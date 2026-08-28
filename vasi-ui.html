@@ -22,8 +22,8 @@ iframe{display:block;width:100%;height:100%;border:0}
     const style=doc.createElement('style');
     style.id='vasi-nav-fix';
     style.textContent=`
-      /* Main navigation stays available everywhere except the active taxi-booking flow. */
-      body:not(.vasi-booking) .bottom{display:grid!important;z-index:95!important}
+      /* VASI navigation: visible on Home, Account, Services and Activity; hidden only during taxi booking. */
+      body:not(.vasi-booking) .bottom{display:grid!important;position:fixed!important;z-index:999999!important}
       body:not(.vasi-booking) .accountScreen{padding-bottom:calc(120px + env(safe-area-inset-bottom))!important}
       body.vasi-booking .bottom{display:none!important}
       body.vasi-booking .sheet{padding-bottom:28px!important}
@@ -36,13 +36,22 @@ iframe{display:block;width:100%;height:100%;border:0}
       const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
       doc.body.classList.toggle('vasi-booking',booking);
       const nav=doc.querySelector('.bottom');
-      if(nav)nav.setAttribute('aria-hidden',booking?'true':'false');
+      if(nav){
+        nav.setAttribute('aria-hidden',booking?'true':'false');
+        if(!booking){
+          nav.style.display='grid';
+          nav.style.zIndex='999999';
+        }else{
+          nav.style.display='none';
+        }
+      }
     }
     new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
     sync();
     setInterval(sync,250);
   }
   frame.addEventListener('load',install);
+  if(frame.contentDocument)install();
 })();
 </script>
 </body>
