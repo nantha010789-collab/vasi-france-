@@ -22,7 +22,9 @@ iframe{display:block;width:100%;height:100%;border:0}
     const style=doc.createElement('style');
     style.id='vasi-nav-fix';
     style.textContent=`
-      /* Home navigation is available on the main screen only, never while booking. */
+      /* Main navigation stays available everywhere except the active taxi-booking flow. */
+      body:not(.vasi-booking) .bottom{display:grid!important;z-index:95!important}
+      body:not(.vasi-booking) .accountScreen{padding-bottom:calc(120px + env(safe-area-inset-bottom))!important}
       body.vasi-booking .bottom{display:none!important}
       body.vasi-booking .sheet{padding-bottom:28px!important}
       @media(max-width:800px){body.vasi-booking .sheet{max-height:82vh!important}}
