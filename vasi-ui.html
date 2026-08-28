@@ -22,10 +22,10 @@ iframe{display:block;width:100%;height:100%;border:0}
     const style=doc.createElement('style');
     style.id='vasi-nav-fix';
     style.textContent=`
-      body.vasi-booking .bottom{display:none!important}
-      body.vasi-booking .sheet{padding-bottom:28px!important}
-      body.vasi-booking .backTitle{margin-top:2px}
-      @media(max-width:800px){body.vasi-booking .sheet{max-height:82vh!important}}
+      /* Keep the Home bar visible throughout the booking flow. */
+      body.vasi-booking .bottom{display:grid!important}
+      body.vasi-booking .sheet{padding-bottom:112px!important}
+      @media(min-width:801px){body.vasi-booking .sheet{padding-bottom:28px!important}}
     `;
     doc.head.appendChild(style);
     function sync(){
@@ -35,8 +35,6 @@ iframe{display:block;width:100%;height:100%;border:0}
       const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
       const accountOpen=!!(account&&account.classList.contains('show'));
       doc.body.classList.toggle('vasi-booking',booking&&!accountOpen);
-      const nav=doc.querySelector('.bottom');
-      if(nav)nav.setAttribute('aria-hidden',booking&&!accountOpen?'true':'false');
     }
     new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
     sync();
