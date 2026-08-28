@@ -1,1 +1,56 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#151515"><title>VASI — France & Europe</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}iframe{display:block;width:100%;height:100%;border:0}</style></head><body><iframe id="app" src="./vasi-rich.html" title="VASI — France & Europe"></iframe></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151515">
+<title>VASI — France & Europe</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}
+iframe{display:block;width:100%;height:100%;border:0}
+</style>
+</head>
+<body>
+<iframe id="app" src="./vasi-rich.html" title="VASI — France & Europe"></iframe>
+<script>
+(function(){
+  const frame=document.getElementById('app');
+  function install(){
+    const doc=frame.contentDocument;
+    if(!doc||!doc.body)return;
+    if(doc.getElementById('vasi-nav-fix'))return;
+    const style=doc.createElement('style');
+    style.id='vasi-nav-fix';
+    style.textContent=`
+      body.vasi-booking .bottom{display:none!important}
+      body.vasi-booking .sheet{padding-bottom:28px!important}
+      body.vasi-booking .backTitle{margin-top:2px}
+      @media(max-width:800px){body.vasi-booking .sheet{max-height:82vh!important}}
+    `;
+    doc.head.appendChild(style);
+    function sync(){
+      const plan=doc.getElementById('planView');
+      const rides=doc.getElementById('ridesView');
+      const account=doc.getElementById('accountScreen');
+      const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
+      const accountOpen=!!(account&&account.classList.contains('show'));
+      doc.body.classList.toggle('vasi-booking',booking&&!accountOpen);
+      const nav=doc.querySelector('.bottom');
+      if(nav)nav.setAttribute('aria-hidden',booking&&!accountOpen?'true':'false');
+    }
+    new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
+    sync();
+    const homeBtn=doc.getElementById('navHome');
+    if(homeBtn){
+      homeBtn.onclick=function(){
+        if(typeof doc.defaultView.goHome==='function')doc.defaultView.goHome();
+        sync();
+      };
+    }
+    setInterval(sync,250);
+  }
+  frame.addEventListener('load',install);
+})();
+</script>
+</body>
+</html>
