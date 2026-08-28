@@ -1,1 +1,1 @@
-{"rewrites":[{"source":"/","destination":"/app.html"}]}
+{"rewrites":[{"source":"/","destination":"/app.html"},{"source":"/vasi-ui.html","destination":"/app.html"},{"source":"/vasi-ui","destination":"/app.html"}]}
