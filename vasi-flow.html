@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#151515"><title>VASI</title><style>html,body{margin:0;height:100%;overflow:hidden;background:#151515}iframe{border:0;width:100%;height:100%;display:block}</style></head><body><iframe id="app" src="/vasi-rich.html" title="VASI"></iframe><script>
+const frame=document.getElementById('app');
+function enhance(){const d=frame.contentDocument;if(!d||!d.body)return; if(d.getElementById('vasi-flow-fix'))return;
+const s=d.createElement('style');s.id='vasi-flow-fix';s.textContent=`
+/* VASI ride-booking polish */
+body.booking-flow .bottom{display:none!important}
+body.booking-flow .mapControls{bottom:30px!important}
+body.booking-flow .sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
+body.booking-flow .rideList{padding-bottom:8px!important}
+body.booking-flow .rideCta{position:sticky!important;bottom:0!important;z-index:4!important;margin-bottom:2px!important}
+@media(max-width:800px){body.booking-flow .sheet{max-height:84vh!important}body.booking-flow .rideList{max-height:calc(84vh - 115px)!important}}
+`;
+d.head.appendChild(s);
+const nav=d.querySelector('.bottom');
+function booking(on){d.body.classList.toggle('booking-flow',on)}
+function bind(){
+ d.querySelectorAll('button').forEach(b=>{const t=(b.textContent||'').trim().toLowerCase();
+   if(t.includes('search destination')||t==='where to?')b.addEventListener('click',()=>setTimeout(()=>booking(true),50),{once:false});
+   if(t.includes('see prices'))b.addEventListener('click',()=>setTimeout(()=>booking(true),50),{once:false});
+   if(t.includes('choose your ride'))b.addEventListener('click',()=>booking(true),{once:false});
+   if(t.includes('home'))b.addEventListener('click',()=>booking(false),{once:false});
+ });
+ d.querySelectorAll('.backTitle button').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{const v=d.querySelector('.view.active');booking(!(v&&v.id==='homeView'));},30)));
+ const orig=d.defaultView.showView;if(typeof orig==='function'&&!d.defaultView.__vasiWrapped){d.defaultView.showView=function(id){orig(id);booking(id!=='homeView')};d.defaultView.__vasiWrapped=true}
+}
+bind();
+}
+frame.addEventListener('load',()=>{enhance();setTimeout(enhance,300);setTimeout(enhance,1000)});
+</script></body></html>
