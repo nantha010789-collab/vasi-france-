@@ -26,11 +26,16 @@ function improve(){
       body.vasi-booking .bottom{display:none!important}
       body.vasi-booking .sheet{padding-bottom:28px!important}
       body.vasi-booking .mapControls{bottom:50px!important}
-      @media(max-width:800px){body.vasi-booking .sheet{padding-bottom:28px!important}body.vasi-booking .mapControls{bottom:30px!important}}
+      /* Account is a normal main-app tab: keep Home/Services/Activity/Account visible. */
+      .accountScreen{z-index:50!important;padding-bottom:calc(110px + env(safe-area-inset-bottom))!important}
+      .bottom{z-index:60!important}
+      @media(max-width:800px){
+        body.vasi-booking .sheet{padding-bottom:28px!important}
+        body.vasi-booking .mapControls{bottom:30px!important}
+      }
     `;
     d.head.appendChild(style);
     const update=()=>{
-      const home=d.getElementById('homeView');
       const active=d.querySelector('.view.active');
       const account=d.getElementById('accountScreen');
       const booking=!!active && active.id!=='homeView' && !(account&&account.classList.contains('show'));
