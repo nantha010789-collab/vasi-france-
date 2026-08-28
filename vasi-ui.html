@@ -22,29 +22,22 @@ iframe{display:block;width:100%;height:100%;border:0}
     const style=doc.createElement('style');
     style.id='vasi-nav-fix';
     style.textContent=`
-      /* Keep the Home bar visible throughout the booking flow. */
-      body.vasi-booking .bottom{display:grid!important}
-      body.vasi-booking .sheet{padding-bottom:112px!important}
-      @media(min-width:801px){body.vasi-booking .sheet{padding-bottom:28px!important}}
+      /* Home navigation is available on the main screen only, never while booking. */
+      body.vasi-booking .bottom{display:none!important}
+      body.vasi-booking .sheet{padding-bottom:28px!important}
+      @media(max-width:800px){body.vasi-booking .sheet{max-height:82vh!important}}
     `;
     doc.head.appendChild(style);
     function sync(){
       const plan=doc.getElementById('planView');
       const rides=doc.getElementById('ridesView');
-      const account=doc.getElementById('accountScreen');
       const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
-      const accountOpen=!!(account&&account.classList.contains('show'));
-      doc.body.classList.toggle('vasi-booking',booking&&!accountOpen);
+      doc.body.classList.toggle('vasi-booking',booking);
+      const nav=doc.querySelector('.bottom');
+      if(nav)nav.setAttribute('aria-hidden',booking?'true':'false');
     }
     new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
     sync();
-    const homeBtn=doc.getElementById('navHome');
-    if(homeBtn){
-      homeBtn.onclick=function(){
-        if(typeof doc.defaultView.goHome==='function')doc.defaultView.goHome();
-        sync();
-      };
-    }
     setInterval(sync,250);
   }
   frame.addEventListener('load',install);
