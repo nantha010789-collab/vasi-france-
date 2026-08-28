@@ -1,32 +1,21 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#151515"><title>VASI</title><style>html,body{margin:0;height:100%;overflow:hidden;background:#151515}iframe{border:0;width:100%;height:100%;display:block}</style></head><body><iframe id="app" src="/vasi-rich.html" title="VASI"></iframe><script>
 const frame=document.getElementById('app');
-function enhance(){const d=frame.contentDocument;if(!d||!d.body)return;if(d.getElementById('vasi-flow-fix'))return;
-const s=d.createElement('style');s.id='vasi-flow-fix';s.textContent=`
-/* VASI booking: clean immersive flow */
-body.booking-flow .bottom{display:none!important}
-body.booking-flow .mapControls{bottom:30px!important}
-body.booking-flow .sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
-body.booking-flow .rideList{padding-bottom:8px!important}
-body.booking-flow .rideCta{position:sticky!important;bottom:0!important;z-index:4!important;margin-bottom:2px!important}
-body.booking-flow .vasi-home-fab{display:flex!important}
-@media(max-width:800px){body.booking-flow .sheet{max-height:84vh!important;touch-action:pan-y}body.booking-flow .rideList{max-height:calc(84vh - 115px)!important}}
-.vasi-home-fab{display:none;position:fixed;z-index:90;left:16px;top:16px;width:48px;height:48px;border:0;border-radius:50%;background:#151515ee;color:#fff;box-shadow:0 6px 24px #0008;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+function enhance(){const d=frame.contentDocument;if(!d||!d.body||d.getElementById('vasi-natural-flow'))return;
+const s=d.createElement('style');s.id='vasi-natural-flow';s.textContent=`
+/* Natural VASI bottom-sheet interaction */
+.bottom{transition:opacity .2s ease,transform .2s ease}
+.sheet{touch-action:none;transition:height .28s cubic-bezier(.2,.8,.2,1),max-height .28s ease,transform .28s ease}
+.sheet.vasi-collapsed{max-height:42vh!important}
+.sheet.vasi-expanded{max-height:86vh!important}
+body.vasi-booking .bottom{display:none!important}
+body.vasi-booking .sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;max-height:86vh!important}
+.vasi-home-float{position:fixed;z-index:75;left:18px;top:78px;width:48px;height:48px;border:0;border-radius:50%;background:#151515ed;color:#fff;font-size:22px;box-shadow:0 6px 22px #0008;display:none}
+body.vasi-booking .vasi-home-float{display:grid;place-items:center}
 `;
 d.head.appendChild(s);
-let fab=d.createElement('button');fab.className='vasi-home-fab';fab.innerHTML='⌂';fab.title='Home';fab.onclick=()=>{if(typeof d.defaultView.showView==='function')d.defaultView.showView('homeView');else{d.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));d.getElementById('homeView')?.classList.add('active')}booking(false)};d.body.appendChild(fab);
-function booking(on){d.body.classList.toggle('booking-flow',on)}
-function sync(){const v=d.querySelector('.view.active');booking(!!v&&v.id!=='homeView')}
-function bind(){
- d.querySelectorAll('button').forEach(b=>{const t=(b.textContent||'').trim().toLowerCase();
-   if(t.includes('search destination')||t==='where to?')b.addEventListener('click',()=>setTimeout(()=>booking(true),80));
-   if(t.includes('see prices'))b.addEventListener('click',()=>setTimeout(()=>booking(true),80));
-   if(t.includes('choose your ride'))b.addEventListener('click',()=>booking(true));
- });
- d.querySelectorAll('.backTitle button').forEach(b=>b.addEventListener('click',()=>setTimeout(sync,60)));
- const orig=d.defaultView.showView;if(typeof orig==='function'&&!d.defaultView.__vasiWrapped){d.defaultView.showView=function(id){orig(id);booking(id!=='homeView')};d.defaultView.__vasiWrapped=true}
- /* Swipe the bottom sheet up/down like a native ride app. */
- const sheet=d.querySelector('.sheet');if(sheet&&!sheet.__vasiSwipe){sheet.__vasiSwipe=true;let sy=0,ey=0,drag=false;sheet.addEventListener('touchstart',e=>{if(!e.touches[0])return;sy=e.touches[0].clientY;drag=true},{passive:true});sheet.addEventListener('touchend',e=>{if(!drag)return;ey=e.changedTouches[0]?.clientY||sy;drag=false;const dy=ey-sy;if(Math.abs(dy)<45)return;const mobile=window.innerWidth<=800;if(dy<0){sheet.style.maxHeight=mobile?'92vh':'calc(100vh - 36px)';sheet.style.transition='max-height .25s ease'}else{sheet.style.maxHeight=mobile?'34vh':'calc(100vh - 250px)';sheet.style.transition='max-height .25s ease'}},{passive:true})}
+let home=d.getElementById('vasi-home-float');if(!home){home=d.createElement('button');home.id='vasi-home-float';home.className='vasi-home-float';home.textContent='⌂';home.title='Home';home.onclick=()=>{try{d.defaultView.showView('homeView')}catch(e){};d.body.classList.remove('vasi-booking');const sh=d.querySelector('.sheet');if(sh){sh.classList.remove('vasi-expanded');sh.classList.add('vasi-collapsed')}};d.body.appendChild(home)}
+const sh=d.querySelector('.sheet');if(sh){sh.classList.add('vasi-collapsed');let sy=0,ey=0;sh.addEventListener('touchstart',e=>{sy=e.touches[0].clientY},{passive:true});sh.addEventListener('touchmove',e=>{ey=e.touches[0].clientY},{passive:true});sh.addEventListener('touchend',()=>{const dy=ey-sy;if(Math.abs(dy)<35)return;if(dy<0){sh.classList.remove('vasi-collapsed');sh.classList.add('vasi-expanded')}else{sh.classList.remove('vasi-expanded');sh.classList.add('vasi-collapsed')}})}
+const orig=d.defaultView.showView;if(typeof orig==='function'&&!d.defaultView.__vasiNatural){d.defaultView.showView=function(id){orig(id);d.body.classList.toggle('vasi-booking',id!=='homeView');if(sh){sh.classList.toggle('vasi-expanded',id!=='homeView');sh.classList.toggle('vasi-collapsed',id==='homeView')}};d.defaultView.__vasiNatural=true}
+d.querySelectorAll('.backTitle button').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>{const v=d.querySelector('.view.active');d.body.classList.toggle('vasi-booking',!(v&&v.id==='homeView'))},40)));
 }
-function run(){enhance();bind();sync()}
-frame.addEventListener('load',run);setTimeout(run,300);setTimeout(run,1000);
-</script></body></html>
+frame.addEventListener('load',()=>{enhance();setTimeout(enhance,300);setTimeout(enhance,1000)});</script></body></html>
