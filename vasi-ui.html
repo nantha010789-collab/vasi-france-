@@ -17,41 +17,98 @@ iframe{display:block;width:100%;height:100%;border:0}
   const frame=document.getElementById('app');
   function install(){
     const doc=frame.contentDocument;
-    if(!doc||!doc.body)return;
+    const win=frame.contentWindow;
+    if(!doc||!doc.body||!win)return;
     if(doc.getElementById('vasi-nav-fix'))return;
+
     const style=doc.createElement('style');
     style.id='vasi-nav-fix';
     style.textContent=`
-      /* VASI navigation: visible on Home, Account, Services and Activity; hidden only during taxi booking. */
-      body:not(.vasi-booking) .bottom{display:grid!important;position:fixed!important;z-index:999999!important}
+      /* VASI navigation: Home/Services/Activity/Account stay available outside taxi ordering. */
+      body:not(.vasi-booking) .bottom{display:grid!important;position:fixed!important;z-index:999999!important;pointer-events:auto!important}
       body:not(.vasi-booking) .accountScreen{padding-bottom:calc(120px + env(safe-area-inset-bottom))!important}
-      body.vasi-booking .bottom{display:none!important}
+      body.vasi-booking .bottom{display:none!important;pointer-events:none!important}
       body.vasi-booking .sheet{padding-bottom:28px!important}
       @media(max-width:800px){body.vasi-booking .sheet{max-height:82vh!important}}
     `;
     doc.head.appendChild(style);
+
+    const originalGoHome=typeof win.goHome==='function'?win.goHome:null;
+    const originalShowView=typeof win.showView==='function'?win.showView:null;
+    const originalShowRides=typeof win.showRides==='function'?win.showRides:null;
+    const originalShowAccount=typeof win.showAccount==='function'?win.showAccount:null;
+
     function sync(){
       const plan=doc.getElementById('planView');
       const rides=doc.getElementById('ridesView');
+      const account=doc.getElementById('accountScreen');
+      const overlay=doc.getElementById('overlay');
       const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
       doc.body.classList.toggle('vasi-booking',booking);
+
       const nav=doc.querySelector('.bottom');
       if(nav){
         nav.setAttribute('aria-hidden',booking?'true':'false');
-        if(!booking){
-          nav.style.display='grid';
-          nav.style.zIndex='999999';
-        }else{
-          nav.style.display='none';
-        }
+        nav.style.display=booking?'none':'grid';
+        nav.style.zIndex='999999';
+        nav.style.pointerEvents=booking?'none':'auto';
+      }
+
+      const home=doc.getElementById('homeView');
+      const buttons=nav?nav.querySelectorAll('button'):[];
+      if(buttons.length){
+        buttons.forEach((b,i)=>b.classList.toggle('active',i===0 && !!home&&home.classList.contains('active') && !(account&&account.classList.contains('show'))));
+      }
+      if(overlay&&overlay.classList.contains('show')&&account&&account.classList.contains('show')===false && !booking){
+        /* Keep normal modals intact; no action needed. */
       }
     }
+
+    win.goHome=function(){
+      const overlay=doc.getElementById('overlay');
+      if(overlay)overlay.classList.remove('show');
+      if(originalGoHome)originalGoHome();
+      const account=doc.getElementById('accountScreen');
+      const home=doc.getElementById('homeView');
+      const plan=doc.getElementById('planView');
+      const rides=doc.getElementById('ridesView');
+      if(account)account.classList.remove('show');
+      if(plan)plan.classList.remove('active');
+      if(rides)rides.classList.remove('active');
+      if(home)home.classList.add('active');
+      const navHome=doc.getElementById('navHome');
+      if(navHome)navHome.classList.add('active');
+      sync();
+    };
+
+    win.showView=function(id){
+      if(originalShowView)originalShowView(id);
+      sync();
+    };
+    win.showRides=function(){
+      if(originalShowRides)originalShowRides();
+      sync();
+    };
+    win.showAccount=function(){
+      if(originalShowAccount)originalShowAccount();
+      sync();
+    };
+
+    const nav=doc.querySelector('.bottom');
+    if(nav){
+      const homeButton=nav.querySelector('button');
+      if(homeButton){
+        homeButton.addEventListener('click',function(){
+          win.goHome();
+        },true);
+      }
+    }
+
     new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
     sync();
-    setInterval(sync,250);
   }
   frame.addEventListener('load',install);
-  if(frame.contentDocument)install();
+  if(frame.contentDocument&&frame.contentDocument.readyState==='complete')install();
 })();
 </script>
 </body>
