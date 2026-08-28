@@ -30,6 +30,28 @@ iframe{display:block;width:100%;height:100%;border:0}
       body.vasi-booking .bottom{display:none!important;pointer-events:none!important}
       body.vasi-booking .sheet{padding-bottom:28px!important}
       @media(max-width:800px){body.vasi-booking .sheet{max-height:82vh!important}}
+      .vasi-add-stops{position:fixed;inset:0;z-index:1000000;background:#151515;color:#fff;display:none;overflow:hidden}
+      .vasi-add-stops.show{display:block}
+      .vasi-add-map{position:absolute;inset:0 0 48%;background:#3b424d;overflow:hidden}
+      .vasi-add-map:before{content:"";position:absolute;inset:-20%;background:linear-gradient(32deg,transparent 45%,#727b87 45.5%,#727b87 46.2%,transparent 46.7%),linear-gradient(120deg,transparent 48%,#68717e 48.5%,#68717e 49%,transparent 49.5%),linear-gradient(8deg,transparent 64%,#68717e 64.5%,#68717e 65%,transparent 65.5%);opacity:.8}
+      .vasi-route-line{position:absolute;left:18%;top:7%;width:65%;height:75%;border-left:7px solid #eee;border-radius:50%;transform:rotate(25deg)}
+      .vasi-map-label{position:absolute;background:#151515;color:#fff;padding:9px 15px;font-weight:700;border-radius:3px;left:38%;bottom:10%;box-shadow:0 4px 14px #0008}
+      .vasi-add-panel{position:absolute;left:0;right:0;bottom:0;height:56%;background:#151515;border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -15px 45px #0009}
+      .vasi-grab{width:74px;height:5px;border-radius:8px;background:#3b3b3b;margin:0 auto 18px}
+      .vasi-add-title{text-align:center;font-size:27px;font-weight:800;margin:0 0 22px}
+      .vasi-add-pickers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+      .vasi-add-pickers button{height:48px;border:0;border-radius:25px;background:#292929;color:#eee;font-weight:700}
+      .vasi-stops-box{border-radius:19px;background:#292929;overflow:hidden;margin-bottom:15px}
+      .vasi-stop-row{min-height:64px;display:flex;align-items:center;border-bottom:1px solid #3b3b3b;padding:0 14px;gap:12px}
+      .vasi-stop-row:last-child{border-bottom:0}
+      .vasi-stop-line{display:flex;flex-direction:column;align-items:center;align-self:stretch;justify-content:center;width:28px;color:#fff}
+      .vasi-stop-line .dot{font-size:20px;line-height:20px}.vasi-stop-line .line{width:2px;flex:1;background:#ddd;min-height:8px}.vasi-stop-line .square{font-size:20px;line-height:20px}
+      .vasi-stop-text{flex:1;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .vasi-drag{font-size:25px;color:#aaa;letter-spacing:-4px;width:30px;text-align:center}
+      .vasi-remove{font-size:29px;color:#ddd;background:transparent;border:0;width:34px}
+      .vasi-add-row{color:#aaa}.vasi-add-row .plus{font-size:25px;width:28px;text-align:center}
+      .vasi-done{height:60px;width:100%;border:0;border-radius:17px;background:#f1f1f1;color:#111;font-size:19px;font-weight:850}
+      @media(min-width:801px){.vasi-add-panel{left:18px;right:auto;width:480px;bottom:18px;height:auto;border-radius:24px}.vasi-add-map{inset:0}.vasi-add-panel{box-shadow:0 15px 45px #0009}}
     `;
     doc.head.appendChild(style);
 
@@ -42,10 +64,8 @@ iframe{display:block;width:100%;height:100%;border:0}
       const plan=doc.getElementById('planView');
       const rides=doc.getElementById('ridesView');
       const account=doc.getElementById('accountScreen');
-      const overlay=doc.getElementById('overlay');
       const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
       doc.body.classList.toggle('vasi-booking',booking);
-
       const nav=doc.querySelector('.bottom');
       if(nav){
         nav.setAttribute('aria-hidden',booking?'true':'false');
@@ -53,20 +73,16 @@ iframe{display:block;width:100%;height:100%;border:0}
         nav.style.zIndex='999999';
         nav.style.pointerEvents=booking?'none':'auto';
       }
-
       const home=doc.getElementById('homeView');
       const buttons=nav?nav.querySelectorAll('button'):[];
-      if(buttons.length){
-        buttons.forEach((b,i)=>b.classList.toggle('active',i===0 && !!home&&home.classList.contains('active') && !(account&&account.classList.contains('show'))));
-      }
-      if(overlay&&overlay.classList.contains('show')&&account&&account.classList.contains('show')===false && !booking){
-        /* Keep normal modals intact; no action needed. */
-      }
+      if(buttons.length){buttons.forEach((b,i)=>b.classList.toggle('active',i===0&&!!home&&home.classList.contains('active')&&!(account&&account.classList.contains('show'))))}
     }
 
     win.goHome=function(){
       const overlay=doc.getElementById('overlay');
       if(overlay)overlay.classList.remove('show');
+      const add=doc.getElementById('vasi-add-stops');
+      if(add)add.classList.remove('show');
       if(originalGoHome)originalGoHome();
       const account=doc.getElementById('accountScreen');
       const home=doc.getElementById('homeView');
@@ -80,30 +96,49 @@ iframe{display:block;width:100%;height:100%;border:0}
       if(navHome)navHome.classList.add('active');
       sync();
     };
+    win.showView=function(id){if(originalShowView)originalShowView(id);sync()};
+    win.showRides=function(){if(originalShowRides)originalShowRides();sync()};
+    win.showAccount=function(){if(originalShowAccount)originalShowAccount();sync()};
 
-    win.showView=function(id){
-      if(originalShowView)originalShowView(id);
-      sync();
-    };
-    win.showRides=function(){
-      if(originalShowRides)originalShowRides();
-      sync();
-    };
-    win.showAccount=function(){
-      if(originalShowAccount)originalShowAccount();
-      sync();
-    };
-
-    const nav=doc.querySelector('.bottom');
-    if(nav){
-      const homeButton=nav.querySelector('button');
-      if(homeButton){
-        homeButton.addEventListener('click',function(){
-          win.goHome();
-        },true);
+    function openAddStops(){
+      let overlay=doc.getElementById('vasi-add-stops');
+      if(!overlay){
+        overlay=doc.createElement('div');
+        overlay.id='vasi-add-stops';
+        overlay.className='vasi-add-stops';
+        overlay.innerHTML=`
+          <div class="vasi-add-map"><div class="vasi-route-line"></div><div class="vasi-map-label">6 Rue Pierre Leroux</div></div>
+          <div class="vasi-add-panel">
+            <div class="vasi-grab"></div>
+            <h2 class="vasi-add-title">Add stops</h2>
+            <div class="vasi-add-pickers"><button>◷ &nbsp; Pickup now⌄</button><button>♙ &nbsp; For me⌄</button></div>
+            <div class="vasi-stops-box" id="vasi-stops-box">
+              <div class="vasi-stop-row"><div class="vasi-stop-line"><span class="dot">●</span><span class="line"></span></div><div class="vasi-stop-text" id="vasi-pickup-text">6 Rue Pierre Leroux</div><div class="vasi-drag">☰</div></div>
+              <div class="vasi-stop-row"><div class="vasi-stop-line"><span class="square">□</span></div><div class="vasi-stop-text" id="vasi-destination-text">Destination</div><button class="vasi-remove" id="vasi-dest-remove">×</button><div class="vasi-drag">☰</div></div>
+              <div class="vasi-stop-row vasi-add-row" id="vasi-add-stop-row"><div class="plus">＋</div><div class="vasi-stop-text">Add a stop</div><div class="vasi-drag">☰</div></div>
+            </div>
+            <button class="vasi-done" id="vasi-done">Done</button>
+          </div>`;
+        doc.body.appendChild(overlay);
+        overlay.querySelector('#vasi-done').onclick=()=>overlay.classList.remove('show');
+        overlay.querySelector('#vasi-dest-remove').onclick=()=>{overlay.querySelector('#vasi-destination-text').textContent='Destination'};
+        overlay.querySelector('#vasi-add-stop-row').onclick=()=>{
+          const row=doc.createElement('div');row.className='vasi-stop-row';
+          row.innerHTML='<div class="vasi-stop-line"><span class="square">□</span></div><div class="vasi-stop-text">Add another stop</div><button class="vasi-remove">×</button><div class="vasi-drag">☰</div>';
+          row.querySelector('.vasi-remove').onclick=()=>row.remove();
+          const box=doc.getElementById('vasi-stops-box');box.insertBefore(row,doc.getElementById('vasi-add-stop-row'));
+        };
       }
+      const dest=doc.getElementById('destination');
+      overlay.querySelector('#vasi-destination-text').textContent=(dest&&dest.value.trim())||'Destination';
+      overlay.classList.add('show');
     }
 
+    const addButton=doc.querySelector('.addStop');
+    if(addButton){addButton.onclick=(e)=>{e.preventDefault();openAddStops()};addButton.setAttribute('aria-label','Add stop')}
+
+    const nav=doc.querySelector('.bottom');
+    if(nav){const homeButton=nav.querySelector('button');if(homeButton)homeButton.addEventListener('click',function(){win.goHome()},true)}
     new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
     sync();
   }
