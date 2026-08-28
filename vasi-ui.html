@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151515">
+<title>VASI — France & Europe</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}
+iframe{display:block;width:100%;height:100%;border:0}
+</style>
+</head>
+<body>
+<iframe id="app" src="/vasi-rich.html" title="VASI"></iframe>
+<script>
+const frame=document.getElementById('app');
+function improve(){
+  try{
+    const d=frame.contentDocument;
+    if(!d||!d.head)return;
+    if(d.getElementById('vasi-booking-nav-fix'))return;
+    const style=d.createElement('style');
+    style.id='vasi-booking-nav-fix';
+    style.textContent=`
+      /* Uber-style booking: bottom navigation is for the main app only. */
+      body.vasi-booking .bottom{display:none!important}
+      body.vasi-booking .sheet{padding-bottom:28px!important}
+      body.vasi-booking .mapControls{bottom:50px!important}
+      @media(max-width:800px){body.vasi-booking .sheet{padding-bottom:28px!important}body.vasi-booking .mapControls{bottom:30px!important}}
+    `;
+    d.head.appendChild(style);
+    const update=()=>{
+      const home=d.getElementById('homeView');
+      const active=d.querySelector('.view.active');
+      const account=d.getElementById('accountScreen');
+      const booking=!!active && active.id!=='homeView' && !(account&&account.classList.contains('show'));
+      d.body.classList.toggle('vasi-booking',booking);
+    };
+    new MutationObserver(update).observe(d.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
+    d.addEventListener('click',()=>setTimeout(update,0),true);
+    update();
+  }catch(e){console.warn('VASI UI fix',e)}
+}
+frame.addEventListener('load',improve);
+</script>
+</body>
+</html>
