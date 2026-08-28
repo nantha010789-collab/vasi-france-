@@ -1,0 +1,47 @@
+name: VASI car design
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upgrade car cards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('vasi-rich.html')
+          s=p.read_text()
+          s=s.replace('.car{height:38px;border-radius:10px;background:#f2f4f2;display:grid;place-items:center;font-size:21px}', '.car{height:66px;display:flex;align-items:center;justify-content:center}.car svg{width:112px;height:62px;display:block}')
+          s=s.replace('<div class="car">🚗</div>', '<div class="car" id="car-go"></div>', 1)
+          s=s.replace('<div class="car">🚘</div>', '<div class="car" id="car-comfort"></div>', 1)
+          s=s.replace('<div class="car">🚙</div>', '<div class="car" id="car-xl"></div>', 1)
+          s=s.replace('<div class="car">✨</div>', '<div class="car" id="car-premium"></div>', 1)
+          if 'VASI Van' not in s:
+              start=s.find('<div class="ride" onclick="selectRide(this,\'VASI Premium\',18)">')
+              i=start; depth=0; end=None
+              while i >= 0 and i < len(s):
+                  a=s.find('<div',i); b=s.find('</div>',i)
+                  if a==-1 or b==-1: break
+                  if a < b: depth+=1; i=a+4
+                  else:
+                      depth-=1; i=b+6
+                      if depth==0: end=i; break
+              if end:
+                  van='<div class="ride" onclick="selectRide(this,\'VASI Van\',22.4)"><div class="car" id="car-van"></div><div><b>Van　♙6</b><small>14 min · 6.4 km</small><span class="tag">NEW</span></div><div class="price">€22.40<small>with luggage</small></div></div>'
+                  s=s[:end]+van+s[end:]
+          js='''<script>const VASI_CARS={go:['#f2f3f3','#dfe7ea'],comfort:['#1c2023','#202b31'],xl:['#e9eceb','#d8e2e5'],premium:['#171a1c','#20272b']};function vasiCar(body,glass){return `<svg viewBox="0 0 260 120" xmlns="http://www.w3.org/2000/svg"><ellipse cx="132" cy="101" rx="102" ry="8" fill="#0008"/><path d="M38 82c5-20 27-29 58-31l27-30c7-8 17-12 28-12h39c13 0 23 6 31 17l20 27c8 2 14 8 16 18l-4 12H38z" fill="${body}" stroke="#111" stroke-width="4"/><path d="M105 50l23-27c4-5 10-8 17-8h36c8 0 14 3 19 10l17 25z" fill="${glass}" stroke="#111" stroke-width="3"/><circle cx="79" cy="91" r="19" fill="#111"/><circle cx="79" cy="91" r="9" fill="#aeb5b8"/><circle cx="195" cy="91" r="19" fill="#111"/><circle cx="195" cy="91" r="9" fill="#aeb5b8"/><path d="M43 73h16M215 71h20" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>`}for(const [k,v] of Object.entries(VASI_CARS)){const e=document.getElementById('car-'+k);if(e)e.innerHTML=vasiCar(v[0],v[1])}const van=document.getElementById('car-van');if(van)van.innerHTML=`<svg viewBox="0 0 260 120" xmlns="http://www.w3.org/2000/svg"><ellipse cx="130" cy="102" rx="100" ry="8" fill="#0008"/><path d="M34 88V45c0-16 13-28 29-28h105c17 0 29 8 38 22l26 40v9H34z" fill="#6e7476" stroke="#111" stroke-width="4"/><path d="M73 26h58v44H55V45c0-11 7-19 18-19zm66 0h27c10 0 17 5 23 14l17 30h-67z" fill="#273137" stroke="#111" stroke-width="3"/><circle cx="76" cy="92" r="19" fill="#111"/><circle cx="76" cy="92" r="9" fill="#aeb5b8"/><circle cx="198" cy="92" r="19" fill="#111"/><circle cx="198" cy="92" r="9" fill="#aeb5b8"/></svg>`</script>'''
+          if 'VASI_CARS' not in s:
+              s=s.replace('</body></html>', js+'</body></html>')
+          p.write_text(s)
+          PY
+      - name: Commit updated design
+        run: |
+          git config user.name "VASI Bot"
+          git config user.email "vasi-bot@users.noreply.github.com"
+          git add vasi-rich.html
+          git diff --cached --quiet || git commit -m "Upgrade VASI ride cards with realistic car visuals"
+          git push
