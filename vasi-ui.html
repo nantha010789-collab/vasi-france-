@@ -9,16 +9,16 @@
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="app" src="./vasi-rich.html?v=2026082906" title="VASI — France & Europe"></iframe>
+<iframe id="app" src="./vasi-rich.html?v=2026082907" title="VASI — France & Europe"></iframe>
 <script>
 (function(){
  const frame=document.getElementById('app');
  function install(){
   const doc=frame.contentDocument,win=frame.contentWindow;if(!doc||!doc.body||!win)return;
-  if(doc.getElementById('vasi-ui-fix-2906'))return;
-  const s=doc.createElement('style');s.id='vasi-ui-fix-2906';s.textContent=`
-   /* VASI: remove the duplicate floating home/account-style button in the top-right. */
-   .accountBtn{display:none!important}
+  if(doc.getElementById('vasi-ui-fix-2907'))return;
+  const s=doc.createElement('style');s.id='vasi-ui-fix-2907';s.textContent=`
+   /* VASI: keep Home only in the normal app state; hide the duplicate floating top-right account/home button. */
+   .accountBtn,button.accountBtn{display:none!important;visibility:hidden!important;pointer-events:none!important}
    #planView{position:relative!important;overflow:visible!important}
    #planView .route{width:calc(100% - 72px)!important;margin-right:72px!important}
    #planView .addStop{position:absolute!important;float:none!important;right:-6px!important;top:calc(42px + 15px + 48px + 12px + 67px + 7px)!important;margin:0!important;width:52px!important;height:52px!important;border-radius:50%!important;background:#292929!important;color:#fff!important;font-size:30px!important;z-index:20!important}
