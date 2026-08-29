@@ -9,100 +9,40 @@
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="app" src="./vasi-rich.html?v=2026082904" title="VASI — France & Europe"></iframe>
+<iframe id="app" src="./vasi-rich.html?v=2026082905" title="VASI — France & Europe"></iframe>
 <script>
 (function(){
-  const frame=document.getElementById('app');
-  function install(){
-    const doc=frame.contentDocument,win=frame.contentWindow;
-    if(!doc||!doc.body||!win)return;
-    if(doc.getElementById('vasi-ui-fix-2904'))return;
-    const s=doc.createElement('style');
-    s.id='vasi-ui-fix-2904';
-    s.textContent=`
-      /* Uber-style plan screen: leave a dedicated column for the + button */
-      #planView{position:relative!important;overflow:visible!important}
-      #planView .route{margin-right:72px!important;width:auto!important}
-      #planView .addStop{
-        position:absolute!important;float:none!important;
-        right:0!important;
-        top:calc(42px + 15px + 48px + 12px + 67px + 7px)!important;
-        margin:0!important;width:52px!important;height:52px!important;
-        border-radius:50%!important;background:#292929!important;
-        color:#fff!important;font-size:30px!important;z-index:20!important;
-      }
-      /* Hide the bottom navigation while planning/requesting a taxi. */
-      body.vasi-booking .bottom{display:none!important;pointer-events:none!important}
-      body:not(.vasi-booking) .bottom{display:grid!important;pointer-events:auto!important;z-index:999999!important}
-      /* Add-stops screen */
-      .vasi-add-stops{position:fixed;inset:0;z-index:1000000;background:#151515;color:#fff;display:none;overflow:hidden}
-      .vasi-add-stops.show{display:block}
-      .vasi-add-map{position:absolute;inset:0 0 48%;background:#3d4551;overflow:hidden}
-      .vasi-add-map:before{content:"";position:absolute;inset:-20%;background:linear-gradient(32deg,transparent 45%,#727b87 45.5%,#727b87 46.2%,transparent 46.7%),linear-gradient(120deg,transparent 48%,#68717e 48.5%,#68717e 49%,transparent 49.5%),linear-gradient(8deg,transparent 64%,#68717e 64.5%,#68717e 65%,transparent 65.5%);opacity:.8}
-      .vasi-route-line{position:absolute;left:18%;top:7%;width:65%;height:75%;border-left:7px solid #eee;border-radius:50%;transform:rotate(25deg)}
-      .vasi-map-label{position:absolute;background:#151515;color:#fff;padding:9px 15px;font-weight:700;border-radius:3px;left:38%;bottom:10%;box-shadow:0 4px 14px #0008}
-      .vasi-add-panel{position:absolute;left:0;right:0;bottom:0;height:56%;background:#151515;border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -15px 45px #0009}
-      .vasi-grab{width:74px;height:5px;border-radius:8px;background:#3b3b3b;margin:0 auto 18px}
-      .vasi-add-title{text-align:center;font-size:27px;font-weight:800;margin:0 0 22px}
-      .vasi-add-pickers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-      .vasi-add-pickers button{height:48px;border:0;border-radius:25px;background:#292929;color:#eee;font-weight:700}
-      .vasi-stops-box{border-radius:19px;background:#292929;overflow:hidden;margin-bottom:15px}
-      .vasi-stop-row{min-height:64px;display:flex;align-items:center;border-bottom:1px solid #3b3b3b;padding:0 14px;gap:12px}
-      .vasi-stop-row:last-child{border-bottom:0}
-      .vasi-stop-line{display:flex;flex-direction:column;align-items:center;align-self:stretch;justify-content:center;width:28px}
-      .vasi-stop-line .line{width:2px;flex:1;background:#ddd;min-height:8px}
-      .vasi-stop-text{flex:1;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .vasi-drag{font-size:25px;color:#aaa;width:30px;text-align:center}
-      .vasi-remove{font-size:29px;color:#ddd;background:transparent;border:0;width:34px}
-      .vasi-add-row{color:#aaa}
-      .vasi-done{height:60px;width:100%;border:0;border-radius:17px;background:#f1f1f1;color:#111;font-size:19px;font-weight:850}
-      @media(min-width:801px){.vasi-add-panel{left:18px;right:auto;width:480px;bottom:18px;height:auto;border-radius:24px}}
-    `;
-    doc.head.appendChild(s);
-
-    function sync(){
-      const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView'),acct=doc.getElementById('accountScreen');
-      const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
-      doc.body.classList.toggle('vasi-booking',booking);
-      const nav=doc.querySelector('.bottom');
-      if(nav)nav.style.display=booking?'none':'grid';
-      if(nav){nav.querySelectorAll('button').forEach((b,i)=>{if(i===0)b.classList.toggle('active',!booking&&!acct?.classList.contains('show')&&doc.getElementById('homeView')?.classList.contains('active'));});}
-    }
-
-    const oldGoHome=win.goHome,oldShowView=win.showView,oldShowRides=win.showRides;
-    win.goHome=function(){if(oldGoHome)oldGoHome();else{doc.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));doc.getElementById('homeView')?.classList.add('active');doc.getElementById('accountScreen')?.classList.remove('show')}sync()};
-    win.showView=function(id){if(oldShowView)oldShowView(id);sync()};
-    win.showRides=function(){if(oldShowRides)oldShowRides();sync()};
-
-    let add=null;
-    function openStops(){
-      if(!add){
-        add=doc.createElement('div');add.id='vasi-add-stops';add.className='vasi-add-stops';
-        add.innerHTML='<div class="vasi-add-map"><div class="vasi-route-line"></div><div class="vasi-map-label">6 Rue Pierre Leroux</div></div><div class="vasi-add-panel"><div class="vasi-grab"></div><h2 class="vasi-add-title">Add stops</h2><div class="vasi-add-pickers"><button>◷ &nbsp; Pickup now⌄</button><button>♙ &nbsp; For me⌄</button></div><div class="vasi-stops-box" id="vasi-stops-box"><div class="vasi-stop-row"><div class="vasi-stop-line">●<span class="line"></span></div><div class="vasi-stop-text">6 Rue Pierre Leroux</div><div class="vasi-drag">☰</div></div><div class="vasi-stop-row"><div class="vasi-stop-line">□</div><div class="vasi-stop-text" id="vasi-destination-text">Destination</div><button class="vasi-remove" id="vasi-dest-remove">×</button><div class="vasi-drag">☰</div></div><div class="vasi-stop-row vasi-add-row" id="vasi-add-stop-row"><div>＋</div><div class="vasi-stop-text">Add a stop</div><div class="vasi-drag">☰</div></div></div><button class="vasi-done" id="vasi-done">Done</button></div>';
-        doc.body.appendChild(add);
-        add.querySelector('#vasi-done').onclick=()=>add.classList.remove('show');
-        add.querySelector('#vasi-dest-remove').onclick=()=>add.querySelector('#vasi-destination-text').textContent='Destination';
-        add.querySelector('#vasi-add-stop-row').onclick=()=>{
-          const r=doc.createElement('div');r.className='vasi-stop-row';
-          r.innerHTML='<div class="vasi-stop-line">□</div><div class="vasi-stop-text">Add another stop</div><button class="vasi-remove">×</button><div class="vasi-drag">☰</div>';
-          r.querySelector('.vasi-remove').onclick=()=>r.remove();
-          add.querySelector('#vasi-stops-box').insertBefore(r,add.querySelector('#vasi-add-stop-row'));
-        };
-      }
-      const d=doc.getElementById('destination');
-      add.querySelector('#vasi-destination-text').textContent=(d&&d.value.trim())||'Destination';
-      add.classList.add('show');
-    }
-
-    const plus=doc.querySelector('#planView .addStop');
-    if(plus)plus.onclick=(e)=>{e.preventDefault();e.stopPropagation();openStops()};
-    const nav=doc.querySelector('.bottom');
-    if(nav){const hb=nav.querySelector('button');if(hb)hb.addEventListener('click',()=>win.goHome(),true)}
-    new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});
-    sync();
-  }
-  frame.addEventListener('load',install);
-  if(frame.contentDocument?.readyState==='complete')install();
+ const frame=document.getElementById('app');
+ function install(){
+  const doc=frame.contentDocument,win=frame.contentWindow;if(!doc||!doc.body||!win)return;
+  if(doc.getElementById('vasi-ui-fix-2905'))return;
+  const s=doc.createElement('style');s.id='vasi-ui-fix-2905';s.textContent=`
+   #planView{position:relative!important;overflow:visible!important}
+   /* Make the route box narrower so the + control is genuinely outside it. */
+   #planView .route{width:calc(100% - 72px)!important;margin-right:72px!important}
+   #planView .addStop{position:absolute!important;float:none!important;right:-6px!important;top:calc(42px + 15px + 48px + 12px + 67px + 7px)!important;margin:0!important;width:52px!important;height:52px!important;border-radius:50%!important;background:#292929!important;color:#fff!important;font-size:30px!important;z-index:20!important}
+   body.vasi-booking .bottom{display:none!important;pointer-events:none!important}
+   body:not(.vasi-booking) .bottom{display:grid!important;pointer-events:auto!important;z-index:999999!important}
+   .vasi-add-stops{position:fixed;inset:0;z-index:1000000;background:#151515;color:#fff;display:none;overflow:hidden}
+   .vasi-add-stops.show{display:block}
+   .vasi-add-map{position:absolute;inset:0 0 48%;background:#3d4551;overflow:hidden}
+   .vasi-add-map:before{content:"";position:absolute;inset:-20%;background:linear-gradient(32deg,transparent 45%,#727b87 45.5%,#727b87 46.2%,transparent 46.7%),linear-gradient(120deg,transparent 48%,#68717e 48.5%,#68717e 49%,transparent 49.5%),linear-gradient(8deg,transparent 64%,#68717e 64.5%,#68717e 65%,transparent 65.5%);opacity:.8}
+   .vasi-route-line{position:absolute;left:18%;top:7%;width:65%;height:75%;border-left:7px solid #eee;border-radius:50%;transform:rotate(25deg)}
+   .vasi-map-label{position:absolute;background:#151515;color:#fff;padding:9px 15px;font-weight:700;border-radius:3px;left:38%;bottom:10%;box-shadow:0 4px 14px #0008}
+   .vasi-add-panel{position:absolute;left:0;right:0;bottom:0;height:56%;background:#151515;border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -15px 45px #0009}
+   .vasi-grab{width:74px;height:5px;border-radius:8px;background:#3b3b3b;margin:0 auto 18px}.vasi-add-title{text-align:center;font-size:27px;font-weight:800;margin:0 0 22px}.vasi-add-pickers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.vasi-add-pickers button{height:48px;border:0;border-radius:25px;background:#292929;color:#eee;font-weight:700}.vasi-stops-box{border-radius:19px;background:#292929;overflow:hidden;margin-bottom:15px}.vasi-stop-row{min-height:64px;display:flex;align-items:center;border-bottom:1px solid #3b3b3b;padding:0 14px;gap:12px}.vasi-stop-row:last-child{border-bottom:0}.vasi-stop-line{display:flex;flex-direction:column;align-items:center;align-self:stretch;justify-content:center;width:28px}.vasi-stop-line .line{width:2px;flex:1;background:#ddd;min-height:8px}.vasi-stop-text{flex:1;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vasi-drag{font-size:25px;color:#aaa;width:30px;text-align:center}.vasi-remove{font-size:29px;color:#ddd;background:transparent;border:0;width:34px}.vasi-add-row{color:#aaa}.vasi-done{height:60px;width:100%;border:0;border-radius:17px;background:#f1f1f1;color:#111;font-size:19px;font-weight:850}
+  `;doc.head.appendChild(s);
+  function sync(){const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView'),acct=doc.getElementById('accountScreen');const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));doc.body.classList.toggle('vasi-booking',booking);const nav=doc.querySelector('.bottom');if(nav)nav.style.display=booking?'none':'grid';if(nav){nav.querySelectorAll('button').forEach((b,i)=>{if(i===0)b.classList.toggle('active',!booking&&!acct?.classList.contains('show')&&doc.getElementById('homeView')?.classList.contains('active'));});}}
+  const oldGoHome=win.goHome,oldShowView=win.showView,oldShowRides=win.showRides;
+  win.goHome=function(){if(oldGoHome)oldGoHome();else{doc.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));doc.getElementById('homeView')?.classList.add('active');doc.getElementById('accountScreen')?.classList.remove('show')}sync()};
+  win.showView=function(id){if(oldShowView)oldShowView(id);sync()};win.showRides=function(){if(oldShowRides)oldShowRides();sync()};
+  let add=null;
+  function openStops(){if(!add){add=doc.createElement('div');add.id='vasi-add-stops';add.className='vasi-add-stops';add.innerHTML='<div class="vasi-add-map"><div class="vasi-route-line"></div><div class="vasi-map-label">6 Rue Pierre Leroux</div></div><div class="vasi-add-panel"><div class="vasi-grab"></div><h2 class="vasi-add-title">Add stops</h2><div class="vasi-add-pickers"><button>◷ &nbsp; Pickup now⌄</button><button>♙ &nbsp; For me⌄</button></div><div class="vasi-stops-box" id="vasi-stops-box"><div class="vasi-stop-row"><div class="vasi-stop-line">●<span class="line"></span></div><div class="vasi-stop-text">6 Rue Pierre Leroux</div><div class="vasi-drag">☰</div></div><div class="vasi-stop-row"><div class="vasi-stop-line">□</div><div class="vasi-stop-text" id="vasi-destination-text">Destination</div><button class="vasi-remove" id="vasi-dest-remove">×</button><div class="vasi-drag">☰</div></div><div class="vasi-stop-row vasi-add-row" id="vasi-add-stop-row"><div>＋</div><div class="vasi-stop-text">Add a stop</div><div class="vasi-drag">☰</div></div></div><button class="vasi-done" id="vasi-done">Done</button></div>';doc.body.appendChild(add);add.querySelector('#vasi-done').onclick=()=>add.classList.remove('show');add.querySelector('#vasi-dest-remove').onclick=()=>add.querySelector('#vasi-destination-text').textContent='Destination';add.querySelector('#vasi-add-stop-row').onclick=()=>{const r=doc.createElement('div');r.className='vasi-stop-row';r.innerHTML='<div class="vasi-stop-line">□</div><div class="vasi-stop-text">Add another stop</div><button class="vasi-remove">×</button><div class="vasi-drag">☰</div>';r.querySelector('.vasi-remove').onclick=()=>r.remove();add.querySelector('#vasi-stops-box').insertBefore(r,add.querySelector('#vasi-add-stop-row'));};}const d=doc.getElementById('destination');add.querySelector('#vasi-destination-text').textContent=(d&&d.value.trim())||'Destination';add.classList.add('show');}
+  const plus=doc.querySelector('#planView .addStop');if(plus)plus.onclick=(e)=>{e.preventDefault();e.stopPropagation();openStops()};
+  const nav=doc.querySelector('.bottom');if(nav){const hb=nav.querySelector('button');if(hb)hb.addEventListener('click',()=>win.goHome(),true)}
+  new MutationObserver(sync).observe(doc.body,{subtree:true,attributes:true,attributeFilter:['class','style']});sync();
+ }
+ frame.addEventListener('load',install);if(frame.contentDocument?.readyState==='complete')install();
 })();
 </script>
 </body>
