@@ -10,15 +10,20 @@
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}
 iframe{display:block;width:100%;height:100%;border:0}
+#homeReturn{display:none;position:fixed;z-index:999999;left:18px;top:18px;height:48px;padding:0 18px;border:1px solid #ffffff25;border-radius:24px;background:#151515ee;color:#fff;font:700 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 6px 24px #0008;align-items:center;gap:8px;cursor:pointer}
+#homeReturn.show{display:flex}
 </style>
 </head>
 <body>
 <iframe id="app" src="./vasi-rich.html?v=2026083101" title="VASI France Taxi"></iframe>
+<button id="homeReturn" type="button" aria-label="Return to Home">⌂ Home</button>
 <script>
 (function(){
   const frame=document.getElementById('app');
+  const home=document.getElementById('homeReturn');
   const presetNames=['Paris','Beauvais','Lille','CDG','Charles de Gaulle','Savigny-le-Temple','2 Rue Raymond Eglin'];
   let installed=false;
+  let originalGoHome=null;
   function clean(doc){
     if(!doc||!doc.body)return;
     doc.querySelectorAll('.acctName').forEach(el=>{if(el.textContent!=='Nanthan Siva')el.textContent='Nanthan Siva'});
@@ -26,19 +31,13 @@ iframe{display:block;width:100%;height:100%;border:0}
     const input=doc.getElementById('destination');
     if(input){input.value='';input.placeholder='Where to?'}
     const suggestions=doc.getElementById('suggestions');
-    if(suggestions){
-      suggestions.querySelectorAll('.suggest').forEach(row=>{
-        const text=row.textContent.trim();
-        if(presetNames.some(name=>text===name||text.startsWith(name)||text.includes(name)))row.remove();
-      });
-    }
+    if(suggestions){suggestions.querySelectorAll('.suggest').forEach(row=>{const text=row.textContent.trim();if(presetNames.some(name=>text===name||text.startsWith(name)||text.includes(name)))row.remove()})}
   }
   function install(){
     if(installed)return;
     const doc=frame.contentDocument,win=frame.contentWindow;
     if(!doc||!doc.body||!win)return;
-    installed=true;
-    clean(doc);
+    installed=true; clean(doc);
     const style=doc.createElement('style');
     style.id='vasi-ui-clean-3101';
     style.textContent=`
@@ -49,22 +48,26 @@ iframe{display:block;width:100%;height:100%;border:0}
       #planView{position:relative!important}
     `;
     doc.head.appendChild(style);
+    function setHomeVisible(show){home.classList.toggle('show',!!show)}
     function sync(){
-      const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView');
+      const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView'),account=doc.querySelector('.accountScreen.show');
       const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
       doc.body.classList.toggle('vasi-booking',booking);
+      setHomeVisible(booking||!!account);
       clean(doc);
     }
-    ['showView','showRides','goHome','showAccount','openPlan'].forEach(name=>{
+    if(typeof win.goHome==='function'){
+      originalGoHome=win.goHome;
+      win.goHome=function(){const result=originalGoHome.apply(this,arguments);setTimeout(sync,60);return result};
+    }
+    ['showView','showRides','showAccount','openPlan'].forEach(name=>{
       const original=win[name];
-      if(typeof original==='function'){
-        win[name]=function(){
-          const result=original.apply(this,arguments);
-          setTimeout(sync,60);
-          return result;
-        };
-      }
+      if(typeof original==='function')win[name]=function(){const result=original.apply(this,arguments);setTimeout(sync,60);return result};
     });
+    home.onclick=function(){
+      try{if(typeof win.goHome==='function'){win.goHome();setTimeout(sync,80);return}}catch(e){}
+      frame.src='./vasi-rich.html?v='+Date.now();
+    };
     setTimeout(sync,100);
   }
   frame.addEventListener('load',install);
