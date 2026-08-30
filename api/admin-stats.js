@@ -19,14 +19,22 @@ export default async function handler(req, res) {
   if (!allow.ok || (await allow.json()).length === 0) return res.status(403).json({ error: 'Admin access required' });
 
   const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
-  async function count(table, extra = '') {
-    const r = await fetch(`${url}/rest/v1/${table}?select=id${extra}`, { method: 'HEAD', headers: { ...headers, Prefer: 'count=exact' } });
+  async function count(table, filter = '') {
+    const r = await fetch(`${url}/rest/v1/${table}?select=id${filter}`, { method: 'HEAD', headers: { ...headers, Prefer: 'count=exact' } });
     if (!r.ok) return null;
     const range = r.headers.get('content-range');
     return range ? Number(range.split('/')[1]) || 0 : null;
   }
+
   const [drivers, customers, bookings, documents, payments, activeRides, onlineDrivers] = await Promise.all([
-    count('drivers'), count('profiles', '&role=eq.customer'), count('bookings'), count('driver_documents'), count('payments'), count('rides', '&status=in.(requested,accepted,arriving,in_progress)'), count('drivers', '&is_online=eq.true')
+    count('drivers'),
+    count('profiles', '&role=eq.customer'),
+    count('bookings'),
+    count('driver_documents'),
+    count('payments'),
+    count('rides', '&status=in.(requested,accepted,driver_arriving,in_progress)'),
+    count('drivers', '&online=eq.true')
   ]);
+
   return res.status(200).json({ drivers, customers, bookings, documents, payments, activeRides, onlineDrivers });
 }
