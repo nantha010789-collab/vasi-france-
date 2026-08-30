@@ -1,18 +1,16 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07100b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="VASI"><title>VASI — Ride</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#030704}iframe{display:block;width:100%;height:100%;border:0}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07100b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VASI">
+<title>VASI France — Ride</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#030704}</style>
 </head>
-<body><iframe id="vasiApp" src="./app-fixed.html?v=1" title="VASI — Ride"></iframe>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-(function(){
-const SUPABASE_URL='https://vhfyvkrvysrooaqzcxsp.supabase.co';const SUPABASE_KEY='sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKt';const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const iframe=document.getElementById('vasiApp');let currentRide=null,poll=null;
-const toast=m=>{const d=iframe.contentDocument,e=d&&d.getElementById('toast');if(e){e.textContent=m;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',2600)}};
-async function session(){return(await sb.auth.getSession()).data.session}
-async function invoke(action,body={}){const r=await sb.functions.invoke('ride-service',{body:{action,...body}});if(r.error)throw r.error;return r.data}
-async function requestRide(){const s=await session();if(!s){toast('Please sign in before requesting a ride');return}const d=iframe.contentDocument,dest=d?.getElementById('destination')?.value?.trim();if(!dest){toast('Choose a destination first');return}const ride=d?.querySelector('.ride.selected'),service=ride?.querySelector('b')?.textContent||'VASI Go',price=Number((ride?.querySelector('.price')?.textContent||'8.50').replace(/[^0-9.]/g,''));if(!navigator.geolocation){toast('Location is not available');return}navigator.geolocation.getCurrentPosition(async p=>{try{const result=await invoke('create_ride',{pickup_address:'Current location',pickup_lat:p.coords.latitude,pickup_lng:p.coords.longitude,destination_address:dest,estimated_fare:price,currency:'EUR',service,payment_method:'cash',mode:'ride'});currentRide=result.ride;toast(result.driver?'Driver assigned · '+(result.driver.full_name||'VTC driver'):'Ride requested · searching for a driver');clearInterval(poll);poll=setInterval(async()=>{try{const r=await invoke('get_my_ride',{ride_id:currentRide.id});if(r.ride){toast('Ride: '+String(r.ride.status||'searching').replaceAll('_',' '));if(['completed','cancelled'].includes(r.ride.status))clearInterval(poll)}}catch(e){}},5000)}catch(e){toast(e.message||'Unable to request ride')}},()=>toast('Please allow location access for VASI'),{enableHighAccuracy:true,timeout:10000,maximumAge:5000})}
-window.vasiBackend={requestRide};window.vasiUseGoogleLocation=()=>{if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>toast('Location found'),()=>toast('Location permission needed'));else toast('Location unavailable')};
-})();
-</script></body></html>
+<body>
+<script>location.replace('./app-fixed.html?v=3');</script>
+<noscript><a href="./app-fixed.html?v=3">Open VASI France</a></noscript>
+</body>
+</html>
