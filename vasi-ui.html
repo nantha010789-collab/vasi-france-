@@ -7,59 +7,68 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="VASI">
 <title>VASI France — Taxi</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}iframe{display:block;width:100%;height:100%;border:0}</style>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}
+iframe{display:block;width:100%;height:100%;border:0}
+</style>
 </head>
 <body>
-<iframe id="app" src="./vasi-rich.html?v=2026083004" title="VASI France Taxi"></iframe>
+<iframe id="app" src="./vasi-rich.html?v=2026083101" title="VASI France Taxi"></iframe>
 <script>
 (function(){
- const frame=document.getElementById('app');
- const removePlaceNames=['Paris','Beauvais','Lille','CDG','Charles de Gaulle','Savigny-le-Temple','2 Rue Raymond Eglin'];
- function install(){
-  const doc=frame.contentDocument,win=frame.contentWindow;if(!doc||!doc.body||!win)return;
-  if(doc.getElementById('vasi-ui-clean-3004'))return;
-  const s=doc.createElement('style');s.id='vasi-ui-clean-3004';s.textContent=`
-   .accountBtn{display:none!important}
-   #planView .suggestions .suggest{display:none!important}
-   #planView .suggestions:before{content:'Enter a destination';display:block;color:#999;padding:18px 4px;font-size:15px}
-   #planView .route{width:calc(100% - 72px)!important;margin-right:72px!important}
-   #planView{position:relative!important}
-   #planView .addStop{position:absolute!important;right:-6px!important;top:170px!important;margin:0!important;width:52px!important;height:52px!important;border-radius:50%!important;background:#292929!important;color:#fff!important;font-size:30px!important;z-index:20!important}
-   body.vasi-booking .bottom{display:none!important}
-   body:not(.vasi-booking) .bottom{display:grid!important;pointer-events:auto!important;z-index:999999!important}
-  `;doc.head.appendChild(s);
-  function leaf(el){return el&&el.children.length===0;}
-  function removePresetRows(){
-   const sheet=doc.getElementById('sheet');if(!sheet)return;
-   sheet.querySelectorAll('*').forEach(el=>{
-    if(!leaf(el))return;
-    const t=el.textContent.trim();
-    if(removePlaceNames.includes(t)){
-      const p=el.parentElement;
-      if(p && ['suggest','listItem','quickCard','recent'].some(c=>p.classList.contains(c))) p.remove();
-      else el.textContent='';
+  const frame=document.getElementById('app');
+  const presetNames=['Paris','Beauvais','Lille','CDG','Charles de Gaulle','Savigny-le-Temple','2 Rue Raymond Eglin'];
+  let installed=false;
+  function clean(doc){
+    if(!doc||!doc.body)return;
+    doc.querySelectorAll('.acctName').forEach(el=>{if(el.textContent!=='Nanthan Siva')el.textContent='Nanthan Siva'});
+    doc.querySelectorAll('.balanceCard b').forEach(el=>{if(el.textContent!=='€0.00')el.textContent='€0.00'});
+    const input=doc.getElementById('destination');
+    if(input){input.value='';input.placeholder='Where to?'}
+    const suggestions=doc.getElementById('suggestions');
+    if(suggestions){
+      suggestions.querySelectorAll('.suggest').forEach(row=>{
+        const text=row.textContent.trim();
+        if(presetNames.some(name=>text===name||text.startsWith(name)||text.includes(name)))row.remove();
+      });
     }
-   });
-   sheet.querySelectorAll('input').forEach(i=>{if(removePlaceNames.some(x=>i.value.trim()===x))i.value='';if(i.id==='destination'||i.readOnly)i.placeholder='Where to?';});
   }
-  function setAccount(){
-   doc.querySelectorAll('.acctName').forEach(e=>e.textContent='Nanthan Siva');
-   doc.querySelectorAll('.balanceCard b').forEach(e=>{if(e.textContent.includes('€')||e.closest('.balanceCard'))e.textContent='€0.00';});
+  function install(){
+    if(installed)return;
+    const doc=frame.contentDocument,win=frame.contentWindow;
+    if(!doc||!doc.body||!win)return;
+    installed=true;
+    clean(doc);
+    const style=doc.createElement('style');
+    style.id='vasi-ui-clean-3101';
+    style.textContent=`
+      body.vasi-booking .bottom{display:none!important}
+      body:not(.vasi-booking) .bottom{display:grid!important;pointer-events:auto!important;z-index:999999!important}
+      #planView .route{width:calc(100% - 72px)!important;margin-right:72px!important}
+      #planView .addStop{position:absolute!important;right:-6px!important;top:170px!important;margin:0!important;width:52px!important;height:52px!important;border-radius:50%!important;background:#292929!important;color:#fff!important;font-size:30px!important;z-index:20!important}
+      #planView{position:relative!important}
+    `;
+    doc.head.appendChild(style);
+    function sync(){
+      const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView');
+      const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
+      doc.body.classList.toggle('vasi-booking',booking);
+      clean(doc);
+    }
+    ['showView','showRides','goHome','showAccount','openPlan'].forEach(name=>{
+      const original=win[name];
+      if(typeof original==='function'){
+        win[name]=function(){
+          const result=original.apply(this,arguments);
+          setTimeout(sync,60);
+          return result;
+        };
+      }
+    });
+    setTimeout(sync,100);
   }
-  function sync(){
-   const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView');
-   doc.body.classList.toggle('vasi-booking',!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active'))));
-   removePresetRows();setAccount();
-  }
-  const input=doc.getElementById('destination');if(input){input.value='';input.placeholder='Where to?';}
-  const oldShowView=win.showView,oldShowRides=win.showRides,oldGoHome=win.goHome;
-  win.showView=function(id){if(oldShowView)oldShowView(id);setTimeout(sync,30)};
-  win.showRides=function(){if(oldShowRides)oldShowRides();setTimeout(sync,30)};
-  win.goHome=function(){if(oldGoHome)oldGoHome();setTimeout(sync,30)};
-  new MutationObserver(sync).observe(doc.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style']});
-  sync();
- }
- frame.addEventListener('load',install);if(frame.contentDocument?.readyState==='complete')install();
+  frame.addEventListener('load',install);
+  if(frame.contentDocument&&frame.contentDocument.readyState==='complete')install();
 })();
 </script>
 </body>
