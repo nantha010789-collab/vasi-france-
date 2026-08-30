@@ -1,0 +1,1 @@
+export default function handler(req,res){if(req.method!=='GET')return res.status(405).json({error:'GET required'});const key=process.env.STRIPE_PUBLISHABLE_KEY;if(!key)return res.status(503).json({error:'Stripe publishable key is not configured'});res.setHeader('Cache-Control','no-store');return res.status(200).json({publishable_key:key});}
