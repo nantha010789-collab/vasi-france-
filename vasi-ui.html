@@ -5,55 +5,60 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#151515">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>VASI — France & Europe</title>
+<meta name="apple-mobile-web-app-title" content="VASI">
+<title>VASI France — Taxi</title>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="app" src="./vasi-rich.html?v=2026083002" title="VASI — France & Europe"></iframe>
+<iframe id="app" src="./vasi-rich.html?v=2026083003" title="VASI France Taxi"></iframe>
 <script>
 (function(){
  const frame=document.getElementById('app');
+ const removePlaceNames=['Paris','Beauvais','Lille','CDG','Charles de Gaulle','Savigny-le-Temple','2 Rue Raymond Eglin'];
  function install(){
   const doc=frame.contentDocument,win=frame.contentWindow;if(!doc||!doc.body||!win)return;
-  if(doc.getElementById('vasi-ui-fix-3002'))return;
-  const s=doc.createElement('style');s.id='vasi-ui-fix-3002';s.textContent=`
+  if(doc.getElementById('vasi-ui-clean-3003'))return;
+  const s=doc.createElement('style');s.id='vasi-ui-clean-3003';s.textContent=`
    .accountBtn{display:none!important}
    #planView .suggestions .suggest{display:none!important}
-   #planView .suggestions:before{content:'Type an address, place or airport';display:block;color:#999;padding:18px 4px;font-size:15px}
+   #planView .suggestions:before{content:'Enter a destination';display:block;color:#999;padding:18px 4px;font-size:15px}
    #planView .route{width:calc(100% - 72px)!important;margin-right:72px!important}
-   #planView .addStop{position:absolute!important;right:-6px!important;top:230px!important;margin:0!important;width:52px!important;height:52px!important;border-radius:50%!important;background:#292929!important;color:#fff!important;font-size:30px!important;z-index:20!important}
+   #planView{position:relative!important}
+   #planView .addStop{position:absolute!important;right:-6px!important;top:170px!important;margin:0!important;width:52px!important;height:52px!important;border-radius:50%!important;background:#292929!important;color:#fff!important;font-size:30px!important;z-index:20!important}
    body.vasi-booking .bottom{display:none!important}
    body:not(.vasi-booking) .bottom{display:grid!important;pointer-events:auto!important;z-index:999999!important}
   `;doc.head.appendChild(s);
-  const name='Nanthan Siva';
-  function cleanText(){
-   doc.querySelectorAll('*').forEach(el=>{
-    if(el.children.length===0&&el.textContent.trim()==='2 Rue Raymond Eglin')el.textContent='';
+  function leaf(el){return el&&el.children.length===0;}
+  function removePresetRows(){
+   const sheet=doc.getElementById('sheet');if(!sheet)return;
+   sheet.querySelectorAll('*').forEach(el=>{
+    if(!leaf(el))return;
+    const t=el.textContent.trim();
+    if(removePlaceNames.includes(t)||/^.+\s—\s(Recent destination|recent destination)$/i.test(t)){
+      let p=el.parentElement;
+      if(p && (p.classList.contains('suggest')||p.classList.contains('listItem')||p.classList.contains('quickCard')||p.classList.contains('recent'))) p.remove();
+      else if(/^(Paris|Beauvais|Lille|CDG|Charles de Gaulle|Savigny-le-Temple|2 Rue Raymond Eglin)$/i.test(t)) el.textContent='';
+    }
    });
-   doc.querySelectorAll('input').forEach(i=>{if(i.value==='2 Rue Raymond Eglin')i.value='';if(i.placeholder&&/Paris|Beauvais|CDG|Savigny/i.test(i.placeholder))i.placeholder='Where to?'});
-   const body=doc.body.innerText;
-   if(body.includes('2 Rue Raymond Eglin')){
-    doc.querySelectorAll('*').forEach(el=>{if(el.children.length===0&&el.textContent.includes('2 Rue Raymond Eglin'))el.textContent=el.textContent.replace(/2 Rue Raymond Eglin/g,'');});
-   }
+   sheet.querySelectorAll('input').forEach(i=>{if(removePlaceNames.some(x=>i.value.trim()===x))i.value='';i.placeholder='Where to?';});
   }
   function setAccount(){
-   doc.querySelectorAll('.acctName').forEach(e=>e.textContent=name);
-   doc.querySelectorAll('.balanceCard b').forEach(e=>{if(e.textContent.includes('€'))e.textContent='€0.00';});
-   doc.querySelectorAll('.balanceCard').forEach(e=>{if(/balance|wallet/i.test(e.innerText))e.querySelector('b')&&(e.querySelector('b').textContent='€0.00');});
+   doc.querySelectorAll('.acctName').forEach(e=>e.textContent='Nanthan Siva');
+   doc.querySelectorAll('.balanceCard b').forEach(e=>e.textContent='€0.00');
+   doc.querySelectorAll('.accountScreen').forEach(e=>{e.innerHTML=e.innerHTML.replace(/Nanthan\s*010789|nath[a-z0-9_-]*|€\s*[0-9]+(?:\.[0-9]{1,2})?/gi,function(m){return /€/.test(m)?'€0.00':'Nanthan Siva'});});
   }
   function sync(){
-   const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView'),acct=doc.getElementById('accountScreen');
-   const booking=!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active')));
-   doc.body.classList.toggle('vasi-booking',booking);
-   setAccount();cleanText();
+   const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView');
+   doc.body.classList.toggle('vasi-booking',!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active'))));
+   removePresetRows();setAccount();
   }
-  const oldShowView=win.showView,oldShowRides=win.showRides,oldGoHome=win.goHome;
-  win.showView=function(id){if(oldShowView)oldShowView(id);sync()};
-  win.showRides=function(){if(oldShowRides)oldShowRides();sync()};
-  win.goHome=function(){if(oldGoHome)oldGoHome();sync()};
   const input=doc.getElementById('destination');
-  if(input){input.value='';input.placeholder='Where to?';input.oninput=function(){if(win.filterSuggestions)win.filterSuggestions(this.value)};}
-  new MutationObserver(sync).observe(doc.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style','value']});
+  if(input){input.value='';input.placeholder='Where to?';}
+  const oldShowView=win.showView,oldShowRides=win.showRides,oldGoHome=win.goHome;
+  win.showView=function(id){if(oldShowView)oldShowView(id);setTimeout(sync,20)};
+  win.showRides=function(){if(oldShowRides)oldShowRides();setTimeout(sync,20)};
+  win.goHome=function(){if(oldGoHome)oldGoHome();setTimeout(sync,20)};
+  new MutationObserver(sync).observe(doc.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style']});
   sync();
  }
  frame.addEventListener('load',install);if(frame.contentDocument?.readyState==='complete')install();
