@@ -10,15 +10,15 @@
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#151515}iframe{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
-<iframe id="app" src="./vasi-rich.html?v=2026083003" title="VASI France Taxi"></iframe>
+<iframe id="app" src="./vasi-rich.html?v=2026083004" title="VASI France Taxi"></iframe>
 <script>
 (function(){
  const frame=document.getElementById('app');
  const removePlaceNames=['Paris','Beauvais','Lille','CDG','Charles de Gaulle','Savigny-le-Temple','2 Rue Raymond Eglin'];
  function install(){
   const doc=frame.contentDocument,win=frame.contentWindow;if(!doc||!doc.body||!win)return;
-  if(doc.getElementById('vasi-ui-clean-3003'))return;
-  const s=doc.createElement('style');s.id='vasi-ui-clean-3003';s.textContent=`
+  if(doc.getElementById('vasi-ui-clean-3004'))return;
+  const s=doc.createElement('style');s.id='vasi-ui-clean-3004';s.textContent=`
    .accountBtn{display:none!important}
    #planView .suggestions .suggest{display:none!important}
    #planView .suggestions:before{content:'Enter a destination';display:block;color:#999;padding:18px 4px;font-size:15px}
@@ -34,30 +34,28 @@
    sheet.querySelectorAll('*').forEach(el=>{
     if(!leaf(el))return;
     const t=el.textContent.trim();
-    if(removePlaceNames.includes(t)||/^.+\s—\s(Recent destination|recent destination)$/i.test(t)){
-      let p=el.parentElement;
-      if(p && (p.classList.contains('suggest')||p.classList.contains('listItem')||p.classList.contains('quickCard')||p.classList.contains('recent'))) p.remove();
-      else if(/^(Paris|Beauvais|Lille|CDG|Charles de Gaulle|Savigny-le-Temple|2 Rue Raymond Eglin)$/i.test(t)) el.textContent='';
+    if(removePlaceNames.includes(t)){
+      const p=el.parentElement;
+      if(p && ['suggest','listItem','quickCard','recent'].some(c=>p.classList.contains(c))) p.remove();
+      else el.textContent='';
     }
    });
-   sheet.querySelectorAll('input').forEach(i=>{if(removePlaceNames.some(x=>i.value.trim()===x))i.value='';i.placeholder='Where to?';});
+   sheet.querySelectorAll('input').forEach(i=>{if(removePlaceNames.some(x=>i.value.trim()===x))i.value='';if(i.id==='destination'||i.readOnly)i.placeholder='Where to?';});
   }
   function setAccount(){
    doc.querySelectorAll('.acctName').forEach(e=>e.textContent='Nanthan Siva');
-   doc.querySelectorAll('.balanceCard b').forEach(e=>e.textContent='€0.00');
-   doc.querySelectorAll('.accountScreen').forEach(e=>{e.innerHTML=e.innerHTML.replace(/Nanthan\s*010789|nath[a-z0-9_-]*|€\s*[0-9]+(?:\.[0-9]{1,2})?/gi,function(m){return /€/.test(m)?'€0.00':'Nanthan Siva'});});
+   doc.querySelectorAll('.balanceCard b').forEach(e=>{if(e.textContent.includes('€')||e.closest('.balanceCard'))e.textContent='€0.00';});
   }
   function sync(){
    const plan=doc.getElementById('planView'),rides=doc.getElementById('ridesView');
    doc.body.classList.toggle('vasi-booking',!!((plan&&plan.classList.contains('active'))||(rides&&rides.classList.contains('active'))));
    removePresetRows();setAccount();
   }
-  const input=doc.getElementById('destination');
-  if(input){input.value='';input.placeholder='Where to?';}
+  const input=doc.getElementById('destination');if(input){input.value='';input.placeholder='Where to?';}
   const oldShowView=win.showView,oldShowRides=win.showRides,oldGoHome=win.goHome;
-  win.showView=function(id){if(oldShowView)oldShowView(id);setTimeout(sync,20)};
-  win.showRides=function(){if(oldShowRides)oldShowRides();setTimeout(sync,20)};
-  win.goHome=function(){if(oldGoHome)oldGoHome();setTimeout(sync,20)};
+  win.showView=function(id){if(oldShowView)oldShowView(id);setTimeout(sync,30)};
+  win.showRides=function(){if(oldShowRides)oldShowRides();setTimeout(sync,30)};
+  win.goHome=function(){if(oldGoHome)oldGoHome();setTimeout(sync,30)};
   new MutationObserver(sync).observe(doc.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style']});
   sync();
  }
