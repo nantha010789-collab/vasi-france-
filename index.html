@@ -3,9 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>VASI France</title>
-<meta http-equiv="refresh" content="0; url=/app.html">
-<script>location.replace('/app.html');</script>
-</head>
-<body style="margin:0;background:#111;color:#fff;font-family:system-ui,sans-serif">Opening VASI…</body>
-</html>
+<meta name="theme-color" content="#050505">
+<title>VASI — Move. Eat. Deliver.</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0;background:#050505}button,input{font:inherit}.app{min-height:100vh;max-width:720px;margin:auto;background:linear-gradient(180deg,#101010 0,#050505 55%);padding:22px 18px 40px}.top{display:flex;align-items:center;justify-content:space-between}.brand{font-size:30px;font-weight:900;letter-spacing:-1.5px}.pill{border:1px solid #303030;background:#151515;border-radius:999px;padding:8px 12px;color:#ddd}.hero{padding:42px 0 26px}.eyebrow{color:#aaa;font-size:13px;text-transform:uppercase;letter-spacing:1.5px}.hero h1{font-size:46px;line-height:.98;margin:10px 0 14px;letter-spacing:-3px}.hero p{color:#aaa;margin:0;font-size:16px}.search{margin:22px 0;background:#151515;border:1px solid #292929;border-radius:18px;padding:15px;color:#777}.services{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card{min-height:145px;border:1px solid #292929;border-radius:22px;padding:17px;background:#111;cursor:pointer;text-align:left;color:#fff}.card strong{display:block;font-size:19px;margin-top:42px}.card span{color:#999;font-size:12px}.ride{background:linear-gradient(145deg,#171717,#0c0c0c)}.section{margin-top:30px}.section h2{font-size:22px;margin:0 0 12px}.panel{border:1px solid #292929;background:#101010;border-radius:22px;padding:18px}.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #222}.row:last-child{border:0}.muted{color:#999}.cta{width:100%;border:0;border-radius:16px;padding:16px;margin-top:14px;background:#fff;color:#050505;font-weight:800;font-size:16px}.status{margin-top:12px;color:#888;font-size:12px;text-align:center}@media(max-width:480px){.hero h1{font-size:40px}.services{gap:8px}.card{padding:13px}}
+</style></head>
+<body><main class="app">
+<header class="top"><div class="brand">VASI</div><button class="pill" onclick="setLang()">EN · FR</button></header>
+<section class="hero"><div class="eyebrow">Europe mobility platform</div><h1>Move.<br>Eat.<br>Deliver.</h1><p>One VASI app for rides, food and delivery.</p></section>
+<div class="search">📍 Where are you going?</div>
+<section class="services" aria-label="Services">
+<button class="card ride" onclick="selectService('Ride')"><strong>🚗 Ride</strong><span>Fast city trips</span></button>
+<button class="card" onclick="selectService('Eats')"><strong>🍔 Eats</strong><span>Food delivery</span></button>
+<button class="card" onclick="selectService('Delivery')"><strong>📦 Delivery</strong><span>Send anything</span></button>
+</section>
+<section class="section"><h2>Ready when you are</h2><div class="panel"><div class="row"><span>Service</span><b id="service">Ride</b></div><div class="row"><span class="muted">Pickup</span><span class="muted">Set pickup location</span></div><div class="row"><span class="muted">Destination</span><span class="muted">Set destination</span></div><button class="cta" onclick="start()">Set pickup & continue</button><div class="status" id="status">VASI clean app foundation</div></div></section>
+</main><script>function selectService(s){document.getElementById('service').textContent=s;document.getElementById('status').textContent=s+' selected'}function start(){document.getElementById('status').textContent='Location flow ready — next: live maps & booking'}function setLang(){document.documentElement.lang=document.documentElement.lang==='en'?'fr':'en';document.querySelector('.pill').textContent=document.documentElement.lang==='fr'?'FR · EN':'EN · FR'}</script></body></html>
