@@ -1,11 +1,10 @@
-const supabaseUrl = process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL;
-const anonKey = process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL || 'https://vhfyvkrvysrooaqzcxsp.supabase.co';
+const anonKey = process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
   const auth = req.headers.authorization || '';
   if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-  if (!supabaseUrl || !anonKey) return res.status(500).json({ error: 'Supabase environment is not configured' });
   try {
     const b = req.body || {};
     const headers = { apikey: anonKey, Authorization: auth, 'Content-Type': 'application/json' };
