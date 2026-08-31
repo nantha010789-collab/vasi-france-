@@ -32,12 +32,11 @@ export default async function handler(req, res) {
     const ride = Array.isArray(created) ? created[0] : created;
     if (!ride?.id) return res.status(500).json({ error: 'Ride was not created' });
 
-    const assign = await fetch(`${supabaseUrl}/rest/v1/rpc/assign_nearest_driver`, {
+    const dispatch = await fetch(`${supabaseUrl}/rest/v1/rpc/vasi_dispatch_ride`, {
       method: 'POST', headers, body: JSON.stringify({ p_ride_id: ride.id })
     });
-    const assigned = await assign.json();
-    if (!assign.ok) return res.status(200).json({ ride, assignment_error: assigned?.message || assigned?.error || 'No driver assigned' });
-    return res.status(201).json({ ride: Array.isArray(assigned) ? assigned[0] : assigned });
+    const dispatched = await dispatch.json();
+    return res.status(201).json({ ride, offers_sent: dispatch.ok ? Number(dispatched || 0) : 0, dispatch_error: dispatch.ok ? null : (dispatched?.message || dispatched?.error || 'Dispatch unavailable') });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Server error' });
   }
