@@ -18,8 +18,20 @@ function fareFor(service, km, mins) {
   const raw = p.base + km * p.km + mins * p.min;
   return Number(Math.max(p.minFare, raw).toFixed(2));
 }
-async function routeMetrics(pickupLat, pickupLng, destinationLat, destinationLng) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${pickupLng},${pickupLat};${destinationLng},${destinationLat}?overview=false`;
+async function geocodeStop(address) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr,gb,be,de,nl,lu,ch,es,it,pt&addressdetails=0&q=${encodeURIComponent(address)}`;
+  const response = await fetch(url, { headers: { 'User-Agent': 'VASI/1.0 (ride-booking)' } });
+  if (!response.ok) throw new Error(`Could not locate stop: ${address}`);
+  const data = await response.json();
+  const hit = data?.[0];
+  const lat = finiteCoord(hit?.lat, -90, 90);
+  const lng = finiteCoord(hit?.lon, -180, 180);
+  if (lat === null || lng === null) throw new Error(`Could not locate stop: ${address}`);
+  return { address, lat, lng };
+}
+async function routeMetrics(points) {
+  const coords = points.map(p => `${p.lng},${p.lat}`).join(';');
+  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
   const response = await fetch(url, { headers: { 'User-Agent': 'VASI/1.0' } });
   if (!response.ok) throw new Error('Route pricing service unavailable');
   const data = await response.json();
@@ -46,20 +58,31 @@ export default async function handler(req, res) {
     if ([pickupLat, pickupLng, destinationLat, destinationLng].some(v => v === null)) {
       return res.status(400).json({ error: 'Valid pickup and destination coordinates are required' });
     }
-    if (!String(b.pickup_address || '').trim() || !String(b.destination_address || '').trim()) {
-      return res.status(400).json({ error: 'Pickup and destination are required' });
-    }
+    const pickupAddress = String(b.pickup_address || '').trim();
+    const destinationAddress = String(b.destination_address || '').trim();
+    if (!pickupAddress || !destinationAddress) return res.status(400).json({ error: 'Pickup and destination are required' });
 
-    const metrics = await routeMetrics(pickupLat, pickupLng, destinationLat, destinationLng);
+    const stopAddresses = Array.isArray(b.stops) ? b.stops.map(x => String(x || '').trim()).filter(Boolean) : [];
+    if (stopAddresses.length > 5) return res.status(400).json({ error: 'Maximum 5 extra stops allowed' });
+    if (stopAddresses.some(x => x.length > 200)) return res.status(400).json({ error: 'Stop address is too long' });
+    const stops = [];
+    for (const address of stopAddresses) stops.push(await geocodeStop(address));
+
+    const points = [
+      { lat: pickupLat, lng: pickupLng },
+      ...stops,
+      { lat: destinationLat, lng: destinationLng }
+    ];
+    const metrics = await routeMetrics(points);
     const authoritativeFare = fareFor(service, metrics.km, metrics.mins);
     const headers = { apikey: anonKey, Authorization: auth, 'Content-Type': 'application/json' };
     const create = await fetch(`${supabaseUrl}/rest/v1/rpc/create_customer_ride`, {
       method: 'POST', headers,
       body: JSON.stringify({
-        p_pickup_address: String(b.pickup_address).trim(),
+        p_pickup_address: pickupAddress,
         p_pickup_lat: pickupLat,
         p_pickup_lng: pickupLng,
-        p_destination_address: String(b.destination_address).trim(),
+        p_destination_address: destinationAddress,
         p_destination_lat: destinationLat,
         p_destination_lng: destinationLng,
         p_service: service,
@@ -77,12 +100,24 @@ export default async function handler(req, res) {
     const ride = Array.isArray(created) ? created[0] : created;
     if (!ride?.id) return res.status(500).json({ error: 'Ride was not created' });
 
+    if (stops.length) {
+      const stopRows = stops.map((s, i) => ({ ride_id: ride.id, stop_order: i + 1, address: s.address, latitude: s.lat, longitude: s.lng }));
+      const saveStops = await fetch(`${supabaseUrl}/rest/v1/ride_stops`, {
+        method: 'POST', headers: { ...headers, Prefer: 'return=minimal' }, body: JSON.stringify(stopRows)
+      });
+      if (!saveStops.ok) {
+        await fetch(`${supabaseUrl}/rest/v1/rides?id=eq.${encodeURIComponent(ride.id)}`, { method: 'DELETE', headers });
+        return res.status(500).json({ error: 'Ride stops could not be saved. Please try again.' });
+      }
+    }
+
     const dispatch = await fetch(`${supabaseUrl}/rest/v1/rpc/vasi_dispatch_ride`, {
       method: 'POST', headers, body: JSON.stringify({ p_ride_id: ride.id })
     });
     const dispatched = await dispatch.json();
     return res.status(201).json({
-      ride,
+      ride: { ...ride, estimated_fare: authoritativeFare },
+      stops: stops.map((s, i) => ({ order: i + 1, address: s.address, latitude: s.lat, longitude: s.lng })),
       pricing: { distance_km: Number(metrics.km.toFixed(2)), duration_min: metrics.mins, estimated_fare: authoritativeFare, currency: 'EUR' },
       offers_sent: dispatch.ok ? Number(dispatched || 0) : 0,
       dispatch_error: dispatch.ok ? null : (dispatched?.message || dispatched?.error || 'Dispatch unavailable')
