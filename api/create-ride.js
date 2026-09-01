@@ -18,6 +18,15 @@ function fareFor(service, km, mins) {
   const raw = p.base + km * p.km + mins * p.min;
   return Number(Math.max(p.minFare, raw).toFixed(2));
 }
+function normalizeSchedule(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const when = new Date(value);
+  if (!Number.isFinite(when.getTime())) throw new Error('Invalid scheduled pickup time');
+  const now = Date.now();
+  if (when.getTime() < now + 30 * 60 * 1000) throw new Error('Scheduled pickup must be at least 30 minutes from now');
+  if (when.getTime() > now + 90 * 24 * 60 * 60 * 1000) throw new Error('Scheduled pickup must be within 90 days');
+  return when.toISOString();
+}
 async function geocodeStop(address) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr,gb,be,de,nl,lu,ch,es,it,pt&addressdetails=0&q=${encodeURIComponent(address)}`;
   const response = await fetch(url, { headers: { 'User-Agent': 'VASI/1.0 (ride-booking)' } });
@@ -50,6 +59,7 @@ export default async function handler(req, res) {
     if (!PRICING[service]) return res.status(400).json({ error: 'Unsupported VASI ride service' });
     const paymentMethod = String(b.payment_method || 'cash').toLowerCase();
     if (!PAYMENT_METHODS.has(paymentMethod)) return res.status(400).json({ error: 'Unsupported payment method' });
+    const scheduledFor = normalizeSchedule(b.scheduled_for);
 
     const pickupLat = finiteCoord(b.pickup_lat, -90, 90);
     const pickupLng = finiteCoord(b.pickup_lng, -180, 180);
@@ -89,7 +99,7 @@ export default async function handler(req, res) {
         p_payment_method: paymentMethod,
         p_estimated_fare: authoritativeFare,
         p_currency: 'EUR',
-        p_scheduled_for: b.scheduled_for || null,
+        p_scheduled_for: scheduledFor,
         p_passenger_name: b.passenger_name || null,
         p_passenger_phone: b.passenger_phone || null,
         p_notes: b.notes || null
@@ -119,10 +129,13 @@ export default async function handler(req, res) {
       ride: { ...ride, estimated_fare: authoritativeFare },
       stops: stops.map((s, i) => ({ order: i + 1, address: s.address, latitude: s.lat, longitude: s.lng })),
       pricing: { distance_km: Number(metrics.km.toFixed(2)), duration_min: metrics.mins, estimated_fare: authoritativeFare, currency: 'EUR' },
+      reservation: scheduledFor ? { scheduled_for: scheduledFor, mode: 'reserve' } : null,
       offers_sent: dispatch.ok ? Number(dispatched || 0) : 0,
       dispatch_error: dispatch.ok ? null : (dispatched?.message || dispatched?.error || 'Dispatch unavailable')
     });
   } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Server error' });
+    const message = e?.message || 'Server error';
+    const badRequest = /scheduled pickup|invalid scheduled/i.test(message);
+    return res.status(badRequest ? 400 : 500).json({ error: message });
   }
 }
