@@ -23,8 +23,19 @@ export default async function handler(req, res) {
     const user = await userResp.json();
     if (!user?.id || user.id !== ride.customer_id) return res.status(403).json({ error: 'Ride does not belong to customer' });
     if (!['card','apple_pay'].includes(String(ride.payment_method || '').toLowerCase())) return res.status(409).json({ error: 'This ride is not configured for card payment' });
-    if (['completed','cancelled'].includes(String(ride.status || '').toLowerCase())) return res.status(409).json({ error: 'Payment authorization is not available for a closed ride' });
+    if (!['accepted','driver_arriving'].includes(String(ride.status || '').toLowerCase())) return res.status(409).json({ error: 'Card authorization is available only after driver acceptance and before the trip starts' });
     if (!ride.driver_id) return res.status(409).json({ error: 'Driver is not assigned yet' });
+
+    const priorResp = await sb(`/rest/v1/payments?select=provider_payment_id,status,amount,currency&ride_id=eq.${encodeURIComponent(ride.id)}&provider=eq.stripe&limit=1`, auth);
+    const prior = priorResp.ok ? (await priorResp.json())?.[0] : null;
+    if (prior?.provider_payment_id) {
+      const existingIntentResp = await fetch(`https://api.stripe.com/v1/payment_intents/${encodeURIComponent(prior.provider_payment_id)}`, { headers: { Authorization: `Bearer ${stripeKey}` } });
+      const existingIntent = await existingIntentResp.json();
+      if (existingIntentResp.ok && existingIntent?.client_secret && !['canceled','succeeded'].includes(existingIntent.status)) {
+        return res.status(200).json({ payment_intent_id: existingIntent.id, client_secret: existingIntent.client_secret, amount: Number(prior.amount || ride.estimated_fare), currency: prior.currency || ride.currency || 'EUR', reused: true });
+      }
+    }
+
     const driverResp = await sb(`/rest/v1/drivers?select=stripe_account_id&id=eq.${encodeURIComponent(ride.driver_id)}&limit=1`, auth);
     const drivers = await driverResp.json();
     const stripeAccount = drivers?.[0]?.stripe_account_id;
@@ -52,6 +63,6 @@ export default async function handler(req, res) {
       const pay = await sb('/rest/v1/payments', auth, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ride_id: ride.id, customer_id: ride.customer_id, amount: Number(ride.estimated_fare), currency: ride.currency || 'EUR', provider: 'stripe', provider_payment_id: pi.id, status: 'pending' }) });
       if (!pay.ok) return res.status(500).json({ error: 'Payment intent created but payment record could not be saved' });
     }
-    return res.status(200).json({ payment_intent_id: pi.id, client_secret: pi.client_secret, amount: Number(ride.estimated_fare), currency: ride.currency || 'EUR' });
+    return res.status(200).json({ payment_intent_id: pi.id, client_secret: pi.client_secret, amount: Number(ride.estimated_fare), currency: ride.currency || 'EUR', reused: false });
   } catch (e) { return res.status(500).json({ error: e?.message || 'Server error' }); }
 }
