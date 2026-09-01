@@ -1,12 +1,20 @@
 const supabaseUrl = process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL || 'https://vhfyvkrvysrooaqzcxsp.supabase.co';
 const anonKey = process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT';
 
-const PRICING = {
-  'VASI Go': { base: 2.50, km: 0.95, min: 0.20, minFare: 7.50 },
-  'VASI Comfort': { base: 3.20, km: 1.10, min: 0.23, minFare: 9.50 },
-  'VASI XL': { base: 4.00, km: 1.25, min: 0.25, minFare: 12.00 },
-  'VASI Van': { base: 5.00, km: 1.40, min: 0.28, minFare: 15.00 }
+const PROMO_END = Date.parse('2026-12-01T00:00:00Z');
+const REGULAR_PRICING = {
+  'VASI Go': { base: 2.50, km: 0.95, min: 0.20, minFare: 9.50 },
+  'VASI Comfort': { base: 3.20, km: 1.10, min: 0.23, minFare: 10.50 },
+  'VASI XL': { base: 4.00, km: 1.25, min: 0.25, minFare: 13.00 },
+  'VASI Van': { base: 5.00, km: 1.40, min: 0.28, minFare: 16.00 }
 };
+const PROMO_PRICING = {
+  'VASI Go': { base: 2.00, km: 0.85, min: 0.16, minFare: 9.50 },
+  'VASI Comfort': { base: 2.70, km: 0.98, min: 0.20, minFare: 10.50 },
+  'VASI XL': { base: 3.50, km: 1.12, min: 0.22, minFare: 12.50 },
+  'VASI Van': { base: 4.50, km: 1.25, min: 0.24, minFare: 15.00 }
+};
+const activePricing = () => Date.now() < PROMO_END ? PROMO_PRICING : REGULAR_PRICING;
 const PAYMENT_METHODS = new Set(['cash', 'card', 'apple_pay']);
 
 function finiteCoord(v, min, max) {
@@ -14,7 +22,7 @@ function finiteCoord(v, min, max) {
   return Number.isFinite(n) && n >= min && n <= max ? n : null;
 }
 function fareFor(service, km, mins) {
-  const p = PRICING[service];
+  const p = activePricing()[service];
   const raw = p.base + km * p.km + mins * p.min;
   return Number(Math.max(p.minFare, raw).toFixed(2));
 }
@@ -56,7 +64,7 @@ export default async function handler(req, res) {
   try {
     const b = req.body || {};
     const service = String(b.service || 'VASI Go');
-    if (!PRICING[service]) return res.status(400).json({ error: 'Unsupported VASI ride service' });
+    if (!activePricing()[service]) return res.status(400).json({ error: 'Unsupported VASI ride service' });
     const paymentMethod = String(b.payment_method || 'cash').toLowerCase();
     if (!PAYMENT_METHODS.has(paymentMethod)) return res.status(400).json({ error: 'Unsupported payment method' });
     const scheduledFor = normalizeSchedule(b.scheduled_for);
@@ -128,7 +136,7 @@ export default async function handler(req, res) {
     return res.status(201).json({
       ride: { ...ride, estimated_fare: authoritativeFare },
       stops: stops.map((s, i) => ({ order: i + 1, address: s.address, latitude: s.lat, longitude: s.lng })),
-      pricing: { distance_km: Number(metrics.km.toFixed(2)), duration_min: metrics.mins, estimated_fare: authoritativeFare, currency: 'EUR' },
+      pricing: { distance_km: Number(metrics.km.toFixed(2)), duration_min: metrics.mins, estimated_fare: authoritativeFare, currency: 'EUR', promotion: Date.now() < PROMO_END ? 'VASI launch price' : null, promotion_ends_at: Date.now() < PROMO_END ? new Date(PROMO_END).toISOString() : null },
       reservation: scheduledFor ? { scheduled_for: scheduledFor, mode: 'reserve' } : null,
       offers_sent: dispatch.ok ? Number(dispatched || 0) : 0,
       dispatch_error: dispatch.ok ? null : (dispatched?.message || dispatched?.error || 'Dispatch unavailable')
