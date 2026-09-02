@@ -816,9 +816,9 @@
       function destinationQueries(raw) {
         const q = normalizeDestinationQuery(raw),
           out = [q];
+        if (!/\bFrance\b/i.test(q)) out.push(q + ", France");
         const fr = q.match(/\b(\d{5})\s+([^,]+?)(?:,\s*France)?$/i);
         if (fr) {
-          if (!/\bFrance\b/i.test(q)) out.push(q + ", France");
           out.push(fr[1] + " " + fr[2].trim() + ", France");
         }
         return [...new Set(out.filter(Boolean))];
