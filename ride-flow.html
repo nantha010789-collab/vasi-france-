@@ -607,10 +607,12 @@
           percent: 0,
           cap: null,
           threshold: null,
-        };
+        },
+        smartOffer = null;
       const $ = (id) => document.getElementById(id),
         money = (n) => "€" + Number(n || 0).toFixed(2);
       function priceFor(km, mins, key) {
+        let fare;
         if (pricingOffer.active && pricingOffer.mode === "percentage") {
           const regular = regularClasses[key],
             regularFare = Math.max(
@@ -628,7 +630,34 @@
           return Math.max(regular.minFare, regularFare - discount);
         }
         const c = classes[key];
-        return Math.max(c.minFare, c.base + km * c.km + mins * c.min);
+        fare = Math.max(c.minFare, c.base + km * c.km + mins * c.min);
+        if (smartOffer) {
+          let discount = (fare * Number(smartOffer.discount_percent)) / 100;
+          if (smartOffer.max_discount_eur != null)
+            discount = Math.min(discount, Number(smartOffer.max_discount_eur));
+          fare -= discount;
+        }
+        return fare;
+      }
+      async function loadCustomerOffer() {
+        const session = (await sb.auth.getSession()).data.session;
+        if (!session || pricingOffer.mode === "percentage") return;
+        try {
+          const response = await fetch("/api/customer-offer", {
+            headers: { Authorization: "Bearer " + session.access_token },
+            cache: "no-store",
+          });
+          const offer = await response.json();
+          if (
+            !response.ok ||
+            ![10, 15].includes(Number(offer.discount_percent))
+          )
+            return;
+          smartOffer = offer;
+          $("promo").textContent =
+            `${offer.label} · ${offer.discount_percent}% off · up to €${Number(offer.max_discount_eur).toFixed(2)}`;
+          $("promo").classList.remove("hidden");
+        } catch (error) {}
       }
       async function checkPaymentAvailability() {
         try {
@@ -693,6 +722,7 @@
       }
       async function init() {
         await loadPricing();
+        await loadCustomerOffer();
         map = L.map("map", { zoomControl: false }).setView(fallback, 13);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
