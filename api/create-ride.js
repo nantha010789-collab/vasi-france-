@@ -9,10 +9,10 @@ const REGULAR_PRICING = {
   'VASI Van': { base: 5.00, km: 1.40, min: 0.28, minFare: 16.00 }
 };
 const PROMO_PRICING = {
-  'VASI Go': { base: 2.00, km: 0.85, min: 0.16, minFare: 9.50 },
-  'VASI Comfort': { base: 2.70, km: 0.98, min: 0.20, minFare: 10.50 },
-  'VASI XL': { base: 3.50, km: 1.12, min: 0.22, minFare: 12.50 },
-  'VASI Van': { base: 4.50, km: 1.25, min: 0.24, minFare: 15.00 }
+  'VASI Go': { base: 1.50, km: 0.68, min: 0.14, minFare: 7.50 },
+  'VASI Comfort': { base: 2.00, km: 0.78, min: 0.16, minFare: 9.00 },
+  'VASI XL': { base: 2.80, km: 0.95, min: 0.18, minFare: 11.50 },
+  'VASI Van': { base: 3.50, km: 1.05, min: 0.20, minFare: 13.50 }
 };
 const activePricing = () => Date.now() < PROMO_END ? PROMO_PRICING : REGULAR_PRICING;
 const PAYMENT_METHODS = new Set(['cash', 'card', 'apple_pay']);
