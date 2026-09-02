@@ -97,6 +97,14 @@
       .bad {
         color: #ff9a9a;
       }
+      select {
+        width: 100%;
+        padding: 12px;
+        background: #181818;
+        color: #fff;
+        border: 1px solid #333;
+        border-radius: 10px;
+      }
       @media (max-width: 700px) {
         .grid {
           grid-template-columns: 1fr 1fr;
@@ -137,6 +145,39 @@
           You can extend an offer later, remove its end date, or disable it at
           any time.
         </p>
+      </section>
+      <section class="card">
+        <h2>✨ AI Offer Assistant</h2>
+        <p class="muted">
+          AI analyses the current rates and prepares a safe suggestion. Nothing
+          is published without your approval.
+        </p>
+        <div class="dates">
+          <div>
+            <label>Competitor / market price € (optional)</label>
+            <input
+              id="market_average"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Example: 17.00"
+            />
+          </div>
+          <div>
+            <label>Current demand</label>
+            <select id="demand">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <p>
+          <button id="analyse" class="btn" onclick="analyseOffer()">
+            AI Analyse & Suggest
+          </button>
+        </p>
+        <div id="aiResult" class="muted">No AI analysis yet.</div>
       </section>
       <section class="card">
         <h2>Vehicle fare formula</h2>
@@ -258,6 +299,74 @@
         message(
           r.ok ? "✓ Pricing is live now." : d.error || "Update failed",
           !r.ok,
+        );
+      }
+      function currentRates() {
+        const rates = {};
+        keys.forEach((k) => {
+          rates[k] = {
+            base: Number(val(k + "_base")),
+            km: Number(val(k + "_per_km")),
+            min: Number(val(k + "_per_minute")),
+            minFare: Number(val(k + "_minimum")),
+          };
+        });
+        return rates;
+      }
+      let aiSuggestion = null;
+      const esc = (x) =>
+        String(x ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      async function analyseOffer() {
+        const s = await session();
+        if (!s) return;
+        const button = document.getElementById("analyse"),
+          box = document.getElementById("aiResult");
+        button.disabled = true;
+        box.textContent = "AI is analysing current pricing…";
+        try {
+          const r = await fetch("/api/ai-pricing", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + s.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              current: currentRates(),
+              market_average_eur: Number(val("market_average")) || null,
+              demand: val("demand"),
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw Error(d.error || "AI analysis failed");
+          aiSuggestion = d;
+          box.innerHTML = `<b>${esc(d.offer_name)}</b> · Confidence: ${esc(d.confidence)}<br>${esc(d.rationale)}<br><br><button class="btn" onclick="applySuggestion()">Apply suggestion to form</button><p class="muted">Engine: ${esc(d.engine)}. Rates remain draft until Save & publish pricing is pressed.</p>`;
+        } catch (e) {
+          box.textContent = e.message;
+        }
+        button.disabled = false;
+      }
+      function applySuggestion() {
+        if (!aiSuggestion) return;
+        val("offer_name", aiSuggestion.offer_name);
+        keys.forEach((k) => {
+          const x = aiSuggestion.rates[k];
+          val(k + "_base", x.base);
+          val(k + "_per_km", x.km);
+          val(k + "_per_minute", x.min);
+          val(k + "_minimum", x.minFare);
+        });
+        message(
+          "AI suggestion applied as draft. Review it, then press Save & publish pricing.",
         );
       }
       function message(t, bad = false) {
