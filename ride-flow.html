@@ -729,13 +729,11 @@
         return [...new Set(out.filter(Boolean))];
       }
       async function geocodeDestination(q) {
-        const u =
-          "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=3&countrycodes=fr,gb,be,de,nl,lu,ch,es,it,pt&q=" +
-          encodeURIComponent(q);
+        const u = "/api/route-preview?q=" + encodeURIComponent(q);
         const r = await fetch(u);
         if (!r.ok) throw Error("Geocoding unavailable");
         const d = await r.json();
-        return d?.[0] || null;
+        return d?.results?.[0] || null;
       }
       function formatGeocodedAddress(found, fallbackText = "Destination") {
         const a = found?.address || {};
@@ -790,13 +788,17 @@
             ...stops.map((s) => [s.lat, s.lng]),
             destination,
           ];
-          const coords = points.map((p) => `${p[1]},${p[0]}`).join(";");
-          const u = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-          const d = await (await fetch(u)).json();
-          if (!d.routes?.length) throw Error();
-          const r = d.routes[0];
-          route.km = r.distance / 1000;
-          route.mins = Math.ceil(r.duration / 60);
+          const response = await fetch("/api/route-preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              points: points.map((p) => ({ lat: p[0], lng: p[1] })),
+            }),
+          });
+          const r = await response.json();
+          if (!response.ok || !r.geometry) throw Error(r.error || "Route unavailable");
+          route.km = r.distance_km;
+          route.mins = r.duration_min;
           if (routeLine) routeLine.remove();
           routeLine = L.geoJSON(r.geometry).addTo(map);
           map.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
@@ -851,16 +853,15 @@
         const address = n.trim();
         $("status").textContent = "Finding stop…";
         try {
-          const url =
-            "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&countrycodes=fr,gb,be,de,nl,lu,ch,es,it,pt&q=" +
-            encodeURIComponent(address);
+          const url = "/api/route-preview?q=" + encodeURIComponent(address);
           const r = await fetch(url);
           const d = await r.json();
-          if (!r.ok || !d.length) throw Error();
-          const lat = Number(d[0].lat),
-            lng = Number(d[0].lon);
+          const found = d?.results?.[0];
+          if (!r.ok || !found) throw Error();
+          const lat = Number(found.lat),
+            lng = Number(found.lon);
           if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw Error();
-          const label = formatGeocodedAddress(d[0], address);
+          const label = formatGeocodedAddress(found, address);
           stops.push({ address: label, label, lat, lng });
           renderStops();
           await buildRoute();
@@ -1094,9 +1095,18 @@
         if (Date.now() - etaLastUpdate < 12000) return;
         etaLastUpdate = Date.now();
         try {
-          const u = `https://router.project-osrm.org/route/v1/driving/${lng},${lat};${pickup[1]},${pickup[0]}?overview=false`;
-          const d = await (await fetch(u)).json();
-          const mins = d.routes?.[0]?.duration / 60;
+          const response = await fetch("/api/route-preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              points: [
+                { lat, lng },
+                { lat: pickup[0], lng: pickup[1] },
+              ],
+            }),
+          });
+          const d = await response.json();
+          const mins = d.duration_min;
           if (Number.isFinite(mins))
             $("eta").textContent = Math.max(1, Math.ceil(mins)) + " min";
         } catch (e) {}
