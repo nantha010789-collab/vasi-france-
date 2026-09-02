@@ -22,7 +22,7 @@ function cleanRates(source) {
   }
   return rates;
 }
-function safeSuggestion(current, marketAverage, demand) {
+function safeSuggestion(current, marketAverage, demand, mode) {
   const factor = demand === "low" ? 0.95 : demand === "high" ? 1 : 0.98;
   const rates = {};
   for (const key of vehicleKeys) {
@@ -36,6 +36,12 @@ function safeSuggestion(current, marketAverage, demand) {
   }
   return {
     offer_name: demand === "low" ? "VASI Smart Saver" : "VASI offer price",
+    offer_mode: mode,
+    discount_percent: demand === "low" ? 12 : demand === "high" ? 5 : 8,
+    max_discount_eur: marketAverage
+      ? Math.max(3, Math.min(10, +(marketAverage * 0.3).toFixed(2)))
+      : 6,
+    minimum_regular_fare: 12,
     rates,
     confidence: "medium",
     rationale: `Safe recommendation based on current VASI rates${marketAverage ? ` and the €${marketAverage.toFixed(2)} market reference` : ""}. Final approval is required.`,
@@ -82,7 +88,12 @@ export default async function handler(req, res) {
     const demand = ["low", "normal", "high"].includes(req.body?.demand)
       ? req.body.demand
       : "normal";
-    const fallback = safeSuggestion(current, marketAverage, demand);
+    const mode = req.body?.offer_mode === "percentage" ? "percentage" : "fixed";
+    const fallback = safeSuggestion(current, marketAverage, demand, mode);
+    if (mode === "percentage")
+      return res
+        .status(200)
+        .json({ ...fallback, engine: "VASI AI safety rules" });
     if (!process.env.OPENAI_API_KEY)
       return res
         .status(200)
@@ -139,23 +150,18 @@ export default async function handler(req, res) {
         if (ratio < 0.9 || ratio > 1.1)
           throw Error("AI suggestion exceeded safety limits");
       }
-    return res
-      .status(200)
-      .json({
-        offer_name: String(parsed.offer_name || fallback.offer_name).slice(
-          0,
-          80,
-        ),
-        confidence: ["low", "medium", "high"].includes(parsed.confidence)
-          ? parsed.confidence
-          : "medium",
-        rationale: String(parsed.rationale || fallback.rationale).slice(0, 600),
-        safeguards: Array.isArray(parsed.safeguards)
-          ? parsed.safeguards.slice(0, 5).map((x) => String(x).slice(0, 120))
-          : fallback.safeguards,
-        rates: proposed,
-        engine: "VASI AI",
-      });
+    return res.status(200).json({
+      offer_name: String(parsed.offer_name || fallback.offer_name).slice(0, 80),
+      confidence: ["low", "medium", "high"].includes(parsed.confidence)
+        ? parsed.confidence
+        : "medium",
+      rationale: String(parsed.rationale || fallback.rationale).slice(0, 600),
+      safeguards: Array.isArray(parsed.safeguards)
+        ? parsed.safeguards.slice(0, 5).map((x) => String(x).slice(0, 120))
+        : fallback.safeguards,
+      rates: proposed,
+      engine: "VASI AI",
+    });
   } catch (e) {
     return res
       .status(400)
