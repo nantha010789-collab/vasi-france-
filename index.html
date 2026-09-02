@@ -140,12 +140,15 @@
       <header class="top">
         <div class="brand">VASI</div>
         <div class="actions">
+          <button class="pill" onclick="location.href='activity.html'">
+            Activity
+          </button>
           <button
             class="pill"
             onclick="location.href='auth.html?role=customer'"
           >
             Login</button
-          ><button class="pill" onclick="setLang()">EN · FR</button>
+          ><button id="langBtn" class="pill" onclick="setLang()">EN · FR</button>
         </div>
       </header>
       <section class="hero">
@@ -181,7 +184,7 @@
       function setLang() {
         document.documentElement.lang =
           document.documentElement.lang === "en" ? "fr" : "en";
-        document.querySelectorAll(".pill")[1].textContent =
+        document.getElementById("langBtn").textContent =
           document.documentElement.lang === "fr" ? "FR · EN" : "EN · FR";
       }
     </script>
