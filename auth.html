@@ -44,7 +44,7 @@
       }
       .switch {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 7px;
         margin-bottom: 20px;
       }
@@ -117,6 +117,8 @@
           ><button id="rideBtn" onclick="setRole('ride')">🚕 Ride</button
           ><button id="courierBtn" onclick="setRole('courier')">
             🛵 Courier
+          </button><button id="restaurantBtn" onclick="setRole('restaurant')">
+            🍽️ Restaurant
           </button>
         </div>
         <h1 id="title">Customer login</h1>
@@ -132,7 +134,7 @@
           >New partner? Register with VASI →</a
         >
         <p class="small">
-          Ride = passenger trips only. Courier = Eats + Delivery only.
+          Ride = passenger trips. Courier = delivery. Restaurant = food partner.
         </p>
         <p id="msg"></p>
       </section>
@@ -144,7 +146,7 @@
       const PRODUCTION_ORIGIN = "https://vasi-new.vercel.app";
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const requestedRole = new URLSearchParams(location.search).get("role");
-      let role = ["customer", "ride", "courier"].includes(requestedRole)
+      let role = ["customer", "ride", "courier", "restaurant"].includes(requestedRole)
         ? requestedRole
         : localStorage.getItem("vasi_role") || "customer";
       localStorage.setItem("vasi_role", role);
@@ -155,23 +157,17 @@
       }
       function render() {
         const customer = role === "customer";
-        $("title").textContent = customer
-          ? "Customer login"
-          : role === "ride"
-            ? "Ride Driver login"
-            : "Courier login";
-        $("desc").textContent = customer
-          ? "Secure email sign-in for VASI customers."
-          : role === "ride"
-            ? "VTC passenger driver account."
-            : "Eats + Delivery courier account.";
-        ["customerBtn", "rideBtn", "courierBtn"].forEach((id) =>
+        $("title").textContent = customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login";
+        $("desc").textContent = customer ? "Secure email sign-in for VASI customers." : role === "ride" ? "VTC passenger driver account." : role === "courier" ? "Eats + Delivery courier account." : "Manage your restaurant, menu and VASI Eats orders.";
+        ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
           $(id).classList.remove("active"),
         );
         $(
-          customer ? "customerBtn" : role === "ride" ? "rideBtn" : "courierBtn",
+          customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
         ).classList.add("active");
         $("register").classList.toggle("hidden", customer);
+        $("register").href = role === "restaurant" ? "restaurant-register.html" : "partner-register-v2.html";
+        $("register").textContent = role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →";
       }
       async function sendLink() {
         const email = $("email").value.trim();
@@ -198,6 +194,7 @@
       function destination(savedRole) {
         if (savedRole === "ride") return "driver.html";
         if (savedRole === "courier") return "delivery-driver.html";
+        if (savedRole === "restaurant") return "restaurant-dashboard.html";
         const back = localStorage.getItem("vasi_return");
         if (back) {
           localStorage.removeItem("vasi_return");
