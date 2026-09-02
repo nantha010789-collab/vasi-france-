@@ -1,1 +1,271 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VASI Admin · Ride pricing</title><style>:root{font-family:Inter,system-ui,sans-serif;background:#050505;color:#fff}*{box-sizing:border-box}body{margin:0}.wrap{max-width:900px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:28px;font-weight:950}.card{background:#111;border:1px solid #292929;border-radius:18px;padding:18px;margin-top:14px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.dates{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:block;color:#aaa;font-size:12px;margin-top:8px}input{width:100%;padding:12px;background:#181818;color:#fff;border:1px solid #333;border-radius:10px;font:inherit}.vehicle{border:1px solid #292929;border-radius:14px;padding:12px}.vehicle h3{margin:0 0 5px}.btn{border:0;background:#fff;color:#050505;border-radius:12px;padding:12px 16px;font-weight:900}.muted{color:#999;font-size:12px}.switch{display:flex;gap:9px;align-items:center}.switch input{width:auto}.ok{color:#77e69b}.bad{color:#ff9a9a}@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}.dates{grid-template-columns:1fr}}</style></head><body><main class="wrap"><header class="top"><div><div class="brand">VASI Pricing</div><div class="muted">Admin-controlled ride rates & offers</div></div><button class="btn" onclick="location.href='vasi-admin.html'">Dashboard</button></header><section class="card"><label class="switch"><input id="offer_active" type="checkbox"> Show offer pricing</label><label>Offer label</label><input id="offer_name" maxlength="80" placeholder="VASI offer price"><div class="dates"><div><label>Starts (optional)</label><input id="starts_at" type="datetime-local"></div><div><label>Ends (optional — leave blank for no expiry)</label><input id="ends_at" type="datetime-local"></div></div><p class="muted">You can extend an offer later, remove its end date, or disable it at any time.</p></section><section class="card"><h2>Vehicle fare formula</h2><p class="muted">Upfront fare = base + distance × €/km + duration × €/minute, never below the minimum.</p><div id="vehicles" class="grid"></div><p><button id="save" class="btn" onclick="save()">Save & publish pricing</button></p><p id="msg" class="muted">Loading…</p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const db=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT'),keys=['go','comfort','xl','van'],names={go:'🚗 Go',comfort:'🚘 Comfort',xl:'🚙 XL',van:'🚐 Van'};document.getElementById('vehicles').innerHTML=keys.map(k=>`<div class="vehicle"><h3>${names[k]}</h3>${[['base','Base €'],['per_km','Per km €'],['per_minute','Per minute €'],['minimum','Minimum €']].map(([x,n])=>`<label>${n}</label><input id="${k}_${x}" type="number" min="0" max="1000" step="0.01">`).join('')}</div>`).join('');const val=(id,v)=>{const e=document.getElementById(id);if(v===undefined)return e.value;e.value=v??''},local=v=>v?new Date(new Date(v).getTime()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):'';async function session(){const {data:{session}}=await db.auth.getSession();if(!session){location.href='admin-login.html';return null}return session}async function load(){const s=await session();if(!s)return;const r=await fetch('/api/pricing',{headers:{Authorization:'Bearer '+s.access_token}}),d=await r.json();if(!r.ok)return message(d.error,true);document.getElementById('offer_active').checked=d.offer_enabled;val('offer_name',d.offer_name);val('starts_at',local(d.starts_at));val('ends_at',local(d.ends_at));keys.forEach(k=>{val(k+'_base',d.classes[k].base);val(k+'_per_km',d.classes[k].km);val(k+'_per_minute',d.classes[k].min);val(k+'_minimum',d.classes[k].minFare)});message('Pricing loaded.')}async function save(){const s=await session();if(!s)return;const b={offer_active:document.getElementById('offer_active').checked,offer_name:val('offer_name'),starts_at:val('starts_at')?new Date(val('starts_at')).toISOString():null,ends_at:val('ends_at')?new Date(val('ends_at')).toISOString():null};keys.forEach(k=>['base','per_km','per_minute','minimum'].forEach(x=>b[k+'_'+x]=Number(val(k+'_'+x))));document.getElementById('save').disabled=true;message('Saving…');const r=await fetch('/api/pricing',{method:'PATCH',headers:{Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'},body:JSON.stringify(b)}),d=await r.json();document.getElementById('save').disabled=false;message(r.ok?'✓ Pricing is live now.':d.error||'Update failed',!r.ok)}function message(t,bad=false){const e=document.getElementById('msg');e.textContent=t;e.className=bad?'bad':'ok'}load();</script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>VASI Admin · Ride pricing</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, sans-serif;
+        background: #050505;
+        color: #fff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .brand {
+        font-size: 28px;
+        font-weight: 950;
+      }
+      .card {
+        background: #111;
+        border: 1px solid #292929;
+        border-radius: 18px;
+        padding: 18px;
+        margin-top: 14px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .dates {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      label {
+        display: block;
+        color: #aaa;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        background: #181818;
+        color: #fff;
+        border: 1px solid #333;
+        border-radius: 10px;
+        font: inherit;
+      }
+      .vehicle {
+        border: 1px solid #292929;
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .vehicle h3 {
+        margin: 0 0 5px;
+      }
+      .btn {
+        border: 0;
+        background: #fff;
+        color: #050505;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 900;
+      }
+      .muted {
+        color: #999;
+        font-size: 12px;
+      }
+      .switch {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+      }
+      .switch input {
+        width: auto;
+      }
+      .ok {
+        color: #77e69b;
+      }
+      .bad {
+        color: #ff9a9a;
+      }
+      @media (max-width: 700px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .dates {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <div>
+          <div class="brand">VASI Pricing</div>
+          <div class="muted">Admin-controlled ride rates & offers</div>
+        </div>
+        <button class="btn" onclick="location.href = 'vasi-admin.html'">
+          Dashboard
+        </button>
+      </header>
+      <section class="card">
+        <label class="switch"
+          ><input id="offer_active" type="checkbox" /> Show offer pricing</label
+        ><label>Offer label</label
+        ><input id="offer_name" maxlength="80" placeholder="VASI offer price" />
+        <div class="dates">
+          <div>
+            <label>Starts (optional)</label
+            ><input id="starts_at" type="datetime-local" />
+          </div>
+          <div>
+            <label>Ends (optional — leave blank for no expiry)</label
+            ><input id="ends_at" type="datetime-local" />
+          </div>
+        </div>
+        <p class="muted">
+          You can extend an offer later, remove its end date, or disable it at
+          any time.
+        </p>
+      </section>
+      <section class="card">
+        <h2>Vehicle fare formula</h2>
+        <p class="muted">
+          Upfront fare = base + distance × €/km + duration × €/minute, never
+          below the minimum.
+        </p>
+        <div id="vehicles" class="grid"></div>
+        <p>
+          <button id="save" class="btn" onclick="save()">
+            Save & publish pricing
+          </button>
+        </p>
+        <p id="msg" class="muted">Loading…</p>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const db = supabase.createClient(
+          "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+          "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+        ),
+        keys = ["go", "comfort", "xl", "van"],
+        names = {
+          go: "🚗 Go",
+          comfort: "🚘 Comfort",
+          xl: "🚙 XL",
+          van: "🚐 Van",
+        };
+      document.getElementById("vehicles").innerHTML = keys
+        .map(
+          (k) =>
+            `<div class="vehicle"><h3>${names[k]}</h3>${[
+              ["base", "Base €"],
+              ["per_km", "Per km €"],
+              ["per_minute", "Per minute €"],
+              ["minimum", "Minimum €"],
+            ]
+              .map(
+                ([x, n]) =>
+                  `<label>${n}</label><input id="${k}_${x}" type="number" min="0" max="1000" step="0.01">`,
+              )
+              .join("")}</div>`,
+        )
+        .join("");
+      const val = (id, v) => {
+          const e = document.getElementById(id);
+          if (v === undefined) return e.value;
+          e.value = v ?? "";
+        },
+        local = (v) =>
+          v
+            ? new Date(
+                new Date(v).getTime() - new Date().getTimezoneOffset() * 60000,
+              )
+                .toISOString()
+                .slice(0, 16)
+            : "";
+      async function session() {
+        const {
+          data: { session },
+        } = await db.auth.getSession();
+        if (!session) {
+          location.href = "admin-login.html";
+          return null;
+        }
+        return session;
+      }
+      async function load() {
+        const s = await session();
+        if (!s) return;
+        const r = await fetch("/api/pricing", {
+            headers: { Authorization: "Bearer " + s.access_token },
+          }),
+          d = await r.json();
+        if (!r.ok) return message(d.error, true);
+        document.getElementById("offer_active").checked = d.offer_enabled;
+        val("offer_name", d.offer_name);
+        val("starts_at", local(d.starts_at));
+        val("ends_at", local(d.ends_at));
+        keys.forEach((k) => {
+          val(k + "_base", d.classes[k].base);
+          val(k + "_per_km", d.classes[k].km);
+          val(k + "_per_minute", d.classes[k].min);
+          val(k + "_minimum", d.classes[k].minFare);
+        });
+        message("Pricing loaded.");
+      }
+      async function save() {
+        const s = await session();
+        if (!s) return;
+        const b = {
+          offer_active: document.getElementById("offer_active").checked,
+          offer_name: val("offer_name"),
+          starts_at: val("starts_at")
+            ? new Date(val("starts_at")).toISOString()
+            : null,
+          ends_at: val("ends_at")
+            ? new Date(val("ends_at")).toISOString()
+            : null,
+        };
+        keys.forEach((k) =>
+          ["base", "per_km", "per_minute", "minimum"].forEach(
+            (x) => (b[k + "_" + x] = Number(val(k + "_" + x))),
+          ),
+        );
+        document.getElementById("save").disabled = true;
+        message("Saving…");
+        const r = await fetch("/api/pricing", {
+            method: "PATCH",
+            headers: {
+              Authorization: "Bearer " + s.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(b),
+          }),
+          d = await r.json();
+        document.getElementById("save").disabled = false;
+        message(
+          r.ok ? "✓ Pricing is live now." : d.error || "Update failed",
+          !r.ok,
+        );
+      }
+      function message(t, bad = false) {
+        const e = document.getElementById("msg");
+        e.textContent = t;
+        e.className = bad ? "bad" : "ok";
+      }
+      load();
+    </script>
+  </body>
+</html>
