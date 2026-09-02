@@ -793,16 +793,20 @@
       }
       function setDestination(p, label = "Destination selected") {
         destination = p;
-        if (destMarker) destMarker.remove();
-        destMarker = L.marker(p).addTo(map).bindPopup(label);
-        if (pickup) {
-          map.fitBounds(L.latLngBounds([pickup, destination]), {
-            padding: [35, 35],
-          });
-        } else {
-          map.setView(destination, 14);
-        }
         $("destination").textContent = label;
+        try {
+          if (destMarker) destMarker.remove();
+          destMarker = L.marker(p).addTo(map).bindPopup(label);
+          if (pickup) {
+            map.fitBounds(L.latLngBounds([pickup, destination]), {
+              padding: [35, 35],
+            });
+          } else {
+            map.setView(destination, 14);
+          }
+        } catch (mapError) {
+          console.warn("Destination map preview unavailable", mapError);
+        }
         if (pickup) buildRoute();
         else
           $("status").textContent =
