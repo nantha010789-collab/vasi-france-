@@ -174,7 +174,10 @@
     <main class="wrap">
       <header class="top">
         <div class="logo">VASI</div>
-        <div><button onclick="location.href='support.html'">Support</button> <button onclick="logout()">Log out</button></div>
+        <div>
+          <button onclick="location.href = 'support.html'">Support</button>
+          <button onclick="logout()">Log out</button>
+        </div>
       </header>
       <section class="card">
         <h1>Driver</h1>
@@ -385,7 +388,7 @@
         const { data, error } = await client
           .from("rides")
           .select(
-            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,waiting_fee,payment_method,accepted_at,arrived_at,started_at",
+            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,waiting_fee,payment_method,accepted_at,arrived_at,started_at",
           )
           .in("status", ["accepted", "driver_arriving", "in_progress"])
           .order("accepted_at", { ascending: false })
@@ -459,7 +462,10 @@
       function showActiveRide() {
         if (!activeRide) return;
         const st = String(activeRide.status);
-        const fare = activeRide.final_fare ?? activeRide.estimated_fare;
+        const fare =
+          Number(activeRide.driver_amount) > 0
+            ? activeRide.driver_amount
+            : (activeRide.final_fare ?? activeRide.estimated_fare);
         let badge = "RIDE ACCEPTED",
           title = "📍 Go to pickup";
         if (st === "driver_arriving") {
@@ -496,7 +502,11 @@
         if (method === "cash") return { ok: true, cash: true };
         const session = (await client.auth.getSession()).data.session;
         if (!session) return { ok: false, error: "Session missing" };
-        const fare = Number(r.final_fare ?? r.estimated_fare ?? 0);
+        const fare = Number(
+          Number(r.driver_amount) > 0
+            ? r.driver_amount
+            : (r.final_fare ?? r.estimated_fare ?? 0),
+        );
         try {
           const res = await fetch("/api/capture-payment", {
             method: "POST",
@@ -538,7 +548,11 @@
           document.getElementById("ride").innerHTML =
             '<div class="offer"><h2>✅ Ride Completed</h2><p class="muted">Final fare: €' +
             Number(
-              completedRide.final_fare ?? completedRide.estimated_fare ?? 0,
+              Number(completedRide.driver_amount) > 0
+                ? completedRide.driver_amount
+                : (completedRide.final_fare ??
+                    completedRide.estimated_fare ??
+                    0),
             ).toFixed(2) +
             '</p><p class="muted">' +
             (payment.cash
