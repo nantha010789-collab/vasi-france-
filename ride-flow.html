@@ -349,7 +349,7 @@
     <main class="app">
       <header class="top">
         <div class="brand">VASI</div>
-        <button class="back" onclick="location.href='app.html'">Home</button>
+        <button class="back" onclick="location.href = 'app.html'">Home</button>
       </header>
       <div id="map" class="map"></div>
       <section class="panel">
@@ -365,7 +365,7 @@
             <input
               id="destSearch"
               placeholder="Enter destination or place"
-              onkeydown="if(event.key==='Enter')searchDestination()"
+              onkeydown="if (event.key === 'Enter') searchDestination();"
             /><button class="iconbtn" onclick="searchDestination()">
               Search
             </button>
@@ -381,9 +381,7 @@
           >
             ➕ Add stop <span id="stopCount">0/5</span>
           </button>
-          <div id="promo" class="promo">
-            VASI offer price
-          </div>
+          <div id="promo" class="promo">VASI offer price</div>
           <div class="section">Choose vehicle</div>
           <div id="types" class="types"></div>
           <div class="fareRow">
@@ -393,14 +391,14 @@
           <div id="tripInfo" class="trip"></div>
           <div class="section">Payment</div>
           <div class="paygrid">
-            <button class="pay active" onclick="payment(this,'cash')">
+            <button class="pay active" onclick="payment(this, 'cash')">
               💶 Cash</button
-            ><button id="cardPay" class="pay" onclick="payment(this,'card')">
+            ><button id="cardPay" class="pay" onclick="payment(this, 'card')">
               💳 Card</button
             ><button
               id="applePay"
               class="pay"
-              onclick="payment(this,'apple_pay')"
+              onclick="payment(this, 'apple_pay')"
             >
                Apple Pay
             </button>
@@ -467,7 +465,7 @@
           <button
             id="receiptBtn"
             class="cta hidden"
-            onclick="location.href='ride-history.html'"
+            onclick="location.href = 'ride-history.html'"
           >
             View receipt</button
           ><button id="cancelBtn" class="cancel" onclick="cancelRide()">
@@ -602,10 +600,33 @@
             minFare: 13.5,
           },
         },
-        classes = offerClasses;
+        classes = offerClasses,
+        pricingOffer = {
+          active: true,
+          mode: "fixed",
+          percent: 0,
+          cap: null,
+          threshold: null,
+        };
       const $ = (id) => document.getElementById(id),
         money = (n) => "€" + Number(n || 0).toFixed(2);
       function priceFor(km, mins, key) {
+        if (pricingOffer.active && pricingOffer.mode === "percentage") {
+          const regular = regularClasses[key],
+            regularFare = Math.max(
+              regular.minFare,
+              regular.base + km * regular.km + mins * regular.min,
+            );
+          if (
+            pricingOffer.threshold != null &&
+            regularFare < pricingOffer.threshold
+          )
+            return regularFare;
+          let discount = (regularFare * pricingOffer.percent) / 100;
+          if (pricingOffer.cap != null)
+            discount = Math.min(discount, pricingOffer.cap);
+          return Math.max(regular.minFare, regularFare - discount);
+        }
         const c = classes[key];
         return Math.max(c.minFare, c.base + km * c.km + mins * c.min);
       }
@@ -630,11 +651,38 @@
           const d = await r.json();
           if (!r.ok) throw Error();
           if (d.offer_active) {
-            for (const key of Object.keys(offerClasses)) Object.assign(offerClasses[key], d.classes[key]);
-            classes = offerClasses;
-            $("promo").textContent = d.offer_name || "VASI offer price";
+            for (const key of Object.keys(offerClasses))
+              Object.assign(offerClasses[key], d.classes[key]);
+            pricingOffer = {
+              active: true,
+              mode: d.offer_mode || "fixed",
+              percent: Number(d.discount_percent || 0),
+              cap:
+                d.max_discount_eur == null ? null : Number(d.max_discount_eur),
+              threshold:
+                d.minimum_regular_fare == null
+                  ? null
+                  : Number(d.minimum_regular_fare),
+            };
+            classes =
+              pricingOffer.mode === "percentage"
+                ? regularClasses
+                : offerClasses;
+            const detail =
+              pricingOffer.mode === "percentage"
+                ? ` · ${pricingOffer.percent}% off${pricingOffer.cap == null ? "" : ` · up to €${pricingOffer.cap.toFixed(2)}`}`
+                : "";
+            $("promo").textContent =
+              (d.offer_name || "VASI offer price") + detail;
             $("promo").classList.remove("hidden");
           } else {
+            pricingOffer = {
+              active: false,
+              mode: "regular",
+              percent: 0,
+              cap: null,
+              threshold: null,
+            };
             classes = regularClasses;
             $("promo").classList.add("hidden");
           }
@@ -813,7 +861,8 @@
             }),
           });
           const r = await response.json();
-          if (!response.ok || !r.geometry) throw Error(r.error || "Route unavailable");
+          if (!response.ok || !r.geometry)
+            throw Error(r.error || "Route unavailable");
           route.km = r.distance_km;
           route.mins = r.duration_min;
           if (routeLine) routeLine.remove();
@@ -948,11 +997,11 @@
         if (!pickup || !destination) return;
         const s = await getSession();
         if (!s) {
-        localStorage.setItem("vasi_role", "customer");
-        localStorage.setItem("vasi_return", "ride-flow.html");
+          localStorage.setItem("vasi_role", "customer");
+          localStorage.setItem("vasi_return", "ride-flow.html");
           $("status").innerHTML =
             '<span class="error">Please sign in to book a real VASI ride.</span>';
-        setTimeout(() => (location.href = "auth.html?role=customer"), 700);
+          setTimeout(() => (location.href = "auth.html?role=customer"), 700);
           return;
         }
         $("routeBtn").disabled = true;
