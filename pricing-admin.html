@@ -131,6 +131,11 @@
           ><input id="offer_active" type="checkbox" /> Show offer pricing</label
         ><label>Offer label</label
         ><input id="offer_name" maxlength="80" placeholder="VASI offer price" />
+        <label>Offer calculation</label>
+        <select id="offer_mode" onchange="showMode()">
+          <option value="fixed">Fixed vehicle rates</option>
+          <option value="percentage">Percentage off regular fare</option>
+        </select>
         <div class="dates">
           <div>
             <label>Starts (optional)</label
@@ -145,6 +150,47 @@
           You can extend an offer later, remove its end date, or disable it at
           any time.
         </p>
+      </section>
+      <section id="percentageCard" class="card" hidden>
+        <h2>Percentage offer</h2>
+        <p class="muted">
+          Discount is calculated from the regular fare. The cap and minimum fare
+          protect margin.
+        </p>
+        <div class="dates">
+          <div>
+            <label>Discount % (maximum 50%)</label
+            ><input
+              id="discount_percent"
+              type="number"
+              min="0"
+              max="50"
+              step="0.01"
+            />
+          </div>
+          <div>
+            <label>Maximum discount € (optional)</label
+            ><input
+              id="max_discount_eur"
+              type="number"
+              min="0"
+              max="1000"
+              step="0.01"
+              placeholder="Example: 6.00"
+            />
+          </div>
+          <div>
+            <label>Minimum regular fare to qualify € (optional)</label
+            ><input
+              id="minimum_regular_fare"
+              type="number"
+              min="0"
+              max="1000"
+              step="0.01"
+              placeholder="Example: 12.00"
+            />
+          </div>
+        </div>
       </section>
       <section class="card">
         <h2>✨ AI Offer Assistant</h2>
@@ -179,11 +225,11 @@
         </p>
         <div id="aiResult" class="muted">No AI analysis yet.</div>
       </section>
-      <section class="card">
-        <h2>Vehicle fare formula</h2>
+      <section id="fixedCard" class="card">
+        <h2>Fixed vehicle fare formula</h2>
         <p class="muted">
-          Upfront fare = base + distance × €/km + duration × €/minute, never
-          below the minimum.
+          Used only in Fixed mode. Upfront fare = base + distance × €/km +
+          duration × €/minute, never below the minimum.
         </p>
         <div id="vehicles" class="grid"></div>
         <p>
@@ -256,6 +302,10 @@
         if (!r.ok) return message(d.error, true);
         document.getElementById("offer_active").checked = d.offer_enabled;
         val("offer_name", d.offer_name);
+        val("offer_mode", d.offer_mode || "fixed");
+        val("discount_percent", d.discount_percent ?? 10);
+        val("max_discount_eur", d.max_discount_eur);
+        val("minimum_regular_fare", d.minimum_regular_fare);
         val("starts_at", local(d.starts_at));
         val("ends_at", local(d.ends_at));
         keys.forEach((k) => {
@@ -264,6 +314,7 @@
           val(k + "_per_minute", d.classes[k].min);
           val(k + "_minimum", d.classes[k].minFare);
         });
+        showMode();
         message("Pricing loaded.");
       }
       async function save() {
@@ -272,6 +323,16 @@
         const b = {
           offer_active: document.getElementById("offer_active").checked,
           offer_name: val("offer_name"),
+          offer_mode: val("offer_mode"),
+          discount_percent: Number(val("discount_percent")),
+          max_discount_eur:
+            val("max_discount_eur") === ""
+              ? null
+              : Number(val("max_discount_eur")),
+          minimum_regular_fare:
+            val("minimum_regular_fare") === ""
+              ? null
+              : Number(val("minimum_regular_fare")),
           starts_at: val("starts_at")
             ? new Date(val("starts_at")).toISOString()
             : null,
@@ -313,6 +374,11 @@
         });
         return rates;
       }
+      function showMode() {
+        const percentage = val("offer_mode") === "percentage";
+        document.getElementById("percentageCard").hidden = !percentage;
+        document.getElementById("vehicles").hidden = percentage;
+      }
       let aiSuggestion = null;
       const esc = (x) =>
         String(x ?? "").replace(
@@ -344,6 +410,7 @@
               current: currentRates(),
               market_average_eur: Number(val("market_average")) || null,
               demand: val("demand"),
+              offer_mode: val("offer_mode"),
             }),
           });
           const d = await r.json();
@@ -358,6 +425,16 @@
       function applySuggestion() {
         if (!aiSuggestion) return;
         val("offer_name", aiSuggestion.offer_name);
+        if (aiSuggestion.offer_mode === "percentage") {
+          val("discount_percent", aiSuggestion.discount_percent);
+          val("max_discount_eur", aiSuggestion.max_discount_eur);
+          val("minimum_regular_fare", aiSuggestion.minimum_regular_fare);
+          showMode();
+          message(
+            "AI percentage suggestion applied as draft. Review it, then publish.",
+          );
+          return;
+        }
         keys.forEach((k) => {
           const x = aiSuggestion.rates[k];
           val(k + "_base", x.base);
