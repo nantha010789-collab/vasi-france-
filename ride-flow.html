@@ -721,8 +721,6 @@
         }
       }
       async function init() {
-        await loadPricing();
-        await loadCustomerOffer();
         map = L.map("map", { zoomControl: false }).setView(fallback, 13);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
@@ -735,6 +733,12 @@
         });
         checkPaymentAvailability();
         useLocation();
+        Promise.allSettled([loadPricing(), loadCustomerOffer()]).then(() => {
+          if (route.km > 0) {
+            renderTypes();
+            selectType(selected);
+          }
+        });
       }
       function useLocation() {
         if (!navigator.geolocation) {
@@ -768,13 +772,17 @@
       }
       function setPickup(p, label = "Pickup selected") {
         pickup = p;
-        if (pickupMarker) pickupMarker.remove();
-        pickupMarker = L.marker(p)
-          .addTo(map)
-          .bindPopup("VASI pickup")
-          .openPopup();
-        map.setView(p, 14);
         $("pickup").textContent = label;
+        try {
+          if (pickupMarker) pickupMarker.remove();
+          pickupMarker = L.marker(p)
+            .addTo(map)
+            .bindPopup("VASI pickup")
+            .openPopup();
+          map.setView(p, 14);
+        } catch (mapError) {
+          console.warn("Pickup map preview unavailable", mapError);
+        }
         if (destination) buildRoute();
         if (homeDestination) {
           $("destSearch").value = homeDestination;
