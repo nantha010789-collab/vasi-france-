@@ -8,6 +8,14 @@ const commissionPercent = () => Date.now() < PROMO_END ? 0 : regularCommissionPe
 async function sb(path, auth, options = {}) {
   return fetch(`${supabaseUrl}${path}`, { ...options, headers: { apikey: anonKey, Authorization: auth, 'Content-Type': 'application/json', ...(options.headers || {}) } });
 }
+async function stripeAccountReady(accountId){
+  const r=await fetch(`https://api.stripe.com/v1/accounts/${encodeURIComponent(accountId)}`,{headers:{Authorization:`Bearer ${stripeKey}`}});
+  const account=await r.json();
+  if(!r.ok)return {ok:false,error:account?.error?.message||'Could not verify driver payout account'};
+  const transfers=account?.capabilities?.transfers;
+  const ready=account?.details_submitted===true&&account?.payouts_enabled===true&&transfers==='active';
+  return ready?{ok:true,account}:{ok:false,error:'Driver Stripe payout account is not ready to receive transfers'};
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
@@ -54,6 +62,8 @@ export default async function handler(req, res) {
     const drivers = await driverResp.json();
     const stripeAccount = drivers?.[0]?.stripe_account_id;
     if (!stripeAccount) return res.status(409).json({ error: 'Driver Stripe payout account is not onboarded yet' });
+    const readiness=await stripeAccountReady(stripeAccount);
+    if(!readiness.ok)return res.status(409).json({error:readiness.error});
     const fee = Math.max(0, Math.min(amount - 1, Math.round(amount * commissionPercent() / 100)));
     const params = new URLSearchParams();
     params.set('amount', String(amount));
