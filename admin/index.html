@@ -1,2 +1,30 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="VASI taxi operations administration"><title>VASI Admin Control Center</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></head><body><aside><div class="brand">VASI <span>ADMIN</span></div><nav id="nav" aria-label="Admin navigation"></nav><div class="foot">France · Europe<br><small>Production Control Center</small></div></aside><main><header><div><div class="eyebrow">OPERATIONS</div><h1 id="title">Dashboard</h1></div><div class="status"><i></i> Protected control center</div></header><section id="app" aria-live="polite"></section></main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="config.js"></script><script src="app.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>VASI Admin</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;background:#050505;color:#fff}
+    body{margin:0;min-height:100vh;display:grid;place-items:center}
+    .card{max-width:520px;margin:24px;padding:24px;border:1px solid #292929;border-radius:24px;background:#111;text-align:center}
+    .brand{font-size:32px;font-weight:950}.muted{color:#aaa;line-height:1.5}.btn{display:inline-block;margin-top:14px;padding:13px 18px;border-radius:14px;background:#fff;color:#050505;text-decoration:none;font-weight:900}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">VASI ADMIN</div>
+    <p class="muted">Admin access now uses the secure VASI admin login and allowlist check.</p>
+    <a class="btn" href="../admin-login.html">Continue to Admin Login</a>
+  </main>
+  <script>
+    // Retire the legacy token-based /admin dashboard. All admin sessions must
+    // enter through admin-login.html, which verifies the Supabase session and
+    // the server-side admin allowlist before opening the control center.
+    const target='../admin-login.html';
+    try{localStorage.removeItem('vasi_admin_access_token')}catch{}
+    setTimeout(()=>location.replace(target),250);
+  </script>
+</body>
+</html>
