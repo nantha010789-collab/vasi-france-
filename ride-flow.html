@@ -525,8 +525,6 @@
         stripeElements = null,
         paymentStarted = false,
         paymentAuthorized = false;
-      const PROMO_END = Date.parse("2026-12-01T00:00:00Z"),
-        promoActive = Date.now() < PROMO_END;
       const fallback = [49.189, 2.449],
         regularClasses = {
           go: {
@@ -566,7 +564,7 @@
             minFare: 16.0,
           },
         },
-        promoClasses = {
+        offerClasses = {
           go: {
             name: "Go",
             seats: 4,
@@ -604,7 +602,7 @@
             minFare: 13.5,
           },
         },
-        classes = promoActive ? promoClasses : regularClasses;
+        classes = offerClasses;
       const $ = (id) => document.getElementById(id),
         money = (n) => "€" + Number(n || 0).toFixed(2);
       function priceFor(km, mins, key) {
@@ -626,8 +624,27 @@
           }
         }
       }
-      function init() {
-        if (!promoActive) $("promo").classList.add("hidden");
+      async function loadPricing() {
+        try {
+          const r = await fetch("/api/pricing", { cache: "no-store" });
+          const d = await r.json();
+          if (!r.ok) throw Error();
+          if (d.offer_active) {
+            for (const key of Object.keys(offerClasses)) Object.assign(offerClasses[key], d.classes[key]);
+            classes = offerClasses;
+            $("promo").textContent = d.offer_name || "VASI offer price";
+            $("promo").classList.remove("hidden");
+          } else {
+            classes = regularClasses;
+            $("promo").classList.add("hidden");
+          }
+        } catch (e) {
+          classes = offerClasses;
+          $("promo").textContent = "VASI offer price";
+        }
+      }
+      async function init() {
+        await loadPricing();
         map = L.map("map", { zoomControl: false }).setView(fallback, 13);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
