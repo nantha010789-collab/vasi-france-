@@ -4,74 +4,9 @@ const PRICING = {
   document: { base: 4, km: 0.65, min: 0.10, minimum: 6 },
   parcel: { base: 5, km: 0.80, min: 0.12, minimum: 7.5 },
 };
-
-function cleanAddress(value) {
-  const address = String(value || "").trim();
-  if (address.length < 4 || address.length > 200) throw new Error("Enter a valid full address");
-  return address;
-}
-
-async function geocode(address) {
-  const query = new URLSearchParams({ format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: "fr,gb,be,de,nl,lu,ch,es,it,pt", q: address });
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
-  if (!response.ok) throw new Error("Address search is temporarily unavailable");
-  const result = (await response.json())?.[0];
-  const lat = Number(result?.lat), lng = Number(result?.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error(`Address not found: ${address}`);
-  return { lat, lng, address: result.display_name || address };
-}
-
-async function route(pickup, dropoff) {
-  const coordinates = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
-  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=false`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
-  if (!response.ok) throw new Error("Delivery route service is unavailable");
-  const best = (await response.json())?.routes?.[0];
-  if (!best || !Number.isFinite(best.distance) || !Number.isFinite(best.duration)) throw new Error("No driving route was found between these addresses");
-  const distanceKm = best.distance / 1000;
-  if (distanceKm > 150) throw new Error("VASI local delivery currently supports routes up to 150 km");
-  return { distanceKm, durationMin: Math.max(1, Math.ceil(best.duration / 60)) };
-}
-
-function calculatePrice(type, metrics) {
-  const p = PRICING[type];
-  return Number(Math.max(p.minimum, p.base + metrics.distanceKm * p.km + metrics.durationMin * p.min).toFixed(2));
-}
-
-async function authenticatedUser(authorization) {
-  if (!authorization.startsWith("Bearer ")) return null;
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: publishableKey, Authorization: authorization } });
-  if (!response.ok) return null;
-  const user = await response.json();
-  return user?.id ? user : null;
-}
-
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "POST required" });
-  res.setHeader("Cache-Control", "no-store");
-  try {
-    const body = req.body || {};
-    const type = String(body.item_type || "parcel").toLowerCase();
-    if (!PRICING[type]) return res.status(400).json({ error: "Choose parcel or document" });
-    const [pickup, dropoff] = await Promise.all([geocode(cleanAddress(body.pickup_address)), geocode(cleanAddress(body.dropoff_address))]);
-    const metrics = await route(pickup, dropoff);
-    const quote = calculatePrice(type, metrics);
-    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency: "EUR" };
-    if (body.action !== "book") return res.status(200).json(result);
-
-    const authorization = req.headers.authorization || "";
-    const user = await authenticatedUser(authorization);
-    if (!user) return res.status(401).json({ error: "Login required" });
-    const response = await fetch(`${supabaseUrl}/rest/v1/delivery_orders`, {
-      method: "POST",
-      headers: { apikey: publishableKey, Authorization: authorization, "Content-Type": "application/json", Prefer: "return=representation" },
-      body: JSON.stringify({ customer_id: user.id, pickup_address: pickup.address, dropoff_address: dropoff.address, item_type: type, quote, currency: "EUR", status: "pending" }),
-    });
-    const created = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: created?.message || created?.error || "Could not book delivery" });
-    const order = Array.isArray(created) ? created[0] : created;
-    return res.status(201).json({ ...result, order_id: order?.id || null });
-  } catch (error) {
-    const message = error?.message || "Delivery service error";
-    return res.status(/address|route|150 km/i.test(message) ? 400 : 502).json({ error: message });
-  }
-}
+function cleanAddress(value) { const address = String(value || "").trim(); if (address.length < 4 || address.length > 200) throw new Error("Enter a valid full address"); return address; }
+async function geocode(address) { const query = new URLSearchParams({ format:"jsonv2", limit:"1", addressdetails:"1", countrycodes:"fr,gb,be,de,nl,lu,ch,es,it,pt", q:address }); const response=await fetch(`https://nominatim.openstreetmap.org/search?${query}`,{headers:{"User-Agent":"VASI/1.0 (delivery-pricing)"}}); if(!response.ok)throw new Error("Address search is temporarily unavailable"); const result=(await response.json())?.[0]; const lat=Number(result?.lat),lng=Number(result?.lon); if(!Number.isFinite(lat)||!Number.isFinite(lng))throw new Error(`Address not found: ${address}`); return{lat,lng,address:result.display_name||address}; }
+async function route(pickup,dropoff){const coordinates=`${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;const response=await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=false`,{headers:{"User-Agent":"VASI/1.0 (delivery-pricing)"}});if(!response.ok)throw new Error("Delivery route service is unavailable");const best=(await response.json())?.routes?.[0];if(!best||!Number.isFinite(best.distance)||!Number.isFinite(best.duration))throw new Error("No driving route was found between these addresses");const distanceKm=best.distance/1000;if(distanceKm>150)throw new Error("VASI local delivery currently supports routes up to 150 km");return{distanceKm,durationMin:Math.max(1,Math.ceil(best.duration/60))};}
+function calculatePrice(type,metrics){const p=PRICING[type];return Number(Math.max(p.minimum,p.base+metrics.distanceKm*p.km+metrics.durationMin*p.min).toFixed(2));}
+async function authenticatedUser(authorization){if(!authorization.startsWith("Bearer "))return null;const response=await fetch(`${supabaseUrl}/auth/v1/user`,{headers:{apikey:publishableKey,Authorization:authorization}});if(!response.ok)return null;const user=await response.json();return user?.id?user:null;}
+export default async function handler(req,res){if(req.method!=="POST")return res.status(405).json({error:"POST required"});res.setHeader("Cache-Control","no-store");try{const body=req.body||{};const action=String(body.action||"").toLowerCase();if(!["quote","book"].includes(action))return res.status(400).json({error:"Choose quote or book action"});const type=String(body.item_type||"parcel").toLowerCase();if(!PRICING[type])return res.status(400).json({error:"Choose parcel or document"});const[pickup,dropoff]=await Promise.all([geocode(cleanAddress(body.pickup_address)),geocode(cleanAddress(body.dropoff_address))]);const metrics=await route(pickup,dropoff);const quote=calculatePrice(type,metrics);const result={pickup,dropoff,item_type:type,distance_km:Number(metrics.distanceKm.toFixed(2)),duration_min:metrics.durationMin,quote,currency:"EUR"};if(action==="quote")return res.status(200).json(result);const authorization=req.headers.authorization||"";const user=await authenticatedUser(authorization);if(!user)return res.status(401).json({error:"Login required"});const response=await fetch(`${supabaseUrl}/rest/v1/delivery_orders`,{method:"POST",headers:{apikey:publishableKey,Authorization:authorization,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({customer_id:user.id,pickup_address:pickup.address,dropoff_address:dropoff.address,item_type:type,quote,currency:"EUR",status:"pending"})});const created=await response.json();if(!response.ok)return res.status(response.status).json({error:created?.message||created?.error||"Could not book delivery"});const order=Array.isArray(created)?created[0]:created;return res.status(201).json({...result,order_id:order?.id||null});}catch(error){const message=error?.message||"Delivery service error";return res.status(/address|route|150 km/i.test(message)?400:502).json({error:message});}}
