@@ -104,6 +104,19 @@ function fareFor(service, km, mins, pricing) {
     Math.max(REGULAR_PRICING[service].minFare, regular - discount).toFixed(2),
   );
 }
+async function customerOffer(auth) {
+  try {
+    const r = await fetch("https://vasi-new.vercel.app/api/customer-offer", {
+      headers: { Authorization: auth },
+    });
+    const offer = await r.json();
+    return r.ok && [10, 15].includes(Number(offer.discount_percent))
+      ? offer
+      : null;
+  } catch {
+    return null;
+  }
+}
 function normalizeSchedule(value) {
   if (value === null || value === undefined || value === "") return null;
   const when = new Date(value);
@@ -172,11 +185,9 @@ export default async function handler(req, res) {
         (v) => v === null,
       )
     ) {
-      return res
-        .status(400)
-        .json({
-          error: "Valid pickup and destination coordinates are required",
-        });
+      return res.status(400).json({
+        error: "Valid pickup and destination coordinates are required",
+      });
     }
     const pickupAddress = String(b.pickup_address || "").trim();
     const destinationAddress = String(b.destination_address || "").trim();
@@ -201,11 +212,23 @@ export default async function handler(req, res) {
       { lat: destinationLat, lng: destinationLng },
     ];
     const metrics = await routeMetrics(points);
-    const authoritativeFare = fareFor(
-      service,
-      metrics.km,
-      metrics.mins,
-      pricing,
+    const preOfferFare = fareFor(service, metrics.km, metrics.mins, pricing);
+    const smartOffer =
+      pricing.mode === "percentage" ? null : await customerOffer(auth);
+    let discountAmount = smartOffer
+      ? (preOfferFare * Number(smartOffer.discount_percent)) / 100
+      : 0;
+    if (smartOffer?.max_discount_eur != null)
+      discountAmount = Math.min(
+        discountAmount,
+        Number(smartOffer.max_discount_eur),
+      );
+    const authoritativeFare = Number(
+      (preOfferFare - discountAmount).toFixed(2),
+    );
+    const driverAmount = Number((preOfferFare * 0.85).toFixed(2));
+    const vasiCommission = Number(
+      Math.max(0, authoritativeFare - driverAmount).toFixed(2),
     );
     const headers = {
       apikey: anonKey,
@@ -227,6 +250,10 @@ export default async function handler(req, res) {
           p_service: service,
           p_payment_method: paymentMethod,
           p_estimated_fare: authoritativeFare,
+          p_regular_fare: preOfferFare,
+          p_customer_discount: Number(discountAmount.toFixed(2)),
+          p_driver_amount: driverAmount,
+          p_vasi_commission: vasiCommission,
           p_currency: "EUR",
           p_scheduled_for: scheduledFor,
           p_passenger_name: b.passenger_name || null,
@@ -237,11 +264,9 @@ export default async function handler(req, res) {
     );
     const created = await create.json();
     if (!create.ok)
-      return res
-        .status(create.status)
-        .json({
-          error: created?.message || created?.error || "Could not create ride",
-        });
+      return res.status(create.status).json({
+        error: created?.message || created?.error || "Could not create ride",
+      });
     const ride = Array.isArray(created) ? created[0] : created;
     if (!ride?.id)
       return res.status(500).json({ error: "Ride was not created" });
@@ -291,6 +316,11 @@ export default async function handler(req, res) {
         distance_km: Number(metrics.km.toFixed(2)),
         duration_min: metrics.mins,
         estimated_fare: authoritativeFare,
+        regular_fare: preOfferFare,
+        customer_discount: Number(discountAmount.toFixed(2)),
+        driver_amount: driverAmount,
+        vasi_commission: vasiCommission,
+        smart_offer: smartOffer,
         currency: "EUR",
         promotion: pricing.offer,
         promotion_ends_at: pricing.endsAt,
