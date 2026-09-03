@@ -658,7 +658,7 @@
           >
         </aside>
 
-        <section class="card">
+        <section id="personalInformation" class="card">
           <div class="section-head">
             <div>
               <h2>Personal information</h2>
@@ -743,7 +743,7 @@
           </form>
         </section>
 
-        <section class="card" aria-labelledby="addressesTitle">
+        <section id="savedAddresses" class="card" aria-labelledby="addressesTitle">
           <div class="section-head address-heading">
             <div>
               <h2 id="addressesTitle">Saved addresses</h2>
@@ -858,6 +858,14 @@
               </span>
               <span class="arrow" aria-hidden="true">›</span>
             </a>
+            <a class="link-row" href="settings.html">
+              <span class="link-icon" aria-hidden="true">⚙</span>
+              <span class="link-copy">
+                <strong>Settings</strong>
+                <span>Notifications, privacy, security and safety</span>
+              </span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
             <a class="link-row" href="support.html">
               <span class="link-icon" aria-hidden="true">?</span>
               <span class="link-copy">
@@ -867,25 +875,6 @@
               <span class="arrow" aria-hidden="true">›</span>
             </a>
           </nav>
-        </section>
-
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <h2>Notifications</h2>
-              <p>
-                Important Ride, Eats and Delivery updates stay on. Choose
-                optional alerts and sound preferences.
-              </p>
-            </div>
-            <button
-              id="notificationSettingsButton"
-              class="section-action"
-              type="button"
-            >
-              Open
-            </button>
-          </div>
         </section>
 
         <section class="card account-actions">
@@ -928,6 +917,7 @@
         "delivery.html",
         "activity.html",
         "ride-history.html",
+        "settings.html",
         "support.html",
         "restaurant-register.html",
         "restaurant-dashboard.html",
@@ -1486,9 +1476,6 @@
       el("addAddressButton").addEventListener("click", () => openAddressForm());
       el("cancelAddressButton").addEventListener("click", closeAddressForm);
       el("signoutButton").addEventListener("click", signOut);
-      el("notificationSettingsButton").addEventListener("click", () =>
-        VasiNotifications.openCentre("notifications"),
-      );
       el("retryButton").addEventListener("click", loadAccount);
       loadAccount();
       VasiNotifications.start(client, { role: "customer" });

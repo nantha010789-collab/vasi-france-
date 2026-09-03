@@ -44,6 +44,10 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
     {
+      "source": "/settings.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
       "source": "/auth",
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },

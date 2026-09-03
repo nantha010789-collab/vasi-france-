@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050505" />
+    <title>Settings · VASI</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #fff;
+        background: #050505;
+        color-scheme: dark;
+        --page: #050505;
+        --card: #111;
+        --field: #181818;
+        --line: #2b2b2b;
+        --muted: #999;
+        --success: #9df2b2;
+        --success-bg: #102818;
+        --danger: #ffb4b4;
+        --danger-bg: #2c1313;
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 90% -5%, #242424 0, transparent 28rem),
+          var(--page);
+      }
+
+      body.reduce-motion *,
+      body.reduce-motion *::before,
+      body.reduce-motion *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+
+      button, select { font: inherit; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+
+      .app {
+        width: min(100%, 720px);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: max(22px, env(safe-area-inset-top)) 18px
+          calc(42px + env(safe-area-inset-bottom));
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        color: #fff;
+        font-size: 30px;
+        font-weight: 950;
+        letter-spacing: -1.5px;
+        text-decoration: none;
+      }
+
+      .back,
+      .button {
+        min-height: 44px;
+        border: 1px solid #353535;
+        border-radius: 999px;
+        background: #171717;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 15px;
+        text-decoration: none;
+      }
+
+      .hero { padding: 34px 2px 20px; }
+
+      .eyebrow {
+        margin: 0 0 7px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(38px, 9vw, 54px);
+        line-height: 0.98;
+        letter-spacing: -2.8px;
+      }
+
+      .hero p:last-child {
+        max-width: 540px;
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .stack { display: grid; gap: 14px; }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(17, 17, 17, 0.96);
+        padding: 20px;
+        scroll-margin-top: 18px;
+      }
+
+      .section-head { margin-bottom: 7px; }
+      .section-head h2 { margin: 0; font-size: 21px; letter-spacing: -0.5px; }
+      .section-head p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .menu { display: grid; margin-top: 13px; }
+
+      .row {
+        width: 100%;
+        min-height: 66px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        border: 0;
+        border-top: 1px solid #292929;
+        background: transparent;
+        color: #fff;
+        padding: 13px 2px;
+        text-align: left;
+        text-decoration: none;
+      }
+
+      button.row { cursor: pointer; }
+
+      .icon {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: #242424;
+        font-size: 18px;
+      }
+
+      .copy { min-width: 0; flex: 1; }
+      .copy strong, .copy span { display: block; }
+      .copy strong { font-size: 15px; }
+      .copy span {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .value {
+        max-width: 120px;
+        color: #aaa;
+        font-size: 12px;
+        text-align: right;
+      }
+
+      .arrow { color: #737373; font-size: 21px; }
+
+      .required {
+        border-radius: 999px;
+        background: #213323;
+        color: #a8e4af;
+        padding: 6px 9px;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .switch {
+        position: relative;
+        width: 50px;
+        height: 30px;
+        flex: 0 0 50px;
+      }
+      .switch input { position: absolute; opacity: 0; pointer-events: none; }
+      .switch span {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        background: #464646;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .switch span::after {
+        content: "";
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        left: 3px;
+        top: 3px;
+        border-radius: 50%;
+        background: #fff;
+        transition: 0.2s;
+      }
+      .switch input:checked + span { background: #2d8a49; }
+      .switch input:checked + span::after { transform: translateX(20px); }
+
+      select {
+        min-height: 42px;
+        max-width: 138px;
+        border: 1px solid #383838;
+        border-radius: 12px;
+        outline: none;
+        background: var(--field);
+        color: #fff;
+        padding: 8px 10px;
+      }
+
+      .notice {
+        margin-top: 14px;
+        border: 1px solid #343434;
+        border-radius: 16px;
+        background: #171717;
+        color: #aaa;
+        padding: 14px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .notice strong { color: #fff; }
+
+      .status {
+        min-height: 18px;
+        margin: 12px 2px 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .status.success { color: var(--success); }
+      .status.error { color: var(--danger); }
+
+      .danger { color: var(--danger); }
+
+      .loading {
+        min-height: 150px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .loader {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto 14px;
+        border: 3px solid #303030;
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .hidden { display: none !important; }
+
+      @media (max-width: 540px) {
+        .app { padding-left: 14px; padding-right: 14px; }
+        .hero { padding-top: 30px; }
+        .card { border-radius: 21px; padding: 17px; }
+        .value { max-width: 95px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <a class="brand" href="index.html" aria-label="VASI home">VASI</a>
+        <a class="back" href="account.html">← Account</a>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">Your VASI account</p>
+        <h1>Settings</h1>
+        <p>Manage alerts, privacy, security, safety and app preferences.</p>
+      </section>
+
+      <section id="loading" class="card loading" aria-live="polite">
+        <div><div class="loader" aria-hidden="true"></div>Loading settings…</div>
+      </section>
+
+      <div id="settings" class="stack hidden">
+        <section id="notifications" class="card" aria-labelledby="notificationsTitle">
+          <div class="section-head">
+            <h2 id="notificationsTitle">Notifications</h2>
+            <p>Live service and safety alerts cannot be switched off inside VASI.</p>
+          </div>
+          <div class="menu">
+            <div class="row">
+              <span class="icon" aria-hidden="true">🚕</span>
+              <span class="copy"><strong>Ride, Eats & Delivery</strong><span>Driver, restaurant, courier and order progress</span></span>
+              <span class="required">Required</span>
+            </div>
+            <button id="alertPreferences" class="row" type="button">
+              <span class="icon" aria-hidden="true">🔔</span>
+              <span class="copy"><strong>Alert preferences</strong><span id="notificationState">Check phone permission and optional alerts</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+            <button id="notificationHistory" class="row" type="button">
+              <span class="icon" aria-hidden="true">◷</span>
+              <span class="copy"><strong>Notification history</strong><span>See recent VASI updates</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+          </div>
+        </section>
+
+        <section id="privacy" class="card" aria-labelledby="privacyTitle">
+          <div class="section-head">
+            <h2 id="privacyTitle">Privacy</h2>
+            <p>Control your data and understand what VASI shares.</p>
+          </div>
+          <div class="menu">
+            <button id="locationButton" class="row" type="button">
+              <span class="icon" aria-hidden="true">⌖</span>
+              <span class="copy"><strong>Location access</strong><span id="locationState">Used for pickup, route and nearby drivers</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+            <div class="row">
+              <span class="icon" aria-hidden="true">◉</span>
+              <span class="copy"><strong>Phone-number privacy</strong><span>Your phone number is not shown to drivers or couriers</span></span>
+              <span class="required">Always</span>
+            </div>
+            <div class="row">
+              <span class="icon" aria-hidden="true">%</span>
+              <span class="copy"><strong>Offers & marketing</strong><span>Optional discounts and VASI news</span></span>
+              <label class="switch" aria-label="Offers and marketing">
+                <input id="marketingToggle" type="checkbox" />
+                <span></span>
+              </label>
+            </div>
+            <button id="downloadData" class="row" type="button">
+              <span class="icon" aria-hidden="true">↓</span>
+              <span class="copy"><strong>Download my data</strong><span>Save a copy of your VASI account information</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+            <button id="deleteAccount" class="row" type="button">
+              <span class="icon" aria-hidden="true">×</span>
+              <span class="copy"><strong class="danger">Delete account</strong><span>Contact support for identity verification</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+          </div>
+          <p id="privacyStatus" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="security" class="card" aria-labelledby="securityTitle">
+          <div class="section-head">
+            <h2 id="securityTitle">Security</h2>
+            <p>Your verified phone and secure session protect this account.</p>
+          </div>
+          <div class="menu">
+            <div class="row">
+              <span class="icon" aria-hidden="true">✓</span>
+              <span class="copy"><strong>SMS verification</strong><span id="verifiedPhone">Verified VASI account</span></span>
+              <span class="required">On</span>
+            </div>
+            <div class="row">
+              <span class="icon" aria-hidden="true">▣</span>
+              <span class="copy"><strong>This device</strong><span id="sessionState">Active session</span></span>
+              <span class="value">Signed in</span>
+            </div>
+            <button id="signoutAll" class="row" type="button">
+              <span class="icon" aria-hidden="true">↪</span>
+              <span class="copy"><strong>Sign out all devices</strong><span>Require SMS login again everywhere</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
+          </div>
+          <p id="securityStatus" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="safety" class="card" aria-labelledby="safetyTitle">
+          <div class="section-head">
+            <h2 id="safetyTitle">Safety</h2>
+            <p>Trip protection and emergency tools stay easy to reach.</p>
+          </div>
+          <div class="menu">
+            <a class="row" href="safety.html">
+              <span class="icon" aria-hidden="true">🛡</span>
+              <span class="copy"><strong>Safety Centre</strong><span>Emergency 112, Share Trip and driver details</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+            <div class="row">
+              <span class="icon" aria-hidden="true">#</span>
+              <span class="copy"><strong>Safety PIN</strong><span>First customer ride only; every Eats delivery</span></span>
+              <span class="required">Protected</span>
+            </div>
+          </div>
+          <div class="notice"><strong>During a live trip:</strong> SOS, Share Trip and ride details remain available on the active ride screen.</div>
+        </section>
+
+        <section id="preferences" class="card" aria-labelledby="preferencesTitle">
+          <div class="section-head">
+            <h2 id="preferencesTitle">App preferences</h2>
+            <p>Choose how VASI looks and communicates on this device.</p>
+          </div>
+          <div class="menu">
+            <div class="row">
+              <span class="icon" aria-hidden="true">A</span>
+              <span class="copy"><strong>Language</strong><span>App display language</span></span>
+              <select id="language" aria-label="VASI language">
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="ta">தமிழ்</option>
+                <option value="de">Deutsch</option>
+                <option value="nl">Nederlands</option>
+              </select>
+            </div>
+            <div class="row">
+              <span class="icon" aria-hidden="true">Aa</span>
+              <span class="copy"><strong>Reduce motion</strong><span>Limit interface animation on this device</span></span>
+              <label class="switch" aria-label="Reduce motion">
+                <input id="motionToggle" type="checkbox" />
+                <span></span>
+              </label>
+            </div>
+            <a class="row" href="account.html#personalInformation">
+              <span class="icon" aria-hidden="true">€</span>
+              <span class="copy"><strong>Country & currency</strong><span>Edit your regional account preferences</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/vasi-notifications.js"></script>
+    <script>
+      const client = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      const PREFS_KEY = "vasi_notification_preferences_v1";
+      const $ = (id) => document.getElementById(id);
+      let currentSession = null;
+
+      function readJson(key, fallback) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          return parsed && typeof parsed === "object" ? parsed : fallback;
+        } catch (_) {
+          return fallback;
+        }
+      }
+
+      function setStatus(id, message, type = "") {
+        $(id).textContent = message;
+        $(id).className = "status" + (type ? " " + type : "");
+      }
+
+      function displayPhone(phone) {
+        const value = String(phone || "");
+        if (/^\+33\d{9}$/.test(value)) {
+          const local = "0" + value.slice(3);
+          return local.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+        }
+        return value || "Verified VASI account";
+      }
+
+      function updateNotificationState() {
+        if (!("Notification" in window)) {
+          $("notificationState").textContent = "Install VASI to receive phone alerts";
+          return;
+        }
+        $("notificationState").textContent =
+          Notification.permission === "granted"
+            ? "Phone alerts enabled · manage optional alerts"
+            : Notification.permission === "denied"
+              ? "Phone alerts blocked in device settings"
+              : "Phone alert permission not enabled";
+      }
+
+      async function checkLocation() {
+        const state = $("locationState");
+        if (!navigator.geolocation) {
+          state.textContent = "Location is not supported on this device";
+          return;
+        }
+        state.textContent = "Checking location permission…";
+        navigator.geolocation.getCurrentPosition(
+          () => { state.textContent = "Location access is available for VASI"; },
+          (error) => {
+            state.textContent = error.code === 1
+              ? "Location is blocked · allow it in phone settings"
+              : "Location is unavailable right now";
+          },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
+        );
+      }
+
+      async function downloadMyData() {
+        if (!currentSession) return;
+        const button = $("downloadData");
+        button.disabled = true;
+        setStatus("privacyStatus", "Preparing your data copy…");
+        try {
+          const userId = currentSession.user.id;
+          const requests = [
+            ["profile", client.from("profiles").select("*").eq("id", userId).maybeSingle()],
+            ["saved_addresses", client.from("customer_saved_addresses").select("*").eq("user_id", userId).limit(100)],
+            ["rides", client.from("rides").select("*").eq("customer_id", userId).limit(500)],
+            ["eats_orders", client.from("eats_orders").select("*").eq("customer_id", userId).limit(500)],
+            ["delivery_orders", client.from("delivery_orders").select("*").eq("customer_id", userId).limit(500)],
+          ];
+          const results = await Promise.all(requests.map((entry) => entry[1]));
+          const exportData = {
+            exported_at: new Date().toISOString(),
+            account: {
+              id: userId,
+              phone: currentSession.user.phone || null,
+              email: currentSession.user.email || null,
+              created_at: currentSession.user.created_at || null,
+            },
+            notification_preferences: readJson(PREFS_KEY, {}),
+          };
+          requests.forEach(([key], index) => {
+            exportData[key] = results[index].error
+              ? { unavailable: true }
+              : results[index].data;
+          });
+          const file = new File(
+            [JSON.stringify(exportData, null, 2)],
+            "vasi-account-data.json",
+            { type: "application/json" },
+          );
+          if (navigator.canShare?.({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "My VASI account data",
+            });
+          } else {
+            const url = URL.createObjectURL(file);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = file.name;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }
+          setStatus("privacyStatus", "Your VASI data copy is ready.", "success");
+        } catch (error) {
+          if (error?.name === "AbortError") {
+            setStatus("privacyStatus", "Data download cancelled.");
+            return;
+          }
+          setStatus("privacyStatus", "We could not prepare the data copy. Please try again.", "error");
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      async function signOutAllDevices() {
+        if (!confirm("Sign out this VASI account on every device?")) return;
+        $("signoutAll").disabled = true;
+        setStatus("securityStatus", "Signing out all devices…");
+        const { error } = await client.auth.signOut({ scope: "global" });
+        if (error) {
+          $("signoutAll").disabled = false;
+          setStatus("securityStatus", error.message || "Could not sign out all devices.", "error");
+          return;
+        }
+        location.replace("auth.html?role=customer");
+      }
+
+      function initializePreferences() {
+        const prefs = readJson(PREFS_KEY, { promotions: false, sound: true });
+        $("marketingToggle").checked = Boolean(prefs.promotions);
+        $("marketingToggle").addEventListener("change", (event) => {
+          localStorage.setItem(PREFS_KEY, JSON.stringify({ ...readJson(PREFS_KEY, {}), promotions: event.target.checked }));
+        });
+
+        const language = localStorage.getItem("vasi_language") || "en";
+        $("language").value = ["en", "fr", "ta", "de", "nl"].includes(language) ? language : "en";
+        $("language").addEventListener("change", (event) => {
+          localStorage.setItem("vasi_language", event.target.value);
+        });
+
+        const reduceMotion = localStorage.getItem("vasi_reduce_motion") === "true";
+        $("motionToggle").checked = reduceMotion;
+        document.body.classList.toggle("reduce-motion", reduceMotion);
+        $("motionToggle").addEventListener("change", (event) => {
+          localStorage.setItem("vasi_reduce_motion", String(event.target.checked));
+          document.body.classList.toggle("reduce-motion", event.target.checked);
+        });
+      }
+
+      $("alertPreferences").addEventListener("click", () => VasiNotifications.openSettings());
+      $("notificationHistory").addEventListener("click", () => VasiNotifications.openCentre("notifications"));
+      $("locationButton").addEventListener("click", checkLocation);
+      $("downloadData").addEventListener("click", downloadMyData);
+      $("deleteAccount").addEventListener("click", () => {
+        sessionStorage.setItem("vasi_support_intent", "Delete my VASI account");
+        location.href = "support.html";
+      });
+      $("signoutAll").addEventListener("click", signOutAllDevices);
+
+      (async () => {
+        currentSession = (await client.auth.getSession()).data.session;
+        if (!currentSession) {
+          localStorage.setItem("vasi_return", "settings.html");
+          location.replace("auth.html?role=customer&next=settings.html");
+          return;
+        }
+        initializePreferences();
+        updateNotificationState();
+        $("verifiedPhone").textContent = displayPhone(currentSession.user.phone);
+        $("sessionState").textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+          ? "This iPhone has an active VASI session"
+          : "This device has an active VASI session";
+        $("loading").classList.add("hidden");
+        $("settings").classList.remove("hidden");
+        VasiNotifications.start(client, { role: "customer" });
+      })();
+    </script>
+  </body>
+</html>

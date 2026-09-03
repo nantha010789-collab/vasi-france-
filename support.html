@@ -230,6 +230,15 @@
           box.innerHTML = "<p>" + esc(e.message) + "</p>";
         }
       }
+      const supportIntent = sessionStorage.getItem("vasi_support_intent");
+      if (supportIntent) {
+        const form = document.getElementById("form");
+        form.elements.category.value = "account";
+        form.elements.subject.value = supportIntent;
+        form.elements.description.value =
+          "Please help me delete my VASI account after verifying my identity.";
+        sessionStorage.removeItem("vasi_support_intent");
+      }
       document.getElementById("form").onsubmit = async (e) => {
         e.preventDefault();
         status.textContent = "VASI is checking your request…";
