@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v8";
+const CACHE = "vasi-app-v9";
 const CORE = [
   "/index.html",
   "/manifest.webmanifest",

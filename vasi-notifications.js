@@ -128,7 +128,6 @@
     const style = document.createElement("style");
     style.id = "vasi-notification-styles";
     style.textContent = `
-      .vasi-alert-button{position:fixed;z-index:9998;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));min-height:46px;border:1px solid #3a3a3a;border-radius:999px;padding:0 16px;background:#fff;color:#050505;font:800 14px/1 system-ui,-apple-system,sans-serif;box-shadow:0 12px 34px #0008;cursor:pointer}.vasi-alert-button[data-state="blocked"]{background:#381616;color:#ffd4d4;border-color:#713030}.vasi-alert-button[data-state="on"]{display:none}
       .vasi-bell{position:fixed;z-index:9997;top:max(14px,env(safe-area-inset-top));right:16px;width:48px;height:48px;border:1px solid #3b3b3b;border-radius:50%;background:#171717;color:#fff;box-shadow:0 10px 28px #0007;font:800 21px/1 system-ui,-apple-system,sans-serif;cursor:pointer}.vasi-bell-count{position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;display:none;place-items:center;border:2px solid #090909;border-radius:999px;background:#ef3340;color:#fff;padding:0 5px;font:900 11px/1 system-ui,-apple-system,sans-serif}.vasi-bell-count[data-show="true"]{display:grid}
       .vasi-notification-backdrop{position:fixed;z-index:10000;inset:0;display:none;background:#000a;backdrop-filter:blur(6px)}.vasi-notification-backdrop[data-open="true"]{display:block}.vasi-notification-sheet{position:absolute;right:0;top:0;width:min(100%,430px);height:100%;display:flex;flex-direction:column;background:#0d0d0d;color:#fff;border-left:1px solid #303030;font-family:system-ui,-apple-system,sans-serif;box-shadow:-20px 0 60px #0009}
       .vasi-centre-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(18px,env(safe-area-inset-top)) 18px 15px;border-bottom:1px solid #292929}.vasi-centre-head h2{margin:0;font-size:25px;letter-spacing:-.7px}.vasi-centre-actions{display:flex;gap:8px;align-items:center}.vasi-centre-action{min-height:40px;border:1px solid #353535;border-radius:999px;background:#191919;color:#fff;padding:0 12px;font-weight:800;cursor:pointer}.vasi-centre-close{width:40px;padding:0;font-size:21px}
@@ -137,7 +136,7 @@
       .vasi-settings-intro{margin:5px 4px 15px;color:#aaa;font-size:14px;line-height:1.5}.vasi-setting-row{display:flex;align-items:center;gap:14px;border-bottom:1px solid #292929;padding:17px 5px}.vasi-setting-copy{min-width:0;flex:1}.vasi-setting-copy strong,.vasi-setting-copy span{display:block}.vasi-setting-copy span{margin-top:4px;color:#929292;font-size:12px;line-height:1.4}.vasi-setting-required{border-radius:999px;background:#213323;color:#a8e4af;padding:6px 9px;font-size:10px;font-weight:900;text-transform:uppercase}.vasi-switch{position:relative;width:50px;height:30px;flex:0 0 50px}.vasi-switch input{position:absolute;opacity:0;pointer-events:none}.vasi-switch span{position:absolute;inset:0;border-radius:999px;background:#464646;cursor:pointer;transition:.2s}.vasi-switch span:after{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}.vasi-switch input:checked+span{background:#2d8a49}.vasi-switch input:checked+span:after{transform:translateX(20px)}
       .vasi-permission-card{margin-top:18px;border:1px solid #343434;border-radius:18px;background:#161616;padding:16px}.vasi-permission-card p{margin:0 0 12px;color:#aaa;font-size:13px;line-height:1.45}.vasi-permission-card button{width:100%;min-height:46px;border:0;border-radius:13px;background:#fff;color:#050505;font-weight:900;cursor:pointer}
       .vasi-urgent{position:fixed;z-index:10001;inset:0;display:none;place-items:center;background:#000d;padding:22px}.vasi-urgent[data-open="true"]{display:grid}.vasi-urgent-card{width:min(100%,430px);border:2px solid #fff;border-radius:28px;background:#111;color:#fff;padding:24px;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 20px 70px #000}.vasi-urgent-icon{font-size:36px}.vasi-urgent-card h2{margin:12px 0 8px;font-size:30px}.vasi-urgent-card p{margin:0;color:#aaa;line-height:1.5}.vasi-urgent-count{margin:18px 0;color:#ddd;font-weight:800}.vasi-urgent-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:10px}.vasi-urgent-actions button{min-height:52px;border:1px solid #393939;border-radius:16px;background:#1b1b1b;color:#fff;font-weight:900;cursor:pointer}.vasi-urgent-actions .vasi-open-job{background:#fff;color:#050505;border-color:#fff}
-      @media(min-width:800px){.vasi-alert-button{right:24px;bottom:24px}.vasi-bell{right:24px}}
+      @media(min-width:800px){.vasi-bell{right:24px}}
     `;
     document.head.appendChild(style);
   }
@@ -178,30 +177,7 @@
       document.body.appendChild(urgent);
       document.getElementById("vasiUrgentDismiss").onclick = closeUrgent;
     }
-    ensureButton();
     renderCentre();
-  }
-
-  function ensureButton() {
-    let button = document.getElementById("vasiAlertButton");
-    if (!button) {
-      button = document.createElement("button");
-      button.id = "vasiAlertButton";
-      button.type = "button";
-      button.className = "vasi-alert-button";
-      button.setAttribute("aria-live", "polite");
-      document.body.appendChild(button);
-    }
-    paintButton(button);
-    button.onclick = requestPermission;
-  }
-
-  function paintButton(button = document.getElementById("vasiAlertButton")) {
-    if (!button) return;
-    if (!("Notification" in window)) { button.dataset.state = "blocked"; button.textContent = "🔔 Install for alerts"; }
-    else if (Notification.permission === "granted") { button.dataset.state = "on"; button.textContent = "🔔 Alerts on"; }
-    else if (Notification.permission === "denied") { button.dataset.state = "blocked"; button.textContent = "🔕 Alerts blocked"; }
-    else { button.dataset.state = "off"; button.textContent = "🔔 Enable alerts"; }
   }
 
   function selectTab(tab) {
@@ -330,7 +306,6 @@
     }
     if (Notification.permission === "denied") { alert("Notifications are blocked. Open your phone or browser Settings, allow notifications for VASI, then return here."); return; }
     if (Notification.permission !== "granted") { try { await Notification.requestPermission(); } catch (_) {} }
-    paintButton();
     renderCentre();
     if (Notification.permission === "granted") await show("VASI alerts are on", "Ride, Eats and Delivery updates will appear here.", location.pathname, "vasi-alerts-enabled");
     else if (/iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.matchMedia("(display-mode: standalone)").matches) alert("On iPhone, add VASI to your Home Screen first, open it there, then enable alerts.");
