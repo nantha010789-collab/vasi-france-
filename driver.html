@@ -365,6 +365,7 @@
           online = false;
           gpsMode = "trip";
           stopOffers();
+          await loadPinRequirement(activeRide.id);
           await loadStops(activeRide.id);
           if (watch === null) startGps("trip");
           else if (lastPos)
@@ -388,6 +389,13 @@
           .order("stop_order", { ascending: true });
         activeStops = error ? [] : data || [];
       }
+      async function loadPinRequirement(rideId) {
+        const { data, error } = await client.rpc(
+          "get_driver_ride_pin_requirement",
+          { p_ride_id: rideId },
+        );
+        activeRide.pin_required = error ? true : Boolean(data?.pin_required);
+      }
       async function loadActiveRide() {
         const { data, error } = await client
           .from("rides")
@@ -399,6 +407,7 @@
           .limit(1);
         if (!error && data && data[0]) {
           activeRide = data[0];
+          await loadPinRequirement(activeRide.id);
           await loadStops(activeRide.id);
           online = false;
           startGps("trip");
@@ -454,7 +463,9 @@
         if (st === "accepted")
           return `<button class="btn navbtn" onclick="navTo(activeRide.pickup_lat,activeRide.pickup_lng,activeRide.pickup_address)">Open navigation to pickup</button><button class="btn accept" onclick="tripAction('arrive')">Arrived at Pickup</button>`;
         if (st === "driver_arriving")
-          return `<div class="fee">Ask the customer for the 4-digit Safety PIN before starting.</div><button class="btn accept" onclick="tripAction('start')">Enter PIN · Start Ride</button>`;
+          return activeRide.pin_required
+            ? `<div class="fee">First VASI ride: ask the customer for the 4-digit Safety PIN before starting.</div><button class="btn accept" onclick="tripAction('start')">Enter PIN · Start Ride</button>`
+            : `<div class="fee">Returning customer: no ride PIN is needed.</div><button class="btn accept" onclick="tripAction('start')">Start Ride</button>`;
         if (st === "in_progress") {
           const next = activeStops.find((s) => !s.completed_at);
           if (next)
@@ -542,13 +553,16 @@
       async function tripAction(action) {
         if (!activeRide) return;
         if (action === "start") {
-          const pin = String(
-            prompt("Enter the customer's 4-digit VASI ride PIN") || "",
-          ).trim();
-          if (!pin) return;
-          if (!/^\d{4}$/.test(pin)) {
-            alert("Enter the 4-digit ride PIN");
-            return;
+          let pin = null;
+          if (activeRide.pin_required) {
+            pin = String(
+              prompt("Enter the customer's 4-digit VASI ride PIN") || "",
+            ).trim();
+            if (!pin) return;
+            if (!/^\d{4}$/.test(pin)) {
+              alert("Enter the 4-digit ride PIN");
+              return;
+            }
           }
           const { data, error } = await client.rpc("vasi_driver_start_ride", {
             p_ride_id: activeRide.id,

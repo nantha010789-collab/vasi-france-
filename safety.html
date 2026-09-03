@@ -91,15 +91,18 @@
         $("rideState").textContent = labels[status] || status.replaceAll("_", " ");
         $("pickup").textContent = ride.pickup_address || "Pickup";
         $("destination").textContent = ride.destination_address || "Destination";
-        if (status === "in_progress" || ride.pin_verified_at) {
+        if (!ride.pin_required) {
+          $("pin").textContent = "—";
+          $("pinHelp").textContent = "Returning customer: a ride-start PIN is not required.";
+        } else if (status === "in_progress" || ride.pin_verified_at) {
           $("pin").textContent = "✓";
-          $("pinHelp").textContent = "PIN verified. This ride was started by the assigned driver.";
+          $("pinHelp").textContent = "First-ride PIN verified. This ride was started by the assigned driver.";
         } else if (["accepted", "driver_arriving"].includes(status) && ride.ride_pin) {
           $("pin").textContent = ride.ride_pin;
-          $("pinHelp").textContent = "Give this PIN to your driver only after you are inside the correct vehicle.";
+          $("pinHelp").textContent = "First VASI ride: give this PIN to your driver only after you are inside the correct vehicle.";
         } else {
           $("pin").textContent = "••••";
-          $("pinHelp").textContent = "Your PIN appears after a driver accepts the ride.";
+          $("pinHelp").textContent = "For a first VASI ride, the PIN appears after a driver accepts.";
         }
         $("stopBtn").classList.toggle("hidden", !ride.sharing_enabled);
         $("shareBtn").textContent = ride.sharing_enabled ? "Share link again" : "Share live trip";

@@ -156,7 +156,8 @@
         ENDPOINT =
           "https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/delivery-driver-service";
       let online = false,
-        tab = "eats";
+        tab = "eats",
+        activeJob = null;
       const $ = (id) => document.getElementById(id),
         esc = (value) =>
           String(value ?? "").replace(
@@ -203,6 +204,7 @@
         $("profile").textContent =
           (profile.full_name || "VASI Courier") +
           (profile.verified ? " · ✓ Verified" : " · Verification pending");
+        await loadJobs();
       }
       async function toggleOnline() {
         const requested = !online,
@@ -221,10 +223,24 @@
         loadJobs();
       }
       async function loadJobs() {
+        const current = await service({ action: "get_current_jobs" });
+        if (!current.error && (current.eat || current.delivery)) {
+          activeJob = current.eat
+            ? { type: "eats", job: current.eat }
+            : { type: "delivery", job: current.delivery };
+          renderActiveJob();
+          return;
+        }
+        activeJob = null;
         if (!online)
           return ($("jobs").textContent = "Go online to see courier jobs.");
         const data = await service({ action: "get_available_jobs" });
         if (data.error) return ($("jobs").textContent = data.error);
+        if (data.active_job) {
+          activeJob = data.active_job;
+          renderActiveJob();
+          return;
+        }
         const jobs = tab === "eats" ? data.eats || [] : data.deliveries || [];
         if (!jobs.length)
           return ($("jobs").textContent =
@@ -239,16 +255,64 @@
           )
           .join("");
       }
+      function renderActiveJob() {
+        if (!activeJob) return;
+        const { type, job } = activeJob,
+          isEats = type === "eats",
+          pickedUp = job.status === "picked_up";
+        $("jobs").innerHTML = isEats
+          ? `<article class="job"><span class="badge">ACTIVE EATS</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><small>Deliver to: ${esc(job.delivery_address || "—")} · €${esc(job.total ?? "—")}</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
+          : `<article class="job"><span class="badge">ACTIVE DELIVERY</span><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="delivery">${pickedUp ? "Complete delivery" : "Parcel picked up"}</button></article>`;
+      }
       async function acceptJob(id, type) {
         const data = await service({
           action: type === "eats" ? "accept_eats" : "accept_delivery",
           order_id: id,
         });
-        $("jobs").textContent = data.error || "✓ Job accepted.";
+        if (data.error) return ($("jobs").textContent = data.error);
+        online = false;
+        $("state").textContent = "Active job";
+        $("dot").classList.remove("green");
+        $("onlineBtn").textContent = "Go online";
+        activeJob = {
+          type,
+          job: type === "eats" ? data.eat : data.delivery,
+        };
+        renderActiveJob();
+      }
+      async function updateJob(id, type, status) {
+        let pin = null;
+        if (type === "eats" && status === "delivered") {
+          pin = String(prompt("Enter the customer's 4-digit Eats delivery PIN") || "").trim();
+          if (!pin) return;
+          if (!/^\d{4}$/.test(pin)) return alert("Enter the 4-digit delivery PIN");
+        }
+        const data = await service({
+          action: type === "eats" ? "update_eats" : "update_delivery",
+          order_id: id,
+          status,
+          pin,
+        });
+        if (data.error) return alert(data.error);
+        if (status === "delivered") {
+          activeJob = null;
+          $("state").textContent = "Offline";
+          $("jobs").textContent = "✓ Delivery completed. Go online for another job.";
+          return;
+        }
+        activeJob.job = type === "eats" ? data.eat : data.delivery;
+        renderActiveJob();
       }
       $("jobs").addEventListener("click", (event) => {
         const button = event.target.closest("button[data-id]");
-        if (button) acceptJob(button.dataset.id, button.dataset.type);
+        if (!button) return;
+        if (button.dataset.jobAction)
+          updateJob(
+            button.dataset.id,
+            button.dataset.type,
+            button.dataset.jobAction,
+          );
+        else acceptJob(button.dataset.id, button.dataset.type);
       });
       client.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
