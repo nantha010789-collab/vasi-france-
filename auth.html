@@ -171,7 +171,21 @@
       const PRODUCTION_ORIGIN = "https://vasi-new.vercel.app";
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       let phoneAwaitingCode = "";
+      let routingSession = false;
       const requestedRole = new URLSearchParams(location.search).get("role");
+      const allowedReturnPages = new Set([
+        "index.html",
+        "account.html",
+        "ride-flow.html",
+        "eats.html",
+        "eats-checkout.html",
+        "delivery.html",
+        "activity.html",
+        "ride-history.html",
+        "support.html",
+        "restaurant-register.html",
+        "restaurant-dashboard.html",
+      ]);
       let role = ["customer", "ride", "courier", "restaurant"].includes(requestedRole)
         ? requestedRole
         : localStorage.getItem("vasi_role") || "customer";
@@ -243,13 +257,14 @@
         const token = $("otp").value.replace(/\D/g, "");
         if (token.length !== 6) return show("Enter the 6-digit SMS code.");
         show("Checking your code…");
-        const { error } = await client.auth.verifyOtp({
+        const { data, error } = await client.auth.verifyOtp({
           phone: phoneAwaitingCode,
           token,
           type: "sms",
         });
         if (error) return show(error.message);
         show("Signed in. Opening VASI…");
+        if (data.session) await routeSession(data.session);
       }
       function changePhone() {
         phoneAwaitingCode = "";
@@ -282,16 +297,57 @@
       function show(t) {
         $("msg").textContent = t;
       }
-      function destination(savedRole) {
+      function safeReturn(value) {
+        const candidate = String(value || "").trim();
+        if (!candidate || candidate.startsWith("//")) return "";
+        try {
+          const url = new URL(candidate, location.href);
+          if (url.origin !== location.origin) return "";
+          const page = url.pathname.split("/").filter(Boolean).pop() || "";
+          if (!allowedReturnPages.has(page)) return "";
+          return page + url.search + url.hash;
+        } catch {
+          return "";
+        }
+      }
+      function destination(savedRole, consumeReturn = true) {
         if (savedRole === "ride") return "driver.html";
         if (savedRole === "courier") return "delivery-driver.html";
         if (savedRole === "restaurant") return "restaurant-dashboard.html";
-        const back = localStorage.getItem("vasi_return");
+        const back = safeReturn(localStorage.getItem("vasi_return"));
         if (back) {
-          localStorage.removeItem("vasi_return");
+          if (consumeReturn) localStorage.removeItem("vasi_return");
           return back;
         }
-        return "app.html";
+        if (consumeReturn) localStorage.removeItem("vasi_return");
+        return "index.html";
+      }
+      async function routeSession(session) {
+        if (!session || routingSession) return;
+        routingSession = true;
+        const savedRole = localStorage.getItem("vasi_role") || "customer";
+        if (savedRole !== "customer") {
+          location.href = destination(savedRole);
+          return;
+        }
+        const next = destination(savedRole, false);
+        const { data: profile, error } = await client
+          .from("profiles")
+          .select("full_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        if (error) {
+          routingSession = false;
+          show("Signed in, but your profile could not be loaded. Refresh and try again.");
+          return;
+        }
+        if (!profile?.full_name?.trim()) {
+          location.href =
+            "account.html?setup=1&next=" + encodeURIComponent(next);
+          return;
+        }
+        destination(savedRole, true);
+        location.href = next;
       }
       render();
       $("identity").addEventListener("keydown", (event) => {
@@ -304,10 +360,8 @@
         if (event.key === "Enter") submitAuth();
       });
       client.auth.onAuthStateChange((event, session) => {
-        if (session) {
-          location.href = destination(
-            localStorage.getItem("vasi_role") || "customer",
-          );
+        if (session && !routingSession) {
+          setTimeout(() => routeSession(session), 0);
         }
       });
     </script>

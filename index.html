@@ -48,6 +48,12 @@
         color: #ddd;
         text-decoration: none;
       }
+      #accountBtn {
+        max-width: 112px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .hero {
         padding: 42px 0 26px;
       }
@@ -144,8 +150,9 @@
             Activity
           </button>
           <button
+            id="accountBtn"
             class="pill"
-            onclick="location.href='auth.html?role=customer'"
+            onclick="openAccount()"
           >
             Login</button
           ><button id="langBtn" class="pill" onclick="setLang()">EN · FR</button>
@@ -183,13 +190,44 @@
         </div>
       </section>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+      const client = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      let signedIn = false;
+      function openAccount() {
+        location.href = signedIn ? "account.html" : "auth.html?role=customer";
+      }
+      async function showAccountState() {
+        const { data } = await client.auth.getSession();
+        const session = data.session;
+        if (!session) {
+          signedIn = false;
+          document.getElementById("accountBtn").textContent = "Login";
+          return;
+        }
+        signedIn = true;
+        const { data: profile } = await client
+          .from("profiles")
+          .select("full_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        const firstName = profile?.full_name?.trim().split(/\s+/)[0];
+        document.getElementById("accountBtn").textContent =
+          firstName || "Account";
+      }
+      client.auth.onAuthStateChange(() => {
+        setTimeout(showAccountState, 0);
+      });
       function setLang() {
         document.documentElement.lang =
           document.documentElement.lang === "en" ? "fr" : "en";
         document.getElementById("langBtn").textContent =
           document.documentElement.lang === "fr" ? "FR · EN" : "EN · FR";
       }
+      showAccountState();
     </script>
   </body>
 </html>
