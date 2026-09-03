@@ -18,7 +18,7 @@ export default async function handler(req,res){
    if(ride)try{payment=await captureCancellation(ride,auth)}catch(e){payment={ok:false,error:e?.message||'Cancellation payment needs review'}}
    return res.status(200).json({...data,payment});
   }
-  const ride=data?.ride||{};const driver=data?.driver||null;const location=data?.location||null;
-  return res.status(200).json({...ride,driver_name:driver?.full_name||null,driver_rating:driver?.rating??null,driver_vehicle_make:driver?.vehicle_make||null,driver_vehicle_model:driver?.vehicle_model||null,driver_vehicle_plate:driver?.vehicle_plate||null,driver_vehicle_color:driver?.vehicle_color||null,driver_lat:location?.latitude??null,driver_lng:location?.longitude??null,driver_location_updated_at:location?.updated_at||null});
+  const ride=data?.ride||{};const driver=data?.driver||null;const location=data?.location||null;const safety=data?.safety||null;
+  return res.status(200).json({...ride,driver_name:driver?.full_name||null,driver_rating:driver?.rating??null,driver_vehicle_make:driver?.vehicle_make||null,driver_vehicle_model:driver?.vehicle_model||null,driver_vehicle_plate:driver?.vehicle_plate||null,driver_vehicle_color:driver?.vehicle_color||null,driver_lat:location?.latitude??null,driver_lng:location?.longitude??null,driver_location_updated_at:location?.updated_at||null,ride_pin:safety?.ride_pin||null,pin_verified_at:safety?.pin_verified_at||null,share_token:safety?.share_token||null,sharing_enabled:Boolean(safety?.sharing_enabled),share_expires_at:safety?.share_expires_at||null});
  }catch(e){return res.status(500).json({error:e?.message||'Server error'})}
 }

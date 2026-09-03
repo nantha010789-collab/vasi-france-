@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>VASI Safety Centre</title>
+    <style>
+      :root { font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #fff; background: #050505; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #050505; }
+      main { max-width: 620px; margin: auto; min-height: 100vh; padding: 22px 18px 44px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .brand { font-size: 31px; font-weight: 950; letter-spacing: -1.5px; }
+      .back { color: #fff; background: #171717; border: 1px solid #343434; border-radius: 999px; padding: 11px 17px; font-weight: 800; }
+      h1 { font-size: clamp(34px, 9vw, 54px); line-height: .95; margin: 36px 0 12px; letter-spacing: -2px; }
+      .lead, .muted { color: #aaa; line-height: 1.5; }
+      .card { border: 1px solid #303030; background: #111; border-radius: 22px; padding: 18px; margin-top: 14px; }
+      .emergency { border-color: #7d2727; background: #220d0d; }
+      .card h2 { margin: 0 0 8px; font-size: 21px; }
+      .pin { font: 950 44px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 10px; padding: 18px 0 8px; }
+      .btn { display: block; width: 100%; padding: 16px; border: 0; border-radius: 16px; background: #fff; color: #050505; font-size: 16px; font-weight: 900; text-align: center; text-decoration: none; margin-top: 12px; }
+      .danger { background: #e92f2f; color: #fff; }
+      .secondary { background: #222; color: #fff; border: 1px solid #3b3b3b; }
+      .btn:disabled { opacity: .45; }
+      .route { display: grid; gap: 10px; margin-top: 12px; }
+      .point { padding: 13px; border-radius: 14px; background: #181818; }
+      .point small { display: block; color: #888; margin-bottom: 4px; }
+      #message { min-height: 22px; color: #aaa; text-align: center; padding: 10px 2px; }
+      .ok { color: #8cf0ad !important; }
+      .error { color: #ffadad !important; }
+      .hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header><div class="brand">VASI</div><button class="back" onclick="history.back()">← Back</button></header>
+      <h1>Safety Centre</h1>
+      <p class="lead">Emergency help, ride-start PIN, and a private live trip link in one place.</p>
+
+      <section class="card emergency">
+        <h2>Emergency assistance</h2>
+        <p class="muted">If you or someone else is in immediate danger in France or the EU, call 112.</p>
+        <a class="btn danger" href="tel:112">Call emergency services · 112</a>
+      </section>
+
+      <section class="card">
+        <h2>Ride-start PIN</h2>
+        <p id="pinHelp" class="muted">Give this PIN to your driver only after you are inside the correct vehicle.</p>
+        <div id="pin" class="pin">••••</div>
+      </section>
+
+      <section class="card">
+        <h2>Share live trip</h2>
+        <p class="muted">Share an unlisted link with someone you trust. Your phone number and email are never shown.</p>
+        <button id="shareBtn" class="btn" onclick="shareTrip()">Share live trip</button>
+        <button id="stopBtn" class="btn secondary hidden" onclick="stopSharing()">Stop sharing</button>
+      </section>
+
+      <section class="card">
+        <h2 id="rideState">Loading ride…</h2>
+        <div class="route">
+          <div class="point"><small>Pickup</small><span id="pickup">—</span></div>
+          <div class="point"><small>Destination</small><span id="destination">—</span></div>
+        </div>
+      </section>
+      <div id="message"></div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const sb = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      const rideId = new URLSearchParams(location.search).get("ride");
+      let session = null, ride = null, poll = null;
+      const $ = (id) => document.getElementById(id);
+      const labels = {
+        requested: "Finding a driver",
+        accepted: "Driver is on the way",
+        driver_arriving: "Driver is at pickup",
+        in_progress: "Trip in progress",
+        completed: "Trip completed",
+        cancelled: "Ride cancelled",
+        canceled: "Ride cancelled",
+      };
+      function message(text, type = "") { $("message").textContent = text || ""; $("message").className = type; }
+      function render() {
+        if (!ride) return;
+        const status = String(ride.status || "").toLowerCase();
+        $("rideState").textContent = labels[status] || status.replaceAll("_", " ");
+        $("pickup").textContent = ride.pickup_address || "Pickup";
+        $("destination").textContent = ride.destination_address || "Destination";
+        if (status === "in_progress" || ride.pin_verified_at) {
+          $("pin").textContent = "✓";
+          $("pinHelp").textContent = "PIN verified. This ride was started by the assigned driver.";
+        } else if (["accepted", "driver_arriving"].includes(status) && ride.ride_pin) {
+          $("pin").textContent = ride.ride_pin;
+          $("pinHelp").textContent = "Give this PIN to your driver only after you are inside the correct vehicle.";
+        } else {
+          $("pin").textContent = "••••";
+          $("pinHelp").textContent = "Your PIN appears after a driver accepts the ride.";
+        }
+        $("stopBtn").classList.toggle("hidden", !ride.sharing_enabled);
+        $("shareBtn").textContent = ride.sharing_enabled ? "Share link again" : "Share live trip";
+      }
+      async function load() {
+        if (!session || !rideId) return;
+        try {
+          const response = await fetch("/api/ride-status?id=" + encodeURIComponent(rideId), {
+            headers: { Authorization: "Bearer " + session.access_token },
+            cache: "no-store",
+          });
+          const data = await response.json();
+          if (!response.ok) throw Error(data.error || "Ride unavailable");
+          ride = data;
+          render();
+          if (["completed", "cancelled", "canceled"].includes(String(ride.status))) clearInterval(poll);
+        } catch (error) { message(error.message, "error"); }
+      }
+      async function shareTrip() {
+        if (!session || !rideId) return;
+        $("shareBtn").disabled = true;
+        try {
+          const response = await fetch("/api/share-trip", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + session.access_token, "Content-Type": "application/json" },
+            body: JSON.stringify({ ride_id: rideId }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw Error(data.error || "Trip link unavailable");
+          if (navigator.share) {
+            try { await navigator.share({ title: "My VASI trip", text: "Follow my VASI trip live", url: data.share_url }); }
+            catch (error) { if (error.name !== "AbortError") throw error; }
+          } else {
+            await navigator.clipboard.writeText(data.share_url);
+            message("Private trip link copied", "ok");
+          }
+          ride.sharing_enabled = true;
+          render();
+        } catch (error) { message(error.message || "Could not share trip", "error"); }
+        finally { $("shareBtn").disabled = false; }
+      }
+      async function stopSharing() {
+        if (!session || !rideId || !confirm("Stop this live trip link?")) return;
+        try {
+          const response = await fetch("/api/share-trip", {
+            method: "DELETE",
+            headers: { Authorization: "Bearer " + session.access_token, "Content-Type": "application/json" },
+            body: JSON.stringify({ ride_id: rideId }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw Error(data.error || "Could not stop sharing");
+          ride.sharing_enabled = false;
+          render();
+          message("Live trip sharing stopped", "ok");
+        } catch (error) { message(error.message, "error"); }
+      }
+      (async () => {
+        if (!/^[0-9a-f-]{36}$/i.test(rideId || "")) return message("Invalid ride link", "error");
+        session = (await sb.auth.getSession()).data.session;
+        if (!session) return location.replace("auth.html?role=customer");
+        await load();
+        poll = setInterval(load, 5000);
+      })();
+    </script>
+  </body>
+</html>

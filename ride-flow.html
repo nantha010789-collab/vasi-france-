@@ -282,6 +282,11 @@
       .cta:disabled {
         opacity: 0.45;
       }
+      .safetyBtn {
+        background: #2b1010;
+        color: #ffb7b7;
+        border: 1px solid #7b2929;
+      }
       .status {
         text-align: center;
         color: #888;
@@ -551,6 +556,9 @@
           <div id="waiting" class="waiting hidden"></div>
           <button id="chatBtn" class="cta hidden" onclick="openRideChat()">
             💬 Chat with driver
+          </button>
+          <button id="safetyBtn" class="cta safetyBtn hidden" onclick="openSafety()">
+            🛡️ Safety Centre · PIN · Share trip
           </button>
           <button
             id="receiptBtn"
@@ -1325,6 +1333,11 @@
           encodeURIComponent(ride.id) +
           "&from=customer";
       }
+      function openSafety() {
+        if (!ride?.id) return;
+        location.href =
+          "safety.html?ride=" + encodeURIComponent(ride.id);
+      }
       function payLabel(v) {
         return v === "apple_pay" ? "Apple Pay" : v === "card" ? "Card" : "Cash";
       }
@@ -1451,6 +1464,11 @@
         if (st === "driver_arriving") $("eta").textContent = "Arrived";
         if (st === "in_progress") $("eta").textContent = "On trip";
         $("chatBtn").classList.toggle(
+          "hidden",
+          !r.driver_id ||
+            !["accepted", "driver_arriving", "in_progress"].includes(st),
+        );
+        $("safetyBtn").classList.toggle(
           "hidden",
           !r.driver_id ||
             !["accepted", "driver_arriving", "in_progress"].includes(st),

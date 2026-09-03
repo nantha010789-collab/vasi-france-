@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>VASI Live Trip</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      :root { font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #fff; background: #050505; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #050505; }
+      main { max-width: 720px; margin: auto; padding: 20px 16px 38px; }
+      .brand { font-size: 31px; font-weight: 950; letter-spacing: -1.5px; }
+      h1 { font-size: clamp(36px, 9vw, 56px); line-height: .95; letter-spacing: -2px; margin: 36px 0 10px; }
+      .lead, .muted { color: #aaa; line-height: 1.5; }
+      #map { height: 42vh; min-height: 300px; border: 1px solid #303030; border-radius: 22px; overflow: hidden; margin: 18px 0; }
+      .card { border: 1px solid #303030; border-radius: 22px; background: #111; padding: 18px; margin-top: 13px; }
+      .status { display: inline-block; padding: 7px 11px; border-radius: 999px; background: #fff; color: #050505; font-size: 12px; font-weight: 900; }
+      .route { display: grid; gap: 10px; margin-top: 14px; }
+      .point { padding: 13px; border-radius: 14px; background: #181818; }
+      .point small { display: block; color: #888; margin-bottom: 4px; }
+      .driver { font-weight: 850; margin-top: 12px; }
+      .error { color: #ffb0b0; }
+      .leaflet-control-attribution { font-size: 9px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">VASI</div>
+      <h1>Live trip</h1>
+      <p class="lead">A VASI customer shared this private trip link with you.</p>
+      <div id="map"></div>
+      <section class="card">
+        <span id="status" class="status">Loading…</span>
+        <div id="driver" class="driver">Waiting for trip details…</div>
+        <div class="route">
+          <div class="point"><small>Pickup</small><span id="pickup">—</span></div>
+          <div class="point"><small>Destination</small><span id="destination">—</span></div>
+        </div>
+        <p id="updated" class="muted"></p>
+        <p id="error" class="error"></p>
+      </section>
+    </main>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const token = new URLSearchParams(location.search).get("token");
+      const $ = (id) => document.getElementById(id);
+      const labels = {
+        requested: "Finding a driver", accepted: "Driver is on the way",
+        driver_arriving: "Driver has arrived", in_progress: "Trip in progress",
+        completed: "Trip completed", cancelled: "Ride cancelled", canceled: "Ride cancelled",
+      };
+      const map = L.map("map", { zoomControl: true }).setView([48.8566, 2.3522], 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+      let pickupMarker = null, destinationMarker = null, driverMarker = null, fitted = false, timer = null;
+      function marker(current, coords, text) {
+        if (!coords) return current;
+        if (!current) return L.marker(coords).addTo(map).bindPopup(text);
+        current.setLatLng(coords);
+        return current;
+      }
+      function coords(lat, lng) {
+        const a = Number(lat), b = Number(lng);
+        return Number.isFinite(a) && Number.isFinite(b) ? [a, b] : null;
+      }
+      async function load() {
+        try {
+          const response = await fetch("/api/shared-ride?token=" + encodeURIComponent(token || ""), { cache: "no-store" });
+          const data = await response.json();
+          if (!response.ok) throw Error(data.error || "Trip link unavailable");
+          const ride = data.ride || {}, driver = data.driver || null, location = data.location || null;
+          const status = String(ride.status || "");
+          $("status").textContent = labels[status] || status.replaceAll("_", " ");
+          $("pickup").textContent = ride.pickup_address || "Pickup";
+          $("destination").textContent = ride.destination_address || "Destination";
+          const car = driver ? [driver.vehicle_color, driver.vehicle_make, driver.vehicle_model, driver.vehicle_plate].filter(Boolean).join(" · ") : "";
+          $("driver").textContent = driver ? `${driver.full_name || "VASI driver"}${car ? " · " + car : ""}` : "A driver has not been assigned yet";
+          $("updated").textContent = "Updated " + new Date(data.refreshed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          $("error").textContent = "";
+          const points = [];
+          const pickup = coords(ride.pickup_lat, ride.pickup_lng), destination = coords(ride.destination_lat, ride.destination_lng), live = coords(location?.latitude, location?.longitude);
+          pickupMarker = marker(pickupMarker, pickup, "Pickup");
+          destinationMarker = marker(destinationMarker, destination, "Destination");
+          driverMarker = marker(driverMarker, live, "VASI driver · live location");
+          [pickup, destination, live].filter(Boolean).forEach((p) => points.push(p));
+          if (points.length && !fitted) { map.fitBounds(points, { padding: [35, 35], maxZoom: 15 }); fitted = true; }
+          else if (live) driverMarker.setLatLng(live);
+          if (["completed", "cancelled", "canceled"].includes(status)) clearInterval(timer);
+        } catch (error) {
+          $("status").textContent = "Unavailable";
+          $("error").textContent = error.message || "Trip link unavailable";
+          clearInterval(timer);
+        }
+      }
+      if (!token) $("error").textContent = "Invalid trip link";
+      else { load(); timer = setInterval(load, 5000); }
+    </script>
+  </body>
+</html>

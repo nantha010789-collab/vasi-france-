@@ -56,6 +56,8 @@
   "functions": {
     "api/create-ride.js": { "includeFiles": "api/create-ride.js" },
     "api/ride-status.js": { "includeFiles": "api/ride-status.js" },
+    "api/share-trip.js": { "includeFiles": "api/share-trip.js" },
+    "api/shared-ride.js": { "includeFiles": "api/shared-ride.js" },
     "api/create-payment-intent.js": {
       "includeFiles": "api/create-payment-intent.js"
     },
