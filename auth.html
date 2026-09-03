@@ -122,14 +122,31 @@
           </button>
         </div>
         <h1 id="title">Customer login</h1>
-        <p id="desc" class="muted">Secure email sign-in for VASI customers.</p>
+        <p id="desc" class="muted">Quick phone sign-in for VASI customers.</p>
         <input
-          id="email"
+          id="identity"
           class="input"
-          type="email"
-          placeholder="you@example.com"
-          autocomplete="email"
-        /><button class="btn primary" onclick="sendLink()">Continue</button
+          type="tel"
+          inputmode="tel"
+          placeholder="06 12 34 56 78"
+          autocomplete="tel"
+        />
+        <div id="codeStep" class="hidden">
+          <input
+            id="otp"
+            class="input"
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="6-digit SMS code"
+            autocomplete="one-time-code"
+          />
+          <button class="btn" type="button" onclick="changePhone()">
+            Change phone number
+          </button>
+        </div>
+        <button id="continueBtn" class="btn primary" onclick="submitAuth()">
+          Send SMS code</button
         ><a id="register" class="link hidden" href="partner-register-v2.html"
           >New partner? Register with VASI →</a
         >
@@ -153,6 +170,7 @@
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
       const PRODUCTION_ORIGIN = "https://vasi-new.vercel.app";
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      let phoneAwaitingCode = "";
       const requestedRole = new URLSearchParams(location.search).get("role");
       let role = ["customer", "ride", "courier", "restaurant"].includes(requestedRole)
         ? requestedRole
@@ -161,12 +179,24 @@
       function setRole(next) {
         role = next;
         localStorage.setItem("vasi_role", role);
+        phoneAwaitingCode = "";
+        $("codeStep").classList.add("hidden");
+        $("identity").disabled = false;
+        $("identity").value = "";
+        $("otp").value = "";
+        show("");
         render();
       }
       function render() {
         const customer = role === "customer";
         $("title").textContent = customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login";
-        $("desc").textContent = customer ? "Secure email sign-in for VASI customers." : role === "ride" ? "VTC passenger driver account." : role === "courier" ? "Eats + Delivery courier account." : "Manage your restaurant, menu and VASI Eats orders.";
+        $("desc").textContent = customer ? "Enter your mobile number. We will send a 6-digit SMS code." : role === "ride" ? "VTC passenger driver account." : role === "courier" ? "Eats + Delivery courier account." : "Manage your restaurant, menu and VASI Eats orders.";
+        $("identity").type = customer ? "tel" : "email";
+        $("identity").inputMode = customer ? "tel" : "email";
+        $("identity").autocomplete = customer ? "tel" : "email";
+        $("identity").placeholder = customer ? "06 12 34 56 78" : "you@example.com";
+        $("continueBtn").textContent = customer ? (phoneAwaitingCode ? "Verify & continue" : "Send SMS code") : "Continue";
+        $("codeStep").classList.toggle("hidden", !customer || !phoneAwaitingCode);
         ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
           $(id).classList.remove("active"),
         );
@@ -177,8 +207,54 @@
         $("register").href = role === "restaurant" ? "restaurant-register.html" : "partner-register-v2.html";
         $("register").textContent = role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →";
       }
-      async function sendLink() {
-        const email = $("email").value.trim();
+      async function submitAuth() {
+        if (role === "customer") return phoneAwaitingCode ? verifyPhoneCode() : sendPhoneCode();
+        return sendEmailLink();
+      }
+      function normalizePhone(value) {
+        const compact = value.replace(/[\s().-]/g, "");
+        if (/^0[1-9]\d{8}$/.test(compact)) return "+33" + compact.slice(1);
+        if (/^33[1-9]\d{8}$/.test(compact)) return "+" + compact;
+        if (/^\+[1-9]\d{7,14}$/.test(compact)) return compact;
+        return "";
+      }
+      async function sendPhoneCode() {
+        const phone = normalizePhone($("identity").value.trim());
+        if (!phone) return show("Enter a valid mobile number, for example 06 12 34 56 78.");
+        show("Sending your SMS code…");
+        localStorage.setItem("vasi_role", "customer");
+        const { error } = await client.auth.signInWithOtp({ phone });
+        if (error) return show(error.message);
+        phoneAwaitingCode = phone;
+        $("identity").disabled = true;
+        $("codeStep").classList.remove("hidden");
+        $("continueBtn").textContent = "Verify & continue";
+        $("otp").focus();
+        show("SMS sent. Enter the 6-digit code.");
+      }
+      async function verifyPhoneCode() {
+        const token = $("otp").value.replace(/\D/g, "");
+        if (token.length !== 6) return show("Enter the 6-digit SMS code.");
+        show("Checking your code…");
+        const { error } = await client.auth.verifyOtp({
+          phone: phoneAwaitingCode,
+          token,
+          type: "sms",
+        });
+        if (error) return show(error.message);
+        show("Signed in. Opening VASI…");
+      }
+      function changePhone() {
+        phoneAwaitingCode = "";
+        $("identity").disabled = false;
+        $("codeStep").classList.add("hidden");
+        $("continueBtn").textContent = "Send SMS code";
+        $("otp").value = "";
+        $("identity").focus();
+        show("");
+      }
+      async function sendEmailLink() {
+        const email = $("identity").value.trim();
         if (!email) return show("Enter your email address.");
         show("Sending secure login link…");
         localStorage.setItem("vasi_role", role);
@@ -211,6 +287,15 @@
         return "app.html";
       }
       render();
+      $("identity").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") submitAuth();
+      });
+      $("otp").addEventListener("input", () => {
+        $("otp").value = $("otp").value.replace(/\D/g, "").slice(0, 6);
+      });
+      $("otp").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") submitAuth();
+      });
       client.auth.onAuthStateChange((event, session) => {
         if (session) {
           location.href = destination(
