@@ -1,9 +1,10 @@
-const CACHE = "vasi-app-v10";
+const CACHE = "vasi-app-v11";
 const CORE = [
   "/index.html",
   "/manifest.webmanifest",
   "/vasi-icon.svg",
   "/vasi-notifications.js",
+  "/vasi-languages.js",
 ];
 self.addEventListener("install", (e) =>
   e.waitUntil(

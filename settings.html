@@ -429,11 +429,12 @@
               <span class="icon" aria-hidden="true">A</span>
               <span class="copy"><strong>Language</strong><span>App display language</span></span>
               <select id="language" aria-label="VASI language">
-                <option value="en">English</option>
                 <option value="fr">Français</option>
+                <option value="en">English</option>
                 <option value="ta">தமிழ்</option>
                 <option value="de">Deutsch</option>
-                <option value="nl">Nederlands</option>
+                <option value="ar">العربية</option>
+                <option value="hi">हिन्दी</option>
               </select>
             </div>
             <div class="row">
@@ -456,6 +457,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/vasi-notifications.js"></script>
+    <script src="/vasi-languages.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -601,10 +603,10 @@
           localStorage.setItem(PREFS_KEY, JSON.stringify({ ...readJson(PREFS_KEY, {}), promotions: event.target.checked }));
         });
 
-        const language = localStorage.getItem("vasi_language") || "en";
-        $("language").value = ["en", "fr", "ta", "de", "nl"].includes(language) ? language : "en";
+        const language = window.VasiLanguage?.getLanguage?.() || "fr";
+        $("language").value = language;
         $("language").addEventListener("change", (event) => {
-          localStorage.setItem("vasi_language", event.target.value);
+          window.VasiLanguage?.setLanguage?.(event.target.value);
         });
 
         const reduceMotion = localStorage.getItem("vasi_reduce_motion") === "true";
