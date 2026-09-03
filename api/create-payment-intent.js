@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     params.set('amount', String(amount));
     params.set('currency', String(ride.currency || 'eur').toLowerCase());
     params.set('capture_method', 'manual');
-    params.set('payment_method_types[0]', 'card');
+    params.set('automatic_payment_methods[enabled]', 'true');
     params.set('description', `VASI ride ${ride.id}`);
     params.set('metadata[ride_id]', ride.id);
     params.set('metadata[customer_id]', ride.customer_id);
