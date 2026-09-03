@@ -1496,7 +1496,7 @@
         if (["in_progress", "completed", "cancelled", "canceled"].includes(st))
           $("cancelBtn").classList.add("hidden");
         if (st === "completed") {
-          $("receiptBtn").textContent = "View receipt";
+          $("receiptBtn").textContent = "Rate driver & view receipt";
           $("receiptBtn").classList.remove("hidden");
         } else if (["cancelled", "canceled"].includes(st)) {
           $("receiptBtn").textContent = "View cancellation receipt";
