@@ -869,6 +869,25 @@
           </nav>
         </section>
 
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Notifications</h2>
+              <p>
+                Important Ride, Eats and Delivery updates stay on. Choose
+                optional alerts and sound preferences.
+              </p>
+            </div>
+            <button
+              id="notificationSettingsButton"
+              class="section-action"
+              type="button"
+            >
+              Settings
+            </button>
+          </div>
+        </section>
+
         <section class="card account-actions">
           <div id="memberSince" class="member-since">VASI customer account</div>
           <button id="signoutButton" class="signout" type="button">
@@ -1467,6 +1486,9 @@
       el("addAddressButton").addEventListener("click", () => openAddressForm());
       el("cancelAddressButton").addEventListener("click", closeAddressForm);
       el("signoutButton").addEventListener("click", signOut);
+      el("notificationSettingsButton").addEventListener("click", () =>
+        VasiNotifications.openSettings(),
+      );
       el("retryButton").addEventListener("click", loadAccount);
       loadAccount();
       VasiNotifications.start(client, { role: "customer" });

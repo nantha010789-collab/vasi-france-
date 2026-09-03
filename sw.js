@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v7";
+const CACHE = "vasi-app-v8";
 const CORE = [
   "/index.html",
   "/manifest.webmanifest",
@@ -70,6 +70,8 @@ self.addEventListener("push", (event) => {
       badge: "/vasi-icon.svg",
       tag: data.tag || "vasi-update",
       renotify: false,
+      silent: Boolean(data.silent),
+      vibrate: data.silent ? [] : [180, 80, 180],
       data: { url: data.url || "/activity.html" },
     }),
   );
