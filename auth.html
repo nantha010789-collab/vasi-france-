@@ -64,6 +64,17 @@
         width: 100%;
         margin-top: 12px;
       }
+      .btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+      .resend {
+        width: 100%;
+        margin-top: 10px;
+      }
+      .delivery-note {
+        margin: 10px 0 0;
+      }
       .input {
         width: 100%;
         padding: 15px;
@@ -144,6 +155,19 @@
           <button class="btn" type="button" onclick="changePhone()">
             Change phone number
           </button>
+          <button
+            id="resendBtn"
+            class="btn resend"
+            type="button"
+            onclick="resendPhoneCode()"
+            disabled
+          >
+            Resend code in 60s
+          </button>
+          <p class="muted delivery-note">
+            SMS delivery can take a few minutes on some mobile networks. Keep
+            this screen open and enter the most recently received code.
+          </p>
         </div>
         <button id="continueBtn" class="btn primary" onclick="submitAuth()">
           Send SMS code</button
@@ -170,7 +194,11 @@
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
       const PRODUCTION_ORIGIN = "https://vasi-new.vercel.app";
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const RESEND_WAIT_SECONDS = 60;
       let phoneAwaitingCode = "";
+      let resendTimer = null;
+      let resendSeconds = 0;
+      let sendingPhoneCode = false;
       let routingSession = false;
       const requestedRole = new URLSearchParams(location.search).get("role");
       const allowedReturnPages = new Set([
@@ -195,6 +223,7 @@
         role = next;
         localStorage.setItem("vasi_role", role);
         phoneAwaitingCode = "";
+        clearResendCountdown();
         $("codeStep").classList.add("hidden");
         $("identity").disabled = false;
         $("identity").value = "";
@@ -234,25 +263,85 @@
         return "";
       }
       async function sendPhoneCode() {
+        if (sendingPhoneCode) return;
         const phone = normalizePhone($("identity").value.trim());
         if (!phone) return show("Enter a valid mobile number, for example 06 12 34 56 78.");
+        sendingPhoneCode = true;
+        $("continueBtn").disabled = true;
         show("Sending your SMS code…");
         localStorage.setItem("vasi_role", "customer");
         const { error } = await client.auth.signInWithOtp({ phone });
+        sendingPhoneCode = false;
+        $("continueBtn").disabled = false;
         if (error) {
-          const unavailable = /unsupported phone provider/i.test(error.message);
-          return show(
-            unavailable
-              ? "SMS login is being connected. Please try again shortly."
-              : error.message,
-          );
+          return showSmsError(error);
         }
         phoneAwaitingCode = phone;
         $("identity").disabled = true;
         $("codeStep").classList.remove("hidden");
         $("continueBtn").textContent = "Verify & continue";
+        startResendCountdown();
         $("otp").focus();
-        show("SMS sent. Enter the 6-digit code.");
+        show("SMS requested. Delivery may take a few minutes. Enter the 6-digit code when it arrives.");
+      }
+      async function resendPhoneCode() {
+        if (!phoneAwaitingCode || resendSeconds > 0 || sendingPhoneCode) return;
+        sendingPhoneCode = true;
+        $("resendBtn").disabled = true;
+        $("resendBtn").textContent = "Requesting new code…";
+        show("Requesting a new SMS code…");
+        const { error } = await client.auth.resend({
+          type: "sms",
+          phone: phoneAwaitingCode,
+        });
+        sendingPhoneCode = false;
+        if (error) {
+          $("resendBtn").disabled = false;
+          $("resendBtn").textContent = "Resend SMS code";
+          return showSmsError(error);
+        }
+        $("otp").value = "";
+        startResendCountdown();
+        $("otp").focus();
+        show("New SMS requested. Delivery may take a few minutes. Enter the most recently received code.");
+      }
+      function startResendCountdown(seconds = RESEND_WAIT_SECONDS) {
+        clearResendCountdown();
+        const readyAt = Date.now() + seconds * 1000;
+        const update = () => {
+          resendSeconds = Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
+          $("resendBtn").disabled = resendSeconds > 0;
+          $("resendBtn").textContent = resendSeconds > 0
+            ? `Resend code in ${resendSeconds}s`
+            : "Resend SMS code";
+          if (resendSeconds === 0 && resendTimer) {
+            clearInterval(resendTimer);
+            resendTimer = null;
+          }
+        };
+        update();
+        resendTimer = setInterval(update, 1000);
+      }
+      function clearResendCountdown() {
+        if (resendTimer) clearInterval(resendTimer);
+        resendTimer = null;
+        resendSeconds = 0;
+        if ($("resendBtn")) {
+          $("resendBtn").disabled = true;
+          $("resendBtn").textContent = `Resend code in ${RESEND_WAIT_SECONDS}s`;
+        }
+      }
+      function showSmsError(error) {
+        const message = String(error?.message || "");
+        const code = String(error?.code || "");
+        if (/unsupported phone provider/i.test(message)) {
+          return show("SMS login is being connected. Please try again shortly.");
+        }
+        if (code === "over_sms_send_rate_limit" || /rate limit|security purposes.*seconds/i.test(message)) {
+          startResendCountdown();
+          return show("Please wait 60 seconds before requesting another SMS code.");
+        }
+        return show(message || "The SMS could not be requested. Please try again.");
       }
       async function verifyPhoneCode() {
         const token = $("otp").value.replace(/\D/g, "");
@@ -269,6 +358,7 @@
       }
       function changePhone() {
         phoneAwaitingCode = "";
+        clearResendCountdown();
         $("identity").disabled = false;
         $("codeStep").classList.add("hidden");
         $("continueBtn").textContent = "Send SMS code";
