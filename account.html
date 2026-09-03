@@ -883,7 +883,7 @@
               class="section-action"
               type="button"
             >
-              Settings
+              Open
             </button>
           </div>
         </section>
@@ -1487,7 +1487,7 @@
       el("cancelAddressButton").addEventListener("click", closeAddressForm);
       el("signoutButton").addEventListener("click", signOut);
       el("notificationSettingsButton").addEventListener("click", () =>
-        VasiNotifications.openSettings(),
+        VasiNotifications.openCentre("notifications"),
       );
       el("retryButton").addEventListener("click", loadAccount);
       loadAccount();
