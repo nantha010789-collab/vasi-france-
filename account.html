@@ -360,6 +360,123 @@
         color: var(--danger);
       }
 
+      .section-action {
+        flex: 0 0 auto;
+        min-height: 40px;
+        border: 1px solid #3a3a3a;
+        border-radius: 999px;
+        background: #202020;
+        color: #fff;
+        cursor: pointer;
+        padding: 9px 13px;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .address-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .address-empty {
+        border: 1px dashed #343434;
+        border-radius: 17px;
+        color: var(--muted);
+        padding: 20px;
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .address-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        border: 1px solid #2d2d2d;
+        border-radius: 17px;
+        background: #171717;
+        padding: 14px;
+      }
+
+      .address-mark {
+        width: 39px;
+        height: 39px;
+        flex: 0 0 39px;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        background: #fff;
+        color: #090909;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      .address-copy {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .address-copy strong,
+      .address-copy span {
+        display: block;
+      }
+
+      .address-copy span {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .address-actions {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 6px;
+      }
+
+      .address-actions button,
+      .address-form-actions button {
+        min-height: 40px;
+        border: 1px solid #353535;
+        border-radius: 12px;
+        background: #202020;
+        color: #fff;
+        cursor: pointer;
+        padding: 8px 11px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .address-actions .delete-address {
+        border-color: #573131;
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+
+      .address-editor {
+        margin-top: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+      }
+
+      .address-editor h3 {
+        margin: 0 0 15px;
+        font-size: 18px;
+      }
+
+      .address-form-actions {
+        display: flex;
+        gap: 9px;
+        margin-top: 18px;
+      }
+
+      .address-form-actions .save-address {
+        flex: 1;
+        border: 0;
+        background: #fff;
+        color: #050505;
+      }
+
       .link-list {
         display: grid;
         gap: 9px;
@@ -462,6 +579,24 @@
 
         .profile-card {
           align-items: flex-start;
+        }
+
+        .section-head.address-heading,
+        .address-row {
+          align-items: stretch;
+        }
+
+        .address-row {
+          flex-wrap: wrap;
+        }
+
+        .address-copy {
+          min-width: calc(100% - 51px);
+        }
+
+        .address-actions {
+          width: 100%;
+          padding-left: 51px;
         }
       }
 
@@ -608,6 +743,105 @@
           </form>
         </section>
 
+        <section class="card" aria-labelledby="addressesTitle">
+          <div class="section-head address-heading">
+            <div>
+              <h2 id="addressesTitle">Saved addresses</h2>
+              <p>Save Home, Work or one Other address for faster bookings.</p>
+            </div>
+            <button id="addAddressButton" class="section-action" type="button">
+              + Add
+            </button>
+          </div>
+
+          <div
+            id="addressList"
+            class="address-list"
+            aria-live="polite"
+          >
+            <div class="address-empty">Loading your saved addresses…</div>
+          </div>
+
+          <form id="addressForm" class="address-editor hidden" novalidate>
+            <h3 id="addressFormTitle">Add address</h3>
+            <div class="grid">
+              <div class="field">
+                <label for="addressLabel">Label</label>
+                <select id="addressLabel" name="label" required>
+                  <option value="Home">Home</option>
+                  <option value="Work">Work</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="addressCountry">Country</label>
+                <select id="addressCountry" name="country_code" required>
+                  <option value="FR">France</option>
+                  <option value="BE">Belgium</option>
+                  <option value="DE">Germany</option>
+                  <option value="ES">Spain</option>
+                  <option value="IT">Italy</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="CH">Switzerland</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="addressLine">Street address</label>
+                <input
+                  id="addressLine"
+                  name="address_line"
+                  type="text"
+                  autocomplete="street-address"
+                  maxlength="180"
+                  placeholder="12 Rue de la Paix, Apartment 4"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="addressPostalCode">Postal code</label>
+                <input
+                  id="addressPostalCode"
+                  name="postal_code"
+                  type="text"
+                  autocomplete="postal-code"
+                  maxlength="16"
+                  placeholder="75002"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="addressCity">City</label>
+                <input
+                  id="addressCity"
+                  name="city"
+                  type="text"
+                  autocomplete="address-level2"
+                  maxlength="80"
+                  placeholder="Paris"
+                  required
+                />
+              </div>
+            </div>
+            <div class="address-form-actions">
+              <button id="cancelAddressButton" type="button">Cancel</button>
+              <button
+                id="saveAddressButton"
+                class="save-address"
+                type="submit"
+              >
+                Save address
+              </button>
+            </div>
+            <p
+              id="addressStatus"
+              class="status"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </form>
+        </section>
+
         <section class="card">
           <div class="section-head">
             <div>
@@ -663,6 +897,7 @@
         "CH",
       ]);
       const allowedCurrencies = new Set(["EUR", "GBP", "CHF"]);
+      const allowedAddressLabels = new Set(["Home", "Work", "Other"]);
       const allowedNextPages = new Set([
         "index.html",
         "app.html",
@@ -683,6 +918,9 @@
       let currentUser = null;
       let currentProfile = null;
       let saving = false;
+      let savedAddresses = [];
+      let editingAddressId = null;
+      let addressSaving = false;
 
       function safeNext(value) {
         const candidate = String(value || "").trim();
@@ -762,6 +1000,226 @@
         saving = next;
         el("saveButton").disabled = next;
         el("saveButton").textContent = next ? "Saving…" : "Save changes";
+      }
+
+      function setAddressStatus(message, type = "") {
+        el("addressStatus").textContent = message;
+        el("addressStatus").className =
+          "status" + (type ? " " + type : "");
+      }
+
+      function cleanAddressPart(value) {
+        return String(value || "")
+          .replace(/[\u0000-\u001f\u007f]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function addressIcon(label) {
+        if (label === "Home") return "H";
+        if (label === "Work") return "W";
+        return "O";
+      }
+
+      function renderAddresses(message = "") {
+        const list = el("addressList");
+        list.replaceChildren();
+
+        if (!savedAddresses.length) {
+          const empty = document.createElement("div");
+          empty.className = "address-empty";
+          empty.textContent =
+            message || "No saved addresses yet. Add Home, Work or Other.";
+          list.append(empty);
+          return;
+        }
+
+        savedAddresses.forEach((address) => {
+          const row = document.createElement("article");
+          row.className = "address-row";
+
+          const mark = document.createElement("div");
+          mark.className = "address-mark";
+          mark.setAttribute("aria-hidden", "true");
+          mark.textContent = addressIcon(address.label);
+
+          const copy = document.createElement("div");
+          copy.className = "address-copy";
+          const title = document.createElement("strong");
+          title.textContent = address.label;
+          const detail = document.createElement("span");
+          detail.textContent = [
+            address.address_line,
+            address.postal_code + " " + address.city,
+            address.country_code,
+          ].join(", ");
+          copy.append(title, detail);
+
+          const actions = document.createElement("div");
+          actions.className = "address-actions";
+          const editButton = document.createElement("button");
+          editButton.type = "button";
+          editButton.textContent = "Edit";
+          editButton.addEventListener("click", () => openAddressForm(address));
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "delete-address";
+          deleteButton.textContent = "Delete";
+          deleteButton.addEventListener("click", () => deleteAddress(address));
+          actions.append(editButton, deleteButton);
+
+          row.append(mark, copy, actions);
+          list.append(row);
+        });
+      }
+
+      function openAddressForm(address = null) {
+        editingAddressId = address?.id || null;
+        el("addressFormTitle").textContent = address
+          ? "Edit " + address.label
+          : "Add address";
+        el("addressLabel").value = address?.label || "Home";
+        el("addressCountry").value =
+          address?.country_code || currentProfile?.country_code || "FR";
+        el("addressLine").value = address?.address_line || "";
+        el("addressPostalCode").value = address?.postal_code || "";
+        el("addressCity").value = address?.city || "";
+        el("addressForm").classList.remove("hidden");
+        el("addAddressButton").classList.add("hidden");
+        setAddressStatus("");
+        requestAnimationFrame(() => el("addressLabel").focus());
+      }
+
+      function closeAddressForm() {
+        editingAddressId = null;
+        el("addressForm").reset();
+        el("addressForm").classList.add("hidden");
+        el("addAddressButton").classList.remove("hidden");
+        setAddressStatus("");
+      }
+
+      async function loadAddresses() {
+        const { data, error } = await client
+          .from("customer_saved_addresses")
+          .select(
+            "id,label,address_line,postal_code,city,country_code,created_at,updated_at",
+          )
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          savedAddresses = [];
+          renderAddresses("We could not load your saved addresses.");
+          return;
+        }
+        savedAddresses = data || [];
+        renderAddresses();
+      }
+
+      async function saveAddress(event) {
+        event.preventDefault();
+        if (addressSaving || !currentUser) return;
+
+        const label = el("addressLabel").value;
+        const countryCode = el("addressCountry").value;
+        const addressLine = cleanAddressPart(el("addressLine").value);
+        const postalCode = cleanAddressPart(el("addressPostalCode").value);
+        const city = cleanAddressPart(el("addressCity").value);
+
+        if (!allowedAddressLabels.has(label)) {
+          setAddressStatus("Choose Home, Work or Other.", "error");
+          return;
+        }
+        if (!allowedCountries.has(countryCode)) {
+          setAddressStatus("Choose a supported country.", "error");
+          return;
+        }
+        if (addressLine.length < 3 || addressLine.length > 180) {
+          setAddressStatus("Enter a valid street address.", "error");
+          el("addressLine").focus();
+          return;
+        }
+        if (postalCode.length < 2 || postalCode.length > 16) {
+          setAddressStatus("Enter a valid postal code.", "error");
+          el("addressPostalCode").focus();
+          return;
+        }
+        if (!city || city.length > 80) {
+          setAddressStatus("Enter a valid city.", "error");
+          el("addressCity").focus();
+          return;
+        }
+
+        addressSaving = true;
+        el("saveAddressButton").disabled = true;
+        el("saveAddressButton").textContent = "Saving…";
+        setAddressStatus("Saving your address…");
+
+        const values = {
+          label,
+          address_line: addressLine,
+          postal_code: postalCode,
+          city,
+          country_code: countryCode,
+        };
+
+        try {
+          let request = editingAddressId
+            ? client
+                .from("customer_saved_addresses")
+                .update(values)
+                .eq("id", editingAddressId)
+            : client.from("customer_saved_addresses").insert(values);
+          const { data, error } = await request
+            .select(
+              "id,label,address_line,postal_code,city,country_code,created_at,updated_at",
+            )
+            .single();
+          if (error) throw error;
+
+          const previousId = editingAddressId;
+          if (previousId) {
+            savedAddresses = savedAddresses.map((item) =>
+              item.id === previousId ? data : item,
+            );
+          } else {
+            savedAddresses.push(data);
+          }
+          renderAddresses();
+          closeAddressForm();
+        } catch (error) {
+          setAddressStatus(
+            error?.code === "23505"
+              ? "That label is already saved. Edit the existing address instead."
+              : error?.message || "We could not save your address. Try again.",
+            "error",
+          );
+        } finally {
+          addressSaving = false;
+          el("saveAddressButton").disabled = false;
+          el("saveAddressButton").textContent = "Save address";
+        }
+      }
+
+      async function deleteAddress(address) {
+        if (!currentUser || !confirm("Delete your " + address.label + " address?"))
+          return;
+
+        const { error } = await client
+          .from("customer_saved_addresses")
+          .delete()
+          .eq("id", address.id);
+
+        if (error) {
+          if (!el("addressForm").classList.contains("hidden")) {
+            setAddressStatus(error.message, "error");
+          } else {
+            alert(error.message || "We could not delete that address. Try again.");
+          }
+          return;
+        }
+        savedAddresses = savedAddresses.filter((item) => item.id !== address.id);
+        if (editingAddressId === address.id) closeAddressForm();
+        renderAddresses();
       }
 
       function redirectToLogin() {
@@ -874,6 +1332,7 @@
             created_at: user.created_at,
           };
           renderAccount();
+          await loadAddresses();
         } catch (error) {
           el("loadingMessage").textContent =
             error?.message || "We could not load your account. Please try again.";
@@ -1003,6 +1462,9 @@
       }
 
       el("profileForm").addEventListener("submit", saveProfile);
+      el("addressForm").addEventListener("submit", saveAddress);
+      el("addAddressButton").addEventListener("click", () => openAddressForm());
+      el("cancelAddressButton").addEventListener("click", closeAddressForm);
       el("signoutButton").addEventListener("click", signOut);
       el("retryButton").addEventListener("click", loadAccount);
       loadAccount();
