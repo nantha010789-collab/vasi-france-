@@ -193,7 +193,14 @@
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
       const PRODUCTION_ORIGIN = "https://vasi-new.vercel.app";
-      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: window.localStorage,
+        },
+      });
       const RESEND_WAIT_SECONDS = 60;
       let phoneAwaitingCode = "";
       let resendTimer = null;
@@ -440,6 +447,20 @@
         destination(savedRole, true);
         location.href = next;
       }
+      async function restoreExistingSession() {
+        show("Checking your VASI account…");
+        const { data, error } = await client.auth.getSession();
+        if (error) {
+          show("");
+          return;
+        }
+        if (!data.session) {
+          show("");
+          return;
+        }
+        show("Welcome back. Opening VASI…");
+        await routeSession(data.session);
+      }
       render();
       $("identity").addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitAuth();
@@ -455,6 +476,7 @@
           setTimeout(() => routeSession(session), 0);
         }
       });
+      restoreExistingSession();
     </script>
   </body>
 </html>
