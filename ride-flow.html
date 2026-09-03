@@ -100,6 +100,80 @@
         color: #fff;
         font-size: 15px;
       }
+      .savedPlaces {
+        margin: 10px 0 4px;
+        padding: 12px;
+        border: 1px solid #2d2d2d;
+        border-radius: 17px;
+        background: #151515;
+      }
+      .savedPlacesHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 9px;
+      }
+      .savedPlacesHead strong {
+        font-size: 14px;
+      }
+      .savedPlacesHead a {
+        color: #bbb;
+        font-size: 12px;
+      }
+      .savedPlace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 9px;
+        align-items: center;
+        padding: 10px 0;
+        border-top: 1px solid #292929;
+      }
+      .savedPlace:first-child {
+        border-top: 0;
+        padding-top: 2px;
+      }
+      .savedPlaceInfo {
+        min-width: 0;
+      }
+      .savedPlaceInfo strong,
+      .savedPlaceInfo small {
+        display: block;
+      }
+      .savedPlaceInfo strong {
+        font-size: 14px;
+      }
+      .savedPlaceInfo small {
+        color: #929292;
+        font-size: 12px;
+        line-height: 1.35;
+        margin-top: 3px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .savedPlaceActions {
+        display: flex;
+        gap: 5px;
+      }
+      .savedPlaceActions button {
+        border: 1px solid #3a3a3a;
+        background: #202020;
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 9px;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .savedPlaceActions button:last-child {
+        background: #fff;
+        color: #090909;
+        border-color: #fff;
+      }
+      .savedPlaceActions button:disabled {
+        opacity: 0.5;
+      }
       .section {
         font-size: 13px;
         font-weight: 900;
@@ -342,6 +416,12 @@
         .options {
           grid-template-columns: repeat(2, 1fr);
         }
+        .savedPlace {
+          grid-template-columns: 1fr;
+        }
+        .savedPlaceActions button {
+          flex: 1;
+        }
       }
     </style>
   </head>
@@ -370,6 +450,13 @@
               Search
             </button>
           </div>
+        </div>
+        <div id="savedPlaces" class="savedPlaces hidden" aria-live="polite">
+          <div class="savedPlacesHead">
+            <strong>Saved places</strong>
+            <a href="account.html#addressesTitle">Manage</a>
+          </div>
+          <div id="savedPlacesList"></div>
         </div>
         <div id="booking" class="hidden">
           <div class="section">Route</div>
@@ -522,7 +609,8 @@
         stripe = null,
         stripeElements = null,
         paymentStarted = false,
-        paymentAuthorized = false;
+        paymentAuthorized = false,
+        savedAddresses = [];
       const fallback = [49.189, 2.449],
         regularClasses = {
           go: {
@@ -659,6 +747,109 @@
           $("promo").classList.remove("hidden");
         } catch (error) {}
       }
+      const savedPlaceIcon = (label) =>
+        ({ home: "🏠", work: "💼", other: "📍" })[
+          String(label || "").toLowerCase()
+        ] || "📍";
+      function savedAddressText(address) {
+        return [
+          address.address_line,
+          [address.postal_code, address.city].filter(Boolean).join(" "),
+          address.country_code,
+        ]
+          .filter(Boolean)
+          .join(", ");
+      }
+      function renderSavedPlaces() {
+        const wrap = $("savedPlaces"),
+          list = $("savedPlacesList");
+        list.replaceChildren();
+        if (!savedAddresses.length) {
+          wrap.classList.add("hidden");
+          return;
+        }
+        savedAddresses.forEach((address) => {
+          const row = document.createElement("div"),
+            info = document.createElement("div"),
+            title = document.createElement("strong"),
+            detail = document.createElement("small"),
+            actions = document.createElement("div"),
+            pickupButton = document.createElement("button"),
+            destinationButton = document.createElement("button");
+          row.className = "savedPlace";
+          info.className = "savedPlaceInfo";
+          actions.className = "savedPlaceActions";
+          title.textContent = `${savedPlaceIcon(address.label)} ${address.label}`;
+          detail.textContent = savedAddressText(address);
+          pickupButton.type = "button";
+          pickupButton.textContent = "Pickup";
+          pickupButton.setAttribute("aria-label", `Use ${address.label} as pickup`);
+          destinationButton.type = "button";
+          destinationButton.textContent = "Destination";
+          destinationButton.setAttribute(
+            "aria-label",
+            `Use ${address.label} as destination`,
+          );
+          pickupButton.onclick = () =>
+            useSavedPlace(address.id, "pickup", pickupButton);
+          destinationButton.onclick = () =>
+            useSavedPlace(address.id, "destination", destinationButton);
+          info.append(title, detail);
+          actions.append(pickupButton, destinationButton);
+          row.append(info, actions);
+          list.append(row);
+        });
+        wrap.classList.remove("hidden");
+      }
+      async function loadSavedPlaces() {
+        const session = (await sb.auth.getSession()).data.session;
+        if (!session) return;
+        try {
+          const { data, error } = await sb
+            .from("customer_saved_addresses")
+            .select("id,label,address_line,postal_code,city,country_code")
+            .order("created_at", { ascending: true });
+          if (error) throw error;
+          savedAddresses = data || [];
+          renderSavedPlaces();
+        } catch (error) {
+          console.warn("Saved places unavailable", error);
+        }
+      }
+      async function useSavedPlace(id, kind, button) {
+        const address = savedAddresses.find((item) => item.id === id);
+        if (!address) return;
+        const query = savedAddressText(address),
+          originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Finding…";
+        $("status").textContent = `Finding ${address.label}…`;
+        try {
+          let found = null;
+          for (const candidate of destinationQueries(query)) {
+            found = await geocodeDestination(candidate);
+            if (found) break;
+          }
+          if (!found) throw Error("not found");
+          const lat = Number(found.lat),
+            lng = Number(found.lon),
+            label = `${savedPlaceIcon(address.label)} ${address.label} · ${query}`;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng))
+            throw Error("invalid coordinates");
+          if (kind === "pickup") setPickup([lat, lng], label);
+          else {
+            setDestination([lat, lng], label);
+            $("destSearch").value = query;
+            $("searchWrap").classList.add("hidden");
+          }
+        } catch (error) {
+          $("status").innerHTML =
+            '<span class="error">Saved address not found on the map — edit the address and postcode</span>';
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
       async function checkPaymentAvailability() {
         try {
           const r = await fetch("/api/payment-config", { cache: "no-store" });
@@ -733,7 +924,11 @@
         });
         checkPaymentAvailability();
         useLocation();
-        Promise.allSettled([loadPricing(), loadCustomerOffer()]).then(() => {
+        Promise.allSettled([
+          loadPricing(),
+          loadCustomerOffer(),
+          loadSavedPlaces(),
+        ]).then(() => {
           if (route.km > 0) {
             renderTypes();
             selectType(selected);
