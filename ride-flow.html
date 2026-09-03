@@ -549,6 +549,9 @@
             <div class="eta" id="eta">—</div>
           </div>
           <div id="waiting" class="waiting hidden"></div>
+          <button id="chatBtn" class="cta hidden" onclick="openRideChat()">
+            💬 Chat with driver
+          </button>
           <button
             id="receiptBtn"
             class="cta hidden"
@@ -1315,6 +1318,13 @@
           payLabel(pay);
         setRideStatus(r);
       }
+      function openRideChat() {
+        if (!ride?.id) return;
+        location.href =
+          "ride-chat.html?ride=" +
+          encodeURIComponent(ride.id) +
+          "&from=customer";
+      }
       function payLabel(v) {
         return v === "apple_pay" ? "Apple Pay" : v === "card" ? "Card" : "Cash";
       }
@@ -1440,6 +1450,11 @@
           $("eta").textContent = "—";
         if (st === "driver_arriving") $("eta").textContent = "Arrived";
         if (st === "in_progress") $("eta").textContent = "On trip";
+        $("chatBtn").classList.toggle(
+          "hidden",
+          !r.driver_id ||
+            !["accepted", "driver_arriving", "in_progress"].includes(st),
+        );
         if (r.driver_name)
           $("driverTitle").textContent =
             "VASI " + classes[selected].name + " · " + r.driver_name;

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>VASI Ride Chat</title>
+    <style>
+      :root{color-scheme:dark;font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#050505;color:#fff}
+      *{box-sizing:border-box}body{margin:0;background:#050505}button,textarea{font:inherit}
+      .app{width:min(680px,100%);min-height:100vh;margin:auto;padding:16px 14px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
+      .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 14px}
+      .brand{font-size:29px;font-weight:950;letter-spacing:-1.5px}
+      .back{border:1px solid #333;border-radius:13px;background:#171717;color:#fff;padding:10px 14px;font-weight:800}
+      .chat{flex:1;min-height:calc(100vh - 105px);display:flex;flex-direction:column;overflow:hidden;background:#111;border:1px solid #292929;border-radius:24px;box-shadow:0 18px 50px #0008}
+      .chatHead{padding:17px;border-bottom:1px solid #292929}
+      h1{margin:0;font-size:clamp(23px,6vw,31px);letter-spacing:-.8px}
+      .route{color:#999;font-size:13px;line-height:1.45;margin-top:8px}
+      .connection{display:inline-flex;align-items:center;gap:6px;color:#999;font-size:12px;margin-top:9px}
+      .connection:before{content:"";width:8px;height:8px;border-radius:50%;background:#777}
+      .connection.live:before{background:#20d66b}
+      .messages{flex:1;min-height:360px;max-height:calc(100vh - 340px);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+      .empty{margin:auto;max-width:310px;text-align:center;color:#888;font-size:14px;line-height:1.5}
+      .bubbleRow{display:flex;flex-direction:column;align-items:flex-start}.bubbleRow.own{align-items:flex-end}
+      .sender{color:#888;font-size:11px;margin:0 7px 4px}
+      .bubble{max-width:min(82%,440px);padding:11px 13px;border-radius:17px 17px 17px 5px;background:#242424;color:#fff;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+      .own .bubble{border-radius:17px 17px 5px 17px;background:#fff;color:#050505}
+      .time{color:#777;font-size:10px;margin:4px 7px 0}
+      .composer{padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end;border-top:1px solid #292929;background:#151515}
+      textarea{width:100%;min-height:48px;max-height:130px;resize:vertical;border:1px solid #383838;border-radius:15px;outline:none;background:#202020;color:#fff;padding:13px;font-size:16px}
+      textarea:focus{border-color:#fff}
+      .send{height:48px;min-width:76px;border:0;border-radius:15px;background:#fff;color:#050505;font-weight:900;padding:0 16px}
+      .send:disabled,textarea:disabled{opacity:.45}
+      .notice{display:none;margin:0;padding:12px 16px;border-top:1px solid #292929;color:#aaa;text-align:center;font-size:13px}
+      .notice.show{display:block}.error{color:#ffb4b4}
+      @media(max-width:480px){.app{padding:10px 8px calc(12px + env(safe-area-inset-bottom))}.messages{max-height:calc(100vh - 320px)}.composer{grid-template-columns:1fr}.send{width:100%}}
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="top"><div class="brand">VASI</div><button class="back" type="button" onclick="goBack()">← Back</button></header>
+      <section class="chat">
+        <div class="chatHead">
+          <h1 id="title">Ride chat</h1>
+          <div id="route" class="route">Loading your ride…</div>
+          <div id="connection" class="connection">Connecting…</div>
+        </div>
+        <div id="messages" class="messages" aria-live="polite"><div class="empty">Loading messages…</div></div>
+        <p id="notice" class="notice"></p>
+        <form id="composer" class="composer" onsubmit="sendMessage(event)">
+          <textarea id="message" maxlength="1000" rows="1" aria-label="Message" placeholder="Write a message" onkeydown="handleMessageKey(event)"></textarea>
+          <button id="send" class="send" type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const client=supabase.createClient("https://vhfyvkrvysrooaqzcxsp.supabase.co","sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT"),
+        params=new URLSearchParams(location.search),rideId=params.get("ride"),$=id=>document.getElementById(id);
+      let session=null,ride=null,channel=null,messages=[],sending=false;
+      function goBack(){if(history.length>1)history.back();else location.href=params.get("from")==="driver"?"driver.html":"ride-flow.html"}
+      function setNotice(text,error=false){$("notice").textContent=text;$("notice").classList.toggle("show",Boolean(text));$("notice").classList.toggle("error",error)}
+      function setComposerEnabled(enabled){$("message").disabled=!enabled;$("send").disabled=!enabled}
+      function partnerLabel(){return ride?.customer_id===session?.user?.id?"Driver":"Customer"}
+      function formatTime(value){const date=new Date(value);return Number.isNaN(date.getTime())?"":date.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
+      function renderMessages(){
+        const list=$("messages");list.replaceChildren();
+        if(!messages.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="No messages yet. Send a short message about your pickup.";list.append(empty);return}
+        messages.forEach(item=>{const own=item.sender_id===session.user.id,row=document.createElement("div"),sender=document.createElement("div"),bubble=document.createElement("div"),time=document.createElement("div");row.className="bubbleRow"+(own?" own":"");sender.className="sender";bubble.className="bubble";time.className="time";sender.textContent=own?"You":partnerLabel();bubble.textContent=String(item.message||"");time.textContent=formatTime(item.created_at);row.append(sender,bubble,time);list.append(row)});
+        requestAnimationFrame(()=>{list.scrollTop=list.scrollHeight});
+      }
+      function addMessage(item){if(!item?.id||messages.some(message=>message.id===item.id))return;messages.push(item);messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));renderMessages()}
+      async function loadRide(){
+        const {data,error}=await client.from("rides").select("id,status,customer_id,driver_id,pickup_address,destination_address").eq("id",rideId).maybeSingle();
+        if(error||!data)throw Error("This ride chat is not available.");
+        ride=data;const customer=ride.customer_id===session.user.id;
+        $("title").textContent=customer?"Chat with your driver":"Chat with your customer";
+        $("route").textContent=(ride.pickup_address||"Pickup")+" → "+(ride.destination_address||"Destination");
+        const active=["accepted","driver_arriving","in_progress"].includes(String(ride.status));
+        setComposerEnabled(active&&Boolean(ride.driver_id));
+        if(!active)setNotice("This ride has ended. Previous messages are still available.");
+      }
+      async function loadMessages(){const {data,error}=await client.from("ride_messages").select("id,ride_id,sender_id,message,created_at").eq("ride_id",rideId).order("created_at",{ascending:true}).limit(200);if(error)throw error;messages=data||[];renderMessages()}
+      function subscribe(){channel=client.channel("vasi-ride-chat-"+rideId).on("postgres_changes",{event:"INSERT",schema:"public",table:"ride_messages",filter:"ride_id=eq."+rideId},payload=>addMessage(payload.new)).subscribe(status=>{const live=status==="SUBSCRIBED";$("connection").classList.toggle("live",live);$("connection").textContent=live?"Live chat":"Connecting…"})}
+      function handleMessageKey(event){if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();sendMessage(event)}}
+      async function sendMessage(event){
+        event?.preventDefault();const input=$("message"),text=input.value.trim();if(!text||sending||input.disabled)return;
+        sending=true;$("send").disabled=true;setNotice("");
+        try{const {data,error}=await client.from("ride_messages").insert({ride_id:rideId,message:text}).select("id,ride_id,sender_id,message,created_at").single();if(error)throw error;input.value="";addMessage(data);input.focus()}
+        catch(error){setNotice(/row-level security|policy/i.test(error.message||"")?"Chat is available only while this ride is active.":"Message could not be sent. Please try again.",true)}
+        finally{sending=false;$("send").disabled=$("message").disabled}
+      }
+      async function init(){
+        if(!rideId){setComposerEnabled(false);$("messages").innerHTML='<div class="empty error">Ride information is missing.</div>';return}
+        session=(await client.auth.getSession()).data.session;
+        if(!session){localStorage.setItem("vasi_return",location.href);location.href="auth.html";return}
+        try{await loadRide();await loadMessages();subscribe()}catch(error){setComposerEnabled(false);$("connection").textContent="Unavailable";$("messages").innerHTML='<div class="empty error">This ride chat is not available.</div>'}
+      }
+      window.addEventListener("beforeunload",()=>{if(channel)client.removeChannel(channel)});
+      init();
+    </script>
+  </body>
+</html>

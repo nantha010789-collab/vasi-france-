@@ -168,6 +168,10 @@
         color: #bbb;
         font-size: 12px;
       }
+      .chatbtn {
+        background: #fff;
+        color: #000;
+      }
     </style>
   </head>
   <body>
@@ -459,6 +463,13 @@
         }
         return "";
       }
+      function openRideChat() {
+        if (!activeRide?.id) return;
+        location.href =
+          "ride-chat.html?ride=" +
+          encodeURIComponent(activeRide.id) +
+          "&from=driver";
+      }
       function showActiveRide() {
         if (!activeRide) return;
         const st = String(activeRide.status);
@@ -482,6 +493,10 @@
         const wait = Number(activeRide.waiting_fee || 0);
         document.getElementById("ride").innerHTML =
           `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · €" + Number(fare).toFixed(2) : ""}</b></div>${wait > 0 ? `<div class="fee">Pickup waiting fee: €${wait.toFixed(2)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
+        document.getElementById("ride").insertAdjacentHTML(
+          "beforeend",
+          '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat with customer</button>',
+        );
       }
       async function confirmStop(stopId) {
         if (!activeRide) return;
