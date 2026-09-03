@@ -224,7 +224,14 @@
         show("Sending your SMS code…");
         localStorage.setItem("vasi_role", "customer");
         const { error } = await client.auth.signInWithOtp({ phone });
-        if (error) return show(error.message);
+        if (error) {
+          const unavailable = /unsupported phone provider/i.test(error.message);
+          return show(
+            unavailable
+              ? "SMS login is being connected. Please try again shortly."
+              : error.message,
+          );
+        }
         phoneAwaitingCode = phone;
         $("identity").disabled = true;
         $("codeStep").classList.remove("hidden");
