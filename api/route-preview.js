@@ -86,6 +86,8 @@ export default async function handler(req, res) {
       let results = [];
       const googleKey = String(
         process.env.GOOGLE_MAPS_SERVER_KEY ||
+          process.env.GOOGLEMAPSERVERKEY ||
+          process.env.GOOGLEMAPSSERVERKEY ||
           process.env.GOOGLE_MAPS_API_KEY ||
           "",
       ).trim();
