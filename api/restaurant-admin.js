@@ -1,6 +1,10 @@
-const url=process.env.VASI_SUPABASE_URL||process.env.SUPABASE_URL||'https://vhfyvkrvysrooaqzcxsp.supabase.co';
-const publicKey=process.env.VASI_SUPABASE_ANON_KEY||process.env.SUPABASE_ANON_KEY||'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT';
-const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.VASI_SUPABASE_SERVICE_ROLE_KEY||'';
-async function authorize(req){if(!serviceKey)throw new Error('Admin service is not configured');const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return null;const response=await fetch(`${url}/auth/v1/user`,{headers:{apikey:publicKey,Authorization:auth}});if(!response.ok)return null;const user=await response.json();const check=await fetch(`${url}/rest/v1/admin_allowlist?user_id=eq.${encodeURIComponent(user.id)}&select=user_id&limit=1`,{headers:{apikey:serviceKey,Authorization:`Bearer ${serviceKey}`}});const rows=await check.json().catch(()=>[]);return check.ok&&rows.length?user:null}
-async function adminDb(path,options={}){const response=await fetch(`${url}/rest/v1/${path}`,{...options,headers:{apikey:serviceKey,Authorization:`Bearer ${serviceKey}`,...(options.headers||{})}});const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'Admin database request failed');return data}
-export default async function handler(req,res){res.setHeader('Cache-Control','no-store');res.setHeader('Vary','Authorization');if(!['GET','PATCH'].includes(req.method))return res.status(405).json({error:'Method not allowed'});try{const admin=await authorize(req);if(!admin)return res.status(403).json({error:'Admin access required'});if(req.method==='GET'){const status=['pending','approved','rejected'].includes(req.query.status)?req.query.status:'pending';const rows=await adminDb(`restaurants?select=*&status=eq.${status}&order=created_at.desc`);return res.status(200).json({restaurants:rows})}const body=typeof req.body==='string'?JSON.parse(req.body||'{}'):req.body||{},status=['approved','rejected'].includes(body.status)?body.status:null;if(!body.id||!status)return res.status(400).json({error:'Restaurant and decision required'});const restaurant=await adminDb('rpc/vasi_review_restaurant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_restaurant_id:body.id,p_status:status,p_reason:body.reason||null,p_commission_rate:Number.isFinite(Number(body.commission_rate))?Number(body.commission_rate):null})});return res.status(200).json({restaurant})}catch(error){return res.status(/not configured/i.test(error.message)?503:500).json({error:error.message||'Admin service error'})}}
+import { callAdminService, parseBody, sendAdminResult } from './_admin-service.js';
+
+export default async function handler(req, res) {
+  if (!['GET', 'PATCH'].includes(req.method)) return res.status(405).json({ error: 'Method not allowed' });
+  const action = req.method === 'GET' ? 'list_restaurants' : 'review_restaurant';
+  const payload = req.method === 'GET'
+    ? { status: req.query.status }
+    : parseBody(req);
+  return sendAdminResult(res, await callAdminService(req, action, payload));
+}
