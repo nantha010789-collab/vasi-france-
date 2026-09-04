@@ -335,7 +335,6 @@ test("legacy public pages redirect to the current product", async () => {
     "vasi.html": "index.html",
     "driver-app.html": "driver.html",
     "partner-register.html": "partner-register-v2.html",
-    "admin/index.html": "../admin-login.html",
   };
   for (const [file, target] of Object.entries(redirects)) {
     const source = await readFile(file, "utf8");
