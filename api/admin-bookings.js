@@ -1,7 +1,8 @@
-export default async function handler(req,res){
- if(!['GET','PATCH'].includes(req.method))return res.status(405).json({error:'Method not allowed'});const url=process.env.VASI_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;if(!url||!key)return res.status(503).json({error:'Supabase server configuration missing'});
- const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return res.status(401).json({error:'Authentication required'});const token=auth.slice(7),h={apikey:key,Authorization:`Bearer ${key}`};const u=await fetch(`${url}/auth/v1/user`,{headers:{apikey:key,Authorization:`Bearer ${token}`}});if(!u.ok)return res.status(401).json({error:'Invalid session'});const user=await u.json();const a=await fetch(`${url}/rest/v1/admin_allowlist?select=user_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,{headers:h});if(!a.ok||(await a.json()).length===0)return res.status(403).json({error:'Admin access required'});
- if(req.method==='GET'){const r=await fetch(`${url}/rest/v1/bookings?select=id,created_at,pickup,destination,ride_date,ride_time,passengers,vehicle,payment_method,estimated_price,vasi_commission,driver_amount,customer_name,customer_phone,status,driver_id,payment_status,currency&order=created_at.desc&limit=100`,{headers:h});if(!r.ok)return res.status(r.status).json({error:'Unable to load bookings'});return res.status(200).json(await r.json())}
- const b=typeof req.body==='string'?JSON.parse(req.body||'{}'):req.body||{};const id=String(b.id||'');if(!id)return res.status(400).json({error:'Booking id required'});const patch={};if(typeof b.driver_id==='string'&&b.driver_id)patch.driver_id=b.driver_id;if(typeof b.status==='string'&&['pending','requested','accepted','driver_arriving','in_progress','completed','cancelled'].includes(b.status))patch.status=b.status;if(!Object.keys(patch).length)return res.status(400).json({error:'No supported booking change'});
- const r=await fetch(`${url}/rest/v1/bookings?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{...h,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(patch)});if(!r.ok)return res.status(r.status).json({error:'Unable to update booking'});return res.status(200).json((await r.json())[0]||null);
+import { callAdminService, parseBody, sendAdminResult } from './_admin-service.js';
+
+export default async function handler(req, res) {
+  if (!['GET', 'PATCH'].includes(req.method)) return res.status(405).json({ error: 'Method not allowed' });
+  const action = req.method === 'GET' ? 'list_bookings' : 'update_booking';
+  const result = await callAdminService(req, action, req.method === 'PATCH' ? parseBody(req) : {});
+  return sendAdminResult(res, result, req.method === 'GET' ? 'bookings' : 'booking');
 }

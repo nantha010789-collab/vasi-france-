@@ -28,11 +28,24 @@ test('admin routing stays on Vercel and old dashboard is retired', async () => {
   assert.ok(config.headers.some(item => item.source === '/admin/(.*)'));
 });
 
-test('sensitive admin APIs enforce server-side allowlist', async () => {
-  for (const file of ['api/restaurant-admin.js','api/support.js','api/pricing.js']) {
+test('sensitive admin APIs use the authenticated edge service without a Vercel service-role secret', async () => {
+  const helper = await read('api/_admin-service.js');
+  assert.match(helper, /Authorization: authorization/);
+  assert.match(helper, /functions\/v1\/admin-service/);
+  assert.doesNotMatch(helper, /SUPABASE_SERVICE_ROLE_KEY|VASI_SUPABASE_SERVICE_ROLE_KEY/);
+  for (const file of ['api/admin-stats.js','api/admin-bookings.js','api/admin-live-gps.js','api/admin-drivers.js','api/admin-documents.js','api/restaurant-admin.js','api/support.js','api/pricing.js']) {
     const source = await read(file);
-    assert.match(source, /SUPABASE_SERVICE_ROLE_KEY/);
-    assert.match(source, /admin_allowlist/);
-    assert.match(source, /Admin access required/);
+    assert.match(source, /callAdminService/);
+    assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|VASI_SUPABASE_SERVICE_ROLE_KEY/);
+  }
+});
+
+test('edge admin service authorizes every operation and keeps privileged keys server-side', async () => {
+  const source = await read('supabase/functions/admin-service/index.ts');
+  assert.match(source, /admin_allowlist/);
+  assert.match(source, /userClient\.auth\.getUser\(\)/);
+  assert.match(source, /SUPABASE_SECRET_KEYS/);
+  for (const action of ['stats','list_bookings','update_booking','list_drivers','update_driver','live_gps','list_documents','review_document','list_restaurants','review_restaurant','update_pricing','list_support','update_support']) {
+    assert.match(source, new RegExp(`action === '${action}'`));
   }
 });
