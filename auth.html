@@ -163,11 +163,12 @@
             onclick="resendPhoneCode()"
             disabled
           >
-            Resend code in 60s
+            Resend code in 90s
           </button>
           <p class="muted delivery-note">
-            SMS delivery can take a few minutes on some mobile networks. Keep
-            this screen open and enter the most recently received code.
+            SMS delivery can take up to 2 minutes on some mobile networks.
+            Resending cancels every earlier code, so after a resend use only
+            the code from the newest SMS.
           </p>
         </div>
         <button id="continueBtn" class="btn primary" onclick="submitAuth()">
@@ -202,7 +203,7 @@
           storage: window.localStorage,
         },
       });
-      const RESEND_WAIT_SECONDS = 60;
+      const RESEND_WAIT_SECONDS = 90;
       let phoneAwaitingCode = "";
       let resendTimer = null;
       let resendSeconds = 0;
@@ -252,12 +253,11 @@
           const seconds = Math.max(0, Math.ceil((Number(pending.readyAt || 0) - Date.now()) / 1000));
           startResendCountdown(seconds);
           $("otp").focus();
-          show("Enter the most recently received 6-digit SMS code.");
+          show("Wait for the newest SMS and enter only its 6-digit code. Earlier codes stop working after a resend.");
         } catch (_) { clearPendingPhone(); }
       }
       function setRole(next) {
         role = next;
-        localStorage.setItem("vasi_role", role);
         phoneAwaitingCode = "";
         clearPendingPhone();
         clearResendCountdown();
@@ -320,7 +320,7 @@
         $("continueBtn").textContent = "Verify & continue";
         startResendCountdown();
         $("otp").focus();
-        show("SMS requested. Delivery may take a few minutes. Enter the 6-digit code when it arrives.");
+        show("SMS sent. Please wait up to 2 minutes and do not resend while it is arriving.");
       }
       async function resendPhoneCode() {
         if (!phoneAwaitingCode || resendSeconds > 0 || sendingPhoneCode) return;
@@ -342,7 +342,7 @@
         savePendingPhone(phoneAwaitingCode, Date.now() + RESEND_WAIT_SECONDS * 1000);
         startResendCountdown();
         $("otp").focus();
-        show("New SMS requested. Delivery may take a few minutes. Enter the most recently received code.");
+        show("New SMS requested. Every earlier code is now invalid. Wait for the newest SMS and enter only that code.");
       }
       function startResendCountdown(seconds = RESEND_WAIT_SECONDS) {
         clearResendCountdown();
@@ -378,7 +378,7 @@
         }
         if (code === "over_sms_send_rate_limit" || /rate limit|security purposes.*seconds/i.test(message)) {
           startResendCountdown();
-          return show("Please wait 60 seconds before requesting another SMS code.");
+          return show(`Please wait ${RESEND_WAIT_SECONDS} seconds before requesting another SMS code.`);
         }
         return show(message || "The SMS could not be requested. Please try again.");
       }
@@ -405,11 +405,11 @@
         $("otp").focus();
         if (code === "otp_expired" || /expired|token.*invalid|invalid.*token/i.test(message)) {
           startResendCountdown(0);
-          return show("This SMS code has expired or was already used. Tap Resend SMS code for a new code.");
+          return show("This code is expired or belongs to an earlier SMS. If you tapped Resend, wait for the newest SMS and use only that code.");
         }
         if (/too many|rate limit/i.test(message)) {
           startResendCountdown();
-          return show("Too many attempts. Wait 60 seconds, request a new code, and enter only the newest SMS code.");
+          return show(`Too many attempts. Wait ${RESEND_WAIT_SECONDS} seconds, request one new code, and enter only the newest SMS code.`);
         }
         return show("The SMS code is incorrect. Check the newest message and try again.");
       }
