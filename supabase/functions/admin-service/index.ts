@@ -11,6 +11,15 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors } });
 const text = (value: unknown, max = 500) => String(value ?? '').trim().slice(0, max);
 
+const motorCourierVehicles = new Set(['scooter', 'moto', 'car']);
+function courierRequiredDocuments(vehicleType: string) {
+  const required = ['identity', 'business', 'rib', 'bag', 'vehicle_photo', 'selfie'];
+  if (motorCourierVehicles.has(vehicleType)) {
+    required.push('licence', 'insurance', 'carte_grise', 'transport_licence');
+  }
+  return required;
+}
+
 function envKey(jsonName: string, legacyName: string) {
   try {
     const keys = JSON.parse(Deno.env.get(jsonName) || '{}');
@@ -194,6 +203,58 @@ Deno.serve(async (req) => {
         }),
         active_rides: rides || [],
       });
+    }
+
+    if (action === 'list_partners') {
+      const status = ['pending', 'approved', 'rejected'].includes(body.status) ? body.status : 'pending';
+      const { data, error } = await db.from('delivery_drivers')
+        .select('id,user_id,full_name,phone,address,vehicle_type,online,verified,documents,application_status,rejection_reason,reviewed_at,created_at,updated_at')
+        .eq('application_status', status)
+        .order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      const partners = await Promise.all((data || []).map(async (partner: any) => {
+        const documentLinks: Record<string, string> = {};
+        for (const [name, rawPath] of Object.entries(partner.documents || {})) {
+          const path = text(rawPath, 500);
+          if (!path || !path.startsWith(`${partner.user_id}/`)) continue;
+          const { data: signed } = await db.storage.from('partner-documents').createSignedUrl(path, 600);
+          if (signed?.signedUrl) documentLinks[name] = signed.signedUrl;
+        }
+        return {
+          ...partner,
+          role: 'courier',
+          required_documents: courierRequiredDocuments(text(partner.vehicle_type, 20)),
+          document_links: documentLinks,
+        };
+      }));
+      return json({ ok: true, partners });
+    }
+    if (action === 'review_partner') {
+      const id = text(body.partner_id || body.id, 80);
+      const status = ['approved', 'rejected'].includes(body.status) ? body.status : '';
+      if (!id || !status) return json({ error: 'Partner and decision required' }, 400);
+      const { data: partner, error: findError } = await db.from('delivery_drivers')
+        .select('id,user_id,vehicle_type,documents,application_status').eq('id', id).maybeSingle();
+      if (findError) throw findError;
+      if (!partner) return json({ error: 'Courier not found' }, 404);
+      const required = courierRequiredDocuments(text(partner.vehicle_type, 20));
+      const missing = required.filter(name => !text(partner.documents?.[name], 500));
+      if (status === 'approved' && missing.length) {
+        return json({ error: `Missing required documents: ${missing.join(', ')}` }, 400);
+      }
+      const patch = {
+        verified: status === 'approved',
+        application_status: status,
+        online: false,
+        rejection_reason: status === 'rejected' ? text(body.reason || 'Documents non conformes', 500) : null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await db.from('delivery_drivers').update(patch).eq('id', id).select().maybeSingle();
+      if (error) throw error;
+      await audit('courier_review', 'delivery_driver', id, { status, reason: patch.rejection_reason, required_documents: required });
+      return json({ ok: true, partner: data });
     }
 
     if (action === 'list_documents') {

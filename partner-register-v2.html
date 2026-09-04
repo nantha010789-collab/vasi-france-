@@ -1,4 +1,217 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>VASI Partner</title><style>body{margin:0;background:#050505;color:#fff;font-family:Inter,system-ui,sans-serif}.wrap{max-width:620px;margin:auto;padding:22px}.card{background:#111;border:1px solid #292929;border-radius:22px;padding:18px;margin:12px 0}.roles,.vehicles{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{width:100%;padding:14px;border-radius:14px;border:1px solid #333;background:#181818;color:#fff;font-weight:800}.active{background:#fff;color:#000}.input,.file{width:100%;box-sizing:border-box;padding:13px;margin:7px 0;border-radius:13px;border:1px solid #333;background:#181818;color:#fff}.doc{padding:10px;border:1px solid #292929;border-radius:13px;margin:7px 0}.muted{color:#999;font-size:13px;line-height:1.5}.hidden{display:none}.ok{color:#9ff0b5}.err{color:#ffb4b4}video{width:100%;border-radius:18px;background:#000}h1{font-size:28px}</style>  <link rel="stylesheet" href="./vasi-mobile-fit.css" />
-  <style>*{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}.wrap{width:100%;padding-top:max(14px,env(safe-area-inset-top));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:max(24px,env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left))}.page-nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;min-height:56px;margin:0 0 12px;background:linear-gradient(#050505 75%,transparent)}.back-btn{min-width:44px;min-height:44px;padding:0 14px 0 10px;display:inline-flex;align-items:center;gap:7px;border:1px solid #303030;border-radius:999px;background:#151515;color:#fff;font:700 15px/1 Inter,system-ui,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.back-btn:active{background:#252525;transform:scale(.98)}.back-icon{font-size:28px;font-weight:400;line-height:0;transform:translateY(-1px)}@media(max-width:420px){.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}h1{font-size:clamp(25px,8vw,28px)}.card{padding:14px}.roles,.vehicles{gap:7px}.btn{padding:13px 8px}}</style>
-  <script>function vasiPartnerGoBack(){try{const ref=document.referrer?new URL(document.referrer,location.href):null;if(ref&&ref.origin===location.origin&&history.length>1){history.back();return}}catch(error){}location.assign('index.html')}document.addEventListener('DOMContentLoaded',()=>{const main=document.querySelector('main.wrap');if(!main)return;const nav=document.createElement('nav');nav.className='page-nav';nav.setAttribute('aria-label','Page navigation');nav.innerHTML='<button class="back-btn" type="button" aria-label="Go back"><span class="back-icon" aria-hidden="true">‹</span><span>Back</span></button>';nav.querySelector('button').addEventListener('click',vasiPartnerGoBack);main.prepend(nav)})</script>
-  </head><body><main class="wrap"><h1>VASI Partner Registration</h1><p class="muted">One partner account. Choose your activity: Ride Driver (VTC) or Courier (Eats + Delivery).</p><section class="card"><div class="roles"><button id="ride" class="btn active" onclick="role='ride';render()">🚕 Ride Driver<br><small>Passenger rides / VTC</small></button><button id="courier" class="btn" onclick="role='courier';render()">🛵 Courier<br><small>Eats + Delivery</small></button></div></section><section class="card"><h3>Identity</h3><input id="name" class="input" placeholder="Full name"><input id="phone" class="input" placeholder="Phone"><input id="address" class="input" placeholder="Address"><label class="muted">ID / Passport</label><input id="id" class="file" type="file" accept="image/*,.pdf"><h3>Vehicle</h3><div id="vehicles" class="vehicles"><button class="btn active" onclick="vehicle='bike';paintVehicle()">🚲 Vélo</button><button class="btn" onclick="vehicle='scooter';paintVehicle()">🛵 Scooter</button><button class="btn" onclick="vehicle='moto';paintVehicle()">🏍️ Motorcycle</button><button class="btn" onclick="vehicle='car';paintVehicle()">🚗 Car</button></div><div id="rideDocs"><div class="doc">VTC professional card <input id="vtc" class="file" type="file" accept="image/*,.pdf"></div><div class="doc">Driving licence <input id="licence" class="file" type="file" accept="image/*,.pdf"></div><div class="doc">SIREN / KBIS / RNE <input id="business" class="file" type="file" accept="image/*,.pdf"></div><div class="doc">Professional insurance <input id="insurance" class="file" type="file" accept="image/*,.pdf"></div><div class="doc">Carte grise <input id="carte" class="file" type="file" accept="image/*,.pdf"></div></div><div id="courierDocs" class="hidden"><div class="doc">SIREN / KBIS / RNE <input id="cbusiness" class="file" type="file" accept="image/*,.pdf"></div><div class="doc">Vehicle / insurance documents <input id="cvehicle" class="file" type="file" accept="image/*,.pdf"></div><div class="doc">Delivery bag photo <input id="bag" class="file" type="file" accept="image/*"></div></div></section><section class="card"><h3>Live selfie verification</h3><p class="muted">Take a live selfie. VASI will require identity/liveness verification before approval. This camera capture is not itself a biometric match.</p><video id="cam" autoplay playsinline></video><button class="btn" onclick="snap()">Take live selfie</button><img id="preview" class="hidden" style="width:160px;border-radius:16px;margin-top:8px"><label class="muted" style="display:block;margin-top:10px"><input id="consent" type="checkbox"> I agree to VASI identity verification and privacy checks.</label><button class="btn active" style="margin-top:12px" onclick="submit()">Submit for VASI Admin review</button><p id="msg" class="muted"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const sb=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');let role='ride',vehicle='bike',selfie=null;function $(x){return document.getElementById(x)}function render(){$('ride').classList.toggle('active',role==='ride');$('courier').classList.toggle('active',role==='courier');$('rideDocs').classList.toggle('hidden',role!=='ride');$('courierDocs').classList.toggle('hidden',role==='ride');$('vehicles').classList.toggle('hidden',role==='ride')}function paintVehicle(){document.querySelectorAll('#vehicles .btn').forEach((b,i)=>b.classList.toggle('active',['bike','scooter','moto','car'][i]===vehicle))}navigator.mediaDevices?.getUserMedia({video:{facingMode:'user'}}).then(s=>{$('cam').srcObject=s}).catch(()=>{});function snap(){const c=document.createElement('canvas'),v=$('cam');c.width=v.videoWidth||640;c.height=v.videoHeight||480;c.getContext('2d').drawImage(v,0,0);selfie=c.toDataURL('image/jpeg',.85);$('preview').src=selfie;$('preview').classList.remove('hidden');$('msg').textContent='Live selfie captured.'}async function submit(){const {data:{user}}=await sb.auth.getUser();if(!user)return location.href='auth.html';if(!$('name').value.trim())return $('msg').textContent='Enter your full name.';if(!selfie)return $('msg').textContent='Take the live selfie first.';if(!$('consent').checked)return $('msg').textContent='Please accept verification/privacy.';let docs={};const files=role==='ride'?{id:$('id').files[0],vtc:$('vtc').files[0],licence:$('licence').files[0],business:$('business').files[0],insurance:$('insurance').files[0],carte:$('carte').files[0]}:{id:$('id').files[0],business:$('cbusiness').files[0],vehicle:$('cvehicle').files[0],bag:$('bag').files[0]};try{for(const [k,f] of Object.entries(files))if(f){const path=user.id+'/'+Date.now()+'-'+k+'-'+f.name;const up=await sb.storage.from('partner-documents').upload(path,f);if(up.error)throw up.error;docs[k]=up.data.path}const blob=await (await fetch(selfie)).blob();const up=await sb.storage.from('partner-documents').upload(user.id+'/'+Date.now()+'-selfie.jpg',new File([blob],'selfie.jpg',{type:'image/jpeg'}));if(up.error)throw up.error;docs.selfie=up.data.path;if(role==='ride'){const {error}=await sb.from('drivers').upsert({id:user.id,user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),online:false,verified:false,rating:5,role:'ride',status:'pending'},{onConflict:'id'});if(error)throw error}else{const {error}=await sb.from('delivery_drivers').upsert({user_id:user.id,full_name:$('name').value,phone:$('phone').value,vehicle_type:vehicle,online:false,verified:false,documents:docs},{onConflict:'user_id'});if(error)throw error}await sb.auth.updateUser({data:{vasi_partner_role:role,vasi_partner_status:'pending',vasi_partner_name:$('name').value,vasi_partner_documents:docs}});$('msg').innerHTML='<span class="ok">✓ Submitted. VASI Admin must approve your documents before you can go online.</span>'}catch(e){$('msg').innerHTML='<span class="err">Submission failed: '+(e.message||'Please try again.')+'</span>'}}render();</script><script src="./vasi-languages.js"></script></body></html>
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Inscription partenaire VASI</title>
+    <style>
+      :root{color-scheme:dark;--bg:#050505;--surface:#111;--surface-2:#181818;--line:#303030;--muted:#a1a1aa;--green:#55db8b;--green-bg:#0d2b1a;--red:#ffb4b4}
+      *{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}body{margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+      button,input{font:inherit}.wrap{width:100%;max-width:680px;margin:auto;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(32px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+      .page-nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;min-height:56px;margin-bottom:8px;background:linear-gradient(var(--bg) 75%,transparent)}
+      .back-btn{min-width:44px;min-height:44px;padding:0 14px 0 10px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;background:#151515;color:#fff;font-weight:750;cursor:pointer}.back-icon{font-size:28px;line-height:0;transform:translateY(-1px)}
+      h1{margin:12px 0 8px;font-size:clamp(29px,8vw,42px);line-height:1.04;letter-spacing:-.04em}h2{font-size:20px;margin:0 0 14px}.intro{margin:0 0 20px;color:var(--muted);font-size:16px;line-height:1.55}
+      .card{background:var(--surface);border:1px solid #292929;border-radius:22px;padding:18px;margin:12px 0}.roles,.vehicles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .btn{width:100%;min-height:52px;padding:13px 10px;border-radius:14px;border:1px solid #353535;background:var(--surface-2);color:#fff;font-weight:800;cursor:pointer;touch-action:manipulation}.btn.active{background:#fff;color:#050505;border-color:#fff}.btn small{display:block;margin-top:3px;font-size:12px;font-weight:650;color:inherit;opacity:.72}.btn:focus-visible,.input:focus-visible,.file:focus-visible{outline:3px solid #3994ff;outline-offset:2px}
+      .field{display:block;margin-top:12px}.label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 6px;color:#ddd;font-size:14px;font-weight:720}.optional{color:#8f8f96;font-size:12px;font-weight:600}.input,.file{display:block;width:100%;min-height:50px;padding:13px;border-radius:13px;border:1px solid #363636;background:var(--surface-2);color:#fff}.file{font-size:14px}.file::file-selector-button{margin-right:10px;border:0;border-radius:9px;padding:8px 10px;background:#fff;color:#050505;font-weight:750}
+      .docs{display:grid;gap:9px;margin-top:12px}.doc{padding:13px;border:1px solid #2d2d2d;border-radius:15px;background:#141414}.doc .label{margin-bottom:8px}.doc-help{display:block;margin:7px 2px 0;color:#8f8f96;font-size:12px;line-height:1.45}
+      .rule{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:12px 13px;border:1px solid #24693f;border-radius:14px;background:var(--green-bg);color:#caffdd;font-size:14px;line-height:1.45}.rule strong{display:block;color:var(--green)}
+      .hidden{display:none!important}.muted{color:var(--muted);font-size:13px;line-height:1.5}.ok{color:#9ff0b5}.err{color:var(--red)}video{display:block;width:100%;max-height:360px;object-fit:cover;border-radius:18px;background:#090909;border:1px solid #282828}.preview{width:140px;height:140px;object-fit:cover;border-radius:18px;margin-top:10px;border:1px solid #333}.consent{display:flex;align-items:flex-start;gap:10px;margin-top:14px;color:#c5c5c5;font-size:13px;line-height:1.5}.consent input{width:20px;height:20px;flex:0 0 auto}.submit{margin-top:14px;background:#fff;color:#050505;border-color:#fff}.status{min-height:22px;margin:12px 2px 0}.required-note{margin:12px 0 0;color:#8f8f96;font-size:12px}
+      @media(max-width:420px){.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.card{padding:14px}.roles,.vehicles{gap:7px}.btn{padding:12px 7px}.doc{padding:11px}}
+    </style>
+    <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <nav class="page-nav" aria-label="Navigation">
+        <button class="back-btn" type="button" onclick="goBack()"><span class="back-icon" aria-hidden="true">‹</span>Retour</button>
+      </nav>
+
+      <h1>Devenir partenaire VASI</h1>
+      <p class="intro">Créez un seul compte pour conduire des passagers ou effectuer des livraisons.</p>
+
+      <section class="card" aria-labelledby="activity-title">
+        <h2 id="activity-title">Choisissez votre activité</h2>
+        <div class="roles">
+          <button id="ride" class="btn active" type="button" onclick="setRole('ride')">🚕 Chauffeur VTC<small>Transport de passagers</small></button>
+          <button id="courier" class="btn" type="button" onclick="setRole('courier')">🛵 Livreur<small>VASI Eats + Livraison</small></button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="identity-title">
+        <h2 id="identity-title">Identité</h2>
+        <label class="field"><span class="label">Nom complet</span><input id="name" class="input" autocomplete="name" placeholder="Votre nom complet" /></label>
+        <label class="field"><span class="label">Téléphone</span><input id="phone" class="input" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" /></label>
+        <label class="field"><span class="label">Adresse</span><input id="address" class="input" autocomplete="street-address" placeholder="Votre adresse complète" /></label>
+        <label class="field"><span class="label">Pièce d’identité <span>Obligatoire</span></span><input id="identity" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+        <label class="field"><span class="label">Photo de profil <span class="optional">Facultatif</span></span><input id="profile_photo" class="file" type="file" accept="image/jpeg,image/png" /></label>
+      </section>
+
+      <section class="card" aria-labelledby="vehicle-title">
+        <h2 id="vehicle-title">Véhicule et documents</h2>
+        <div id="vehicles" class="vehicles hidden">
+          <button class="btn active" type="button" data-vehicle="bike" onclick="setVehicle('bike')">🚲 Vélo</button>
+          <button class="btn" type="button" data-vehicle="ebike" onclick="setVehicle('ebike')">⚡ Vélo électrique</button>
+          <button class="btn" type="button" data-vehicle="scooter" onclick="setVehicle('scooter')">🛵 Scooter</button>
+          <button class="btn" type="button" data-vehicle="moto" onclick="setVehicle('moto')">🏍️ Moto</button>
+          <button class="btn" type="button" data-vehicle="car" onclick="setVehicle('car')">🚗 Voiture</button>
+        </div>
+
+        <div id="bikeRule" class="rule hidden" role="status">
+          <span aria-hidden="true">✓</span><span><strong>Aucun permis de conduire requis</strong>Pour un vélo ou un VAE conforme : pas de permis, carte grise ou assurance véhicule à télécharger.</span>
+        </div>
+        <div id="motorRule" class="rule hidden" role="status">
+          <span aria-hidden="true">!</span><span><strong>Véhicule motorisé</strong>Le permis, l’assurance, la carte grise et les justificatifs de transport sont obligatoires.</span>
+        </div>
+
+        <div id="rideDocs" class="docs">
+          <label class="doc"><span class="label">Carte professionnelle VTC</span><input id="vtc" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span class="label">Permis de conduire</span><input id="ride_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span class="label">SIREN / KBIS / RNE</span><input id="ride_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span class="label">Assurance professionnelle</span><input id="ride_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span class="label">Carte grise</span><input id="ride_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+        </div>
+
+        <div id="courierDocs" class="docs hidden">
+          <label class="doc"><span class="label">SIREN / KBIS / RNE</span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Preuve de votre activité indépendante en France.</span></label>
+          <label class="doc"><span class="label">RIB à votre nom</span><input id="rib" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Utilisé uniquement pour le versement de vos revenus.</span></label>
+          <label class="doc"><span class="label">Photo du sac isotherme</span><input id="bag" class="file" type="file" accept="image/jpeg,image/png" /></label>
+          <label class="doc"><span class="label" id="vehiclePhotoLabel">Photo du vélo</span><input id="vehicle_photo" class="file" type="file" accept="image/jpeg,image/png" /></label>
+          <div id="motorDocs" class="docs hidden">
+            <label class="doc"><span class="label">Permis de conduire</span><input id="courier_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+            <label class="doc"><span class="label">Assurance du véhicule</span><input id="courier_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+            <label class="doc"><span class="label">Carte grise</span><input id="courier_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+            <label class="doc"><span class="label">Capacité / licence de transport léger</span><input id="transport_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="selfie-title">
+        <h2 id="selfie-title">Vérification en direct</h2>
+        <p class="muted">Prenez un selfie en direct pour confirmer que le compte vous appartient.</p>
+        <video id="cam" autoplay playsinline muted></video>
+        <button class="btn" type="button" style="margin-top:10px" onclick="snap()">Prendre le selfie</button>
+        <img id="preview" class="preview hidden" alt="Aperçu du selfie" />
+        <label class="consent"><input id="consent" type="checkbox" /><span>J’accepte la vérification d’identité et le traitement sécurisé de mes documents par VASI.</span></label>
+        <p class="required-note">Les documents obligatoires doivent être validés par un administrateur VASI avant la mise en ligne.</p>
+        <button id="submitButton" class="btn submit" type="button" onclick="submitApplication()">Envoyer pour validation</button>
+        <p id="msg" class="status muted" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const sb = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co', 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+      const motorVehicles = new Set(['scooter', 'moto', 'car']);
+      let role = 'ride', vehicle = 'bike', selfie = null, submitting = false;
+      const $ = id => document.getElementById(id);
+
+      function goBack(){ if(history.length > 1) history.back(); else location.href = 'index.html'; }
+      function setRole(next){ role = next; render(); }
+      function setVehicle(next){ vehicle = next; renderVehicle(); }
+      function render(){
+        $('ride').classList.toggle('active', role === 'ride');
+        $('courier').classList.toggle('active', role === 'courier');
+        $('rideDocs').classList.toggle('hidden', role !== 'ride');
+        $('courierDocs').classList.toggle('hidden', role !== 'courier');
+        $('vehicles').classList.toggle('hidden', role !== 'courier');
+        renderVehicle();
+      }
+      function renderVehicle(){
+        document.querySelectorAll('[data-vehicle]').forEach(button => button.classList.toggle('active', button.dataset.vehicle === vehicle));
+        const motor = role === 'courier' && motorVehicles.has(vehicle);
+        const cycle = role === 'courier' && !motor;
+        $('bikeRule').classList.toggle('hidden', !cycle);
+        $('motorRule').classList.toggle('hidden', !motor);
+        $('motorDocs').classList.toggle('hidden', !motor);
+        const names = {bike:'Photo du vélo', ebike:'Photo du vélo électrique', scooter:'Photo du scooter', moto:'Photo de la moto', car:'Photo de la voiture'};
+        $('vehiclePhotoLabel').textContent = names[vehicle] || 'Photo du véhicule';
+      }
+
+      navigator.mediaDevices?.getUserMedia({video:{facingMode:'user'},audio:false})
+        .then(stream => { $('cam').srcObject = stream; })
+        .catch(() => { $('msg').textContent = 'Autorisez la caméra pour prendre votre selfie.'; });
+
+      function snap(){
+        const video = $('cam');
+        if (!video.videoWidth) return showError('La caméra n’est pas encore prête. Réessayez.');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        selfie = canvas.toDataURL('image/jpeg', .86);
+        $('preview').src = selfie; $('preview').classList.remove('hidden');
+        $('msg').innerHTML = '<span class="ok">✓ Selfie enregistré.</span>';
+      }
+      function showError(message){ $('msg').innerHTML = '<span class="err">' + message + '</span>'; }
+      function selected(id){ return $(id).files && $(id).files[0]; }
+      function requiredFiles(){
+        if (role === 'ride') return {
+          identity:selected('identity'), vtc:selected('vtc'), licence:selected('ride_licence'), business:selected('ride_business'),
+          insurance:selected('ride_insurance'), carte_grise:selected('ride_carte_grise')
+        };
+        const files = {
+          identity:selected('identity'), business:selected('courier_business'), rib:selected('rib'), bag:selected('bag'), vehicle_photo:selected('vehicle_photo')
+        };
+        if (motorVehicles.has(vehicle)) Object.assign(files, {
+          licence:selected('courier_licence'), insurance:selected('courier_insurance'), carte_grise:selected('courier_carte_grise'), transport_licence:selected('transport_licence')
+        });
+        return files;
+      }
+      function validate(files){
+        if (!$('name').value.trim()) return 'Saisissez votre nom complet.';
+        if (!$('phone').value.trim()) return 'Saisissez votre numéro de téléphone.';
+        if (!$('address').value.trim()) return 'Saisissez votre adresse.';
+        if (Object.values(files).some(file => !file)) return 'Ajoutez tous les documents obligatoires.';
+        const tooLarge = [...Object.values(files), selected('profile_photo')].filter(Boolean).find(file => file.size > 10 * 1024 * 1024);
+        if (tooLarge) return 'Chaque fichier doit faire moins de 10 Mo.';
+        if (!selfie) return 'Prenez votre selfie en direct.';
+        if (!$('consent').checked) return 'Acceptez la vérification pour continuer.';
+        return '';
+      }
+      async function upload(userId, key, file){
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(-90);
+        const path = userId + '/' + Date.now() + '-' + key + '-' + safeName;
+        const {data,error} = await sb.storage.from('partner-documents').upload(path, file, {cacheControl:'3600',upsert:false});
+        if (error) throw error;
+        return data.path;
+      }
+      async function submitApplication(){
+        if (submitting) return;
+        const files = requiredFiles(), problem = validate(files);
+        if (problem) return showError(problem);
+        const {data:{user}} = await sb.auth.getUser();
+        if (!user) { location.href = 'auth.html?role=' + role; return; }
+        submitting = true; $('submitButton').disabled = true; $('submitButton').textContent = 'Envoi en cours…';
+        try {
+          const docs = {};
+          for (const [key,file] of Object.entries(files)) docs[key] = await upload(user.id, key, file);
+          if (selected('profile_photo')) docs.profile_photo = await upload(user.id, 'profile_photo', selected('profile_photo'));
+          const selfieBlob = await (await fetch(selfie)).blob();
+          docs.selfie = await upload(user.id, 'selfie', new File([selfieBlob], 'selfie.jpg', {type:'image/jpeg'}));
+          if (role === 'ride') {
+            const {error} = await sb.from('drivers').upsert({
+              id:user.id,user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),online:false,verified:false,rating:5,role:'ride',status:'pending'
+            }, {onConflict:'id'});
+            if (error) throw error;
+          } else {
+            const {error} = await sb.from('delivery_drivers').upsert({
+              user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),vehicle_type:vehicle,
+              online:false,verified:false,application_status:'pending',rejection_reason:null,documents:docs,accepted_policy_at:new Date().toISOString()
+            }, {onConflict:'user_id'});
+            if (error) throw error;
+          }
+          const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending'};
+          if (role === 'ride') metadata.vasi_partner_documents = docs;
+          await sb.auth.updateUser({data:metadata});
+          $('msg').innerHTML = '<span class="ok">✓ Dossier envoyé. VASI vous informera après la vérification.</span>';
+          $('submitButton').textContent = 'Dossier envoyé';
+        } catch (error) {
+          showError('Envoi impossible : ' + (error.message || 'réessayez.'));
+          submitting = false; $('submitButton').disabled = false; $('submitButton').textContent = 'Envoyer pour validation';
+        }
+      }
+      render();
+    </script>
+    <script src="./vasi-languages.js"></script>
+  </body>
+</html>
