@@ -6,6 +6,10 @@ const anonKey =
   process.env.VASI_SUPABASE_ANON_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
+const serviceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.VASI_SUPABASE_SERVICE_ROLE_KEY ||
+  "";
 
 const fields = [
   "go_base",
@@ -111,6 +115,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "GET or PATCH required" });
   if (!auth.startsWith("Bearer "))
     return res.status(401).json({ error: "Admin sign-in required" });
+  if (!serviceKey)
+    return res.status(503).json({ error: "Admin service is not configured" });
   try {
     const b = req.body || {},
       update = {};
@@ -162,12 +168,24 @@ export default async function handler(req, res) {
       (r) => (r.ok ? r.json() : null),
     );
     if (!user?.id) return res.status(401).json({ error: "Session expired" });
+    const allowResponse = await fetch(
+      `${supabaseUrl}/rest/v1/admin_allowlist?user_id=eq.${encodeURIComponent(user.id)}&select=user_id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
+    );
+    const allowRows = await allowResponse.json().catch(() => []);
+    if (!allowResponse.ok || !allowRows.length)
+      return res.status(403).json({ error: "Admin access required" });
     update.updated_by = user.id;
     const r = await fetch(
       `${supabaseUrl}/rest/v1/vasi_pricing_settings?id=eq.active`,
       {
         method: "PATCH",
-        headers: { ...headers, Prefer: "return=representation" },
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
         body: JSON.stringify(update),
       },
     );
