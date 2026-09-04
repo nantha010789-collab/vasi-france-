@@ -100,6 +100,74 @@
         color: #fff;
         font-size: 15px;
       }
+      .addressSearchRow {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+      }
+      .addressSuggestions {
+        margin: -1px 0 10px;
+        border: 1px solid #303030;
+        border-radius: 15px;
+        overflow: hidden;
+        background: #161616;
+        box-shadow: 0 14px 36px #0009;
+      }
+      .addressSuggestion {
+        display: block;
+        width: 100%;
+        padding: 12px 13px;
+        border: 0;
+        border-bottom: 1px solid #2a2a2a;
+        background: transparent;
+        color: #fff;
+        text-align: left;
+        cursor: pointer;
+      }
+      .addressSuggestion:last-child {
+        border-bottom: 0;
+      }
+      .addressSuggestion strong,
+      .addressSuggestion small {
+        display: block;
+      }
+      .addressSuggestion strong {
+        font-size: 14px;
+      }
+      .addressSuggestion small {
+        margin-top: 3px;
+        color: #9b9b9b;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .pinConfirm {
+        margin: 9px 0 11px;
+        padding: 13px;
+        border: 1px solid #315b42;
+        border-radius: 16px;
+        background: #102419;
+      }
+      .pinConfirm strong,
+      .pinConfirm span {
+        display: block;
+      }
+      .pinConfirm span {
+        margin: 4px 0 10px;
+        color: #b7c8bd;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .pinConfirm button {
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        padding: 12px;
+        background: #fff;
+        color: #090909;
+        font-size: 14px;
+        font-weight: 900;
+      }
       .savedPlaces {
         margin: 10px 0 4px;
         padding: 12px;
@@ -448,14 +516,33 @@
         </div>
         <div id="searchWrap" class="hidden">
           <div class="field">
-            <input
-              id="destSearch"
-              placeholder="Enter destination or place"
-              onkeydown="if (event.key === 'Enter') searchDestination();"
-            /><button class="iconbtn" onclick="searchDestination()">
-              Search
-            </button>
+            <div class="addressSearchRow">
+              <input
+                id="destSearch"
+                placeholder="Enter destination or place"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="destSuggestions"
+                oninput="schedulePlaceSuggestions()"
+                onkeydown="if (event.key === 'Enter') searchDestination();"
+              /><button class="iconbtn" onclick="searchDestination()">
+                Search
+              </button>
+            </div>
           </div>
+          <div
+            id="destSuggestions"
+            class="addressSuggestions hidden"
+            role="listbox"
+            aria-label="Destination suggestions"
+          ></div>
+        </div>
+        <div id="pinConfirm" class="pinConfirm hidden" aria-live="polite">
+          <strong>Confirm the map pin</strong>
+          <span>Drag the destination pin if needed, then confirm it.</span>
+          <button type="button" onclick="confirmDestination()">
+            Confirm destination
+          </button>
         </div>
         <div id="savedPlaces" class="savedPlaces hidden" aria-live="polite">
           <div class="savedPlacesHead">
@@ -606,6 +693,10 @@
         driverMarker,
         pickup = null,
         destination = null,
+        destinationConfirmed = false,
+        placeSuggestionTimer = null,
+        placeSuggestionRequest = 0,
+        placeSuggestions = [],
         statusTimer = null,
         waitTimer = null,
         waitSeconds = 0,
@@ -712,6 +803,10 @@
         smartOffer = null;
       const $ = (id) => document.getElementById(id),
         money = (n) => "€" + Number(n || 0).toFixed(2);
+      const VASI_API_ORIGIN = location.hostname.endsWith(".github.io")
+        ? "https://vasi-new.vercel.app"
+        : "";
+      const apiUrl = (path) => VASI_API_ORIGIN + path;
       function priceFor(km, mins, key) {
         let fare;
         if (pricingOffer.active && pricingOffer.mode === "percentage") {
@@ -933,7 +1028,11 @@
         map.on("click", (e) => {
           if (!pickup)
             setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map");
-          else setDestination([e.latlng.lat, e.latlng.lng]);
+          else
+            setDestination(
+              [e.latlng.lat, e.latlng.lng],
+              "Destination pin selected",
+            );
         });
         checkPaymentAvailability();
         useLocation();
@@ -991,7 +1090,7 @@
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
         }
-        if (destination) buildRoute();
+        if (destination && destinationConfirmed) buildRoute();
         if (homeDestination) {
           $("destSearch").value = homeDestination;
           localStorage.removeItem("vasi_destination_hint");
@@ -1009,10 +1108,28 @@
       }
       function setDestination(p, label = "Destination selected") {
         destination = p;
+        destinationConfirmed = false;
         $("destination").textContent = label;
+        $("booking").classList.add("hidden");
+        $("fare").textContent = "—";
+        $("pinConfirm").classList.remove("hidden");
+        $("searchWrap").classList.add("hidden");
+        clearPlaceSuggestions();
         try {
           if (destMarker) destMarker.remove();
-          destMarker = L.marker(p).addTo(map).bindPopup(label);
+          destMarker = L.marker(p, { draggable: true })
+            .addTo(map)
+            .bindPopup(label)
+            .openPopup();
+          destMarker.on("dragend", () => {
+            const pin = destMarker.getLatLng();
+            destination = [pin.lat, pin.lng];
+            destinationConfirmed = false;
+            $("destination").textContent = label + " · pin adjusted";
+            $("pinConfirm").classList.remove("hidden");
+            $("status").textContent =
+              "Pin moved — confirm this destination before pricing";
+          });
           if (pickup) {
             map.fitBounds(L.latLngBounds([pickup, destination]), {
               padding: [35, 35],
@@ -1023,15 +1140,114 @@
         } catch (mapError) {
           console.warn("Destination map preview unavailable", mapError);
         }
+        $("status").textContent = pickup
+          ? "Check the destination pin, then confirm it"
+          : "Confirm the destination pin, then choose your pickup";
+      }
+      function confirmDestination() {
+        if (!destination) return;
+        destinationConfirmed = true;
+        $("pinConfirm").classList.add("hidden");
+        if (destMarker?.dragging) destMarker.dragging.disable();
         if (pickup) buildRoute();
         else
           $("status").textContent =
-            "Destination selected — now choose your pickup location";
+            "Destination confirmed — now choose your pickup location";
       }
       function focusDestination() {
         $("searchWrap").classList.remove("hidden");
         $("destSearch").focus();
-        $("status").textContent = "Enter a destination or tap the map";
+        $("status").textContent =
+          "Start typing an address or place — VASI will suggest matches";
+      }
+      function clearPlaceSuggestions() {
+        placeSuggestions = [];
+        const list = $("destSuggestions");
+        list.replaceChildren();
+        list.classList.add("hidden");
+      }
+      function renderPlaceSuggestions(rows) {
+        clearPlaceSuggestions();
+        placeSuggestions = rows;
+        const list = $("destSuggestions");
+        rows.forEach((suggestion, index) => {
+          const button = document.createElement("button"),
+            title = document.createElement("strong"),
+            detail = document.createElement("small");
+          button.type = "button";
+          button.className = "addressSuggestion";
+          button.setAttribute("role", "option");
+          title.textContent = suggestion.main || suggestion.label;
+          detail.textContent = suggestion.secondary || suggestion.label;
+          button.append(title, detail);
+          button.onclick = () => selectPlaceSuggestion(index);
+          list.append(button);
+        });
+        list.classList.toggle("hidden", !rows.length);
+      }
+      function schedulePlaceSuggestions() {
+        clearTimeout(placeSuggestionTimer);
+        const input = $("destSearch").value.trim();
+        if (input.length < 4) {
+          clearPlaceSuggestions();
+          return;
+        }
+        placeSuggestionTimer = setTimeout(loadPlaceSuggestions, 420);
+      }
+      async function loadPlaceSuggestions() {
+        const input = $("destSearch").value.trim();
+        if (input.length < 4) return clearPlaceSuggestions();
+        const requestId = ++placeSuggestionRequest;
+        try {
+          const response = await fetch(apiUrl("/api/places"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "autocomplete",
+              input,
+              location: pickup ? { lat: pickup[0], lng: pickup[1] } : null,
+            }),
+          });
+          const data = await response.json();
+          if (requestId !== placeSuggestionRequest) return;
+          if (!response.ok || !Array.isArray(data?.suggestions))
+            return clearPlaceSuggestions();
+          renderPlaceSuggestions(data.suggestions);
+        } catch (error) {
+          if (requestId === placeSuggestionRequest) clearPlaceSuggestions();
+        }
+      }
+      async function selectPlaceSuggestion(index) {
+        const suggestion = placeSuggestions[index];
+        if (!suggestion?.place_id) return;
+        $("status").textContent = "Confirming the selected Google address…";
+        clearPlaceSuggestions();
+        try {
+          const response = await fetch(apiUrl("/api/places"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "resolve",
+              place_id: suggestion.place_id,
+            }),
+          });
+          const data = await response.json();
+          const place = data?.place;
+          if (
+            !response.ok ||
+            !Number.isFinite(Number(place?.lat)) ||
+            !Number.isFinite(Number(place?.lng))
+          )
+            throw Error("Place unavailable");
+          $("destSearch").value = place.label || suggestion.label;
+          setDestination(
+            [Number(place.lat), Number(place.lng)],
+            place.label || suggestion.label,
+          );
+        } catch (error) {
+          $("destSearch").value = suggestion.label;
+          await searchDestination();
+        }
       }
       function normalizeDestinationQuery(value) {
         return String(value || "")
@@ -1051,11 +1267,12 @@
         return [...new Set(out.filter(Boolean))];
       }
       async function geocodeDestination(q) {
-        const u =
+        const u = apiUrl(
           "/api/route-preview?q=" +
           encodeURIComponent(q) +
           "&_=" +
-          Date.now();
+          Date.now(),
+        );
         const r = await fetch(u, { cache: "no-store" });
         if (!r.ok) throw Error("Geocoding unavailable");
         const d = await r.json();
@@ -1065,7 +1282,7 @@
         try {
           const session = (await sb.auth.getSession()).data.session;
           if (!session?.access_token) return [];
-          const response = await fetch("/api/ai-map-assist", {
+          const response = await fetch(apiUrl("/api/ai-map-assist"), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1134,7 +1351,6 @@
           const label = formatGeocodedAddress(found, raw);
           setDestination([lat, lng], label);
           $("destSearch").value = label;
-          $("searchWrap").classList.add("hidden");
           if (resolved.corrected)
             $("status").textContent =
               "AI corrected the destination search — check the map pin";
@@ -1152,7 +1368,7 @@
             ...stops.map((s) => [s.lat, s.lng]),
             destination,
           ];
-          const response = await fetch("/api/route-preview", {
+          const response = await fetch(apiUrl("/api/route-preview"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1218,7 +1434,9 @@
         const address = n.trim();
         $("status").textContent = "Finding stop…";
         try {
-          const url = "/api/route-preview?q=" + encodeURIComponent(address);
+          const url = apiUrl(
+            "/api/route-preview?q=" + encodeURIComponent(address),
+          );
           const r = await fetch(url);
           const d = await r.json();
           const found = d?.results?.[0];
@@ -1472,7 +1690,7 @@
         if (Date.now() - etaLastUpdate < 12000) return;
         etaLastUpdate = Date.now();
         try {
-          const response = await fetch("/api/route-preview", {
+          const response = await fetch(apiUrl("/api/route-preview"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

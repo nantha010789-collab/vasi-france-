@@ -187,12 +187,99 @@ test("AI map assistance degrades safely when no API key is configured", async ()
   assert.deepEqual(res.body, { enabled: false, suggestions: [] });
 });
 
+test("Google Places returns lean autocomplete suggestions and resolves the selected pin", async () => {
+  process.env.GOOGLE_MAPS_SERVER_KEY = "google-test-key";
+  const calls = [];
+  global.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+    if (String(url).includes("places.googleapis.com")) {
+      return response({
+        suggestions: [
+          {
+            placePrediction: {
+              placeId: "ChIJVasiTestPlace123",
+              text: { text: "Gare du Nord, Paris, France" },
+              structuredFormat: {
+                mainText: { text: "Gare du Nord" },
+                secondaryText: { text: "Paris, France" },
+              },
+            },
+          },
+        ],
+      });
+    }
+    if (String(url).includes("maps.googleapis.com/maps/api/geocode")) {
+      return response({
+        results: [
+          {
+            place_id: "ChIJVasiTestPlace123",
+            formatted_address: "Gare du Nord, 75010 Paris, France",
+            geometry: { location: { lat: 48.8809, lng: 2.3553 } },
+          },
+        ],
+      });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+  const { default: places } = await import(`../api/places.js?test=${Date.now()}`);
+  const suggestionRes = mockRes();
+  await places(
+    {
+      method: "POST",
+      headers: { origin: "https://nantha010789-collab.github.io" },
+      body: {
+        action: "autocomplete",
+        input: "gare du nor",
+        location: { lat: 48.8566, lng: 2.3522 },
+      },
+    },
+    suggestionRes,
+  );
+  assert.equal(suggestionRes.statusCode, 200);
+  assert.equal(suggestionRes.body.suggestions[0].main, "Gare du Nord");
+  assert.equal(
+    suggestionRes.headers["access-control-allow-origin"],
+    "https://nantha010789-collab.github.io",
+  );
+  const placesCall = calls.find((item) => item.url.includes("places.googleapis.com"));
+  assert.match(placesCall.options.headers["X-Goog-FieldMask"], /placeId/);
+  assert.deepEqual(JSON.parse(placesCall.options.body).includedRegionCodes.slice(0, 2), ["fr", "gb"]);
+
+  const resolveRes = mockRes();
+  await places(
+    {
+      method: "POST",
+      headers: {},
+      body: { action: "resolve", place_id: "ChIJVasiTestPlace123" },
+    },
+    resolveRes,
+  );
+  delete process.env.GOOGLE_MAPS_SERVER_KEY;
+  assert.equal(resolveRes.statusCode, 200);
+  assert.deepEqual(resolveRes.body.place, {
+    place_id: "ChIJVasiTestPlace123",
+    label: "Gare du Nord, 75010 Paris, France",
+    lat: 48.8809,
+    lng: 2.3553,
+  });
+});
+
 test("ride map verifies AI address text with the trusted geocoder", async () => {
   const source = await readFile("ride-flow.html", "utf8");
-  assert.match(source, /fetch\("\/api\/ai-map-assist"/);
+  assert.match(source, /apiUrl\("\/api\/ai-map-assist"\)/);
   assert.match(source, /AI supplies text only/);
   assert.match(source, /await geocodeDestination\(query\)/);
   assert.match(source, /AI corrected your \$\{kind\} address/);
+});
+
+test("ride map uses debounced Google suggestions and requires pin confirmation", async () => {
+  const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /schedulePlaceSuggestions/);
+  assert.match(source, /apiUrl\("\/api\/places"\)/);
+  assert.match(source, /setTimeout\(loadPlaceSuggestions, 420\)/);
+  assert.match(source, /L\.marker\(p, \{ draggable: true \}\)/);
+  assert.match(source, /function confirmDestination\(\)/);
+  assert.match(source, /destination && destinationConfirmed/);
 });
 
 test("customer-to-driver lifecycle exposes call, payment and receipt contracts", async () => {
