@@ -123,18 +123,19 @@
         >
       </header>
       <section class="card">
-        <div class="switch">
-          <button id="customerBtn" onclick="setRole('customer')">
+        <div class="switch" role="tablist" aria-label="VASI account type">
+          <button id="customerBtn" type="button" role="tab" onclick="setRole('customer')">
             Customer</button
-          ><button id="rideBtn" onclick="setRole('ride')">🚕 Ride</button
-          ><button id="courierBtn" onclick="setRole('courier')">
+          ><button id="rideBtn" type="button" role="tab" onclick="setRole('ride')">🚕 Ride</button
+          ><button id="courierBtn" type="button" role="tab" onclick="setRole('courier')">
             🛵 Courier
-          </button><button id="restaurantBtn" onclick="setRole('restaurant')">
+          </button><button id="restaurantBtn" type="button" role="tab" onclick="setRole('restaurant')">
             🍽️ Restaurant
           </button>
         </div>
         <h1 id="title">Customer login</h1>
         <p id="desc" class="muted">Quick phone sign-in for VASI customers.</p>
+        <label id="identityLabel" class="vasi-field-label" for="identity">Mobile number</label>
         <input
           id="identity"
           class="input"
@@ -144,6 +145,7 @@
           autocomplete="tel"
         />
         <div id="codeStep" class="hidden">
+          <label class="vasi-field-label" for="otp">6-digit SMS code</label>
           <input
             id="otp"
             class="input"
@@ -170,7 +172,7 @@
             this screen open and enter the most recently received code.
           </p>
         </div>
-        <button id="continueBtn" class="btn primary" onclick="submitAuth()">
+        <button id="continueBtn" class="btn primary" type="button" onclick="submitAuth()">
           Send SMS code</button
         ><a id="register" class="link hidden" href="partner-register-v2.html"
           >New partner? Register with VASI →</a
@@ -186,7 +188,7 @@
             >contact@vasigo.eu</a
           >
         </p>
-        <p id="msg"></p>
+        <p id="msg" role="status" aria-live="polite"></p>
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -276,14 +278,15 @@
         $("identity").inputMode = customer ? "tel" : "email";
         $("identity").autocomplete = customer ? "tel" : "email";
         $("identity").placeholder = customer ? "06 12 34 56 78" : "you@example.com";
+        $("identityLabel").textContent = customer ? "Mobile number" : "Email address";
         $("continueBtn").textContent = customer ? (phoneAwaitingCode ? "Verify & continue" : "Send SMS code") : "Continue";
         $("codeStep").classList.toggle("hidden", !customer || !phoneAwaitingCode);
-        ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
-          $(id).classList.remove("active"),
-        );
-        $(
-          customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
-        ).classList.add("active");
+        const activeTab = customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn";
+        ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) => {
+          const active = id === activeTab;
+          $(id).classList.toggle("active", active);
+          $(id).setAttribute("aria-selected", String(active));
+        });
         $("register").classList.toggle("hidden", customer);
         $("register").href = role === "restaurant" ? "restaurant-register.html" : "partner-register-v2.html";
         $("register").textContent = role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →";

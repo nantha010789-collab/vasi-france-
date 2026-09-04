@@ -119,6 +119,127 @@ button {
   max-width: 100%;
 }
 
+button,
+[role="button"],
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+:focus-visible {
+  outline: 3px solid #73e89a;
+  outline-offset: 3px;
+}
+
+.vasi-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.vasi-field-label {
+  display: block;
+  margin: 0 0 8px;
+  color: #d5d5d5;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.vasi-address-shell {
+  position: relative;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+
+.vasi-address-shell input {
+  width: 100%;
+}
+
+.vasi-address-shell.is-confirmed input {
+  border-color: #318d50 !important;
+  box-shadow: 0 0 0 1px #318d50;
+}
+
+.vasi-address-suggestions {
+  position: absolute;
+  z-index: 1200;
+  top: calc(100% - 1px);
+  right: 0;
+  left: 0;
+  max-height: min(310px, 42vh);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #3b3b3b;
+  border-radius: 14px;
+  background: #171717;
+  box-shadow: 0 18px 42px rgb(0 0 0 / 48%);
+}
+
+.vasi-address-option {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vasi-address-option:hover,
+.vasi-address-option[aria-selected="true"] {
+  background: #2a2a2a;
+}
+
+.vasi-address-option strong,
+.vasi-address-option span {
+  display: block;
+}
+
+.vasi-address-option span {
+  margin-top: 3px;
+  color: #a8a8a8;
+  font-size: 12px;
+}
+
+.vasi-address-confirmation {
+  margin-top: 8px;
+  padding: 9px 11px;
+  border: 1px solid #235f37;
+  border-radius: 11px;
+  background: #0c2516;
+  color: #8bf0aa;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.vasi-address-status {
+  min-height: 18px;
+  margin: 7px 2px 0;
+  color: #9b9b9b;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .payModal {
   padding-top: max(14px, var(--vasi-safe-top)) !important;
   padding-right: max(14px, var(--vasi-safe-right)) !important;

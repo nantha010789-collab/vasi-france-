@@ -23,13 +23,22 @@ async function geocode(address) {
 
 async function route(pickup, dropoff) {
   const coordinates = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
-  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=false`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
+  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
   if (!response.ok) throw new Error("Delivery route service is unavailable");
   const best = (await response.json())?.routes?.[0];
   if (!best || !Number.isFinite(best.distance) || !Number.isFinite(best.duration)) throw new Error("No driving route was found between these addresses");
   const distanceKm = best.distance / 1000;
   if (distanceKm > 150) throw new Error("VASI local delivery currently supports routes up to 150 km");
-  return { distanceKm, durationMin: Math.max(1, Math.ceil(best.duration / 60)) };
+  return {
+    distanceKm,
+    durationMin: Math.max(1, Math.ceil(best.duration / 60)),
+    route: Array.isArray(best.geometry?.coordinates)
+      ? best.geometry.coordinates.filter((point, index, points) =>
+          Array.isArray(point) && point.length === 2 &&
+          (index === 0 || index === points.length - 1 || index % Math.max(1, Math.ceil(points.length / 400)) === 0),
+        )
+      : [],
+  };
 }
 
 function calculatePrice(type, metrics) {
@@ -55,7 +64,7 @@ export default async function handler(req, res) {
     const [pickup, dropoff] = await Promise.all([geocode(cleanAddress(body.pickup_address)), geocode(cleanAddress(body.dropoff_address))]);
     const metrics = await route(pickup, dropoff);
     const quote = calculatePrice(type, metrics);
-    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency: "EUR" };
+    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, route: metrics.route, quote, currency: "EUR" };
     if (body.action !== "book") return res.status(200).json(result);
 
     const authorization = req.headers.authorization || "";
