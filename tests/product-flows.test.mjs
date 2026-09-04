@@ -310,6 +310,9 @@ test("customer-to-driver lifecycle exposes call, payment and receipt contracts",
   assert.match(auth, /vasi_pending_phone/);
   assert.match(auth, /otp_expired/);
   assert.match(auth, /startResendCountdown\(0\)/);
+  assert.match(auth, /const RESEND_WAIT_SECONDS = 90/);
+  assert.match(auth, /Every earlier code is now invalid/);
+  assert.match(auth, /persistSession: true/);
   for (const language of ["fr", "en", "ta", "de", "ar", "hi"]) assert.match(languages, new RegExp(`\\b${language}:`));
 });
 
