@@ -316,6 +316,26 @@ test("customer-to-driver lifecycle exposes call, payment and receipt contracts",
   for (const language of ["fr", "en", "ta", "de", "ar", "hi"]) assert.match(languages, new RegExp(`\\b${language}:`));
 });
 
+test("customer profile photo remains optional and owner-scoped", async () => {
+  const [account, migration] = await Promise.all([
+    readFile("account.html", "utf8"),
+    readFile(
+      "supabase/migrations/20260904182500_add_optional_customer_avatar.sql",
+      "utf8",
+    ),
+  ]);
+  assert.match(account, /id="avatarButton"/);
+  assert.match(account, /id="removeAvatarButton"/);
+  assert.match(account, /Optional · JPG, PNG or WebP · max 2 MB/);
+  assert.match(account, /createSignedUrl\(path, 60 \* 60\)/);
+  assert.match(account, /upsert: true/);
+  assert.match(account, /el\("avatarInitials"\)\.textContent = initials\(name\)/);
+  assert.match(migration, /'customer-avatars'/);
+  assert.match(migration, /file_size_limit/);
+  assert.match(migration, /\(storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
+  assert.match(migration, /for delete\s+to authenticated/);
+});
+
 test("customer, driver, restaurant and admin surfaces load the shared language runtime", async () => {
   const pages = [
     "index.html", "ride-flow.html", "ride-chat.html", "driver.html", "settings.html",
