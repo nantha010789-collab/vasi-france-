@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/", "destination": "/index.html" },
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app.html", "destination": "/index.html" },
@@ -62,6 +64,14 @@
     {
       "source": "/auth.html",
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/admin/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/admin-login.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     }
   ],
   "cleanUrls": true,
@@ -84,6 +94,9 @@
     "api/admin-documents.js": { "includeFiles": "api/admin-documents.js" },
     "api/admin-drivers.js": { "includeFiles": "api/admin-drivers.js" },
     "api/admin-live-gps.js": { "includeFiles": "api/admin-live-gps.js" },
-    "api/admin-stats.js": { "includeFiles": "api/admin-stats.js" }
+    "api/admin-stats.js": { "includeFiles": "api/admin-stats.js" },
+    "api/restaurant-admin.js": { "includeFiles": "api/restaurant-admin.js" },
+    "api/support.js": { "includeFiles": "api/support.js" },
+    "api/pricing.js": { "includeFiles": "api/pricing.js" }
   }
 }
