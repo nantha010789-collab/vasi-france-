@@ -1,9 +1,10 @@
-const CACHE = "vasi-app-v14";
+const CACHE = "vasi-app-v15";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
   appUrl("index.html"),
   appUrl("manifest.webmanifest"),
+  appUrl("vasi-mobile-fit.css"),
   appUrl("vasi-icon.svg"),
   appUrl("vasi-icon-192.png"),
   appUrl("vasi-icon-512.png"),
