@@ -1,2 +1,76 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>VASI Partner Admin</title><style>body{margin:0;background:#070707;color:#fff;font-family:Inter,system-ui,sans-serif}.wrap{max-width:900px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:30px;font-weight:950}.card{background:#111;border:1px solid #292929;border-radius:18px;padding:16px;margin-top:12px}.filters{display:flex;gap:8px;overflow:auto}.filters button,.action{border:1px solid #333;background:#181818;color:#fff;border-radius:12px;padding:10px;font-weight:800}.filters .active{background:#fff;color:#050505}.partner{border:1px solid #2b2b2b;border-radius:16px;padding:14px;margin-top:9px}.meta{color:#999;font-size:12px;margin:5px 0}.actions{display:flex;gap:8px;margin-top:10px}.approve{background:#fff;color:#050505}.reject{background:#321717}.empty{color:#999}.note{color:#888;font-size:11px;line-height:1.5}</style>  <link rel="stylesheet" href="./vasi-mobile-fit.css" />
-  </head><body><main class="wrap"><header class="top"><div class="brand">VASI Admin</div><button class="action" onclick="location.href='index.html'">Home</button></header><section class="card"><h2>Partner verification</h2><div class="filters"><button class="active" onclick="setFilter('pending',this)">Pending</button><button onclick="setFilter('approved',this)">Approved</button><button onclick="setFilter('rejected',this)">Rejected</button></div><div id="list"><p class="empty">Loading…</p></div><p class="note">Only authorized VASI admins should use this page. Approval controls the partner's ability to go online.</p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');let filter='pending';const $=id=>document.getElementById(id);async function admin(body){const {data:{session}}=await client.auth.getSession();if(!session){location.href='auth.html';return null}const r=await fetch('https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/admin-service',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});return r.json()}async function load(){const d=await admin({action:'list_partners',status:filter});if(!d)return;if(d.error){$('list').innerHTML='<p class="empty">'+d.error+'</p>';return}const rows=d.partners||[];if(!rows.length){$('list').innerHTML='<p class="empty">No '+filter+' partners.</p>';return}$('list').innerHTML=rows.map(p=>`<article class="partner"><b>${p.full_name||'Partner'}</b><div class="meta">${p.role==='ride'?'🚕 Ride Driver · VTC':'🛵 Courier · Eats + Delivery'} · ${p.vehicle_type||'—'}</div><div class="meta">Status: ${p.status||filter} · ${p.phone||''}</div><div class="actions"><button class="action approve" onclick="review('${p.id}','approved')">✓ Approve</button><button class="action reject" onclick="review('${p.id}','rejected')">✕ Reject</button></div></article>`).join('')}async function review(id,status){const reason=status==='rejected'?prompt('Reason for rejection (optional):')||'Documents not approved':'';const d=await admin({action:'review_partner',partner_id:id,status,reason});if(d?.error)return alert(d.error);load()}function setFilter(f,el){filter=f;document.querySelectorAll('.filters button').forEach(x=>x.classList.remove('active'));el.classList.add('active');load()}load();</script><script src="./vasi-languages.js"></script></body></html>
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Validation des livreurs · VASI Admin</title>
+    <style>
+      :root{color-scheme:dark;--bg:#070707;--surface:#111;--line:#2b2b2b;--muted:#a1a1aa;--ok:#8ee7ad;--danger:#ffb4b4}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,-apple-system,sans-serif}.wrap{max-width:920px;margin:auto;padding:max(18px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(34px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-size:clamp(25px,6vw,34px);font-weight:950;letter-spacing:-.03em}.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;margin-top:14px}.filters{display:flex;gap:8px;overflow:auto;padding-bottom:2px}.filters button,.action{min-height:44px;border:1px solid #373737;background:#181818;color:#fff;border-radius:12px;padding:10px 13px;font-weight:800;cursor:pointer}.filters .active,.approve{background:#fff;color:#050505}.partner{border:1px solid var(--line);border-radius:17px;padding:15px;margin-top:11px}.partner-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.badge{flex:0 0 auto;border-radius:999px;padding:6px 9px;background:#202020;color:#d4d4d8;font-size:12px;font-weight:750}.meta{color:var(--muted);font-size:13px;margin:6px 0;line-height:1.4}.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px;margin-top:12px}.doc{display:flex;justify-content:space-between;gap:8px;align-items:center;min-height:42px;padding:9px 10px;border:1px solid #303030;border-radius:11px;background:#171717;color:#ddd;font-size:13px}.doc a{color:#fff;font-weight:800}.missing{color:var(--danger)}.actions{display:flex;gap:8px;margin-top:13px}.actions button{flex:1}.reject{background:#321717}.empty{color:var(--muted)}.note{color:#888;font-size:12px;line-height:1.5}.error{color:var(--danger)}@media(max-width:480px){.card{padding:13px}.partner{padding:12px}.docs{grid-template-columns:1fr}.top .action{padding:8px 11px}}
+    </style>
+    <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top"><div class="brand">VASI Admin</div><button class="action" type="button" onclick="location.href='vasi-admin.html'">Tableau de bord</button></header>
+      <section class="card">
+        <h1>Validation des livreurs</h1>
+        <div class="filters" role="tablist">
+          <button class="active" type="button" onclick="setFilter('pending',this)">En attente</button>
+          <button type="button" onclick="setFilter('approved',this)">Approuvés</button>
+          <button type="button" onclick="setFilter('rejected',this)">Refusés</button>
+        </div>
+        <div id="list"><p class="empty">Chargement…</p></div>
+        <p class="note">Vélo et VAE conforme : aucun permis, carte grise ou assurance véhicule n’est requis. Les véhicules motorisés nécessitent les quatre justificatifs supplémentaires.</p>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const client = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+      const labels = {identity:'Pièce d’identité',business:'SIREN / KBIS / RNE',rib:'RIB',bag:'Sac isotherme',vehicle_photo:'Photo du véhicule',selfie:'Selfie en direct',profile_photo:'Photo de profil',licence:'Permis de conduire',insurance:'Assurance véhicule',carte_grise:'Carte grise',transport_licence:'Capacité de transport'};
+      const vehicleLabels = {bike:'Vélo',ebike:'Vélo électrique',scooter:'Scooter',moto:'Moto',car:'Voiture'};
+      let filter = 'pending';
+      const $ = id => document.getElementById(id);
+      const safe = value => String(value || '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+      async function admin(body){
+        const {data:{session}} = await client.auth.getSession();
+        if (!session) { location.href = 'auth.html'; return null; }
+        const response = await fetch('https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/admin-service', {method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+        return response.json();
+      }
+      function renderDocuments(partner){
+        const required = partner.required_documents || [], links = partner.document_links || {};
+        const ordered = [...new Set([...required, ...Object.keys(links)])];
+        return ordered.map(name => {
+          const link = links[name];
+          return `<div class="doc"><span>${safe(labels[name] || name)}</span>${link ? `<a href="${safe(link)}" target="_blank" rel="noopener">Voir</a>` : '<b class="missing">Manquant</b>'}</div>`;
+        }).join('');
+      }
+      async function load(){
+        $('list').innerHTML = '<p class="empty">Chargement…</p>';
+        const data = await admin({action:'list_partners',status:filter});
+        if (!data) return;
+        if (data.error) { $('list').innerHTML = '<p class="error">'+safe(data.error)+'</p>'; return; }
+        const rows = data.partners || [];
+        if (!rows.length) { $('list').innerHTML = '<p class="empty">Aucun dossier.</p>'; return; }
+        $('list').innerHTML = rows.map(partner => `
+          <article class="partner">
+            <div class="partner-head"><div><b>${safe(partner.full_name || 'Livreur')}</b><div class="meta">${safe(partner.phone)} · ${safe(partner.address)}</div></div><span class="badge">${safe(vehicleLabels[partner.vehicle_type] || partner.vehicle_type)}</span></div>
+            <div class="docs">${renderDocuments(partner)}</div>
+            ${partner.rejection_reason ? `<p class="meta error">Motif : ${safe(partner.rejection_reason)}</p>` : ''}
+            ${filter === 'pending' ? `<div class="actions"><button class="action approve" type="button" onclick="review('${safe(partner.id)}','approved')">✓ Approuver</button><button class="action reject" type="button" onclick="review('${safe(partner.id)}','rejected')">✕ Refuser</button></div>` : ''}
+          </article>`).join('');
+      }
+      async function review(id,status){
+        const reason = status === 'rejected' ? (prompt('Motif du refus :') || 'Documents non conformes') : '';
+        const data = await admin({action:'review_partner',partner_id:id,status,reason});
+        if (data?.error) return alert(data.error);
+        load();
+      }
+      function setFilter(next,button){
+        filter = next; document.querySelectorAll('.filters button').forEach(item => item.classList.remove('active')); button.classList.add('active'); load();
+      }
+      load();
+    </script>
+    <script src="./vasi-languages.js"></script>
+  </body>
+</html>
