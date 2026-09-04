@@ -28,13 +28,21 @@
       * {
         box-sizing: border-box;
       }
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        overflow-x: clip;
+        overscroll-behavior-x: none;
+        background: #050505;
+      }
       body {
         margin: 0;
-        background: #050505;
       }
       .app {
         min-height: 100vh;
         min-height: 100dvh;
+        width: 100%;
         max-width: 720px;
         margin: auto;
         padding:
@@ -72,7 +80,7 @@
         white-space: nowrap;
       }
       .hero {
-        padding: 42px 0 26px;
+        padding: clamp(26px, 5.5vh, 42px) 0 clamp(18px, 3.2vh, 26px);
       }
       .eyebrow {
         color: #aaa;
@@ -81,7 +89,7 @@
         letter-spacing: 1.5px;
       }
       .hero h1 {
-        font-size: 46px;
+        font-size: clamp(40px, 11.8vw, 52px);
         line-height: 0.98;
         margin: 10px 0 14px;
         letter-spacing: -3px;
@@ -92,14 +100,15 @@
       }
       .services {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 10px;
       }
       .card {
-        min-height: 145px;
+        min-width: 0;
+        min-height: clamp(118px, 18vh, 145px);
         border: 1px solid #292929;
         border-radius: 22px;
-        padding: 17px;
+        padding: clamp(12px, 4vw, 17px);
         background: #111;
         cursor: pointer;
         text-align: left;
@@ -107,21 +116,24 @@
       }
       .card strong {
         display: block;
-        font-size: 19px;
-        margin-top: 42px;
+        font-size: clamp(16px, 4.8vw, 19px);
+        margin-top: clamp(24px, 5.2vh, 42px);
+        overflow-wrap: anywhere;
       }
       .card span {
         color: #999;
-        font-size: 12px;
+        font-size: clamp(11px, 3.1vw, 12px);
+        line-height: 1.35;
+        overflow-wrap: anywhere;
       }
       .section {
-        margin-top: 30px;
+        margin-top: clamp(20px, 3.8vh, 30px);
       }
       .panel {
         border: 1px solid #292929;
         background: #101010;
         border-radius: 22px;
-        padding: 18px;
+        padding: clamp(14px, 4.5vw, 18px);
       }
       .row {
         display: flex;
@@ -155,6 +167,67 @@
         font-weight: 800;
         font-size: 15px;
         text-align: center;
+      }
+      @media (max-height: 740px) {
+        .app {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+        }
+        .hero {
+          padding-top: 22px;
+          padding-bottom: 14px;
+        }
+        .hero h1 {
+          font-size: clamp(36px, 10.5vw, 42px);
+          margin-block: 8px 10px;
+        }
+        .hero p {
+          margin-block: 8px;
+        }
+        .card {
+          min-height: 108px;
+        }
+        .card strong {
+          margin-top: 20px;
+        }
+        .section {
+          margin-top: 16px;
+        }
+        .panel {
+          padding: 13px;
+        }
+        .row {
+          padding-block: 8px;
+        }
+        .cta {
+          padding-block: 12px;
+          margin-top: 10px;
+        }
+        .driver {
+          padding-block: 11px;
+          margin-top: 8px;
+        }
+      }
+      @media (max-height: 620px) {
+        .hero {
+          padding-top: 14px;
+          padding-bottom: 10px;
+        }
+        .eyebrow {
+          font-size: 12px;
+        }
+        .hero h1 {
+          font-size: 34px;
+        }
+        .hero p {
+          font-size: 14px;
+        }
+        .card {
+          min-height: 96px;
+        }
+        .card strong {
+          margin-top: 12px;
+        }
       }
       @media (max-width: 520px) {
         .brand {
