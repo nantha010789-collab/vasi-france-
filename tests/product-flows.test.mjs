@@ -282,6 +282,40 @@ test("ride map uses debounced Google suggestions and requires pin confirmation",
   assert.match(source, /destination && destinationConfirmed/);
 });
 
+test("Delivery and Eats require shared Google address confirmation and render map pins", async () => {
+  const [addressSearch, delivery, eats] = await Promise.all([
+    readFile("vasi-address-search.js", "utf8"),
+    readFile("delivery.html", "utf8"),
+    readFile("eats-checkout.html", "utf8"),
+  ]);
+  assert.match(addressSearch, /action: "autocomplete"/);
+  assert.match(addressSearch, /action: "resolve"/);
+  assert.match(addressSearch, /role", "combobox"/);
+  assert.match(addressSearch, /aria-activedescendant/);
+  for (const source of [delivery, eats]) {
+    assert.match(source, /vasi-address-search\.js/);
+    assert.match(source, /VasiAddressSearch\.attach/);
+    assert.match(source, /L\.marker/);
+    assert.match(source, /isConfirmed\(\)/);
+    assert.match(source, /aria-live="polite"/);
+  }
+});
+
+test("customer cancellation RPC is private and preserves driver availability", async () => {
+  const source = await readFile(
+    "supabase/migrations/20260904084500_harden_ride_cancellation_and_preserve_driver_availability.sql",
+    "utf8",
+  );
+  assert.match(source, /security definer/i);
+  assert.match(source, /set search_path = pg_catalog, public/i);
+  assert.match(source, /customer_id = auth\.uid\(\)/);
+  assert.match(source, /revoke all on function public\.vasi_customer_cancel_ride\(uuid\) from public/i);
+  assert.match(source, /grant execute on function public\.vasi_customer_cancel_ride\(uuid\) to authenticated/i);
+  assert.doesNotMatch(source, /update public\.drivers/i);
+  assert.match(source, /interval '2 minutes'/);
+  assert.match(source, /fee := 5\.00/);
+});
+
 test("customer-to-driver lifecycle exposes call, payment and receipt contracts", async () => {
   const [chat, call, driver, history, worker, notifications, settings, auth, languages] = await Promise.all([
     readFile("ride-chat.html", "utf8"),
@@ -366,6 +400,7 @@ test("PWA install metadata and baseline security headers stay production-ready",
   assert.ok(icon512.length > 1_000);
   assert.match(worker, /vasi-icon-192\.png/);
   assert.match(worker, /vasi-icon-512\.png/);
+  assert.match(worker, /vasi-address-search\.js/);
   assert.equal(header("X-Content-Type-Options"), "nosniff");
   assert.equal(header("X-Frame-Options"), "DENY");
   assert.equal(header("Referrer-Policy"), "strict-origin-when-cross-origin");
