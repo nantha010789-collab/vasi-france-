@@ -625,7 +625,7 @@
             </button>
           </div>
           <div class="policy" style="margin-top: 10px">
-            <div>Cancellation<b>€5</b></div>
+            <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
             <div>Waiting<b>3 min free · €0.30/min</b></div>
           </div>
           <button id="routeBtn" class="cta" onclick="requestRide()">
@@ -1711,8 +1711,39 @@
             $("eta").textContent = Math.max(1, Math.ceil(mins)) + " min";
         } catch (e) {}
       }
+      function cancellationQuote(r = ride) {
+        const st = String(r?.status || "requested").toLowerCase();
+        const acceptedAt = Date.parse(r?.accepted_at || "");
+        const freeUntil = Number.isFinite(acceptedAt)
+          ? acceptedAt + 2 * 60 * 1000
+          : null;
+        const afterAcceptance = ["accepted", "driver_arriving"].includes(st);
+        const fee =
+          afterAcceptance && freeUntil !== null && Date.now() >= freeUntil
+            ? 5
+            : 0;
+        return {
+          fee,
+          freeUntil,
+          cancellable: ["requested", "accepted", "driver_arriving"].includes(st),
+        };
+      }
+      function updateCancellationUI(r = ride) {
+        const quote = cancellationQuote(r);
+        const policy = $("cancellationPolicy");
+        if (policy) {
+          policy.innerHTML =
+            "Cancellation<b>Free before acceptance · €5 after 2 min</b>";
+        }
+        const button = $("cancelBtn");
+        if (!button) return;
+        button.classList.toggle("hidden", !quote.cancellable);
+        button.textContent =
+          quote.fee > 0 ? "Cancel ride · €5" : "Cancel ride · Free";
+      }
       function setRideStatus(r) {
         const st = String(r.status || "requested").toLowerCase();
+        updateCancellationUI(r);
         const driverLat = Number(r.driver_lat ?? r.driver_latitude),
           driverLng = Number(r.driver_lng ?? r.driver_longitude);
         if (Number.isFinite(driverLat) && Number.isFinite(driverLng)) {
@@ -1826,8 +1857,12 @@
       }
       async function cancelRide() {
         if (!ride?.id) return;
-        if (!confirm("Cancel this VASI ride? A €5 cancellation fee applies."))
-          return;
+        const quote = cancellationQuote(ride);
+        const message =
+          quote.fee > 0
+            ? "Cancel this VASI ride? A €5 cancellation fee will be charged."
+            : "Cancel this VASI ride? This cancellation is free.";
+        if (!confirm(message)) return;
         const s = await getSession();
         if (!s) return;
         try {
@@ -1843,11 +1878,13 @@
           if (!r.ok)
             throw Error(d.error || "Cancellation could not be completed");
           ride = d.ride || ride;
-          const fee = d.cancellation_fee ?? 5;
+          const fee = Number(d.cancellation_fee ?? 0);
           $("status").innerHTML =
-            '<span class="error">Ride cancelled · ' +
-            money(fee) +
-            " cancellation fee</span>";
+            fee > 0
+              ? '<span class="error">Ride cancelled · ' +
+                money(fee) +
+                " cancellation fee</span>"
+              : '<span class="success">Ride cancelled · No fee</span>';
           $("cancelBtn").classList.add("hidden");
           $("receiptBtn").textContent = "View cancellation receipt";
           $("receiptBtn").classList.remove("hidden");
