@@ -1,2 +1,203 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Add your restaurant · VASI</title><style>:root{font-family:Inter,system-ui;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0}.wrap{max-width:760px;margin:auto;padding:22px 18px 50px}.top{display:flex;justify-content:space-between}.brand{font-size:30px;font-weight:950}.btn,input,select{border:1px solid #333;background:#171717;color:#fff;border-radius:14px;padding:14px;font:inherit}.btn{font-weight:850;cursor:pointer}.primary{background:#fff;color:#050505;width:100%;margin-top:16px}.hero{padding:42px 0 18px}.hero h1{font-size:44px;line-height:1;margin:0 0 12px}.muted{color:#999}.offer{background:#102818;border:1px solid #28683d;color:#8bf0aa;padding:14px;border-radius:16px;margin:15px 0}.panel{background:#101010;border:1px solid #292929;border-radius:22px;padding:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-size:12px;color:#aaa}label input,label select{display:block;width:100%;margin-top:6px}.full{grid-column:1/-1}.status{text-align:center;min-height:24px;color:#aaa}@media(max-width:600px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.hero h1{font-size:36px}}</style>  <link rel="stylesheet" href="./vasi-mobile-fit.css" />
-  </head><body><main class="wrap"><header class="top"><div class="brand">VASI.</div><button class="btn" onclick="location.href='eats.html'">Back</button></header><section class="hero"><p class="muted">VASI Restaurant Partners</p><h1>Grow your restaurant.</h1><p class="muted">Register your business, add your menu and start receiving local orders after approval.</p></section><div class="offer"><b>Launch offer · first 3 months</b><br>5% commission with your delivery team · 10% with a VASI courier · €0 setup fee.</div><section class="panel"><form id="form" class="grid"><label>Restaurant name<input name="name" required></label><label>Legal business name<input name="legal_name" required></label><label>SIRET / SIREN<input name="siret" inputmode="numeric" required></label><label>Cuisine<input name="cuisine" placeholder="Indian, French, Pizza…" required></label><label>Business email<input name="email" type="email" required></label><label>Phone<input name="phone" type="tel" required></label><label class="full">Restaurant address<input name="address" required></label><label>Postal code<input name="postal_code" required></label><label>City<input name="city" required></label><label class="full">Delivery service<select name="delivery_mode"><option value="vasi">VASI courier · 10%</option><option value="own">My own delivery team · 5%</option></select></label><button class="btn primary full" type="submit">Submit for VASI approval</button></form><p id="status" class="status"></p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT'),status=document.getElementById('status');async function session(){const{data:{session}}=await client.auth.getSession();if(!session){localStorage.setItem('vasi_role','restaurant');localStorage.setItem('vasi_return','restaurant-register.html');location.href='auth.html?role=restaurant';return null}return session}document.getElementById('form').onsubmit=async e=>{e.preventDefault();const s=await session();if(!s)return;status.textContent='Submitting securely…';const body=Object.fromEntries(new FormData(e.target));body.action='register';const r=await fetch('/api/restaurant-partner',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.access_token},body:JSON.stringify(body)}),d=await r.json();if(!r.ok){status.textContent=d.error||'Could not submit';return}status.textContent='Application received. Opening your dashboard…';setTimeout(()=>location.href='restaurant-dashboard.html',900)};session()</script><script src="./vasi-languages.js"></script></body></html>
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>Rejoindre VASI · Restaurant</title>
+    <style>
+      :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#fff; background:#050505 }
+      * { box-sizing:border-box }
+      html,body { width:100%; min-height:100%; overflow-x:hidden; background:#050505 }
+      body { margin:0 }
+      button,input,select { font:inherit }
+      .wrap { width:min(100%,760px); margin:auto; padding:calc(env(safe-area-inset-top,0px) + 20px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 48px) max(18px,env(safe-area-inset-left,0px)) }
+      .top { display:flex; align-items:center; justify-content:space-between; gap:16px }
+      .brand { font-size:30px; font-weight:950; letter-spacing:-1px }
+      .btn,.field { border:1px solid #333; background:#171717; color:#fff; border-radius:15px; min-height:52px; padding:14px 16px }
+      .btn { font-weight:850; cursor:pointer; touch-action:manipulation }
+      .btn:disabled { cursor:not-allowed; opacity:.55 }
+      .back { min-height:46px; padding:10px 15px }
+      .primary { width:100%; background:#fff; color:#050505; border-color:#fff; margin-top:16px }
+      .secondary { width:100%; margin-top:10px }
+      .hero { padding:clamp(34px,7vh,58px) 0 22px }
+      .eyebrow { margin:0 0 12px; color:#a6a6a6; font-size:13px; font-weight:800; letter-spacing:1.7px; text-transform:uppercase }
+      .hero h1 { margin:0 0 14px; font-size:clamp(38px,10vw,58px); line-height:.98; letter-spacing:-2.4px }
+      .muted { color:#aaa; line-height:1.55 }
+      .offer { margin:0 0 18px; padding:15px 16px; border:1px solid #28683d; border-radius:17px; background:#102818; color:#9af2b3; line-height:1.45 }
+      .panel { margin-top:14px; padding:clamp(18px,5vw,24px); border:1px solid #292929; border-radius:24px; background:#101010 }
+      .step { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; margin-right:8px; border-radius:50%; background:#fff; color:#050505; font-size:14px }
+      h2 { margin:0 0 8px; font-size:clamp(22px,6vw,28px) }
+      .account-line { display:flex; align-items:center; gap:10px; margin:16px 0 4px; padding:13px 14px; border:1px solid #2f2f2f; border-radius:15px; background:#171717; color:#d7d7d7; overflow-wrap:anywhere }
+      .dot { width:9px; height:9px; flex:0 0 auto; border-radius:50%; background:#46d879 }
+      .field { display:block; width:100%; margin-top:8px; outline:none }
+      .field:focus { border-color:#8c8c8c; box-shadow:0 0 0 3px rgba(255,255,255,.08) }
+      .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px }
+      label { display:block; min-width:0; color:#bbb; font-size:14px; font-weight:650 }
+      .full { grid-column:1/-1 }
+      .hidden { display:none !important }
+      .status { min-height:24px; margin:14px 2px 0; color:#aaa; line-height:1.45 }
+      .status.error { color:#ffaaa5 }
+      .status.ok { color:#9af2b3 }
+      .privacy { margin:14px 2px 0; color:#858585; font-size:13px; line-height:1.5 }
+      @media (max-width:600px) {
+        .grid { grid-template-columns:1fr }
+        .full { grid-column:auto }
+        .hero { padding-top:32px }
+      }
+      @media (max-width:380px) {
+        .wrap { padding-inline:14px }
+        .panel { padding:16px }
+        .hero h1 { font-size:36px }
+      }
+    </style>
+    <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <div class="brand">VASI.</div>
+        <button class="btn back" type="button" onclick="location.href='eats.html'">← Retour</button>
+      </header>
+      <section class="hero">
+        <p class="eyebrow">Partenaires restaurants</p>
+        <h1>Rejoignez VASI.</h1>
+        <p class="muted">Créez votre compte restaurateur, enregistrez votre établissement puis ajoutez votre menu après validation.</p>
+      </section>
+      <div class="offer"><strong>Offre de lancement · 3 premiers mois</strong><br />5 % avec votre équipe de livraison · 10 % avec un coursier VASI · 0 € de frais d’installation.</div>
+      <section id="accountPanel" class="panel">
+        <h2><span class="step">1</span>Compte restaurateur</h2>
+        <p id="accountCopy" class="muted">Entrez votre e-mail. Nous vous enverrons un lien sécurisé pour créer votre compte ou vous connecter.</p>
+        <div id="accountForm">
+          <label for="ownerEmail">E-mail du propriétaire</label>
+          <input id="ownerEmail" class="field" type="email" inputmode="email" autocomplete="email" placeholder="vous@restaurant.fr" />
+          <button id="accountButton" class="btn primary" type="button">Créer mon compte restaurant</button>
+        </div>
+        <div id="accountConnected" class="hidden">
+          <div class="account-line"><span class="dot" aria-hidden="true"></span><span id="connectedEmail"></span></div>
+          <button id="changeAccount" class="btn secondary" type="button">Utiliser un autre compte</button>
+        </div>
+        <p id="accountStatus" class="status" role="status" aria-live="polite"></p>
+      </section>
+      <section id="restaurantPanel" class="panel hidden">
+        <h2><span class="step">2</span>Votre restaurant</h2>
+        <p class="muted">Complétez les informations professionnelles. L’équipe VASI les vérifiera avant la mise en ligne.</p>
+        <form id="restaurantForm" class="grid">
+          <label>Nom du restaurant<input class="field" name="name" autocomplete="organization" required /></label>
+          <label>Raison sociale<input class="field" name="legal_name" required /></label>
+          <label>SIRET / SIREN<input class="field" name="siret" inputmode="numeric" required /></label>
+          <label>Type de cuisine<input class="field" name="cuisine" placeholder="Indienne, française, pizza…" required /></label>
+          <label>E-mail professionnel<input id="businessEmail" class="field" name="email" type="email" autocomplete="email" required /></label>
+          <label>Téléphone<input class="field" name="phone" type="tel" autocomplete="tel" required /></label>
+          <label class="full">Adresse du restaurant<input class="field" name="address" autocomplete="street-address" required /></label>
+          <label>Code postal<input class="field" name="postal_code" inputmode="numeric" autocomplete="postal-code" required /></label>
+          <label>Ville<input class="field" name="city" autocomplete="address-level2" required /></label>
+          <label class="full">Service de livraison
+            <select class="field" name="delivery_mode">
+              <option value="vasi">Coursier VASI · 10 %</option>
+              <option value="own">Ma propre équipe · 5 %</option>
+            </select>
+          </label>
+          <button id="submitButton" class="btn primary full" type="submit">Envoyer pour validation VASI</button>
+        </form>
+        <p id="formStatus" class="status" role="status" aria-live="polite"></p>
+        <p class="privacy">Vos informations servent uniquement à vérifier et gérer votre partenariat restaurant VASI.</p>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage },
+      });
+      const accountStatus = document.getElementById("accountStatus");
+      const formStatus = document.getElementById("formStatus");
+      const accountButton = document.getElementById("accountButton");
+      const submitButton = document.getElementById("submitButton");
+      let activeSession = null;
+
+      function setStatus(element, message, kind = "") {
+        element.textContent = message;
+        element.className = "status" + (kind ? " " + kind : "");
+      }
+      function paintAccount() {
+        const connected = Boolean(activeSession?.user);
+        document.getElementById("accountForm").classList.toggle("hidden", connected);
+        document.getElementById("accountConnected").classList.toggle("hidden", !connected);
+        document.getElementById("restaurantPanel").classList.toggle("hidden", !connected);
+        document.getElementById("accountCopy").textContent = connected
+          ? "Votre compte est connecté. Vous pouvez maintenant enregistrer votre restaurant."
+          : "Entrez votre e-mail. Nous vous enverrons un lien sécurisé pour créer votre compte ou vous connecter.";
+        if (connected) {
+          const email = activeSession.user.email || "Compte VASI connecté";
+          document.getElementById("connectedEmail").textContent = email;
+          if (!document.getElementById("businessEmail").value) document.getElementById("businessEmail").value = activeSession.user.email || "";
+          setStatus(accountStatus, "Compte restaurateur prêt.", "ok");
+        }
+      }
+      async function refreshSession() {
+        const { data, error } = await client.auth.getSession();
+        if (error) setStatus(accountStatus, "Connexion impossible. Réessayez.", "error");
+        activeSession = data?.session || null;
+        paintAccount();
+      }
+      accountButton.addEventListener("click", async () => {
+        const email = document.getElementById("ownerEmail").value.trim();
+        if (!/^\S+@\S+\.\S+$/.test(email)) return setStatus(accountStatus, "Entrez une adresse e-mail valide.", "error");
+        accountButton.disabled = true;
+        setStatus(accountStatus, "Envoi du lien sécurisé…");
+        localStorage.setItem("vasi_role", "restaurant");
+        localStorage.setItem("vasi_return", "restaurant-register.html");
+        const { error } = await client.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: new URL("restaurant-register.html", location.href).href, shouldCreateUser: true },
+        });
+        accountButton.disabled = false;
+        if (error) return setStatus(accountStatus, error.message || "Le lien n’a pas pu être envoyé.", "error");
+        setStatus(accountStatus, "E-mail envoyé. Ouvrez le lien reçu pour continuer votre inscription.", "ok");
+      });
+      document.getElementById("ownerEmail").addEventListener("keydown", event => {
+        if (event.key === "Enter") accountButton.click();
+      });
+      document.getElementById("changeAccount").addEventListener("click", async () => {
+        await client.auth.signOut();
+        activeSession = null;
+        setStatus(accountStatus, "");
+        paintAccount();
+        document.getElementById("ownerEmail").focus();
+      });
+      document.getElementById("restaurantForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!activeSession) {
+          document.getElementById("accountPanel").scrollIntoView({ behavior: "smooth" });
+          return setStatus(accountStatus, "Créez ou connectez d’abord votre compte restaurant.", "error");
+        }
+        submitButton.disabled = true;
+        setStatus(formStatus, "Envoi sécurisé de votre demande…");
+        const body = Object.fromEntries(new FormData(event.currentTarget));
+        body.action = "register";
+        try {
+          const response = await fetch("/api/restaurant-partner", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + activeSession.access_token },
+            body: JSON.stringify(body),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Votre demande n’a pas pu être envoyée.");
+          setStatus(formStatus, "Demande reçue. Ouverture de votre espace restaurant…", "ok");
+          setTimeout(() => location.href = "restaurant-dashboard.html", 900);
+        } catch (error) {
+          submitButton.disabled = false;
+          setStatus(formStatus, error.message || "Votre demande n’a pas pu être envoyée.", "error");
+        }
+      });
+      client.auth.onAuthStateChange((_event, session) => {
+        activeSession = session;
+        setTimeout(paintAccount, 0);
+      });
+      refreshSession();
+    </script>
+    <script src="./vasi-languages.js"></script>
+  </body>
+</html>

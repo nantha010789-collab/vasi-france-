@@ -460,10 +460,14 @@
         }
       }
       function destination(savedRole, consumeReturn = true) {
+        const back = safeReturn(localStorage.getItem("vasi_return"));
+        if (savedRole === "restaurant" && back === "restaurant-register.html") {
+          if (consumeReturn) localStorage.removeItem("vasi_return");
+          return back;
+        }
         if (savedRole === "ride") return "driver.html";
         if (savedRole === "courier") return "delivery-driver.html";
         if (savedRole === "restaurant") return "restaurant-dashboard.html";
-        const back = safeReturn(localStorage.getItem("vasi_return"));
         if (back) {
           if (consumeReturn) localStorage.removeItem("vasi_return");
           return back;
