@@ -6,22 +6,54 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
   pages: write
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  publish:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync current build to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
+          git rm -rf .
+          git checkout "$GITHUB_SHA" -- .
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No site changes to publish."
+          else
+            git commit -m "Publish ${GITHUB_SHA::7} to GitHub Pages"
+            git push origin gh-pages
+          fi
+
+      - name: Start Pages deployment from gh-pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref gh-pages
+
   deploy:
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == 'gh-pages'
     runs-on: ubuntu-latest
     environment:
-      name: vasi-pages-production
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
+      - name: Checkout gh-pages
         uses: actions/checkout@v4
 
       - name: Configure Pages
