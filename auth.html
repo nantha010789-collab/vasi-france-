@@ -212,6 +212,8 @@
         "index.html",
         "account.html",
         "ride-flow.html",
+        "ride-chat.html",
+        "safety.html",
         "eats.html",
         "eats-checkout.html",
         "delivery.html",
@@ -226,10 +228,37 @@
         ? requestedRole
         : localStorage.getItem("vasi_role") || "customer";
       localStorage.setItem("vasi_role", role);
+      function savePendingPhone(phone, readyAt) {
+        try {
+          sessionStorage.setItem("vasi_pending_phone", JSON.stringify({ phone, readyAt, createdAt: Date.now() }));
+        } catch (_) {}
+      }
+      function clearPendingPhone() {
+        try { sessionStorage.removeItem("vasi_pending_phone"); } catch (_) {}
+      }
+      function restorePendingPhone() {
+        try {
+          const pending = JSON.parse(sessionStorage.getItem("vasi_pending_phone") || "null");
+          if (!pending?.phone || Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) {
+            clearPendingPhone();
+            return;
+          }
+          phoneAwaitingCode = normalizePhone(pending.phone);
+          if (!phoneAwaitingCode) return clearPendingPhone();
+          $("identity").value = phoneAwaitingCode;
+          $("identity").disabled = true;
+          render();
+          const seconds = Math.max(0, Math.ceil((Number(pending.readyAt || 0) - Date.now()) / 1000));
+          startResendCountdown(seconds);
+          $("otp").focus();
+          show("Enter the most recently received 6-digit SMS code.");
+        } catch (_) { clearPendingPhone(); }
+      }
       function setRole(next) {
         role = next;
         localStorage.setItem("vasi_role", role);
         phoneAwaitingCode = "";
+        clearPendingPhone();
         clearResendCountdown();
         $("codeStep").classList.add("hidden");
         $("identity").disabled = false;
@@ -284,6 +313,7 @@
           return showSmsError(error);
         }
         phoneAwaitingCode = phone;
+        savePendingPhone(phone, Date.now() + RESEND_WAIT_SECONDS * 1000);
         $("identity").disabled = true;
         $("codeStep").classList.remove("hidden");
         $("continueBtn").textContent = "Verify & continue";
@@ -308,6 +338,7 @@
           return showSmsError(error);
         }
         $("otp").value = "";
+        savePendingPhone(phoneAwaitingCode, Date.now() + RESEND_WAIT_SECONDS * 1000);
         startResendCountdown();
         $("otp").focus();
         show("New SMS requested. Delivery may take a few minutes. Enter the most recently received code.");
@@ -354,17 +385,36 @@
         const token = $("otp").value.replace(/\D/g, "");
         if (token.length !== 6) return show("Enter the 6-digit SMS code.");
         show("Checking your code…");
+        $("continueBtn").disabled = true;
         const { data, error } = await client.auth.verifyOtp({
           phone: phoneAwaitingCode,
           token,
           type: "sms",
         });
-        if (error) return show(error.message);
+        $("continueBtn").disabled = false;
+        if (error) return showOtpError(error);
+        clearPendingPhone();
         show("Signed in. Opening VASI…");
         if (data.session) await routeSession(data.session);
       }
+      function showOtpError(error) {
+        const message = String(error?.message || "");
+        const code = String(error?.code || "");
+        $("otp").value = "";
+        $("otp").focus();
+        if (code === "otp_expired" || /expired|token.*invalid|invalid.*token/i.test(message)) {
+          startResendCountdown(0);
+          return show("This SMS code has expired or was already used. Tap Resend SMS code for a new code.");
+        }
+        if (/too many|rate limit/i.test(message)) {
+          startResendCountdown();
+          return show("Too many attempts. Wait 60 seconds, request a new code, and enter only the newest SMS code.");
+        }
+        return show("The SMS code is incorrect. Check the newest message and try again.");
+      }
       function changePhone() {
         phoneAwaitingCode = "";
+        clearPendingPhone();
         clearResendCountdown();
         $("identity").disabled = false;
         $("codeStep").classList.add("hidden");
@@ -422,6 +472,7 @@
       }
       async function routeSession(session) {
         if (!session || routingSession) return;
+        clearPendingPhone();
         routingSession = true;
         const savedRole = localStorage.getItem("vasi_role") || "customer";
         if (savedRole !== "customer") {
@@ -462,6 +513,7 @@
         await routeSession(data.session);
       }
       render();
+      if (role === "customer") restorePendingPhone();
       $("identity").addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitAuth();
       });

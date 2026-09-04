@@ -507,7 +507,7 @@
           `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · €" + Number(fare).toFixed(2) : ""}</b></div>${wait > 0 ? `<div class="fee">Pickup waiting fee: €${wait.toFixed(2)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
-          '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat with customer</button>',
+          '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
         );
       }
       async function confirmStop(stopId) {
@@ -648,5 +648,6 @@
       });
       VasiNotifications.start(client, { role: "driver" });
     </script>
+    <script src="./vasi-languages.js"></script>
   </body>
 </html>

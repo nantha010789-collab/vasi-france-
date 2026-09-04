@@ -333,6 +333,11 @@
               <span class="copy"><strong>Notification history</strong><span>See recent VASI updates</span></span>
               <span class="arrow" aria-hidden="true">›</span>
             </button>
+            <button id="testNotification" class="row" type="button">
+              <span class="icon" aria-hidden="true">📱</span>
+              <span class="copy"><strong>Test phone alert</strong><span>Check notifications on this device</span></span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </button>
           </div>
         </section>
 
@@ -620,6 +625,17 @@
 
       $("alertPreferences").addEventListener("click", () => VasiNotifications.openSettings());
       $("notificationHistory").addEventListener("click", () => VasiNotifications.openCentre("notifications"));
+      $("testNotification").addEventListener("click", async () => {
+        const granted = await VasiNotifications.requestPermission();
+        updateNotificationState();
+        if (!granted) return;
+        await VasiNotifications.show(
+          "VASI test successful",
+          "Phone alerts work on this device. Keep VASI installed for ride updates.",
+          "settings.html",
+          "vasi-notification-test",
+        );
+      });
       $("locationButton").addEventListener("click", checkLocation);
       $("downloadData").addEventListener("click", downloadMyData);
       $("deleteAccount").addEventListener("click", () => {

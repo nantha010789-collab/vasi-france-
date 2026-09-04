@@ -12,4 +12,4 @@ Clean VASI app foundation.
 - Admin dashboard
 - France / England / Europe-ready localization
 
-The root `index.html` is now the clean VASI entry point. Legacy app pages remain in the repository temporarily so production can be migrated safely without breaking existing deployments.
+The root `index.html` is the single customer entry point. Historical URLs remain only as lightweight redirects so old bookmarks never expose obsolete demo screens.
