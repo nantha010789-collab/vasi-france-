@@ -336,6 +336,24 @@ test("customer profile photo remains optional and owner-scoped", async () => {
   assert.match(migration, /for delete\s+to authenticated/);
 });
 
+test("restaurant join and dashboard use restaurant authentication", async () => {
+  const [register, dashboard, auth] = await Promise.all([
+    readFile("restaurant-register.html", "utf8"),
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile("auth.html", "utf8"),
+  ]);
+  for (const source of [register, dashboard]) {
+    assert.match(source, /localStorage\.setItem\('vasi_role','restaurant'\)/);
+    assert.match(source, /auth\.html\?role=restaurant/);
+    assert.doesNotMatch(
+      source,
+      /localStorage\.setItem\('vasi_role','customer'\).*auth\.html\?role=customer/,
+    );
+  }
+  assert.match(auth, /savedRole === "restaurant"/);
+  assert.match(auth, /return "restaurant-dashboard\.html"/);
+});
+
 test("customer, driver, restaurant and admin surfaces load the shared language runtime", async () => {
   const pages = [
     "index.html", "ride-flow.html", "ride-chat.html", "driver.html", "settings.html",
