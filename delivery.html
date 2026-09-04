@@ -18,14 +18,14 @@
       <section class="panel" aria-labelledby="delivery-form-title">
         <h2 id="delivery-form-title" class="vasi-sr-only">Delivery details</h2>
         <div class="vasi-address-shell" id="pickupShell">
-          <label class="vasi-field-label" for="pickup">📍 Pickup address</label>
+          <label class="vasi-field-label" for="pickup"><span aria-hidden="true">📍</span> Pickup address</label>
           <input class="address-input" id="pickup" placeholder="Start typing the full pickup address" autocomplete="street-address" />
           <div class="vasi-address-suggestions" id="pickupSuggestions" hidden></div>
           <div class="vasi-address-confirmation" id="pickupConfirmation" hidden></div>
           <p class="vasi-address-status" id="pickupStatus" role="status" aria-live="polite"></p>
         </div>
         <div class="vasi-address-shell" id="dropoffShell">
-          <label class="vasi-field-label" for="dropoff">🏁 Drop-off address</label>
+          <label class="vasi-field-label" for="dropoff"><span aria-hidden="true">🏁</span> Drop-off address</label>
           <input class="address-input" id="dropoff" placeholder="Start typing the full destination address" autocomplete="street-address" />
           <div class="vasi-address-suggestions" id="dropoffSuggestions" hidden></div>
           <div class="vasi-address-confirmation" id="dropoffConfirmation" hidden></div>
@@ -33,8 +33,8 @@
         </div>
         <span class="section-label">Item type</span>
         <div class="options" role="group" aria-label="Item type">
-          <button id="parcel" class="option active" type="button" aria-pressed="true" onclick="selectType('parcel')"><strong>📦 Parcel</strong><span class="muted">Small & medium</span></button>
-          <button id="document" class="option" type="button" aria-pressed="false" onclick="selectType('document')"><strong>📄 Document</strong><span class="muted">Fast & secure</span></button>
+          <button id="parcel" class="option active" type="button" aria-pressed="true" onclick="selectType('parcel')"><strong><span aria-hidden="true">📦</span> Parcel</strong><span class="muted">Small & medium</span></button>
+          <button id="document" class="option" type="button" aria-pressed="false" onclick="selectType('document')"><strong><span aria-hidden="true">📄</span> Document</strong><span class="muted">Fast & secure</span></button>
         </div>
         <div id="map" class="map" aria-label="Confirmed delivery route map" hidden></div>
         <div id="quote" class="quote" hidden><span>Estimated delivery</span><b id="price">—</b></div>
