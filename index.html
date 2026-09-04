@@ -44,7 +44,11 @@
         height: 100dvh;
         min-height: 0;
         width: 100%;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
         display: flex;
         flex-direction: column;
         max-width: 720px;
@@ -55,7 +59,11 @@
           calc(env(safe-area-inset-bottom, 0px) + 40px)
           max(18px, env(safe-area-inset-left, 0px));
       }
+      .app::-webkit-scrollbar {
+        display: none;
+      }
       .top {
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -267,6 +275,17 @@
         }
         .card strong {
           margin-top: 12px;
+        }
+      }
+      @media (max-width: 520px) and (min-height: 760px) {
+        .app {
+          justify-content: space-between;
+        }
+        .hero {
+          padding-block: 0;
+        }
+        .section {
+          margin-top: 0;
         }
       }
       @media (max-width: 520px) {
