@@ -133,6 +133,30 @@
       "Estimated delivery": "Livraison estimée",
       "Get delivery quote": "Obtenir un tarif de livraison",
       "Book VASI delivery": "Commander une livraison VASI",
+      "Delivery details": "Détails de la livraison",
+      "Pickup address": "Adresse de départ",
+      "Drop-off address": "Adresse de destination",
+      "Start typing the full pickup address": "Commencez à saisir l’adresse complète de départ",
+      "Start typing the full destination address": "Commencez à saisir l’adresse complète de destination",
+      "Start typing your full delivery address": "Commencez à saisir votre adresse complète de livraison",
+      "Item type": "Type d’envoi",
+      "Small & medium": "Petit et moyen format",
+      "Fast & secure": "Rapide et sécurisé",
+      "Select both suggested addresses to continue.": "Sélectionnez les deux adresses proposées pour continuer.",
+      "Addresses confirmed. Get your delivery quote.": "Adresses confirmées. Obtenez votre tarif de livraison.",
+      "Address confirmed": "Adresse confirmée",
+      "Confirming address…": "Confirmation de l’adresse…",
+      "Searching addresses…": "Recherche d’adresses…",
+      "No matching address found.": "Aucune adresse correspondante trouvée.",
+      "Checkout": "Paiement",
+      "Order summary": "Récapitulatif de la commande",
+      "Review your basket and confirm the delivery pin before ordering.": "Vérifiez votre panier et confirmez le point de livraison avant de commander.",
+      "Delivery address": "Adresse de livraison",
+      "Place VASI order": "Commander avec VASI",
+      "Choose an address from the suggestions to confirm the delivery pin.": "Choisissez une adresse proposée pour confirmer le point de livraison.",
+      "Delivery pin confirmed. You can place your order.": "Point de livraison confirmé. Vous pouvez commander.",
+      "Mobile number": "Numéro de mobile",
+      "Email address": "Adresse e-mail",
     },
     ta: {
       "Home": "முகப்பு", "Back": "பின்செல்", "Account": "கணக்கு", "Activity": "செயல்பாடுகள்", "Login": "உள்நுழைவு", "Settings": "அமைப்புகள்", "Language": "மொழி", "App display language": "செயலி காட்சி மொழி",
@@ -298,6 +322,13 @@
     const style = document.createElement("style");
     style.textContent = "html[dir='rtl'] input[type='tel'],html[dir='rtl'] input[inputmode='numeric'],html[dir='rtl'] .price{direction:ltr}html[dir='rtl'] input[type='tel'],html[dir='rtl'] input[inputmode='numeric']{text-align:right}";
     document.head.appendChild(style);
+    document.querySelectorAll("input, select, textarea").forEach((control) => {
+      if (control.hasAttribute("aria-label") || control.hasAttribute("aria-labelledby")) return;
+      const explicitLabel = control.id && document.querySelector(`label[for="${CSS.escape(control.id)}"]`);
+      if (explicitLabel || control.closest("label")) return;
+      const fallback = control.getAttribute("placeholder") || control.getAttribute("name") || control.type || "Input";
+      control.setAttribute("aria-label", fallback.replaceAll("_", " "));
+    });
     applyDocument();
     new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
