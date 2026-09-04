@@ -70,6 +70,7 @@
 
   function categoryFromTag(tag) {
     const value = String(tag || "");
+    if (value.includes("call")) return "call";
     if (value.includes("restaurant")) return "restaurant";
     if (value.includes("offer") || value.includes("job")) return "jobs";
     if (value.includes("eats")) return "eats";
@@ -80,7 +81,7 @@
   }
 
   function categoryIcon(category) {
-    return { ride: "🚕", eats: "🍽️", delivery: "🛵", jobs: "📍", restaurant: "🧾", promotions: "🏷️", general: "🔔" }[category] || "🔔";
+    return { call: "📞", ride: "🚕", eats: "🍽️", delivery: "🛵", jobs: "📍", restaurant: "🧾", promotions: "🏷️", general: "🔔" }[category] || "🔔";
   }
 
   function shouldNotify(key, value) {
@@ -252,7 +253,7 @@
     const category = categoryFromTag(tag);
     if (category === "promotions" && !getPreferences().promotions) return;
     saveHistoryEntry(title, body, url, tag, category);
-    if ((category === "jobs" || category === "restaurant") && document.visibilityState === "visible") showUrgent(title, body, url);
+    if ((category === "call" || category === "jobs" || category === "restaurant") && document.visibilityState === "visible") showUrgent(title, body, url);
     if (!("Notification" in window) || Notification.permission !== "granted") return;
     const registration = await registerWorker();
     const prefs = getPreferences();
@@ -283,16 +284,23 @@
   }
 
   async function requestPermission() {
-    if (!("Notification" in window)) {
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) alert("On iPhone, tap Share → Add to Home Screen. Then open VASI from the Home Screen and enable alerts.");
-      else alert("Notifications are not supported in this browser.");
-      return;
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+    if (ios && !standalone) {
+      alert("On iPhone, tap Share → Add to Home Screen. Open VASI from the Home Screen, then enable alerts.");
+      return false;
     }
-    if (Notification.permission === "denied") { alert("Notifications are blocked. Open your phone or browser Settings, allow notifications for VASI, then return here."); return; }
+    if (!("Notification" in window)) {
+      if (ios) alert("Update iOS, then open the installed VASI app from your Home Screen to enable alerts.");
+      else alert("Notifications are not supported in this browser.");
+      return false;
+    }
+    if (Notification.permission === "denied") { alert("Notifications are blocked. Open your phone or browser Settings, allow notifications for VASI, then return here."); return false; }
     if (Notification.permission !== "granted") { try { await Notification.requestPermission(); } catch (_) {} }
     renderCentre();
     if (Notification.permission === "granted") await show("VASI alerts are on", "Ride, Eats and Delivery updates will appear here.", location.pathname, "vasi-alerts-enabled");
-    else if (/iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.matchMedia("(display-mode: standalone)").matches) alert("On iPhone, add VASI to your Home Screen first, open it there, then enable alerts.");
+    else if (ios && !standalone) alert("On iPhone, add VASI to your Home Screen first, open it there, then enable alerts.");
+    return Notification.permission === "granted";
   }
 
   function notifyStatus(kind, row) {
@@ -330,6 +338,18 @@
     });
   }
 
+  function listenVoiceCalls(userId, channel) {
+    channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "ride_call_signals" }, (payload) => {
+      const row = payload.new;
+      if (row?.signal_type !== "invite" || row.sender_id === userId || !row.ride_id || !row.call_id) return;
+      const id = `voice-call:${row.call_id}`;
+      if (!shouldNotify(id, "ringing")) return;
+      const url = `/ride-chat.html?ride=${encodeURIComponent(row.ride_id)}&incoming=${encodeURIComponent(row.call_id)}`;
+      show("Incoming VASI voice call", "Your ride partner is calling inside VASI.", url, `vasi-call-${row.call_id}`);
+      navigator.vibrate?.([180, 90, 180, 90, 300]);
+    });
+  }
+
   async function subscribe() {
     if (!activeClient) return;
     const { data } = await activeClient.auth.getSession();
@@ -337,6 +357,7 @@
     if (!session) return;
     if (activeChannel) await activeClient.removeChannel(activeChannel);
     const channel = activeClient.channel(`${CHANNEL_PREFIX}:${activeRole}:${session.user.id}`);
+    listenVoiceCalls(session.user.id, channel);
     if (activeRole === "driver") listenDriver(channel);
     else if (activeRole === "courier") listenCourier(channel);
     else if (activeRole === "restaurant") listenRestaurant(channel);

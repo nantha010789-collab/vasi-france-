@@ -62,6 +62,7 @@
     "api/ride-status.js": { "includeFiles": "api/ride-status.js" },
     "api/share-trip.js": { "includeFiles": "api/share-trip.js" },
     "api/shared-ride.js": { "includeFiles": "api/shared-ride.js" },
+    "api/call-config.js": { "includeFiles": "api/call-config.js" },
     "api/create-payment-intent.js": {
       "includeFiles": "api/create-payment-intent.js"
     },

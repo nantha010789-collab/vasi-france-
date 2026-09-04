@@ -1,0 +1,13 @@
+{
+  "name": "vasi-france",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "check": "npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

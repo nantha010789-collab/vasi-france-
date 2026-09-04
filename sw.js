@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v12";
+const CACHE = "vasi-app-v13";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
@@ -7,6 +7,7 @@ const CORE = [
   appUrl("vasi-icon.svg"),
   appUrl("vasi-notifications.js"),
   appUrl("vasi-languages.js"),
+  appUrl("vasi-call.js"),
 ];
 self.addEventListener("install", (e) =>
   e.waitUntil(

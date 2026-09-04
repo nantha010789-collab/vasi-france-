@@ -14,6 +14,8 @@
       .back{border:1px solid #333;border-radius:13px;background:#171717;color:#fff;padding:10px 14px;font-weight:800}
       .chat{flex:1;min-height:calc(100vh - 105px);display:flex;flex-direction:column;overflow:hidden;background:#111;border:1px solid #292929;border-radius:24px;box-shadow:0 18px 50px #0008}
       .chatHead{padding:17px;border-bottom:1px solid #292929}
+      .chatHeadTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+      .callButton{min-width:46px;height:46px;border:1px solid #3a3a3a;border-radius:15px;background:#fff;color:#050505;font-size:21px;cursor:pointer}
       h1{margin:0;font-size:clamp(23px,6vw,31px);letter-spacing:-.8px}
       .route{color:#999;font-size:13px;line-height:1.45;margin-top:8px}
       .connection{display:inline-flex;align-items:center;gap:6px;color:#999;font-size:12px;margin-top:9px}
@@ -33,6 +35,12 @@
       .send:disabled,textarea:disabled{opacity:.45}
       .notice{display:none;margin:0;padding:12px 16px;border-top:1px solid #292929;color:#aaa;text-align:center;font-size:13px}
       .notice.show{display:block}.error{color:#ffb4b4}
+      .hidden{display:none!important}
+      .callOverlay{position:fixed;z-index:1000;inset:0;display:grid;place-items:center;padding:20px;background:#000d;backdrop-filter:blur(10px)}
+      .callCard{width:min(100%,390px);border:1px solid #353535;border-radius:30px;background:#131313;padding:27px 22px calc(22px + env(safe-area-inset-bottom));text-align:center;box-shadow:0 25px 80px #000}
+      .callAvatar{width:88px;height:88px;margin:2px auto 20px;display:grid;place-items:center;border-radius:50%;background:#242424;font-size:38px}
+      .callCard h2{margin:0;font-size:29px}.callState{min-height:24px;margin:9px 0 26px;color:#aaa}
+      .callActions{display:grid;grid-template-columns:1fr 1fr;gap:12px}.callAction{min-height:55px;border:0;border-radius:17px;background:#292929;color:#fff;font-weight:900;cursor:pointer}.callAnswer{background:#28c76f;color:#03150a}.callEnd{background:#ef4444}.callMute{background:#eee;color:#080808}
       @media(max-width:480px){.app{padding:10px 8px calc(12px + env(safe-area-inset-bottom))}.messages{max-height:calc(100vh - 320px)}.composer{grid-template-columns:1fr}.send{width:100%}}
     </style>
   </head>
@@ -41,7 +49,7 @@
       <header class="top"><div class="brand">VASI</div><button class="back" type="button" onclick="goBack()">← Back</button></header>
       <section class="chat">
         <div class="chatHead">
-          <h1 id="title">Ride chat</h1>
+          <div class="chatHeadTop"><h1 id="title">Ride chat</h1><button id="callButton" class="callButton hidden" type="button" aria-label="Start voice call" title="Voice call">📞</button></div>
           <div id="route" class="route">Loading your ride…</div>
           <div id="connection" class="connection">Connecting…</div>
         </div>
@@ -53,11 +61,28 @@
         </form>
       </section>
     </main>
+    <div id="voiceCall" class="callOverlay hidden" role="dialog" aria-modal="true" aria-labelledby="callTitle">
+      <section class="callCard">
+        <div class="callAvatar" aria-hidden="true">📞</div>
+        <h2 id="callTitle">Voice call</h2>
+        <p id="callState" class="callState">Connecting…</p>
+        <audio id="remoteAudio" autoplay playsinline></audio>
+        <div id="incomingCallActions" class="callActions hidden">
+          <button id="declineCall" class="callAction callEnd" type="button">Decline</button>
+          <button id="answerCall" class="callAction callAnswer" type="button">Answer</button>
+        </div>
+        <div id="activeCallActions" class="callActions hidden">
+          <button id="muteCall" class="callAction callMute" type="button">Mute</button>
+          <button id="endCall" class="callAction callEnd" type="button">End call</button>
+        </div>
+      </section>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./vasi-call.js"></script>
     <script>
       const client=supabase.createClient("https://vhfyvkrvysrooaqzcxsp.supabase.co","sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT"),
         params=new URLSearchParams(location.search),rideId=params.get("ride"),$=id=>document.getElementById(id);
-      let session=null,ride=null,channel=null,messages=[],sending=false;
+      let session=null,ride=null,channel=null,voiceCall=null,messages=[],sending=false;
       function goBack(){if(history.length>1)history.back();else location.href=params.get("from")==="driver"?"driver.html":"ride-flow.html"}
       function setNotice(text,error=false){$("notice").textContent=text;$("notice").classList.toggle("show",Boolean(text));$("notice").classList.toggle("error",error)}
       function setComposerEnabled(enabled){$("message").disabled=!enabled;$("send").disabled=!enabled}
@@ -81,7 +106,7 @@
         if(!active)setNotice("This ride has ended. Previous messages are still available.");
       }
       async function loadMessages(){const {data,error}=await client.from("ride_messages").select("id,ride_id,sender_id,message,created_at").eq("ride_id",rideId).order("created_at",{ascending:true}).limit(200);if(error)throw error;messages=data||[];renderMessages()}
-      function subscribe(){channel=client.channel("vasi-ride-chat-"+rideId).on("postgres_changes",{event:"INSERT",schema:"public",table:"ride_messages",filter:"ride_id=eq."+rideId},payload=>addMessage(payload.new)).subscribe(status=>{const live=status==="SUBSCRIBED";$("connection").classList.toggle("live",live);$("connection").textContent=live?"Live chat":"Connecting…"})}
+      function subscribe(){channel=client.channel("vasi-ride-chat-"+rideId).on("postgres_changes",{event:"INSERT",schema:"public",table:"ride_messages",filter:"ride_id=eq."+rideId},payload=>addMessage(payload.new)).subscribe(status=>{const live=status==="SUBSCRIBED";$("connection").classList.toggle("live",live);$("connection").textContent=live?"Live chat & calls":"Connecting…"})}
       function handleMessageKey(event){if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();sendMessage(event)}}
       async function sendMessage(event){
         event?.preventDefault();const input=$("message"),text=input.value.trim();if(!text||sending||input.disabled)return;
@@ -94,9 +119,9 @@
         if(!rideId){setComposerEnabled(false);$("messages").innerHTML='<div class="empty error">Ride information is missing.</div>';return}
         session=(await client.auth.getSession()).data.session;
         if(!session){localStorage.setItem("vasi_return",location.href);location.href="auth.html";return}
-        try{await loadRide();await loadMessages();subscribe()}catch(error){setComposerEnabled(false);$("connection").textContent="Unavailable";$("messages").innerHTML='<div class="empty error">This ride chat is not available.</div>'}
+        try{await loadRide();await loadMessages();subscribe();voiceCall=await VasiVoiceCall.init({client,session,ride,rideId,partnerLabel:partnerLabel()})}catch(error){setComposerEnabled(false);$("connection").textContent="Unavailable";$("messages").innerHTML='<div class="empty error">This ride chat is not available.</div>'}
       }
-      window.addEventListener("beforeunload",()=>{if(channel)client.removeChannel(channel)});
+      window.addEventListener("beforeunload",()=>{if(channel)client.removeChannel(channel);voiceCall?.destroy()});
       init();
     </script>
   <script src="./vasi-languages.js"></script></body>
