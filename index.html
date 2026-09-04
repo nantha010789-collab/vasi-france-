@@ -31,18 +31,22 @@
       html,
       body {
         width: 100%;
-        min-height: 100%;
-        overflow-x: clip;
-        overscroll-behavior-x: none;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
         background: #050505;
       }
       body {
         margin: 0;
       }
       .app {
-        min-height: 100vh;
-        min-height: 100dvh;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
         width: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
         max-width: 720px;
         margin: auto;
         padding:
@@ -167,6 +171,42 @@
         font-weight: 800;
         font-size: 15px;
         text-align: center;
+      }
+      @media (max-width: 520px) and (max-height: 950px) {
+        .app {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        }
+        .hero {
+          padding-top: clamp(18px, 3dvh, 26px);
+          padding-bottom: clamp(12px, 2dvh, 18px);
+        }
+        .hero p {
+          margin-block: 10px 0;
+        }
+        .card {
+          min-height: clamp(108px, 14dvh, 132px);
+        }
+        .card strong {
+          margin-top: clamp(18px, 3.4dvh, 30px);
+        }
+        .section {
+          margin-top: clamp(14px, 2.2dvh, 20px);
+        }
+        .panel {
+          padding: 14px;
+        }
+        .row {
+          padding-block: 10px;
+        }
+        .cta {
+          padding-block: 13px;
+          margin-top: 12px;
+        }
+        .driver {
+          padding-block: 11px;
+          margin-top: 8px;
+        }
       }
       @media (max-height: 740px) {
         .app {
@@ -361,6 +401,8 @@
           ? "settings.html#preferences"
           : "auth.html?role=customer&next=settings.html";
       }
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
       showAccountState();
       VasiNotifications.start(client, { role: "customer" });
     </script>
