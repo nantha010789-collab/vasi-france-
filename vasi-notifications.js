@@ -5,6 +5,9 @@
   const HISTORY_KEY = "vasi_notification_history_v1";
   const PREFS_KEY = "vasi_notification_preferences_v1";
   const HISTORY_LIMIT = 50;
+  const APP_BASE = new URL(".", document.currentScript?.src || location.href);
+  const appUrl = (path) =>
+    new URL(String(path || "").replace(/^\//, ""), APP_BASE).href;
   let activeClient = null;
   let activeChannel = null;
   let activeRole = "customer";
@@ -94,7 +97,7 @@
     const history = getHistory();
     const id = tag || `vasi-${Date.now()}`;
     if (history.some((item) => item.id === id)) return;
-    history.unshift({ id, title, body, url: url || "/activity.html", category, createdAt: new Date().toISOString(), read: false });
+    history.unshift({ id, title, body, url: appUrl(url || "activity.html"), category, createdAt: new Date().toISOString(), read: false });
     writeJson(HISTORY_KEY, history.slice(0, HISTORY_LIMIT));
     renderCentre();
   }
@@ -241,7 +244,7 @@
 
   function registerWorker() {
     if (!("serviceWorker" in navigator)) return Promise.resolve(null);
-    if (!registrationPromise) registrationPromise = navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(() => navigator.serviceWorker.ready).catch(() => null);
+    if (!registrationPromise) registrationPromise = navigator.serviceWorker.register(appUrl("sw.js"), { scope: APP_BASE.pathname }).then(() => navigator.serviceWorker.ready).catch(() => null);
     return registrationPromise;
   }
 
@@ -253,7 +256,7 @@
     if (!("Notification" in window) || Notification.permission !== "granted") return;
     const registration = await registerWorker();
     const prefs = getPreferences();
-    const options = { body, icon: "/vasi-icon.svg", badge: "/vasi-icon.svg", tag: tag || "vasi-update", renotify: false, silent: !prefs.sound, vibrate: prefs.sound ? [180, 80, 180] : [], data: { url: url || "/activity.html" } };
+    const options = { body, icon: appUrl("vasi-icon.svg"), badge: appUrl("vasi-icon.svg"), tag: tag || "vasi-update", renotify: false, silent: !prefs.sound, vibrate: prefs.sound ? [180, 80, 180] : [], data: { url: appUrl(url || "activity.html") } };
     if (registration?.showNotification) await registration.showNotification(title, options);
     else new Notification(title, options);
   }
@@ -264,7 +267,7 @@
     const urgent = document.getElementById("vasiUrgentAlert");
     document.getElementById("vasiUrgentTitle").textContent = title;
     document.getElementById("vasiUrgentBody").textContent = body;
-    document.getElementById("vasiUrgentOpen").onclick = () => { location.href = url || "/activity.html"; };
+    document.getElementById("vasiUrgentOpen").onclick = () => { location.href = appUrl(url || "activity.html"); };
     urgent.dataset.open = "true";
     let remaining = 20;
     const count = document.getElementById("vasiUrgentCount");

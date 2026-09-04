@@ -148,7 +148,7 @@
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/vasi-notifications.js"></script>
+    <script src="./vasi-notifications.js"></script>
     <script>
       const client = supabase.createClient(
           "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -326,5 +326,5 @@
       setInterval(loadJobs, 10000);
       VasiNotifications.start(client, { role: "courier" });
     </script>
-  <script src="/vasi-languages.js"></script></body>
+  <script src="./vasi-languages.js"></script></body>
 </html>
