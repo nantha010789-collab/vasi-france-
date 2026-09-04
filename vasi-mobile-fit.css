@@ -1,0 +1,78 @@
+:root {
+  --vasi-safe-top: env(safe-area-inset-top, 0px);
+  --vasi-safe-right: env(safe-area-inset-right, 0px);
+  --vasi-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --vasi-safe-left: env(safe-area-inset-left, 0px);
+}
+
+html {
+  min-height: 100%;
+  background: #050505;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: hidden;
+  padding-top: var(--vasi-safe-top);
+  padding-right: var(--vasi-safe-right);
+  padding-bottom: var(--vasi-safe-bottom);
+  padding-left: var(--vasi-safe-left);
+}
+
+body > .app,
+body > .wrap,
+body > main {
+  width: 100%;
+  min-height: calc(100vh - var(--vasi-safe-top) - var(--vasi-safe-bottom));
+  min-height: calc(100dvh - var(--vasi-safe-top) - var(--vasi-safe-bottom));
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+.payModal {
+  padding-top: max(14px, var(--vasi-safe-top)) !important;
+  padding-right: max(14px, var(--vasi-safe-right)) !important;
+  padding-bottom: max(14px, var(--vasi-safe-bottom)) !important;
+  padding-left: max(14px, var(--vasi-safe-left)) !important;
+}
+
+@media (max-width: 720px) {
+  body {
+    background: #050505;
+  }
+}
+
+@media (max-width: 520px) {
+  .top,
+  header {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .top > *,
+  header > * {
+    min-width: 0;
+  }
+
+  .top-actions,
+  .actions {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
