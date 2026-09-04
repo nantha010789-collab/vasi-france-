@@ -6,9 +6,11 @@
 - GitHub Pages is a static mirror only. All API-backed acceptance tests must use the Vercel URL.
 - Every main-branch change must pass `npm test` before deployment.
 
-## Backup and recovery gate
+## Backup policy and recovery gate
 
-Before accepting real rides or orders, an owner must confirm in Supabase **Project Settings → Infrastructure → Backups** that daily backups are present. Enable Point-in-Time Recovery for the production project when the plan supports it.
+Decision recorded on 2026-09-04: use the Supabase **Pro daily backup** policy with seven-day retention. PITR is not selected because its additional cost is not required at the current launch stage.
+
+Before accepting real rides or orders, an owner must upgrade the Supabase organization from Free to Pro and confirm in **Database → Backups** that the first scheduled daily backup is present. Do not mark this gate complete from the plan upgrade alone; verify an actual successful backup timestamp.
 
 Monthly recovery drill:
 
