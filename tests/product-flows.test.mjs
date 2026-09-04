@@ -342,15 +342,20 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("auth.html", "utf8"),
   ]);
-  for (const source of [register, dashboard]) {
-    assert.match(source, /localStorage\.setItem\('vasi_role','restaurant'\)/);
-    assert.match(source, /auth\.html\?role=restaurant/);
-    assert.doesNotMatch(
-      source,
-      /localStorage\.setItem\('vasi_role','customer'\).*auth\.html\?role=customer/,
-    );
-  }
+  assert.match(register, /Créer mon compte restaurant/);
+  assert.match(register, /localStorage\.setItem\("vasi_role", "restaurant"\)/);
+  assert.match(register, /emailRedirectTo: new URL\("restaurant-register\.html"/);
+  assert.match(register, /shouldCreateUser: true/);
+  assert.match(register, /id="restaurantPanel" class="panel hidden"/);
+  assert.doesNotMatch(register, /location\.href='auth\.html\?role=restaurant'/);
+  assert.match(dashboard, /localStorage\.setItem\('vasi_role','restaurant'\)/);
+  assert.match(dashboard, /auth\.html\?role=restaurant/);
+  assert.doesNotMatch(
+    dashboard,
+    /localStorage\.setItem\('vasi_role','customer'\).*auth\.html\?role=customer/,
+  );
   assert.match(auth, /savedRole === "restaurant"/);
+  assert.match(auth, /back === "restaurant-register\.html"/);
   assert.match(auth, /return "restaurant-dashboard\.html"/);
 });
 
