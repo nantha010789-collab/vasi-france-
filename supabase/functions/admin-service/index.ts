@@ -223,6 +223,49 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return json({ ok: true, restaurants: data || [] });
     }
+    if (action === 'list_menu_photo_reviews') {
+      const requested = ['checking', 'admin_review', 'needs_changes', 'approved'].includes(body.status) ? body.status : 'admin_review';
+      const { data: photos, error: photoError } = await db.from('restaurant_menu_items')
+        .select('id,restaurant_id,name,category,photo_candidate_url,photo_url,photo_status,photo_review_reason,photo_ai_confidence,photo_checked_at,updated_at')
+        .eq('photo_status', requested).order('updated_at', { ascending: false }).limit(100);
+      if (photoError) throw photoError;
+      const restaurantIds = [...new Set((photos || []).map((photo: any) => photo.restaurant_id).filter(Boolean))];
+      let restaurants: any[] = [];
+      if (restaurantIds.length) {
+        const { data, error } = await db.from('restaurants').select('id,name,email,phone').in('id', restaurantIds);
+        if (error) throw error;
+        restaurants = data || [];
+      }
+      const byId = new Map(restaurants.map((restaurant: any) => [restaurant.id, restaurant]));
+      return json({
+        ok: true,
+        photos: (photos || []).map((photo: any) => ({ ...photo, restaurant: byId.get(photo.restaurant_id) || null })),
+      });
+    }
+    if (action === 'review_menu_photo') {
+      const id = text(body.photo_id, 80);
+      const status = ['approved', 'needs_changes'].includes(body.status) ? body.status : '';
+      if (!id || !status) return json({ error: 'Photo and decision required' }, 400);
+      const { data: existing, error: findError } = await db.from('restaurant_menu_items')
+        .select('id,photo_candidate_url,photo_status').eq('id', id).maybeSingle();
+      if (findError) throw findError;
+      if (!existing?.photo_candidate_url) return json({ error: 'Photo not found' }, 404);
+      const reason = status === 'approved'
+        ? 'Approved by VASI.'
+        : text(body.reason || 'Please upload a clearer food photo without text or watermarks.', 240);
+      const patch = {
+        photo_url: status === 'approved' ? existing.photo_candidate_url : null,
+        photo_status: status,
+        photo_review_reason: reason,
+        photo_checked_at: new Date().toISOString(),
+        photo_reviewed_by: user.id,
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await db.from('restaurant_menu_items').update(patch).eq('id', id).select().maybeSingle();
+      if (error) throw error;
+      await audit('menu_photo_review', 'restaurant_menu_item', id, { status, reason, previous_status: existing.photo_status });
+      return json({ ok: true, photo: data });
+    }
     if (action === 'review_restaurant') {
       const id = text(body.id, 80);
       const status = ['approved', 'rejected'].includes(body.status) ? body.status : '';

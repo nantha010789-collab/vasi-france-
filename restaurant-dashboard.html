@@ -1,2 +1,204 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Restaurant dashboard · VASI</title><style>:root{font-family:Inter,system-ui;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0}.wrap{max-width:900px;margin:auto;padding:20px 18px 50px}.top,.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.brand{font-size:29px;font-weight:950}.btn,input{border:1px solid #333;background:#181818;color:#fff;border-radius:12px;padding:11px;font:inherit}.btn{font-weight:800;cursor:pointer}.on{background:#58ca75;color:#07150b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{background:#101010;border:1px solid #292929;border-radius:20px;padding:17px;margin-top:14px}.muted{color:#999;font-size:13px}.badge{display:inline-block;padding:7px 10px;border-radius:999px;background:#292929;text-transform:capitalize}.menu-item,.order{border-top:1px solid #292929;padding:13px 0}.form{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}.status{min-height:22px;color:#aaa}@media(max-width:650px){.grid,.form{grid-template-columns:1fr}}</style>  <link rel="stylesheet" href="./vasi-mobile-fit.css" />
-  </head><body><main class="wrap"><header class="top"><div class="brand">VASI Partner</div><div><button class="btn" onclick="location.href='eats.html'">Eats</button> <button class="btn" onclick="logout()">Sign out</button></div></header><div id="app"><p class="muted">Loading restaurant…</p></div><p id="message" class="status"></p></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./vasi-notifications.js"></script><script>const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT'),app=document.getElementById('app'),msg=document.getElementById('message');let token='',data={};const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));async function api(body){const r=await fetch('/api/restaurant-partner',{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined}),d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}async function load(){try{data=await api();if(!data.restaurant){location.href='restaurant-register.html';return}render()}catch(e){msg.textContent=e.message}}function render(){const r=data.restaurant,rate=(Number(r.commission_rate)*100).toFixed(0);app.innerHTML=`<section class="card"><div class="row"><div><h1>${esc(r.name)}</h1><span class="badge">${esc(r.status)}</span></div><button class="btn ${r.is_open?'on':''}" onclick="toggleOpen(${!r.is_open})">${r.is_open?'Online':'Offline'}</button></div><p class="muted">${esc(r.cuisine)} · ${esc(r.delivery_mode==='own'?'Own delivery':'VASI courier')} · ${rate}% launch commission until ${new Date(r.launch_commission_ends_at).toLocaleDateString()}</p>${r.status==='pending'?'<p>Your application is being reviewed. Add your menu now; online ordering unlocks after approval.</p>':''}${r.status==='rejected'?`<p>Changes needed: ${esc(r.rejection_reason)}</p>`:''}</section><div class="grid"><section class="card"><h2>Menu</h2><form class="form" onsubmit="addItem(event)"><input name="name" placeholder="Item name" required><input name="category" placeholder="Category"><input name="price" type="number" min="0.5" step="0.01" placeholder="€ Price" required><input name="description" placeholder="Description"><input name="allergens" placeholder="Allergens, comma separated"><button class="btn" type="submit">Add item</button></form><div>${(data.menu||[]).map(i=>`<div class="menu-item row"><div><b>${esc(i.name)}</b><div class="muted">€${Number(i.price).toFixed(2)} · ${esc(i.category)}</div></div><button class="btn" onclick="toggleItem('${i.id}',${!i.active})">${i.active?'Hide':'Show'}</button></div>`).join('')||'<p class="muted">No menu items yet.</p>'}</div></section><section class="card"><h2>Orders</h2><div>${(data.orders||[]).map(o=>`<div class="order"><div class="row"><b>#${o.id.slice(0,8).toUpperCase()}</b><span class="badge">${esc(o.status)}</span></div><p class="muted">€${Number(o.total).toFixed(2)} · ${new Date(o.created_at).toLocaleString()}</p><div class="row"><button class="btn" onclick="order('${o.id}','accepted')">Accept</button><button class="btn" onclick="order('${o.id}','preparing')">Preparing</button><button class="btn" onclick="order('${o.id}','ready_for_pickup')">Ready</button></div></div>`).join('')||'<p class="muted">No orders yet.</p>'}</div></section></div>`}async function act(body){msg.textContent='Saving…';try{await api(body);msg.textContent='Saved.';await load()}catch(e){msg.textContent=e.message}}function addItem(e){e.preventDefault();act({action:'add_item',...Object.fromEntries(new FormData(e.target))})}function toggleItem(id,active){act({action:'toggle_item',id,active})}function toggleOpen(is_open){act({action:'toggle_open',is_open})}function order(id,status){act({action:'order_status',id,status})}async function logout(){await client.auth.signOut();location.href='index.html'}client.auth.getSession().then(({data:{session}})=>{if(!session){localStorage.setItem('vasi_role','restaurant');localStorage.setItem('vasi_return','restaurant-dashboard.html');location.href='auth.html?role=restaurant'}else{token=session.access_token;load()}});VasiNotifications.start(client,{role:"restaurant"});</script><script src="./vasi-languages.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <title>Restaurant dashboard · VASI</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:#fff;background:#050505;--panel:#101010;--line:#292929;--muted:#999;--green:#68e48b;--amber:#ffc766;--red:#ff8a82}
+    *{box-sizing:border-box}
+    body{margin:0;background:#050505}
+    button,input{font:inherit}
+    .wrap{width:min(100%,980px);margin:auto;padding:max(16px,env(safe-area-inset-top)) 16px calc(54px + env(safe-area-inset-bottom))}
+    .top,.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .brand{font-size:clamp(23px,5vw,30px);font-weight:950;letter-spacing:-.04em}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn,input{border:1px solid #363636;background:#181818;color:#fff;border-radius:13px;padding:11px 13px}
+    .btn{font-weight:800;cursor:pointer;min-height:44px}
+    .btn:hover,.btn:focus-visible{border-color:#777}
+    .btn.primary{background:#fff;color:#050505;border-color:#fff}
+    .on{background:#173d22;color:var(--green);border-color:#2e7b44}
+    .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:14px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:clamp(15px,3vw,20px);margin-top:14px;overflow:hidden}
+    h1,h2{margin:0 0 10px;letter-spacing:-.025em} h1{font-size:clamp(25px,6vw,38px)} h2{font-size:22px}
+    .muted{color:var(--muted);font-size:13px;line-height:1.45}
+    .badge,.photo-state{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:#292929;font-size:12px;font-weight:800;text-transform:capitalize}
+    .photo-state.approved{background:#153b20;color:var(--green)}
+    .photo-state.checking,.photo-state.admin_review{background:#3b3019;color:var(--amber)}
+    .photo-state.needs_changes{background:#421d1b;color:var(--red)}
+    .menu-item,.order{border-top:1px solid var(--line);padding:15px 0}
+    .menu-item:first-child{margin-top:14px}
+    .form{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+    .form input{min-width:0;width:100%}
+    .form .wide{grid-column:span 2}
+    .menu-main{display:grid;grid-template-columns:92px minmax(0,1fr) auto;align-items:center;gap:13px}
+    .food-photo,.photo-placeholder{width:92px;height:76px;border-radius:14px;border:1px solid #323232;object-fit:cover;background:#181818}
+    .photo-placeholder{display:grid;place-items:center;font-size:26px;color:#777}
+    .item-name{font-size:17px}
+    .item-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .photo-note{margin:9px 0 0 105px}
+    .optional{display:block;margin:7px 0 14px;padding:11px 12px;background:#171717;border:1px solid #292929;border-radius:13px}
+    .status{min-height:22px;color:#bbb;text-align:center}
+    .busy{opacity:.65;pointer-events:none}
+    @media(max-width:720px){.grid,.form{grid-template-columns:1fr}.form .wide{grid-column:auto}.menu-main{grid-template-columns:76px minmax(0,1fr)}.food-photo,.photo-placeholder{width:76px;height:68px}.item-actions{grid-column:1/-1;justify-content:stretch}.item-actions .btn{flex:1}.photo-note{margin-left:0}.top{align-items:flex-start}}
+    @media(max-width:390px){.wrap{padding-left:12px;padding-right:12px}.top-actions .btn{padding:9px 10px}.card{border-radius:18px}.menu-main{grid-template-columns:64px minmax(0,1fr)}.food-photo,.photo-placeholder{width:64px;height:60px}}
+  </style>
+  <link rel="stylesheet" href="./vasi-mobile-fit.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div class="brand">VASI Partner</div>
+      <div class="top-actions">
+        <button class="btn" type="button" onclick="location.href='eats.html'">Eats</button>
+        <button class="btn" type="button" onclick="logout()">Sign out</button>
+      </div>
+    </header>
+    <div id="app"><p class="muted">Loading restaurant…</p></div>
+    <p id="message" class="status" aria-live="polite"></p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./vasi-notifications.js"></script>
+  <script>
+    const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+    const app=document.getElementById('app'),msg=document.getElementById('message');
+    let token='',data={};
+    const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const photoLabel=status=>({none:'No photo',checking:'Checking',approved:'Approved',needs_changes:'Needs changes',admin_review:'Admin review'}[status]||'No photo');
+
+    async function api(body){
+      const response=await fetch('/api/restaurant-partner',{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok)throw Error(result.error||'Request failed');
+      return result;
+    }
+
+    async function load(){
+      try{
+        data=await api();
+        if(!data.restaurant){location.href='restaurant-register.html';return}
+        render();
+      }catch(error){msg.textContent=error.message}
+    }
+
+    function render(){
+      const restaurant=data.restaurant,rate=(Number(restaurant.commission_rate)*100).toFixed(0);
+      const menu=(data.menu||[]).map(item=>{
+        const status=item.photo_status||'none';
+        const preview=item.photo_candidate_url||item.photo_url;
+        return `<article class="menu-item">
+          <div class="menu-main">
+            ${preview?`<img class="food-photo" src="${esc(preview)}" alt="${esc(item.name)} menu photo" loading="lazy">`:'<div class="photo-placeholder" aria-hidden="true">🍽️</div>'}
+            <div>
+              <b class="item-name">${esc(item.name)}</b>
+              <div class="muted">€${Number(item.price).toFixed(2)} · ${esc(item.category)}</div>
+              <div style="margin-top:7px"><span class="photo-state ${esc(status)}">${photoLabel(status)}</span></div>
+            </div>
+            <div class="item-actions">
+              <input id="photo-${esc(item.id)}" type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="uploadPhoto('${esc(item.id)}',this)">
+              <button class="btn" type="button" onclick="document.getElementById('photo-${esc(item.id)}').click()">${preview?'Change photo':'Add photo'}</button>
+              <button class="btn" type="button" onclick="toggleItem('${esc(item.id)}',${!item.active})">${item.active?'Hide':'Show'}</button>
+            </div>
+          </div>
+          ${item.photo_review_reason?`<p class="muted photo-note">${esc(item.photo_review_reason)}</p>`:''}
+        </article>`;
+      }).join('');
+
+      app.innerHTML=`<section class="card">
+        <div class="row">
+          <div><h1>${esc(restaurant.name)}</h1><span class="badge">${esc(restaurant.status)}</span></div>
+          <button class="btn ${restaurant.is_open?'on':''}" type="button" onclick="toggleOpen(${!restaurant.is_open})">${restaurant.is_open?'Online':'Offline'}</button>
+        </div>
+        <p class="muted">${esc(restaurant.cuisine)} · ${esc(restaurant.delivery_mode==='own'?'Own delivery':'VASI courier')} · ${rate}% launch commission until ${new Date(restaurant.launch_commission_ends_at).toLocaleDateString()}</p>
+        ${restaurant.status==='pending'?'<p>Your application is being reviewed. You can prepare your menu now.</p>':''}
+        ${restaurant.status==='rejected'?`<p>Changes needed: ${esc(restaurant.rejection_reason)}</p>`:''}
+      </section>
+      <div class="grid">
+        <section class="card">
+          <h2>Menu</h2>
+          <span class="optional"><b>Food photos are optional.</b><br><span class="muted">Add a clear food photo now or later. VASI checks it automatically before customers see it.</span></span>
+          <form class="form" onsubmit="addItem(event)">
+            <input name="name" placeholder="Item name" aria-label="Item name" required>
+            <input name="category" placeholder="Category" aria-label="Category">
+            <input name="price" type="number" min="0.5" step="0.01" placeholder="€ Price" aria-label="Price" required>
+            <input class="wide" name="description" placeholder="Description" aria-label="Description">
+            <input name="allergens" placeholder="Allergens, comma separated" aria-label="Allergens">
+            <button class="btn primary" type="submit">Add item</button>
+          </form>
+          <div>${menu||'<p class="muted">No menu items yet.</p>'}</div>
+        </section>
+        <section class="card">
+          <h2>Orders</h2>
+          <div>${(data.orders||[]).map(order=>`<div class="order">
+            <div class="row"><b>#${order.id.slice(0,8).toUpperCase()}</b><span class="badge">${esc(order.status)}</span></div>
+            <p class="muted">€${Number(order.total).toFixed(2)} · ${new Date(order.created_at).toLocaleString()}</p>
+            <div class="row">
+              <button class="btn" type="button" onclick="orderStatus('${order.id}','accepted')">Accept</button>
+              <button class="btn" type="button" onclick="orderStatus('${order.id}','preparing')">Preparing</button>
+              <button class="btn" type="button" onclick="orderStatus('${order.id}','ready_for_pickup')">Ready</button>
+            </div>
+          </div>`).join('')||'<p class="muted">No orders yet.</p>'}</div>
+        </section>
+      </div>`;
+    }
+
+    async function compressPhoto(file){
+      if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Choose a JPG, PNG or WebP photo.');
+      if(file.size>8*1024*1024)throw Error('Original photo is too large. Choose one under 8 MB.');
+      const source=await new Promise((resolve,reject)=>{
+        const image=new Image(),objectUrl=URL.createObjectURL(file);
+        image.onload=()=>{URL.revokeObjectURL(objectUrl);resolve(image)};
+        image.onerror=()=>{URL.revokeObjectURL(objectUrl);reject(Error('This photo could not be opened.'))};
+        image.src=objectUrl;
+      });
+      const scale=Math.min(1,1600/Math.max(source.naturalWidth,source.naturalHeight));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(source.naturalWidth*scale));
+      canvas.height=Math.max(1,Math.round(source.naturalHeight*scale));
+      canvas.getContext('2d',{alpha:false}).drawImage(source,0,0,canvas.width,canvas.height);
+      for(const quality of [.86,.76,.66,.56]){
+        const value=canvas.toDataURL('image/webp',quality);
+        if(value.length<2.65*1024*1024)return value;
+      }
+      throw Error('Photo is still too large after resizing. Choose another photo.');
+    }
+
+    async function uploadPhoto(id,input){
+      const file=input.files?.[0];
+      if(!file)return;
+      msg.textContent='Preparing and checking food photo…';
+      app.classList.add('busy');
+      try{
+        const image=await compressPhoto(file);
+        const result=await api({action:'submit_photo',id,image});
+        const status=result.item?.photo_status||'admin_review';
+        msg.textContent=status==='approved'?'Photo approved and published.':status==='needs_changes'?'Photo needs changes. See the reason below.':'Photo sent for VASI review.';
+        await load();
+      }catch(error){msg.textContent=error.message}
+      finally{app.classList.remove('busy');input.value=''}
+    }
+
+    async function act(body,success='Saved.'){
+      msg.textContent='Saving…';
+      try{await api(body);msg.textContent=success;await load()}
+      catch(error){msg.textContent=error.message}
+    }
+    async function addItem(event){event.preventDefault();await act({action:'add_item',...Object.fromEntries(new FormData(event.target))},'Menu item added. Photo is optional.');event.target.reset()}
+    function toggleItem(id,active){act({action:'toggle_item',id,active})}
+    function toggleOpen(is_open){act({action:'toggle_open',is_open})}
+    function orderStatus(id,status){act({action:'order_status',id,status})}
+    async function logout(){await client.auth.signOut();location.href='index.html'}
+
+    client.auth.getSession().then(({data:{session}})=>{
+      if(!session){
+        localStorage.setItem('vasi_role','restaurant');
+        localStorage.setItem('vasi_return','restaurant-dashboard.html');
+        location.href='auth.html?role=restaurant';
+      }else{token=session.access_token;load()}
+    });
+    VasiNotifications.start(client,{role:'restaurant'});
+  </script>
+  <script src="./vasi-languages.js"></script>
+</body>
+</html>

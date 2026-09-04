@@ -354,6 +354,102 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(auth, /return "restaurant-dashboard\.html"/);
 });
 
+test("restaurant food photos are optional, owner-scoped and safely reviewed", async () => {
+  const [dashboard, migration, adminApp, adminService] = await Promise.all([
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile(
+      "supabase/migrations/20260904222000_add_ai_menu_photo_review.sql",
+      "utf8",
+    ),
+    readFile("admin/app.js", "utf8"),
+    readFile("supabase/functions/admin-service/index.ts", "utf8"),
+  ]);
+  assert.match(dashboard, /Food photos are optional/);
+  assert.match(dashboard, /action:'submit_photo'/);
+  assert.match(dashboard, /image\/jpeg,image\/png,image\/webp/);
+  assert.match(dashboard, /Photo approved and published/);
+  assert.match(migration, /'restaurant-menu-photos'/);
+  assert.match(migration, /file_size_limit/);
+  assert.match(migration, /photo_status in \('none','checking','approved','needs_changes','admin_review'\)/);
+  assert.match(
+    migration,
+    /\(storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)::text\)/,
+  );
+  assert.match(migration, /Restaurant owners can never self-approve/);
+  assert.match(adminApp, /data-photo-decision="approved"/);
+  assert.match(adminService, /action === 'review_menu_photo'/);
+  assert.match(adminService, /photo_reviewed_by: user\.id/);
+});
+
+test("menu photo AI approval falls back to admin review without a server database key", async () => {
+  process.env.OPENAI_API_KEY = "test-openai-key";
+  delete process.env.VASI_SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.SUPABASE_SECRET_KEY;
+  const calls = [];
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    calls.push({ url: value, options });
+    if (value.endsWith("/auth/v1/user")) return response({ id: "owner-1" });
+    if (value.includes("/rest/v1/restaurants?"))
+      return response([{ id: "restaurant-1", owner_id: "owner-1" }]);
+    if (value.includes("/rest/v1/restaurant_menu_items?select=id,name"))
+      return response([
+        {
+          id: "item-1",
+          restaurant_id: "restaurant-1",
+          name: "Vegetable curry",
+          description: "Fresh curry",
+          category: "Main",
+        },
+      ]);
+    if (value.includes("/storage/v1/object/restaurant-menu-photos/"))
+      return response({ Key: "uploaded" });
+    if (value.includes("/rest/v1/rpc/vasi_restaurant_set_menu_photo_pending"))
+      return response({ id: "item-1", photo_status: "checking" });
+    if (value === "https://api.openai.com/v1/responses")
+      return response({
+        output_text: JSON.stringify({
+          decision: "approved",
+          confidence: 0.96,
+          reason: "Clear food photo matching the menu item.",
+        }),
+      });
+    if (value.includes("/rest/v1/rpc/vasi_restaurant_finish_menu_photo_review"))
+      return response({ id: "item-1", photo_status: "admin_review" });
+    throw new Error(`Unexpected request: ${value}`);
+  };
+
+  const { default: restaurantPartner } = await import(
+    `../api/restaurant-partner.js?photo=${Date.now()}`
+  );
+  const res = mockRes();
+  await restaurantPartner(
+    {
+      method: "POST",
+      headers: { authorization: "Bearer restaurant-token" },
+      body: {
+        action: "submit_photo",
+        id: "item-1",
+        image: `data:image/png;base64,${Buffer.from("food-photo").toString("base64")}`,
+      },
+    },
+    res,
+  );
+  delete process.env.OPENAI_API_KEY;
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.item.photo_status, "admin_review");
+  const aiCall = calls.find((call) => call.url === "https://api.openai.com/v1/responses");
+  assert.ok(aiCall);
+  const aiBody = JSON.parse(aiCall.options.body);
+  assert.equal(aiBody.text.format.type, "json_schema");
+  assert.ok(aiBody.input[0].content.some((part) => part.type === "input_image"));
+  const fallbackCall = calls.find((call) =>
+    call.url.includes("vasi_restaurant_finish_menu_photo_review"),
+  );
+  assert.equal(JSON.parse(fallbackCall.options.body).p_status, "admin_review");
+});
+
 test("customer, driver, restaurant and admin surfaces load the shared language runtime", async () => {
   const pages = [
     "index.html", "ride-flow.html", "ride-chat.html", "driver.html", "settings.html",
