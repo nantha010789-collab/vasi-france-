@@ -34,14 +34,20 @@
       }
       .app {
         min-height: 100vh;
+        min-height: 100dvh;
         max-width: 720px;
         margin: auto;
-        padding: 22px 18px 40px;
+        padding:
+          calc(env(safe-area-inset-top, 0px) + 18px)
+          max(18px, env(safe-area-inset-right, 0px))
+          calc(env(safe-area-inset-bottom, 0px) + 40px)
+          max(18px, env(safe-area-inset-left, 0px));
       }
       .top {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
       }
       .brand {
         font-size: 30px;
@@ -149,6 +155,50 @@
         font-weight: 800;
         font-size: 15px;
         text-align: center;
+      }
+      @media (max-width: 520px) {
+        .brand {
+          flex: 0 0 auto;
+          font-size: 27px;
+        }
+        .actions {
+          min-width: 0;
+          justify-content: flex-end;
+          gap: 6px;
+        }
+        .pill {
+          min-height: 42px;
+          padding: 8px 10px;
+          font-size: 14px;
+          line-height: 1;
+        }
+        #accountBtn {
+          max-width: 100px;
+        }
+        #langBtn {
+          flex: 0 0 42px;
+          width: 42px;
+          padding-inline: 0;
+        }
+      }
+      @media (max-width: 360px) {
+        .app {
+          padding-left: max(12px, env(safe-area-inset-left, 0px));
+          padding-right: max(12px, env(safe-area-inset-right, 0px));
+        }
+        .top {
+          gap: 8px;
+        }
+        .brand {
+          font-size: 24px;
+        }
+        .pill {
+          padding-inline: 8px;
+          font-size: 13px;
+        }
+        #accountBtn {
+          max-width: 86px;
+        }
       }
     </style>
   </head>
