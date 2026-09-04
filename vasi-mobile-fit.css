@@ -126,6 +126,19 @@ button {
   padding-left: max(14px, var(--vasi-safe-left)) !important;
 }
 
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+    line-height: 1.25;
+  }
+
+  body {
+    scroll-padding-bottom: 45vh;
+  }
+}
+
 @media (max-width: 720px) {
   body {
     background: #050505;
