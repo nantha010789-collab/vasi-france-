@@ -270,13 +270,13 @@ Deno.serve(async (req) => {
       const id = text(body.id, 80);
       const status = ['approved', 'rejected'].includes(body.status) ? body.status : '';
       if (!id || !status) return json({ error: 'Restaurant and decision required' }, 400);
-      const commission = body.commission_rate == null ? null : Number(body.commission_rate);
-      if (commission != null && (!Number.isFinite(commission) || commission < 0 || commission > 50)) return json({ error: 'Invalid commission rate' }, 400);
+      const commission = body.commission_rate == null ? 0.10 : Number(body.commission_rate);
+      if (!Number.isFinite(commission) || commission !== 0.10) return json({ error: 'Restaurant commission must be 10%' }, 400);
       const patch: Record<string, unknown> = {
         status, active: status === 'approved', rejection_reason: status === 'rejected' ? text(body.reason || 'Refus administrateur') : null,
         updated_at: new Date().toISOString(),
       };
-      if (commission != null) patch.commission_rate = commission;
+      patch.commission_rate = commission;
       const { data, error } = await db.from('restaurants').update(patch).eq('id', id).select().maybeSingle();
       if (error) throw error;
       await audit('restaurant_review', 'restaurant', id, { status, reason: patch.rejection_reason, commission_rate: commission });

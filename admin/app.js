@@ -41,7 +41,7 @@
       document.querySelectorAll('[data-restaurant]').forEach(btn=>btn.addEventListener('click',async()=>{
         const rejected=btn.dataset.decision==='rejected',reason=rejected?prompt('Motif du refus :','Informations à compléter')||'Refus administrateur':null;
         if(!confirm(`Confirmer : ${rejected?'refuser':'approuver'} ce restaurant ?`))return;
-        await api('/api/restaurant-admin',{method:'PATCH',body:JSON.stringify({id:btn.dataset.restaurant,status:btn.dataset.decision,reason,commission_rate:10})});
+        await api('/api/restaurant-admin',{method:'PATCH',body:JSON.stringify({id:btn.dataset.restaurant,status:btn.dataset.decision,reason,commission_rate:.10})});
         notify('Restaurant mis à jour');restaurants();
       }));
       document.querySelectorAll('[data-photo]').forEach(btn=>btn.addEventListener('click',async()=>{

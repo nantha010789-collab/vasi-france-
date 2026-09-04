@@ -85,17 +85,21 @@ test("completed cash ride returns a successful payment result", async () => {
 });
 
 test("VASI Eats validates a live menu and creates an order with delivery PIN", async () => {
+  let createdOrder;
   global.fetch = async (url, options = {}) => {
     const value = String(url);
     if (value.includes("/rest/v1/restaurants?")) {
-      return response([{ id: "restaurant-1", name: "VASI Test Kitchen", cuisine: "French", preparation_minutes: 20, minimum_order: 8, delivery_fee: 2.5, delivery_mode: "vasi" }]);
+      return response([{ id: "restaurant-1", name: "VASI Test Kitchen", cuisine: "French", preparation_minutes: 20, minimum_order: 8, delivery_fee: 2.5, delivery_mode: "vasi", commission_rate: 0.10 }]);
     }
     if (value.includes("/rest/v1/restaurant_menu_items?")) {
       return response([{ id: "item-1", restaurant_id: "restaurant-1", name: "Meal", category: "Menu", price: 10, allergens: [] }]);
     }
     if (value.endsWith("/auth/v1/user")) return response({ id: "customer-1" });
     if (value.includes("nominatim.openstreetmap.org")) return response([{ display_name: "1 Rue de Paris, 60100 Creil" }]);
-    if (value.endsWith("/rest/v1/eats_orders") && options.method === "POST") return response([{ id: "order-123" }], 201);
+    if (value.endsWith("/rest/v1/eats_orders") && options.method === "POST") {
+      createdOrder = JSON.parse(options.body);
+      return response([{ id: "order-123" }], 201);
+    }
     if (value.includes("/rest/v1/eats_order_safety?")) return response([{ delivery_pin: "2468" }]);
     throw new Error(`Unexpected request: ${value}`);
   };
@@ -111,6 +115,33 @@ test("VASI Eats validates a live menu and creates an order with delivery PIN", a
   assert.equal(res.body.order_id, "order-123");
   assert.equal(res.body.delivery_pin, "2468");
   assert.equal(res.body.total, 22.5);
+  assert.equal(res.body.commission_rate, 0.10);
+  assert.equal(res.body.restaurant_commission, 2);
+  assert.equal(res.body.restaurant_net, 18);
+  assert.equal(createdOrder.restaurant_commission, 2);
+  assert.equal(createdOrder.restaurant_net, 18);
+});
+
+test("restaurant commission is a permanent 10% for every delivery mode", async () => {
+  const [register, dashboard, classicAdmin, adminApp, migration, enforcement] = await Promise.all([
+    readFile("restaurant-register.html", "utf8"),
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile("restaurant-admin.html", "utf8"),
+    readFile("admin/app.js", "utf8"),
+    readFile("supabase/migrations/20260904231000_set_restaurant_commission_to_ten_percent.sql", "utf8"),
+    readFile("supabase/migrations/20260904231500_enforce_eats_commission_math.sql", "utf8"),
+  ]);
+  assert.match(register, /Commission restaurant simple · 10 %/);
+  assert.match(register, /Ma propre équipe · 10 %/);
+  assert.doesNotMatch(register, /3 premiers mois|5 % avec/);
+  assert.doesNotMatch(dashboard, /launch commission until/);
+  assert.match(classicAdmin, /commission_rate:\.10/);
+  assert.match(adminApp, /commission_rate:\.10/);
+  assert.match(migration, /commission_rate = 0\.10/);
+  assert.match(migration, /restaurant_commission = round\(subtotal \* 0\.10, 2\)/);
+  assert.match(enforcement, /before insert or update of subtotal/);
+  assert.match(enforcement, /security invoker/);
+  assert.match(enforcement, /new\.restaurant_commission := round\(new\.subtotal \* 0\.10, 2\)/);
 });
 
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {

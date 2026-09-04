@@ -110,7 +110,7 @@
           <div><h1>${esc(restaurant.name)}</h1><span class="badge">${esc(restaurant.status)}</span></div>
           <button class="btn ${restaurant.is_open?'on':''}" type="button" onclick="toggleOpen(${!restaurant.is_open})">${restaurant.is_open?'Online':'Offline'}</button>
         </div>
-        <p class="muted">${esc(restaurant.cuisine)} · ${esc(restaurant.delivery_mode==='own'?'Own delivery':'VASI courier')} · ${rate}% launch commission until ${new Date(restaurant.launch_commission_ends_at).toLocaleDateString()}</p>
+        <p class="muted">${esc(restaurant.cuisine)} · ${esc(restaurant.delivery_mode==='own'?'Own delivery':'VASI courier')} · ${rate}% restaurant commission</p>
         ${restaurant.status==='pending'?'<p>Your application is being reviewed. You can prepare your menu now.</p>':''}
         ${restaurant.status==='rejected'?`<p>Changes needed: ${esc(restaurant.rejection_reason)}</p>`:''}
       </section>
@@ -132,7 +132,7 @@
           <h2>Orders</h2>
           <div>${(data.orders||[]).map(order=>`<div class="order">
             <div class="row"><b>#${order.id.slice(0,8).toUpperCase()}</b><span class="badge">${esc(order.status)}</span></div>
-            <p class="muted">€${Number(order.total).toFixed(2)} · ${new Date(order.created_at).toLocaleString()}</p>
+            <p class="muted">Order €${Number(order.total).toFixed(2)} · Restaurant payout €${Number(order.restaurant_net ?? order.subtotal * .9).toFixed(2)} · ${new Date(order.created_at).toLocaleString()}</p>
             <div class="row">
               <button class="btn" type="button" onclick="orderStatus('${order.id}','accepted')">Accept</button>
               <button class="btn" type="button" onclick="orderStatus('${order.id}','preparing')">Preparing</button>
