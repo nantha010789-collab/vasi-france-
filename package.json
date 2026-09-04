@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
-    "check": "npm test"
+    "check": "npm test",
+    "smoke:live": "node tests/live-smoke.mjs"
   },
   "engines": {
     "node": ">=22"
