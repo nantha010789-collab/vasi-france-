@@ -1,10 +1,12 @@
-const CACHE = "vasi-app-v11";
+const CACHE = "vasi-app-v12";
+const APP_BASE = self.registration.scope;
+const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
-  "/index.html",
-  "/manifest.webmanifest",
-  "/vasi-icon.svg",
-  "/vasi-notifications.js",
-  "/vasi-languages.js",
+  appUrl("index.html"),
+  appUrl("manifest.webmanifest"),
+  appUrl("vasi-icon.svg"),
+  appUrl("vasi-notifications.js"),
+  appUrl("vasi-languages.js"),
 ];
 self.addEventListener("install", (e) =>
   e.waitUntil(
@@ -39,7 +41,7 @@ self.addEventListener("fetch", (e) => {
           return n;
         })
         .catch(() =>
-          caches.match(e.request).then((r) => r || caches.match("/index.html")),
+          caches.match(e.request).then((r) => r || caches.match(appUrl("index.html"))),
         ),
     );
     return;
@@ -67,13 +69,13 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "VASI", {
       body: data.body || "You have a new update.",
-      icon: "/vasi-icon.svg",
-      badge: "/vasi-icon.svg",
+      icon: appUrl("vasi-icon.svg"),
+      badge: appUrl("vasi-icon.svg"),
       tag: data.tag || "vasi-update",
       renotify: false,
       silent: Boolean(data.silent),
       vibrate: data.silent ? [] : [180, 80, 180],
-      data: { url: data.url || "/activity.html" },
+      data: { url: appUrl(data.url || "activity.html") },
     }),
   );
 });
@@ -81,8 +83,8 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = new URL(
-    event.notification.data?.url || "/activity.html",
-    self.location.origin,
+    event.notification.data?.url || appUrl("activity.html"),
+    APP_BASE,
   ).href;
   event.waitUntil(
     self.clients
