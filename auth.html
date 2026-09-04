@@ -48,6 +48,31 @@
         gap: 7px;
         margin-bottom: 20px;
       }
+      .method-switch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 18px 0 10px;
+        padding: 4px;
+        border: 1px solid #2b2b2b;
+        border-radius: 16px;
+        background: #0a0a0a;
+      }
+      .method-switch button {
+        min-height: 48px;
+        padding: 11px 12px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #aaa;
+        font: inherit;
+        font-weight: 800;
+      }
+      .method-switch button.active {
+        outline: 0;
+        background: #fff;
+        color: #000;
+      }
       .switch button,
       .btn {
         padding: 14px;
@@ -135,6 +160,22 @@
         </div>
         <h1 id="title">Customer login</h1>
         <p id="desc" class="muted">Quick phone sign-in for VASI customers.</p>
+        <div id="methodSwitch" class="method-switch" aria-label="Customer sign-in method">
+          <button
+            id="phoneMethodBtn"
+            type="button"
+            onclick="setAuthMethod('phone')"
+          >
+            📱 Téléphone
+          </button>
+          <button
+            id="emailMethodBtn"
+            type="button"
+            onclick="setAuthMethod('email')"
+          >
+            ✉️ E-mail
+          </button>
+        </div>
         <input
           id="identity"
           class="input"
@@ -211,7 +252,7 @@
       let routingSession = false;
       const searchParams = new URLSearchParams(location.search);
       const requestedRole = searchParams.get("role");
-      let authMethod = searchParams.get("method") === "phone" ? "phone" : "email";
+      const requestedMethod = searchParams.get("method");
       const allowedReturnPages = new Set([
         "index.html",
         "account.html",
@@ -231,8 +272,13 @@
       let role = ["customer", "ride", "courier", "restaurant"].includes(requestedRole)
         ? requestedRole
         : localStorage.getItem("vasi_role") || "customer";
+      let authMethod = ["phone", "email"].includes(requestedMethod)
+        ? requestedMethod
+        : role === "customer"
+          ? "phone"
+          : "email";
       localStorage.setItem("vasi_role", role);
-      const usesPhone = () => role === "customer" || (role === "restaurant" && authMethod === "phone");
+      const usesPhone = () => authMethod === "phone";
       function savePendingPhone(phone, readyAt) {
         try {
           sessionStorage.setItem("vasi_pending_phone", JSON.stringify({ phone, readyAt, createdAt: Date.now() }));
@@ -262,6 +308,25 @@
       function setRole(next) {
         role = next;
         authMethod = next === "customer" ? "phone" : "email";
+        resetAuthForm();
+        const params = new URLSearchParams(location.search);
+        params.set("role", role);
+        params.set("method", authMethod);
+        history.replaceState(null, "", location.pathname + "?" + params.toString());
+        render();
+      }
+      function setAuthMethod(next) {
+        if (role !== "customer" || !["phone", "email"].includes(next) || next === authMethod) return;
+        authMethod = next;
+        resetAuthForm();
+        const params = new URLSearchParams(location.search);
+        params.set("role", role);
+        params.set("method", authMethod);
+        history.replaceState(null, "", location.pathname + "?" + params.toString());
+        render();
+        $("identity").focus();
+      }
+      function resetAuthForm() {
         phoneAwaitingCode = "";
         clearPendingPhone();
         clearResendCountdown();
@@ -270,18 +335,36 @@
         $("identity").value = "";
         $("otp").value = "";
         show("");
-        render();
       }
       function render() {
         const customer = role === "customer";
         const phone = usesPhone();
-        $("title").textContent = customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Connexion restaurateur";
-        $("desc").textContent = customer ? "Enter your mobile number. We will send a 6-digit SMS code." : role === "ride" ? "VTC passenger driver account." : role === "courier" ? "Eats + Delivery courier account." : phone ? "Entrez votre numéro. Nous vous enverrons un code SMS à 6 chiffres." : "Manage your restaurant, menu and VASI Eats orders.";
+        $("title").textContent = customer ? "Connexion client" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Connexion restaurateur";
+        $("desc").textContent = customer
+          ? phone
+            ? "Entrez votre numéro. Nous vous enverrons un code SMS à 6 chiffres."
+            : "Entrez votre e-mail. Nous vous enverrons un lien de connexion sécurisé."
+          : role === "ride"
+            ? "VTC passenger driver account."
+            : role === "courier"
+              ? "Eats + Delivery courier account."
+              : phone
+                ? "Entrez votre numéro. Nous vous enverrons un code SMS à 6 chiffres."
+                : "Manage your restaurant, menu and VASI Eats orders.";
+        $("methodSwitch").classList.toggle("hidden", !customer);
+        $("phoneMethodBtn").classList.toggle("active", customer && phone);
+        $("emailMethodBtn").classList.toggle("active", customer && !phone);
+        $("phoneMethodBtn").setAttribute("aria-pressed", String(customer && phone));
+        $("emailMethodBtn").setAttribute("aria-pressed", String(customer && !phone));
         $("identity").type = phone ? "tel" : "email";
         $("identity").inputMode = phone ? "tel" : "email";
         $("identity").autocomplete = phone ? "tel" : "email";
         $("identity").placeholder = phone ? "06 12 34 56 78" : "you@example.com";
-        $("continueBtn").textContent = phone ? (phoneAwaitingCode ? "Vérifier et continuer" : "Envoyer le code SMS") : "Continue";
+        $("continueBtn").textContent = phone
+          ? phoneAwaitingCode
+            ? "Vérifier et continuer"
+            : "Envoyer le code SMS"
+          : "Continuer avec mon e-mail";
         $("codeStep").classList.toggle("hidden", !phone || !phoneAwaitingCode);
         ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
           $(id).classList.remove("active"),
@@ -438,12 +521,18 @@
           email,
           options: {
             emailRedirectTo:
-              PRODUCTION_ORIGIN + "/auth.html?role=" + encodeURIComponent(role),
+              PRODUCTION_ORIGIN + "/auth.html?role=" + encodeURIComponent(role) + "&method=email",
             shouldCreateUser: true,
           },
         });
-        if (error) return show(error.message);
-        show("Check your email for the VASI sign-in link.");
+        if (error) {
+          return show(
+            role === "customer"
+              ? "Le service e-mail est momentanément indisponible. Utilisez votre numéro de téléphone pour continuer."
+              : "Le service e-mail est momentanément indisponible. Réessayez plus tard.",
+          );
+        }
+        show("Consultez votre e-mail pour ouvrir le lien de connexion VASI.");
       }
       function $(id) {
         return document.getElementById(id);
