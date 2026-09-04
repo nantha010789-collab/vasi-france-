@@ -297,7 +297,7 @@ export default async function handler(req, res) {
           `restaurant_menu_items?select=*&restaurant_id=eq.${restaurant.id}&order=sort_order.asc,created_at.asc`,
         ),
         db(
-          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,status,delivery_address&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
+          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,commission_rate,restaurant_commission,restaurant_net,status,delivery_address&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
         ),
       ]);
       return res.status(200).json({ restaurant, menu, orders });
