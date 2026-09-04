@@ -34,14 +34,26 @@ async function expectPage(base, path, markers) {
 }
 
 const checks = [
-  expectPage(production, "/", ["Move.", "vasi-notifications.js", "vasi-languages.js"]),
+  (async () => {
+    const response = await fetchWithRetry(`${production}/`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
+    assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+    const html = await response.text();
+    for (const marker of ["Move.", "vasi-notifications.js", "vasi-languages.js", "apple-touch-icon"]) {
+      assert.ok(html.includes(marker), `${production}/ must contain ${marker}`);
+    }
+  })(),
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
   expectPage(production, "/auth.html", ["vasi_pending_phone", "otp_expired"]),
   expectPage(production, "/settings.html", ["testNotification", "VASI test successful"]),
   expectPage(production, "/vasi-languages.js", ["fr:", "ta:", "de:", "ar:", "hi:"]),
+  expectPage(production, "/manifest.webmanifest", ["vasi-icon-192.png", "vasi-icon-512.png"]),
   expectPage(production, "/vasi-clean-start.html", ["location.replace(\"index.html\")"]),
   expectPage(pages, "/vasi-france-/", ["Move.", "vasi-notifications.js"]),
   expectPage(pages, "/vasi-france-/ride-chat.html", ["callButton", "vasi-call.js"]),
+  expectPage(pages, "/vasi-france-/manifest.webmanifest", ["vasi-icon-192.png", "vasi-icon-512.png"]),
   (async () => {
     const callConfig = await fetchWithRetry(`${production}/api/call-config`, { redirect: "manual" });
     assert.equal(callConfig.status, 401, "call configuration must reject unauthenticated requests");

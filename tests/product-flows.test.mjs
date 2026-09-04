@@ -186,3 +186,31 @@ test("legacy public pages redirect to the current product", async () => {
     assert.match(source, new RegExp(`location\\.replace\\(["']${target.replaceAll(".", "\\.")}`));
   }
 });
+
+test("PWA install metadata and baseline security headers stay production-ready", async () => {
+  const [index, manifestSource, worker, vercel, icon192, icon512] = await Promise.all([
+    readFile("index.html", "utf8"),
+    readFile("manifest.webmanifest", "utf8"),
+    readFile("sw.js", "utf8"),
+    readFile("vercel.json", "utf8"),
+    readFile("vasi-icon-192.png"),
+    readFile("vasi-icon-512.png"),
+  ]);
+  const manifest = JSON.parse(manifestSource);
+  const headers = JSON.parse(vercel).headers[0].headers;
+  const header = (name) => headers.find((item) => item.key === name)?.value;
+
+  assert.match(index, /rel="apple-touch-icon" href="\.\/vasi-icon-192\.png"/);
+  assert.match(index, /name="apple-mobile-web-app-capable" content="yes"/);
+  assert.equal(manifest.theme_color, "#050505");
+  assert.equal(manifest.background_color, "#050505");
+  assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.type === "image/png"));
+  assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.type === "image/png"));
+  assert.ok(icon192.length > 1_000);
+  assert.ok(icon512.length > 1_000);
+  assert.match(worker, /vasi-icon-192\.png/);
+  assert.match(worker, /vasi-icon-512\.png/);
+  assert.equal(header("X-Content-Type-Options"), "nosniff");
+  assert.equal(header("X-Frame-Options"), "DENY");
+  assert.equal(header("Referrer-Policy"), "strict-origin-when-cross-origin");
+});
