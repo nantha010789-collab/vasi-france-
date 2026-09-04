@@ -177,6 +177,44 @@
         font-size: 23px;
         font-weight: 950;
         letter-spacing: -1px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .avatar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .avatar-action {
+        min-height: 36px;
+        border: 1px solid #383838;
+        border-radius: 999px;
+        background: #1a1a1a;
+        color: #fff;
+        cursor: pointer;
+        padding: 7px 11px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .avatar-action.remove {
+        color: #ffb4b4;
+      }
+
+      .avatar-help {
+        flex-basis: 100%;
+        margin: 0;
+        color: #777;
+        font-size: 10px;
       }
 
       .profile-copy {
@@ -642,11 +680,33 @@
 
       <div id="account" class="stack hidden">
         <section class="card profile-card" aria-label="Account summary">
-          <div id="avatar" class="avatar" aria-hidden="true">VA</div>
+          <div id="avatar" class="avatar" aria-label="Customer profile photo">
+            <span id="avatarInitials">VA</span>
+            <img id="avatarImage" class="hidden" alt="Customer profile" />
+          </div>
           <div class="profile-copy">
             <h2 id="profileName">VASI customer</h2>
             <p id="profilePhone">No verified phone</p>
             <span id="profileBadge" class="badge">Profile needs details</span>
+            <div class="avatar-actions">
+              <input
+                id="avatarInput"
+                class="hidden"
+                type="file"
+                accept="image/*"
+              />
+              <button id="avatarButton" class="avatar-action" type="button">
+                Add photo
+              </button>
+              <button
+                id="removeAvatarButton"
+                class="avatar-action remove hidden"
+                type="button"
+              >
+                Remove
+              </button>
+              <p class="avatar-help">Optional · JPG, PNG or WebP · max 2 MB</p>
+            </div>
           </div>
         </section>
 
@@ -931,6 +991,8 @@
       let savedAddresses = [];
       let editingAddressId = null;
       let addressSaving = false;
+      let avatarSaving = false;
+      let avatarRenderToken = 0;
 
       function safeNext(value) {
         const candidate = String(value || "").trim();
@@ -968,6 +1030,148 @@
 
       function validEmail(value) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+      }
+
+      async function prepareAvatar(file) {
+        if (!file || !String(file.type || "").startsWith("image/")) {
+          throw new Error("Choose an image file.");
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error("Choose a photo smaller than 10 MB.");
+        }
+
+        const bitmap = await createImageBitmap(file);
+        const side = Math.min(bitmap.width, bitmap.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 512;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("This photo could not be prepared.");
+        context.drawImage(
+          bitmap,
+          (bitmap.width - side) / 2,
+          (bitmap.height - side) / 2,
+          side,
+          side,
+          0,
+          0,
+          512,
+          512,
+        );
+        bitmap.close?.();
+
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/webp", 0.82),
+        );
+        if (!blob || blob.size > 2 * 1024 * 1024) {
+          throw new Error("This photo could not be compressed below 2 MB.");
+        }
+        return blob;
+      }
+
+      async function renderAvatar(path = currentProfile?.avatar_path) {
+        const token = ++avatarRenderToken;
+        const image = el("avatarImage");
+        const initialsElement = el("avatarInitials");
+        const hasPhoto = Boolean(path);
+        el("avatarButton").textContent = hasPhoto ? "Change photo" : "Add photo";
+        el("removeAvatarButton").classList.toggle("hidden", !hasPhoto);
+
+        if (!hasPhoto) {
+          image.removeAttribute("src");
+          image.classList.add("hidden");
+          initialsElement.classList.remove("hidden");
+          return;
+        }
+
+        const { data, error } = await client.storage
+          .from("customer-avatars")
+          .createSignedUrl(path, 60 * 60);
+        if (token !== avatarRenderToken) return;
+        if (error || !data?.signedUrl) {
+          image.classList.add("hidden");
+          initialsElement.classList.remove("hidden");
+          return;
+        }
+        image.src = data.signedUrl;
+        image.classList.remove("hidden");
+        initialsElement.classList.add("hidden");
+      }
+
+      async function uploadAvatar(file) {
+        if (avatarSaving || !currentUser) return;
+        avatarSaving = true;
+        el("avatarButton").disabled = true;
+        el("removeAvatarButton").disabled = true;
+        setStatus("Preparing your optional profile photo…");
+
+        try {
+          const blob = await prepareAvatar(file);
+          const path = `${currentUser.id}/avatar.webp`;
+          const { error: uploadError } = await client.storage
+            .from("customer-avatars")
+            .upload(path, blob, {
+              contentType: "image/webp",
+              cacheControl: "3600",
+              upsert: true,
+            });
+          if (uploadError) throw uploadError;
+
+          const { data: savedProfile, error: profileError } = await client
+            .from("profiles")
+            .update({ avatar_path: path })
+            .eq("id", currentUser.id)
+            .select(
+              "id,full_name,phone,country_code,currency,avatar_path,role,created_at,updated_at",
+            )
+            .single();
+          if (profileError) throw profileError;
+          currentProfile = savedProfile;
+          await renderAvatar(path);
+          setStatus("Profile photo saved.", "success");
+        } catch (error) {
+          setStatus(
+            error?.message || "We could not save that photo. Please try again.",
+            "error",
+          );
+        } finally {
+          avatarSaving = false;
+          el("avatarInput").value = "";
+          el("avatarButton").disabled = false;
+          el("removeAvatarButton").disabled = false;
+        }
+      }
+
+      async function removeAvatar() {
+        if (avatarSaving || !currentUser || !currentProfile?.avatar_path) return;
+        avatarSaving = true;
+        el("avatarButton").disabled = true;
+        el("removeAvatarButton").disabled = true;
+        setStatus("Removing your profile photo…");
+        try {
+          const path = currentProfile.avatar_path;
+          const { error: storageError } = await client.storage
+            .from("customer-avatars")
+            .remove([path]);
+          if (storageError) throw storageError;
+          const { error: profileError } = await client
+            .from("profiles")
+            .update({ avatar_path: null })
+            .eq("id", currentUser.id);
+          if (profileError) throw profileError;
+          currentProfile.avatar_path = null;
+          await renderAvatar(null);
+          setStatus("Profile photo removed.", "success");
+        } catch (error) {
+          setStatus(
+            error?.message || "We could not remove that photo. Please try again.",
+            "error",
+          );
+        } finally {
+          avatarSaving = false;
+          el("avatarButton").disabled = false;
+          el("removeAvatarButton").disabled = false;
+        }
       }
 
       function inferredCountry(phone) {
@@ -1267,7 +1471,8 @@
           : "Your personal details, preferences and support in one place.";
         el("profileName").textContent = name || "VASI customer";
         el("profilePhone").textContent = displayPhone(phone);
-        el("avatar").textContent = initials(name);
+        el("avatarInitials").textContent = initials(name);
+        renderAvatar(currentProfile?.avatar_path);
         el("profileBadge").textContent = isComplete
           ? "✓ Profile ready"
           : "Profile needs details";
@@ -1326,7 +1531,7 @@
           const { data: profile, error: profileError } = await client
             .from("profiles")
             .select(
-              "id,full_name,phone,country_code,currency,role,created_at,updated_at",
+              "id,full_name,phone,country_code,currency,avatar_path,role,created_at,updated_at",
             )
             .eq("id", user.id)
             .maybeSingle();
@@ -1404,7 +1609,7 @@
             })
             .eq("id", currentUser.id)
             .select(
-              "id,full_name,phone,country_code,currency,role,created_at,updated_at",
+              "id,full_name,phone,country_code,currency,avatar_path,role,created_at,updated_at",
             )
             .single();
 
@@ -1472,6 +1677,14 @@
       }
 
       el("profileForm").addEventListener("submit", saveProfile);
+      el("avatarButton").addEventListener("click", () =>
+        el("avatarInput").click(),
+      );
+      el("avatarInput").addEventListener("change", (event) => {
+        const [file] = event.target.files || [];
+        if (file) uploadAvatar(file);
+      });
+      el("removeAvatarButton").addEventListener("click", removeAvatar);
       el("addressForm").addEventListener("submit", saveAddress);
       el("addAddressButton").addEventListener("click", () => openAddressForm());
       el("cancelAddressButton").addEventListener("click", closeAddressForm);
