@@ -1,4 +1,48 @@
 const COUNTRIES = "fr,gb,be,de,nl,lu,ch,es,it,pt";
+const ALLOWED_ORIGINS = new Set([
+  "https://nantha010789-collab.github.io",
+  "https://vasi-new.vercel.app",
+  "https://vasigo.eu",
+  "https://www.vasigo.eu",
+]);
+
+function cors(req, res) {
+  const origin = String(req.headers?.origin || "").trim();
+  if (ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function googleAddress(result) {
+  const components = Object.fromEntries(
+    (result?.address_components || []).flatMap((component) =>
+      (component.types || []).map((type) => [type, component.long_name]),
+    ),
+  );
+  return {
+    lat: String(result.geometry?.location?.lat),
+    lon: String(result.geometry?.location?.lng),
+    display_name: result.formatted_address,
+    address: {
+      house_number: components.street_number,
+      road: components.route,
+      postcode: components.postal_code,
+      city:
+        components.locality ||
+        components.postal_town ||
+        components.administrative_area_level_2,
+      country: components.country,
+      country_code: String(
+        (result?.address_components || []).find((component) =>
+          component.types?.includes("country"),
+        )?.short_name || "",
+      ).toLowerCase(),
+    },
+  };
+}
 
 async function getJson(url, label) {
   let last;
@@ -29,18 +73,36 @@ function coordinate(value, min, max) {
 }
 
 export default async function handler(req, res) {
+  cors(req, res);
   res.setHeader("Cache-Control", "no-store");
   try {
+    if (req.method === "OPTIONS") return res.status(204).end();
     if (req.method === "GET") {
       const query = String(req.query?.q || "")
         .trim()
         .slice(0, 240);
       if (query.length < 3)
         return res.status(400).json({ error: "Enter a destination" });
-      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=3&countrycodes=${COUNTRIES}&q=${encodeURIComponent(query)}`;
       let results = [];
+      const googleKey = String(
+        process.env.GOOGLE_MAPS_SERVER_KEY ||
+          process.env.GOOGLE_MAPS_API_KEY ||
+          "",
+      ).trim();
+      if (googleKey) {
+        try {
+          const google = await getJson(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&language=fr&region=fr&key=${encodeURIComponent(googleKey)}`,
+            "Google Geocoding",
+          );
+          results = (google?.results || []).slice(0, 3).map(googleAddress);
+        } catch (error) {
+          console.warn("[route-preview] Google geocoder failed", error?.message);
+        }
+      }
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=3&countrycodes=${COUNTRIES}&q=${encodeURIComponent(query)}`;
       try {
-        results = await getJson(url, "Address search");
+        if (!results.length) results = await getJson(url, "Address search");
       } catch (error) {
         console.warn("[route-preview] primary geocoder failed", error?.message);
       }
