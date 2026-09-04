@@ -209,7 +209,9 @@
       let resendSeconds = 0;
       let sendingPhoneCode = false;
       let routingSession = false;
-      const requestedRole = new URLSearchParams(location.search).get("role");
+      const searchParams = new URLSearchParams(location.search);
+      const requestedRole = searchParams.get("role");
+      let authMethod = searchParams.get("method") === "phone" ? "phone" : "email";
       const allowedReturnPages = new Set([
         "index.html",
         "account.html",
@@ -230,6 +232,7 @@
         ? requestedRole
         : localStorage.getItem("vasi_role") || "customer";
       localStorage.setItem("vasi_role", role);
+      const usesPhone = () => role === "customer" || (role === "restaurant" && authMethod === "phone");
       function savePendingPhone(phone, readyAt) {
         try {
           sessionStorage.setItem("vasi_pending_phone", JSON.stringify({ phone, readyAt, createdAt: Date.now() }));
@@ -258,6 +261,7 @@
       }
       function setRole(next) {
         role = next;
+        authMethod = next === "customer" ? "phone" : "email";
         phoneAwaitingCode = "";
         clearPendingPhone();
         clearResendCountdown();
@@ -270,14 +274,15 @@
       }
       function render() {
         const customer = role === "customer";
-        $("title").textContent = customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login";
-        $("desc").textContent = customer ? "Enter your mobile number. We will send a 6-digit SMS code." : role === "ride" ? "VTC passenger driver account." : role === "courier" ? "Eats + Delivery courier account." : "Manage your restaurant, menu and VASI Eats orders.";
-        $("identity").type = customer ? "tel" : "email";
-        $("identity").inputMode = customer ? "tel" : "email";
-        $("identity").autocomplete = customer ? "tel" : "email";
-        $("identity").placeholder = customer ? "06 12 34 56 78" : "you@example.com";
-        $("continueBtn").textContent = customer ? (phoneAwaitingCode ? "Verify & continue" : "Send SMS code") : "Continue";
-        $("codeStep").classList.toggle("hidden", !customer || !phoneAwaitingCode);
+        const phone = usesPhone();
+        $("title").textContent = customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Connexion restaurateur";
+        $("desc").textContent = customer ? "Enter your mobile number. We will send a 6-digit SMS code." : role === "ride" ? "VTC passenger driver account." : role === "courier" ? "Eats + Delivery courier account." : phone ? "Entrez votre numéro. Nous vous enverrons un code SMS à 6 chiffres." : "Manage your restaurant, menu and VASI Eats orders.";
+        $("identity").type = phone ? "tel" : "email";
+        $("identity").inputMode = phone ? "tel" : "email";
+        $("identity").autocomplete = phone ? "tel" : "email";
+        $("identity").placeholder = phone ? "06 12 34 56 78" : "you@example.com";
+        $("continueBtn").textContent = phone ? (phoneAwaitingCode ? "Vérifier et continuer" : "Envoyer le code SMS") : "Continue";
+        $("codeStep").classList.toggle("hidden", !phone || !phoneAwaitingCode);
         ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
           $(id).classList.remove("active"),
         );
@@ -289,7 +294,7 @@
         $("register").textContent = role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →";
       }
       async function submitAuth() {
-        if (role === "customer") return phoneAwaitingCode ? verifyPhoneCode() : sendPhoneCode();
+        if (usesPhone()) return phoneAwaitingCode ? verifyPhoneCode() : sendPhoneCode();
         return sendEmailLink();
       }
       function normalizePhone(value) {
@@ -306,7 +311,7 @@
         sendingPhoneCode = true;
         $("continueBtn").disabled = true;
         show("Sending your SMS code…");
-        localStorage.setItem("vasi_role", "customer");
+        localStorage.setItem("vasi_role", role);
         const { error } = await client.auth.signInWithOtp({ phone });
         sendingPhoneCode = false;
         $("continueBtn").disabled = false;
@@ -518,7 +523,7 @@
         await routeSession(data.session);
       }
       render();
-      if (role === "customer") restorePendingPhone();
+      if (usesPhone()) restorePendingPhone();
       $("identity").addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitAuth();
       });

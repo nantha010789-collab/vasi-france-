@@ -377,8 +377,12 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(register, /localStorage\.setItem\("vasi_role", "restaurant"\)/);
   assert.match(register, /emailRedirectTo: new URL\("restaurant-register\.html"/);
   assert.match(register, /shouldCreateUser: true/);
+  assert.match(register, /Continuer avec mon numéro de téléphone/);
+  assert.match(register, /auth\.html\?role=restaurant&method=phone/);
+  assert.match(register, /service e-mail est momentanément indisponible/);
   assert.match(register, /id="restaurantPanel" class="panel hidden"/);
-  assert.doesNotMatch(register, /location\.href='auth\.html\?role=restaurant'/);
+  assert.match(auth, /role === "restaurant" && authMethod === "phone"/);
+  assert.match(auth, /localStorage\.setItem\("vasi_role", role\)/);
   assert.match(dashboard, /localStorage\.setItem\('vasi_role','restaurant'\)/);
   assert.match(dashboard, /auth\.html\?role=restaurant/);
   assert.doesNotMatch(

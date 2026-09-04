@@ -20,6 +20,9 @@
       .back { min-height:46px; padding:10px 15px }
       .primary { width:100%; background:#fff; color:#050505; border-color:#fff; margin-top:16px }
       .secondary { width:100%; margin-top:10px }
+      .phone-fallback { border-color:#3b3b3b; background:#202020 }
+      .or { display:flex; align-items:center; gap:12px; margin:15px 0 2px; color:#777; font-size:13px }
+      .or::before,.or::after { content:""; height:1px; flex:1; background:#292929 }
       .hero { padding:clamp(34px,7vh,58px) 0 22px }
       .eyebrow { margin:0 0 12px; color:#a6a6a6; font-size:13px; font-weight:800; letter-spacing:1.7px; text-transform:uppercase }
       .hero h1 { margin:0 0 14px; font-size:clamp(38px,10vw,58px); line-height:.98; letter-spacing:-2.4px }
@@ -72,6 +75,9 @@
           <label for="ownerEmail">E-mail du propriétaire</label>
           <input id="ownerEmail" class="field" type="email" inputmode="email" autocomplete="email" placeholder="vous@restaurant.fr" />
           <button id="accountButton" class="btn primary" type="button">Créer mon compte restaurant</button>
+          <div class="or" aria-hidden="true">ou</div>
+          <button id="phoneFallback" class="btn secondary phone-fallback" type="button">Continuer avec mon numéro de téléphone</button>
+          <p class="privacy">Le SMS permet de continuer immédiatement si votre e-mail tarde à arriver.</p>
         </div>
         <div id="accountConnected" class="hidden">
           <div class="account-line"><span class="dot" aria-hidden="true"></span><span id="connectedEmail"></span></div>
@@ -154,8 +160,13 @@
           options: { emailRedirectTo: new URL("restaurant-register.html", location.href).href, shouldCreateUser: true },
         });
         accountButton.disabled = false;
-        if (error) return setStatus(accountStatus, error.message || "Le lien n’a pas pu être envoyé.", "error");
+        if (error) return setStatus(accountStatus, "Le service e-mail est momentanément indisponible. Continuez avec votre numéro de téléphone ci-dessous.", "error");
         setStatus(accountStatus, "E-mail envoyé. Ouvrez le lien reçu pour continuer votre inscription.", "ok");
+      });
+      document.getElementById("phoneFallback").addEventListener("click", () => {
+        localStorage.setItem("vasi_role", "restaurant");
+        localStorage.setItem("vasi_return", "restaurant-register.html");
+        location.href = "auth.html?role=restaurant&method=phone";
       });
       document.getElementById("ownerEmail").addEventListener("keydown", event => {
         if (event.key === "Enter") accountButton.click();
