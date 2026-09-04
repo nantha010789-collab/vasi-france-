@@ -1,42 +1,17 @@
-name: Fix VASI UI
+name: VASI UI Maintenance
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/fix-vasi.yml'
-      - 'vasi-rich.html'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  fix:
-    if: ${{ !contains(github.event.head_commit.message, 'VASI UI auto-fix') }}
+  verify:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Patch VASI ride navigation
-        shell: python
-        run: |
-          from pathlib import Path
-          p=Path('vasi-rich.html')
-          s=p.read_text()
-          s=s.replace('<button class="accountBtn" onclick="showAccount()">♙</button>','')
-          s=s.replace('<button class="addStop" onclick="toast(\'Add a stop\')">＋</button>','<button class="addStop" onclick="addStop()">＋</button>')
-          old="function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='ridesView')document.getElementById('sheet').style.maxHeight='78vh';else document.getElementById('sheet').style.maxHeight='76vh'}"
-          new="function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');const nav=document.querySelector('.bottom');nav.classList.toggle('hideDuringRide',id==='planView'||id==='ridesView');if(id==='ridesView')document.getElementById('sheet').style.maxHeight='78vh';else document.getElementById('sheet').style.maxHeight='76vh'}"
-          s=s.replace(old,new)
-          marker="function chooseDestination(name){document.getElementById('destination').value=name;showRides()}"
-          insert="""function chooseDestination(name){document.getElementById('destination').value=name;showRides()}
-let stopCount=0;
-function addStop(){if(stopCount>=2){toast('Maximum 2 extra stops');return}stopCount++;const row=document.createElement('div');row.className='routeRow extraStop';row.innerHTML=`<span class=\"routeIcon\">＋</span><input placeholder=\"Add a stop\" aria-label=\"Stop ${stopCount}\"><button type=\"button\" class=\"stopRemove\" onclick=\"this.parentElement.remove();stopCount--\">×</button>`;document.querySelector('.route').appendChild(row);row.querySelector('input').focus();toast('Stop added')}
-"""
-          s=s.replace(marker,insert)
-          s=s.replace('.bottom button.active{background:#2c2c2c;color:#fff}', '.bottom button.active{background:#2c2c2c;color:#fff}.bottom.hideDuringRide{display:none}.stopRemove{border:0;background:transparent;color:#aaa;font-size:24px;padding:8px}.extraStop input{min-width:0}')
-          p.write_text(s)
-          
-          import subprocess
-          subprocess.run(['git','config','user.name','VASI Bot'],check=True)
-          subprocess.run(['git','config','user.email','actions@github.com'],check=True)
-          subprocess.run(['git','add','vasi-rich.html'],check=True)
-          subprocess.run(['git','commit','-m','VASI UI auto-fix'],check=False)
-          subprocess.run(['git','push'],check=True)
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify VASI UI source
+        run: test -f vasi-rich.html
