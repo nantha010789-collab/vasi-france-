@@ -381,7 +381,8 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(register, /auth\.html\?role=restaurant&method=phone/);
   assert.match(register, /service e-mail est momentanément indisponible/);
   assert.match(register, /id="restaurantPanel" class="panel hidden"/);
-  assert.match(auth, /role === "restaurant" && authMethod === "phone"/);
+  assert.match(auth, /const requestedMethod = searchParams\.get\("method"\)/);
+  assert.match(auth, /const usesPhone = \(\) => authMethod === "phone"/);
   assert.match(auth, /localStorage\.setItem\("vasi_role", role\)/);
   assert.match(dashboard, /localStorage\.setItem\('vasi_role','restaurant'\)/);
   assert.match(dashboard, /auth\.html\?role=restaurant/);
@@ -392,6 +393,18 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(auth, /savedRole === "restaurant"/);
   assert.match(auth, /back === "restaurant-register\.html"/);
   assert.match(auth, /return "restaurant-dashboard\.html"/);
+});
+
+test("customer login offers phone OTP and email magic-link choices", async () => {
+  const auth = await readFile("auth.html", "utf8");
+  assert.match(auth, /id="methodSwitch"/);
+  assert.match(auth, /id="phoneMethodBtn"/);
+  assert.match(auth, /id="emailMethodBtn"/);
+  assert.match(auth, /Continuer avec mon e-mail/);
+  assert.match(auth, /authMethod === "phone"/);
+  assert.match(auth, /role !== "customer"/);
+  assert.match(auth, /emailRedirectTo:[\s\S]*&method=email/);
+  assert.match(auth, /service e-mail est momentanément indisponible/);
 });
 
 test("restaurant food photos are optional, owner-scoped and safely reviewed", async () => {
