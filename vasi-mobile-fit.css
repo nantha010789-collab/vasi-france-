@@ -13,22 +13,28 @@
 
 html {
   width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-  overflow-x: clip;
-  overscroll-behavior-x: none;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: #050505;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
+  position: fixed;
+  inset: 0;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
   max-width: 100%;
+  margin: 0;
   overflow-x: hidden;
-  overflow-x: clip;
+  overflow-y: auto;
   overscroll-behavior-x: none;
-  position: relative;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding-top: var(--vasi-safe-top);
   padding-right: var(--vasi-safe-right);
   padding-bottom: var(--vasi-safe-bottom);
@@ -81,6 +87,14 @@ body > main > *,
 .leaflet-container {
   width: 100%;
   max-width: 100%;
+  touch-action: none !important;
+}
+
+body > *,
+body > .app > *,
+body > .wrap > *,
+body > main > * {
+  max-inline-size: 100%;
 }
 
 .leaflet-control-attribution {
