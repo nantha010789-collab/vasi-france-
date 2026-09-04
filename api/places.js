@@ -26,6 +26,26 @@ function googleKey() {
   ).trim();
 }
 
+function googleErrorCode(error) {
+  const message = String(error?.message || "").toLowerCase();
+  if (error?.name === "AbortError") return "timeout";
+  if (message.includes("api key not valid")) return "invalid_key";
+  if (message.includes("billing")) return "billing_required";
+  if (
+    message.includes("has not been used") ||
+    message.includes("is disabled") ||
+    message.includes("not enabled")
+  )
+    return "api_disabled";
+  if (
+    message.includes("not authorized") ||
+    message.includes("permission") ||
+    message.includes("forbidden")
+  )
+    return "not_authorized";
+  return "upstream_error";
+}
+
 function cors(req, res) {
   const origin = clean(req.headers?.origin, 240);
   if (ALLOWED_ORIGINS.has(origin)) {
@@ -166,10 +186,13 @@ export default async function handler(req, res) {
     }
     return res.status(400).json({ error: "Invalid action" });
   } catch (error) {
-    console.warn("[places] Google fallback", error?.message);
+    const reason = googleErrorCode(error);
+    console.error(`[places] google_${reason}`);
+    res.setHeader("X-VASI-Places-Status", reason);
     return res.status(503).json({
       enabled: true,
       error: "Address suggestions are temporarily unavailable",
+      reason,
     });
   }
 }
