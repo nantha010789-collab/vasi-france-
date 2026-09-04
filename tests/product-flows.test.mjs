@@ -126,6 +126,75 @@ test("voice-call ICE configuration requires an authenticated VASI user", async (
   assert.equal(allowed.headers["cache-control"], "private, no-store, max-age=0");
 });
 
+test("AI map assistance returns only safe address text and never model coordinates", async () => {
+  process.env.OPENAI_API_KEY = "test-openai-key";
+  let requestBody;
+  global.fetch = async (url, options = {}) => {
+    if (String(url).endsWith("/auth/v1/user"))
+      return response({ id: "customer-1" });
+    assert.equal(String(url), "https://api.openai.com/v1/responses");
+    requestBody = JSON.parse(options.body);
+    return response({
+      output_text: JSON.stringify({
+        suggestions: [
+          "Gare du Nord, Paris, France",
+          "48.8809, 2.3553",
+          "https://example.com/place",
+        ],
+      }),
+    });
+  };
+  const { default: aiMapAssist } = await import(
+    `../api/ai-map-assist.js?test=${Date.now()}`
+  );
+  const res = mockRes();
+  await aiMapAssist(
+    {
+      method: "POST",
+      headers: { authorization: "Bearer customer-token" },
+      body: { query: "gar du nor pari", kind: "destination" },
+    },
+    res,
+  );
+  delete process.env.OPENAI_API_KEY;
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.suggestions, ["Gare du Nord, Paris, France"]);
+  assert.equal(requestBody.text.format.type, "json_schema");
+  assert.match(requestBody.instructions, /Never invent/);
+  assert.match(requestBody.instructions, /coordinates/);
+});
+
+test("AI map assistance degrades safely when no API key is configured", async () => {
+  delete process.env.OPENAI_API_KEY;
+  global.fetch = async (url) => {
+    if (String(url).endsWith("/auth/v1/user"))
+      return response({ id: "customer-1" });
+    throw new Error("OpenAI must not be called without a server key");
+  };
+  const { default: aiMapAssist } = await import(
+    `../api/ai-map-assist.js?fallback=${Date.now()}`
+  );
+  const res = mockRes();
+  await aiMapAssist(
+    {
+      method: "POST",
+      headers: { authorization: "Bearer customer-token" },
+      body: { query: "Creil station", kind: "pickup" },
+    },
+    res,
+  );
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, { enabled: false, suggestions: [] });
+});
+
+test("ride map verifies AI address text with the trusted geocoder", async () => {
+  const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /fetch\("\/api\/ai-map-assist"/);
+  assert.match(source, /AI supplies text only/);
+  assert.match(source, /await geocodeDestination\(query\)/);
+  assert.match(source, /AI corrected your \$\{kind\} address/);
+});
+
 test("customer-to-driver lifecycle exposes call, payment and receipt contracts", async () => {
   const [chat, call, driver, history, worker, notifications, settings, auth, languages] = await Promise.all([
     readFile("ride-chat.html", "utf8"),

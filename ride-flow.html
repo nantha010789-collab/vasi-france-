@@ -837,11 +837,8 @@
         button.textContent = "Finding…";
         $("status").textContent = `Finding ${address.label}…`;
         try {
-          let found = null;
-          for (const candidate of destinationQueries(query)) {
-            found = await geocodeDestination(candidate);
-            if (found) break;
-          }
+          const resolved = await resolveMapPlace(query, kind),
+            found = resolved?.found;
           if (!found) throw Error("not found");
           const lat = Number(found.lat),
             lng = Number(found.lon),
@@ -854,6 +851,9 @@
             $("destSearch").value = query;
             $("searchWrap").classList.add("hidden");
           }
+          if (resolved.corrected)
+            $("status").textContent =
+              `AI corrected your ${kind} address — check the map pin`;
         } catch (error) {
           $("status").innerHTML =
             '<span class="error">Saved address not found on the map — edit the address and postcode</span>';
@@ -1060,6 +1060,44 @@
         const d = await r.json();
         return d?.results?.[0] || null;
       }
+      async function aiMapSuggestions(query, kind) {
+        try {
+          const session = (await sb.auth.getSession()).data.session;
+          if (!session?.access_token) return [];
+          const response = await fetch("/api/ai-map-assist", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+            body: JSON.stringify({ query, kind }),
+          });
+          const data = await response.json();
+          return response.ok && Array.isArray(data?.suggestions)
+            ? data.suggestions
+            : [];
+        } catch (error) {
+          console.warn("AI map correction unavailable", error);
+          return [];
+        }
+      }
+      async function resolveMapPlace(raw, kind = "destination") {
+        for (const query of destinationQueries(raw)) {
+          const found = await geocodeDestination(query);
+          if (found) return { found, corrected: false };
+        }
+        const suggestions = await aiMapSuggestions(raw, kind);
+        for (const suggestion of suggestions) {
+          // AI supplies text only. VASI's map geocoder must verify the real place
+          // and is the sole source of coordinates used by routing.
+          for (const query of destinationQueries(suggestion)) {
+            const found = await geocodeDestination(query);
+            if (found) return { found, corrected: true, suggestion };
+          }
+        }
+        return null;
+      }
       function formatGeocodedAddress(found, fallbackText = "Destination") {
         const a = found?.address || {};
         const street = [a.house_number, a.road || a.pedestrian || a.footway]
@@ -1085,11 +1123,8 @@
         if (!raw) return;
         $("status").textContent = "Finding destination…";
         try {
-          let found = null;
-          for (const q of destinationQueries(raw)) {
-            found = await geocodeDestination(q);
-            if (found) break;
-          }
+          const resolved = await resolveMapPlace(raw, "destination"),
+            found = resolved?.found;
           if (!found) throw Error("not found");
           const lat = Number(found.lat),
             lng = Number(found.lon);
@@ -1099,6 +1134,9 @@
           setDestination([lat, lng], label);
           $("destSearch").value = label;
           $("searchWrap").classList.add("hidden");
+          if (resolved.corrected)
+            $("status").textContent =
+              "AI corrected the destination search — check the map pin";
         } catch (e) {
           $("status").innerHTML =
             '<span class="error">Destination not found — try the postcode and city</span>';

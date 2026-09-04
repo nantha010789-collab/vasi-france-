@@ -71,6 +71,7 @@
     "api/share-trip.js": { "includeFiles": "api/share-trip.js" },
     "api/shared-ride.js": { "includeFiles": "api/shared-ride.js" },
     "api/call-config.js": { "includeFiles": "api/call-config.js" },
+    "api/ai-map-assist.js": { "includeFiles": "api/ai-map-assist.js" },
     "api/create-payment-intent.js": {
       "includeFiles": "api/create-payment-intent.js"
     },
