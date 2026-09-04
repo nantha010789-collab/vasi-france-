@@ -1210,10 +1210,15 @@
           });
           const data = await response.json();
           if (requestId !== placeSuggestionRequest) return;
-          if (!response.ok || !Array.isArray(data?.suggestions))
+          if (!response.ok || !Array.isArray(data?.suggestions)) {
+            document.body.dataset.placesStatus =
+              data?.reason || (data?.enabled === false ? "not_configured" : "unavailable");
             return clearPlaceSuggestions();
+          }
+          document.body.dataset.placesStatus = "ready";
           renderPlaceSuggestions(data.suggestions);
         } catch (error) {
+          document.body.dataset.placesStatus = "network_error";
           if (requestId === placeSuggestionRequest) clearPlaceSuggestions();
         }
       }
@@ -1793,83 +1798,3 @@
         if (!ride?.id) return;
         try {
           const s = await getSession();
-          if (!s) return;
-          const r = await fetch(
-            "/api/ride-status?id=" + encodeURIComponent(ride.id),
-            { headers: { Authorization: "Bearer " + s.access_token } },
-          );
-          const d = await r.json();
-          if (!r.ok) throw Error(d.error || "Status unavailable");
-          ride = d;
-          setRideStatus(ride);
-        } catch (e) {}
-      }
-      function startWaiting() {
-        if (waitTimer) return;
-        waitSeconds = 0;
-        $("waiting").classList.remove("hidden");
-        waitTimer = setInterval(() => {
-          waitSeconds++;
-          const m = Math.floor(waitSeconds / 60),
-            s = waitSeconds % 60,
-            fee = Math.max(0, Math.ceil((waitSeconds - 180) / 60) * 0.3);
-          $("waiting").textContent =
-            waitSeconds <= 180
-              ? `Waiting: ${m}:${String(s).padStart(2, "0")} · Free`
-              : `Waiting: ${m}:${String(s).padStart(2, "0")} · ${money(fee)}`;
-        }, 1000);
-      }
-      async function cancelRide() {
-        if (!ride?.id) return;
-        if (!confirm("Cancel this VASI ride? A €5 cancellation fee applies."))
-          return;
-        const s = await getSession();
-        if (!s) return;
-        try {
-          $("cancelBtn").disabled = true;
-          const r = await fetch(
-            "/api/ride-status?id=" + encodeURIComponent(ride.id),
-            {
-              method: "DELETE",
-              headers: { Authorization: "Bearer " + s.access_token },
-            },
-          );
-          const d = await r.json();
-          if (!r.ok)
-            throw Error(d.error || "Cancellation could not be completed");
-          ride = d.ride || ride;
-          const fee = d.cancellation_fee ?? 5;
-          $("status").innerHTML =
-            '<span class="error">Ride cancelled · ' +
-            money(fee) +
-            " cancellation fee</span>";
-          $("cancelBtn").classList.add("hidden");
-          $("receiptBtn").textContent = "View cancellation receipt";
-          $("receiptBtn").classList.remove("hidden");
-          $("eta").textContent = "—";
-          clearInterval(statusTimer);
-          clearInterval(waitTimer);
-        } catch (e) {
-          $("cancelBtn").disabled = false;
-          $("status").innerHTML =
-            '<span class="error">' + esc(e.message) + "</span>";
-        }
-      }
-      function esc(s) {
-        return String(s || "").replace(
-          /[&<>"']/g,
-          (m) =>
-            ({
-              "&": "&amp;",
-              "<": "&lt;",
-              ">": "&gt;",
-              '"': "&quot;",
-              "'": "&#39;",
-            })[m],
-        );
-      }
-      init();
-      VasiNotifications.start(sb, { role: "customer" });
-    </script>
-  <script src="./vasi-languages.js"></script></body>
-</html>
