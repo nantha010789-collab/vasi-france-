@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>VASI Support</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui;
+        color: #fff;
+        background: #050505;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: auto;
+        padding: 20px 18px 50px;
+      }
+      .top,
+      .ticket-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      .brand {
+        font-size: 30px;
+        font-weight: 950;
+      }
+      .btn,
+      input,
+      select,
+      textarea {
+        border: 1px solid #333;
+        background: #181818;
+        color: #fff;
+        border-radius: 14px;
+        padding: 13px;
+        font: inherit;
+      }
+      .btn {
+        font-weight: 850;
+      }
+      .primary {
+        background: #fff;
+        color: #050505;
+        width: 100%;
+      }
+      .hero {
+        padding: 35px 0 14px;
+      }
+      .hero h1 {
+        font-size: 42px;
+        margin: 5px 0;
+      }
+      .panel,
+      .ticket {
+        background: #111;
+        border: 1px solid #292929;
+        border-radius: 20px;
+        padding: 17px;
+        margin-top: 13px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .full {
+        grid-column: 1/-1;
+        width: 100%;
+      }
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      .muted {
+        color: #999;
+      }
+      .reply {
+        background: #18231b;
+        border-left: 3px solid #5bd279;
+        padding: 12px;
+        border-radius: 10px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+      }
+      .human {
+        border-left-color: #fff;
+        background: #202020;
+      }
+      .badge {
+        font-size: 11px;
+        background: #282828;
+        border-radius: 999px;
+        padding: 6px 9px;
+        text-transform: capitalize;
+      }
+      .status {
+        text-align: center;
+        min-height: 22px;
+        color: #aaa;
+      }
+      @media (max-width: 580px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .full {
+          grid-column: auto;
+        }
+        .hero h1 {
+          font-size: 35px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <div class="brand">VASI.</div>
+        <button class="btn" onclick="location.href = 'index.html'">Home</button>
+      </header>
+      <section class="hero">
+        <p class="muted">24/7 help</p>
+        <h1>VASI Support</h1>
+        <p class="muted">
+          Tamil · English · Français. For immediate danger call
+          <a href="tel:112" style="color: #fff">112</a>.
+        </p>
+      </section>
+      <section class="panel">
+        <form id="form" class="grid">
+          <select name="user_role">
+            <option value="customer">Customer</option>
+            <option value="ride">Ride driver</option>
+            <option value="courier">Courier</option>
+            <option value="restaurant">Restaurant</option></select
+          ><select name="category">
+            <option value="ride">Ride</option>
+            <option value="eats">Food order</option>
+            <option value="delivery">Delivery</option>
+            <option value="payment">Payment / refund</option>
+            <option value="account">Account / login</option>
+            <option value="restaurant">Restaurant partner</option>
+            <option value="safety">Safety</option>
+            <option value="other">Other</option></select
+          ><input
+            class="full"
+            name="subject"
+            placeholder="Short title"
+            required
+          /><textarea
+            class="full"
+            name="description"
+            placeholder="Tell VASI what happened…"
+            required
+          ></textarea
+          ><button class="btn primary full" type="submit">
+            Send to VASI Support
+          </button>
+        </form>
+        <p id="status" class="status"></p>
+      </section>
+      <section class="panel">
+        <b>Temporary support email</b>
+        <p class="muted">
+          Contact us:
+          <a
+            href="mailto:contact@vasigo.eu?subject=VASI%20Support"
+            style="color: #fff"
+            >contact@vasigo.eu</a
+          >.
+        </p>
+      </section>
+      <section>
+        <h2>Your support tickets</h2>
+        <div id="tickets"><p class="muted">Loading…</p></div>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const client = supabase.createClient(
+          "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+          "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+        ),
+        status = document.getElementById("status"),
+        box = document.getElementById("tickets");
+      let token = "";
+      const esc = (v) =>
+        String(v ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      async function api(body) {
+        const r = await fetch("/api/support", {
+            method: body ? "POST" : "GET",
+            headers: {
+              Authorization: "Bearer " + token,
+              ...(body ? { "Content-Type": "application/json" } : {}),
+            },
+            body: body ? JSON.stringify(body) : undefined,
+          }),
+          d = await r.json();
+        if (!r.ok) throw Error(d.error || "Support unavailable");
+        return d;
+      }
+      async function load() {
+        try {
+          const d = await api();
+          box.innerHTML =
+            d.tickets
+              .map(
+                (t) =>
+                  `<article class="ticket"><div class="ticket-head"><b>#${t.id.slice(0, 8).toUpperCase()} · ${esc(t.subject)}</b><span class="badge">${esc(t.status.replace("_", " "))}</span></div><p class="muted">${esc(t.category)} · ${new Date(t.created_at).toLocaleString()}</p><div>${esc(t.description)}</div>${t.ai_reply ? `<div class="reply"><b>VASI Assistant</b><br>${esc(t.ai_reply)}</div>` : ""}${t.human_reply ? `<div class="reply human"><b>VASI Human Support</b><br>${esc(t.human_reply)}</div>` : ""}</article>`,
+              )
+              .join("") || '<p class="muted">No support tickets yet.</p>';
+        } catch (e) {
+          box.innerHTML = "<p>" + esc(e.message) + "</p>";
+        }
+      }
+      const supportIntent = sessionStorage.getItem("vasi_support_intent");
+      if (supportIntent) {
+        const form = document.getElementById("form");
+        form.elements.category.value = "account";
+        form.elements.subject.value = supportIntent;
+        form.elements.description.value =
+          "Please help me delete my VASI account after verifying my identity.";
+        sessionStorage.removeItem("vasi_support_intent");
+      }
+      document.getElementById("form").onsubmit = async (e) => {
+        e.preventDefault();
+        status.textContent = "VASI is checking your request…";
+        try {
+          const d = await api(Object.fromEntries(new FormData(e.target)));
+          status.textContent =
+            "Ticket #" + d.ticket.id.slice(0, 8).toUpperCase() + " created.";
+          e.target.reset();
+          await load();
+        } catch (x) {
+          status.textContent = x.message;
+        }
+      };
+      client.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          localStorage.setItem("vasi_return", "support.html");
+          location.href = "auth.html?role=customer";
+        } else {
+          token = session.access_token;
+          load();
+        }
+      });
+    </script>
+  <script src="/vasi-languages.js"></script></body>
+</html>

@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>VASI Admin · Ride pricing</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, sans-serif;
+        background: #050505;
+        color: #fff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .brand {
+        font-size: 28px;
+        font-weight: 950;
+      }
+      .card {
+        background: #111;
+        border: 1px solid #292929;
+        border-radius: 18px;
+        padding: 18px;
+        margin-top: 14px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .dates {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      label {
+        display: block;
+        color: #aaa;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        background: #181818;
+        color: #fff;
+        border: 1px solid #333;
+        border-radius: 10px;
+        font: inherit;
+      }
+      .vehicle {
+        border: 1px solid #292929;
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .vehicle h3 {
+        margin: 0 0 5px;
+      }
+      .btn {
+        border: 0;
+        background: #fff;
+        color: #050505;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 900;
+      }
+      .muted {
+        color: #999;
+        font-size: 12px;
+      }
+      .switch {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+      }
+      .switch input {
+        width: auto;
+      }
+      .ok {
+        color: #77e69b;
+      }
+      .bad {
+        color: #ff9a9a;
+      }
+      select {
+        width: 100%;
+        padding: 12px;
+        background: #181818;
+        color: #fff;
+        border: 1px solid #333;
+        border-radius: 10px;
+      }
+      @media (max-width: 700px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .dates {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <div>
+          <div class="brand">VASI Pricing</div>
+          <div class="muted">Admin-controlled ride rates & offers</div>
+        </div>
+        <button class="btn" onclick="location.href = 'vasi-admin.html'">
+          Dashboard
+        </button>
+      </header>
+      <section class="card">
+        <label class="switch"
+          ><input id="offer_active" type="checkbox" /> Show offer pricing</label
+        ><label>Offer label</label
+        ><input id="offer_name" maxlength="80" placeholder="VASI offer price" />
+        <label>Offer calculation</label>
+        <select id="offer_mode" onchange="showMode()">
+          <option value="fixed">Fixed vehicle rates</option>
+          <option value="percentage">Percentage off regular fare</option>
+        </select>
+        <div class="dates">
+          <div>
+            <label>Starts (optional)</label
+            ><input id="starts_at" type="datetime-local" />
+          </div>
+          <div>
+            <label>Ends (optional — leave blank for no expiry)</label
+            ><input id="ends_at" type="datetime-local" />
+          </div>
+        </div>
+        <p class="muted">
+          You can extend an offer later, remove its end date, or disable it at
+          any time.
+        </p>
+      </section>
+      <section id="percentageCard" class="card" hidden>
+        <h2>Percentage offer</h2>
+        <p class="muted">
+          Discount is calculated from the regular fare. The cap and minimum fare
+          protect margin.
+        </p>
+        <div class="dates">
+          <div>
+            <label>Discount % (maximum 50%)</label
+            ><input
+              id="discount_percent"
+              type="number"
+              min="0"
+              max="50"
+              step="0.01"
+            />
+          </div>
+          <div>
+            <label>Maximum discount € (optional)</label
+            ><input
+              id="max_discount_eur"
+              type="number"
+              min="0"
+              max="1000"
+              step="0.01"
+              placeholder="Example: 6.00"
+            />
+          </div>
+          <div>
+            <label>Minimum regular fare to qualify € (optional)</label
+            ><input
+              id="minimum_regular_fare"
+              type="number"
+              min="0"
+              max="1000"
+              step="0.01"
+              placeholder="Example: 12.00"
+            />
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>✨ AI Offer Assistant</h2>
+        <p class="muted">
+          AI analyses the current rates and prepares a safe suggestion. Nothing
+          is published without your approval.
+        </p>
+        <div class="dates">
+          <div>
+            <label>Competitor / market price € (optional)</label>
+            <input
+              id="market_average"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Example: 17.00"
+            />
+          </div>
+          <div>
+            <label>Current demand</label>
+            <select id="demand">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <p>
+          <button id="analyse" class="btn" onclick="analyseOffer()">
+            AI Analyse & Suggest
+          </button>
+        </p>
+        <div id="aiResult" class="muted">No AI analysis yet.</div>
+      </section>
+      <section id="fixedCard" class="card">
+        <h2>Fixed vehicle fare formula</h2>
+        <p class="muted">
+          Used only in Fixed mode. Upfront fare = base + distance × €/km +
+          duration × €/minute, never below the minimum.
+        </p>
+        <div id="vehicles" class="grid"></div>
+        <p>
+          <button id="save" class="btn" onclick="save()">
+            Save & publish pricing
+          </button>
+        </p>
+        <p id="msg" class="muted">Loading…</p>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const db = supabase.createClient(
+          "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+          "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+        ),
+        keys = ["go", "comfort", "xl", "van"],
+        names = {
+          go: "🚗 Go",
+          comfort: "🚘 Comfort",
+          xl: "🚙 XL",
+          van: "🚐 Van",
+        };
+      document.getElementById("vehicles").innerHTML = keys
+        .map(
+          (k) =>
+            `<div class="vehicle"><h3>${names[k]}</h3>${[
+              ["base", "Base €"],
+              ["per_km", "Per km €"],
+              ["per_minute", "Per minute €"],
+              ["minimum", "Minimum €"],
+            ]
+              .map(
+                ([x, n]) =>
+                  `<label>${n}</label><input id="${k}_${x}" type="number" min="0" max="1000" step="0.01">`,
+              )
+              .join("")}</div>`,
+        )
+        .join("");
+      const val = (id, v) => {
+          const e = document.getElementById(id);
+          if (v === undefined) return e.value;
+          e.value = v ?? "";
+        },
+        local = (v) =>
+          v
+            ? new Date(
+                new Date(v).getTime() - new Date().getTimezoneOffset() * 60000,
+              )
+                .toISOString()
+                .slice(0, 16)
+            : "";
+      async function session() {
+        const {
+          data: { session },
+        } = await db.auth.getSession();
+        if (!session) {
+          location.href = "admin-login.html";
+          return null;
+        }
+        return session;
+      }
+      async function load() {
+        const s = await session();
+        if (!s) return;
+        const r = await fetch("/api/pricing", {
+            headers: { Authorization: "Bearer " + s.access_token },
+          }),
+          d = await r.json();
+        if (!r.ok) return message(d.error, true);
+        document.getElementById("offer_active").checked = d.offer_enabled;
+        val("offer_name", d.offer_name);
+        val("offer_mode", d.offer_mode || "fixed");
+        val("discount_percent", d.discount_percent ?? 10);
+        val("max_discount_eur", d.max_discount_eur);
+        val("minimum_regular_fare", d.minimum_regular_fare);
+        val("starts_at", local(d.starts_at));
+        val("ends_at", local(d.ends_at));
+        keys.forEach((k) => {
+          val(k + "_base", d.classes[k].base);
+          val(k + "_per_km", d.classes[k].km);
+          val(k + "_per_minute", d.classes[k].min);
+          val(k + "_minimum", d.classes[k].minFare);
+        });
+        showMode();
+        message("Pricing loaded.");
+      }
+      async function save() {
+        const s = await session();
+        if (!s) return;
+        const b = {
+          offer_active: document.getElementById("offer_active").checked,
+          offer_name: val("offer_name"),
+          offer_mode: val("offer_mode"),
+          discount_percent: Number(val("discount_percent")),
+          max_discount_eur:
+            val("max_discount_eur") === ""
+              ? null
+              : Number(val("max_discount_eur")),
+          minimum_regular_fare:
+            val("minimum_regular_fare") === ""
+              ? null
+              : Number(val("minimum_regular_fare")),
+          starts_at: val("starts_at")
+            ? new Date(val("starts_at")).toISOString()
+            : null,
+          ends_at: val("ends_at")
+            ? new Date(val("ends_at")).toISOString()
+            : null,
+        };
+        keys.forEach((k) =>
+          ["base", "per_km", "per_minute", "minimum"].forEach(
+            (x) => (b[k + "_" + x] = Number(val(k + "_" + x))),
+          ),
+        );
+        document.getElementById("save").disabled = true;
+        message("Saving…");
+        const r = await fetch("/api/pricing", {
+            method: "PATCH",
+            headers: {
+              Authorization: "Bearer " + s.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(b),
+          }),
+          d = await r.json();
+        document.getElementById("save").disabled = false;
+        message(
+          r.ok ? "✓ Pricing is live now." : d.error || "Update failed",
+          !r.ok,
+        );
+      }
+      function currentRates() {
+        const rates = {};
+        keys.forEach((k) => {
+          rates[k] = {
+            base: Number(val(k + "_base")),
+            km: Number(val(k + "_per_km")),
+            min: Number(val(k + "_per_minute")),
+            minFare: Number(val(k + "_minimum")),
+          };
+        });
+        return rates;
+      }
+      function showMode() {
+        const percentage = val("offer_mode") === "percentage";
+        document.getElementById("percentageCard").hidden = !percentage;
+        document.getElementById("vehicles").hidden = percentage;
+      }
+      let aiSuggestion = null;
+      const esc = (x) =>
+        String(x ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      async function analyseOffer() {
+        const s = await session();
+        if (!s) return;
+        const button = document.getElementById("analyse"),
+          box = document.getElementById("aiResult");
+        button.disabled = true;
+        box.textContent = "AI is analysing current pricing…";
+        try {
+          const r = await fetch("/api/ai-pricing", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + s.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              current: currentRates(),
+              market_average_eur: Number(val("market_average")) || null,
+              demand: val("demand"),
+              offer_mode: val("offer_mode"),
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw Error(d.error || "AI analysis failed");
+          aiSuggestion = d;
+          box.innerHTML = `<b>${esc(d.offer_name)}</b> · Confidence: ${esc(d.confidence)}<br>${esc(d.rationale)}<br><br><button class="btn" onclick="applySuggestion()">Apply suggestion to form</button><p class="muted">Engine: ${esc(d.engine)}. Rates remain draft until Save & publish pricing is pressed.</p>`;
+        } catch (e) {
+          box.textContent = e.message;
+        }
+        button.disabled = false;
+      }
+      function applySuggestion() {
+        if (!aiSuggestion) return;
+        val("offer_name", aiSuggestion.offer_name);
+        if (aiSuggestion.offer_mode === "percentage") {
+          val("discount_percent", aiSuggestion.discount_percent);
+          val("max_discount_eur", aiSuggestion.max_discount_eur);
+          val("minimum_regular_fare", aiSuggestion.minimum_regular_fare);
+          showMode();
+          message(
+            "AI percentage suggestion applied as draft. Review it, then publish.",
+          );
+          return;
+        }
+        keys.forEach((k) => {
+          const x = aiSuggestion.rates[k];
+          val(k + "_base", x.base);
+          val(k + "_per_km", x.km);
+          val(k + "_per_minute", x.min);
+          val(k + "_minimum", x.minFare);
+        });
+        message(
+          "AI suggestion applied as draft. Review it, then press Save & publish pricing.",
+        );
+      }
+      function message(t, bad = false) {
+        const e = document.getElementById("msg");
+        e.textContent = t;
+        e.className = bad ? "bad" : "ok";
+      }
+      load();
+    </script>
+  </body>
+</html>

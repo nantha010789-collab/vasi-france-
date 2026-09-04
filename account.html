@@ -1,0 +1,1484 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050505" />
+    <title>Your account · VASI</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #fff;
+        background: #050505;
+        color-scheme: dark;
+        --page: #050505;
+        --card: #111;
+        --field: #181818;
+        --line: #2b2b2b;
+        --muted: #9a9a9a;
+        --success: #9df2b2;
+        --success-bg: #102818;
+        --danger: #ffb4b4;
+        --danger-bg: #2c1313;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 90% -5%, #242424 0, transparent 28rem),
+          var(--page);
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .app {
+        width: min(100%, 720px);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: max(22px, env(safe-area-inset-top)) 18px
+          calc(42px + env(safe-area-inset-bottom));
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .brand {
+        color: #fff;
+        font-size: 30px;
+        font-weight: 950;
+        letter-spacing: -1.5px;
+        text-decoration: none;
+      }
+
+      .back,
+      .secondary,
+      .signout {
+        min-height: 44px;
+        border: 1px solid #333;
+        border-radius: 999px;
+        background: #171717;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 15px;
+        text-decoration: none;
+      }
+
+      .hero {
+        padding: 34px 2px 19px;
+      }
+
+      .eyebrow {
+        margin: 0 0 7px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(38px, 9vw, 54px);
+        line-height: 0.98;
+        letter-spacing: -2.8px;
+      }
+
+      .hero-copy {
+        max-width: 520px;
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(17, 17, 17, 0.96);
+        padding: 20px;
+      }
+
+      .loading-card {
+        min-height: 176px;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .loader {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto 14px;
+        border: 3px solid #303030;
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .profile-card {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .avatar {
+        width: 68px;
+        height: 68px;
+        flex: 0 0 68px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #3a3a3a;
+        border-radius: 21px;
+        background: #fff;
+        color: #090909;
+        font-size: 23px;
+        font-weight: 950;
+        letter-spacing: -1px;
+      }
+
+      .profile-copy {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .profile-copy h2 {
+        overflow: hidden;
+        margin: 0 0 5px;
+        font-size: 22px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .profile-copy p {
+        overflow: hidden;
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 9px;
+        border-radius: 999px;
+        padding: 6px 9px;
+        background: #232323;
+        color: #d3d3d3;
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .badge.success {
+        border: 1px solid #28683d;
+        background: var(--success-bg);
+        color: var(--success);
+      }
+
+      .completion {
+        border: 1px solid #52441c;
+        border-radius: 18px;
+        background: #221d0d;
+        padding: 15px;
+        color: #f5d97e;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 18px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: 21px;
+        letter-spacing: -0.5px;
+      }
+
+      .section-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px 12px;
+      }
+
+      .field {
+        min-width: 0;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 7px;
+        color: #cfcfcf;
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 52px;
+        border: 1px solid #353535;
+        border-radius: 15px;
+        outline: none;
+        background: var(--field);
+        color: #fff;
+        padding: 13px 14px;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: #777;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.09);
+      }
+
+      input[readonly] {
+        color: #bdbdbd;
+        cursor: default;
+      }
+
+      .input-wrap {
+        position: relative;
+      }
+
+      .input-wrap input {
+        padding-right: 94px;
+      }
+
+      .verified {
+        position: absolute;
+        top: 50%;
+        right: 11px;
+        transform: translateY(-50%);
+        border-radius: 999px;
+        background: var(--success-bg);
+        color: var(--success);
+        padding: 6px 8px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+      }
+
+      .help {
+        margin: 7px 2px 0;
+        color: #838383;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .primary {
+        width: 100%;
+        min-height: 54px;
+        margin-top: 18px;
+        border: 0;
+        border-radius: 16px;
+        background: #fff;
+        color: #050505;
+        cursor: pointer;
+        font-weight: 900;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.58;
+      }
+
+      .status {
+        min-height: 20px;
+        margin: 13px 2px 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .status.success {
+        color: var(--success);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .section-action {
+        flex: 0 0 auto;
+        min-height: 40px;
+        border: 1px solid #3a3a3a;
+        border-radius: 999px;
+        background: #202020;
+        color: #fff;
+        cursor: pointer;
+        padding: 9px 13px;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .address-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .address-empty {
+        border: 1px dashed #343434;
+        border-radius: 17px;
+        color: var(--muted);
+        padding: 20px;
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      .address-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        border: 1px solid #2d2d2d;
+        border-radius: 17px;
+        background: #171717;
+        padding: 14px;
+      }
+
+      .address-mark {
+        width: 39px;
+        height: 39px;
+        flex: 0 0 39px;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        background: #fff;
+        color: #090909;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      .address-copy {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .address-copy strong,
+      .address-copy span {
+        display: block;
+      }
+
+      .address-copy span {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .address-actions {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 6px;
+      }
+
+      .address-actions button,
+      .address-form-actions button {
+        min-height: 40px;
+        border: 1px solid #353535;
+        border-radius: 12px;
+        background: #202020;
+        color: #fff;
+        cursor: pointer;
+        padding: 8px 11px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .address-actions .delete-address {
+        border-color: #573131;
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+
+      .address-editor {
+        margin-top: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+      }
+
+      .address-editor h3 {
+        margin: 0 0 15px;
+        font-size: 18px;
+      }
+
+      .address-form-actions {
+        display: flex;
+        gap: 9px;
+        margin-top: 18px;
+      }
+
+      .address-form-actions .save-address {
+        flex: 1;
+        border: 0;
+        background: #fff;
+        color: #050505;
+      }
+
+      .link-list {
+        display: grid;
+        gap: 9px;
+      }
+
+      .link-row {
+        display: flex;
+        min-height: 62px;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid #2d2d2d;
+        border-radius: 17px;
+        background: #171717;
+        color: #fff;
+        padding: 11px 13px;
+        text-decoration: none;
+      }
+
+      .link-icon {
+        width: 39px;
+        height: 39px;
+        flex: 0 0 39px;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        background: #242424;
+        font-size: 18px;
+      }
+
+      .link-copy {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .link-copy strong,
+      .link-copy span {
+        display: block;
+      }
+
+      .link-copy span {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .arrow {
+        color: #777;
+        font-size: 20px;
+      }
+
+      .account-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .member-since {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .signout {
+        flex: 0 0 auto;
+        border-color: #573131;
+        background: var(--danger-bg);
+        color: var(--danger);
+        padding: 10px 16px;
+      }
+
+      .retry {
+        display: inline-flex;
+        margin-top: 8px;
+        padding: 10px 16px;
+      }
+
+      @media (max-width: 540px) {
+        .app {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+
+        .hero {
+          padding-top: 30px;
+        }
+
+        .card {
+          border-radius: 21px;
+          padding: 17px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .field.full {
+          grid-column: auto;
+        }
+
+        .profile-card {
+          align-items: flex-start;
+        }
+
+        .section-head.address-heading,
+        .address-row {
+          align-items: stretch;
+        }
+
+        .address-row {
+          flex-wrap: wrap;
+        }
+
+        .address-copy {
+          min-width: calc(100% - 51px);
+        }
+
+        .address-actions {
+          width: 100%;
+          padding-left: 51px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <a class="brand" href="index.html" aria-label="VASI home">VASI</a>
+        <a class="back" href="index.html">← Home</a>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">Your VASI</p>
+        <h1 id="pageTitle">Account</h1>
+        <p id="pageDescription" class="hero-copy">
+          Your personal details, preferences and support in one place.
+        </p>
+      </section>
+
+      <section id="loading" class="card loading-card" aria-live="polite">
+        <div>
+          <div class="loader" aria-hidden="true"></div>
+          <div id="loadingMessage">Loading your account…</div>
+          <button
+            id="retryButton"
+            class="secondary retry hidden"
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      </section>
+
+      <div id="account" class="stack hidden">
+        <section class="card profile-card" aria-label="Account summary">
+          <div id="avatar" class="avatar" aria-hidden="true">VA</div>
+          <div class="profile-copy">
+            <h2 id="profileName">VASI customer</h2>
+            <p id="profilePhone">No verified phone</p>
+            <span id="profileBadge" class="badge">Profile needs details</span>
+          </div>
+        </section>
+
+        <aside id="completion" class="completion hidden">
+          <strong id="completionTitle">One quick step.</strong>
+          <span id="completionText"
+            >Add your name so rides, orders and customer support can identify
+            your account correctly.</span
+          >
+        </aside>
+
+        <section id="personalInformation" class="card">
+          <div class="section-head">
+            <div>
+              <h2>Personal information</h2>
+              <p>Your verified phone cannot be changed from this page.</p>
+            </div>
+          </div>
+
+          <form id="profileForm" novalidate>
+            <div class="grid">
+              <div class="field full">
+                <label for="fullName">Full name</label>
+                <input
+                  id="fullName"
+                  name="full_name"
+                  type="text"
+                  autocomplete="name"
+                  maxlength="80"
+                  placeholder="Your full name"
+                  required
+                />
+              </div>
+
+              <div class="field full">
+                <label for="phone">Verified mobile number</label>
+                <div class="input-wrap">
+                  <input
+                    id="phone"
+                    type="tel"
+                    autocomplete="tel"
+                    readonly
+                    aria-readonly="true"
+                  />
+                  <span id="phoneBadge" class="verified hidden">✓ Verified</span>
+                </div>
+              </div>
+
+              <div class="field full">
+                <label for="email">Contact email <span>(optional)</span></label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  maxlength="254"
+                  placeholder="you@example.com"
+                />
+                <p class="help">
+                  Adding or changing an email may require confirmation from
+                  your inbox.
+                </p>
+              </div>
+
+              <div class="field">
+                <label for="country">Country</label>
+                <select id="country" name="country_code">
+                  <option value="FR">France</option>
+                  <option value="BE">Belgium</option>
+                  <option value="DE">Germany</option>
+                  <option value="ES">Spain</option>
+                  <option value="IT">Italy</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="CH">Switzerland</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="currency">Preferred currency</label>
+                <select id="currency" name="currency">
+                  <option value="EUR">EUR · €</option>
+                  <option value="GBP">GBP · £</option>
+                  <option value="CHF">CHF</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="saveButton" class="primary" type="submit">
+              Save changes
+            </button>
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section id="savedAddresses" class="card" aria-labelledby="addressesTitle">
+          <div class="section-head address-heading">
+            <div>
+              <h2 id="addressesTitle">Saved addresses</h2>
+              <p>Save Home, Work or one Other address for faster bookings.</p>
+            </div>
+            <button id="addAddressButton" class="section-action" type="button">
+              + Add
+            </button>
+          </div>
+
+          <div
+            id="addressList"
+            class="address-list"
+            aria-live="polite"
+          >
+            <div class="address-empty">Loading your saved addresses…</div>
+          </div>
+
+          <form id="addressForm" class="address-editor hidden" novalidate>
+            <h3 id="addressFormTitle">Add address</h3>
+            <div class="grid">
+              <div class="field">
+                <label for="addressLabel">Label</label>
+                <select id="addressLabel" name="label" required>
+                  <option value="Home">Home</option>
+                  <option value="Work">Work</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="addressCountry">Country</label>
+                <select id="addressCountry" name="country_code" required>
+                  <option value="FR">France</option>
+                  <option value="BE">Belgium</option>
+                  <option value="DE">Germany</option>
+                  <option value="ES">Spain</option>
+                  <option value="IT">Italy</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="CH">Switzerland</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="addressLine">Street address</label>
+                <input
+                  id="addressLine"
+                  name="address_line"
+                  type="text"
+                  autocomplete="street-address"
+                  maxlength="180"
+                  placeholder="12 Rue de la Paix, Apartment 4"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="addressPostalCode">Postal code</label>
+                <input
+                  id="addressPostalCode"
+                  name="postal_code"
+                  type="text"
+                  autocomplete="postal-code"
+                  maxlength="16"
+                  placeholder="75002"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="addressCity">City</label>
+                <input
+                  id="addressCity"
+                  name="city"
+                  type="text"
+                  autocomplete="address-level2"
+                  maxlength="80"
+                  placeholder="Paris"
+                  required
+                />
+              </div>
+            </div>
+            <div class="address-form-actions">
+              <button id="cancelAddressButton" type="button">Cancel</button>
+              <button
+                id="saveAddressButton"
+                class="save-address"
+                type="submit"
+              >
+                Save address
+              </button>
+            </div>
+            <p
+              id="addressStatus"
+              class="status"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Your VASI</h2>
+              <p>Manage trips, orders, deliveries and help requests.</p>
+            </div>
+          </div>
+          <nav class="link-list" aria-label="Account destinations">
+            <a class="link-row" href="activity.html">
+              <span class="link-icon" aria-hidden="true">◷</span>
+              <span class="link-copy">
+                <strong>Activity</strong>
+                <span>Rides, food orders and deliveries</span>
+              </span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="link-row" href="settings.html">
+              <span class="link-icon" aria-hidden="true">⚙</span>
+              <span class="link-copy">
+                <strong>Settings</strong>
+                <span>Notifications, privacy, security and safety</span>
+              </span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+            <a class="link-row" href="support.html">
+              <span class="link-icon" aria-hidden="true">?</span>
+              <span class="link-copy">
+                <strong>Help & support</strong>
+                <span>Get help with your VASI account</span>
+              </span>
+              <span class="arrow" aria-hidden="true">›</span>
+            </a>
+          </nav>
+        </section>
+
+        <section class="card account-actions">
+          <div id="memberSince" class="member-since">VASI customer account</div>
+          <button id="signoutButton" class="signout" type="button">
+            Sign out
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/vasi-notifications.js"></script>
+    <script>
+      const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
+      const SUPABASE_KEY =
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const el = (id) => document.getElementById(id);
+      const allowedCountries = new Set([
+        "FR",
+        "BE",
+        "DE",
+        "ES",
+        "IT",
+        "NL",
+        "GB",
+        "CH",
+      ]);
+      const allowedCurrencies = new Set(["EUR", "GBP", "CHF"]);
+      const allowedAddressLabels = new Set(["Home", "Work", "Other"]);
+      const allowedNextPages = new Set([
+        "index.html",
+        "app.html",
+        "account.html",
+        "ride-flow.html",
+        "eats.html",
+        "eats-checkout.html",
+        "delivery.html",
+        "activity.html",
+        "ride-history.html",
+        "settings.html",
+        "support.html",
+        "restaurant-register.html",
+        "restaurant-dashboard.html",
+      ]);
+      const pageParams = new URLSearchParams(location.search);
+      const setupMode = pageParams.get("setup") === "1";
+
+      let currentUser = null;
+      let currentProfile = null;
+      let saving = false;
+      let savedAddresses = [];
+      let editingAddressId = null;
+      let addressSaving = false;
+
+      function safeNext(value) {
+        const candidate = String(value || "").trim();
+        if (
+          !candidate ||
+          candidate.startsWith("//") ||
+          /^[a-z][a-z0-9+.-]*:/i.test(candidate)
+        )
+          return "";
+        try {
+          const url = new URL(candidate, location.href);
+          if (url.origin !== location.origin) return "";
+          const page = url.pathname.split("/").filter(Boolean).pop() || "";
+          if (!allowedNextPages.has(page)) return "";
+          return page + url.search + url.hash;
+        } catch {
+          return "";
+        }
+      }
+
+      function completionDestination() {
+        return (
+          safeNext(pageParams.get("next")) ||
+          safeNext(localStorage.getItem("vasi_return")) ||
+          "index.html"
+        );
+      }
+
+      function cleanName(value) {
+        return String(value || "")
+          .replace(/[\u0000-\u001f\u007f]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function validEmail(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+      }
+
+      function inferredCountry(phone) {
+        if (phone.startsWith("+33")) return "FR";
+        if (phone.startsWith("+32")) return "BE";
+        if (phone.startsWith("+49")) return "DE";
+        if (phone.startsWith("+34")) return "ES";
+        if (phone.startsWith("+39")) return "IT";
+        if (phone.startsWith("+31")) return "NL";
+        if (phone.startsWith("+44")) return "GB";
+        if (phone.startsWith("+41")) return "CH";
+        return "FR";
+      }
+
+      function displayPhone(phone) {
+        const value = String(phone || "").trim();
+        if (/^\+33\d{9}$/.test(value)) {
+          const local = "0" + value.slice(3);
+          return local.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+        }
+        return value || "No verified phone";
+      }
+
+      function initials(name) {
+        const letters = cleanName(name)
+          .split(" ")
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part) => part[0]?.toUpperCase())
+          .join("");
+        return letters || "VA";
+      }
+
+      function setStatus(message, type = "") {
+        el("status").textContent = message;
+        el("status").className = "status" + (type ? " " + type : "");
+      }
+
+      function setSaving(next) {
+        saving = next;
+        el("saveButton").disabled = next;
+        el("saveButton").textContent = next ? "Saving…" : "Save changes";
+      }
+
+      function setAddressStatus(message, type = "") {
+        el("addressStatus").textContent = message;
+        el("addressStatus").className =
+          "status" + (type ? " " + type : "");
+      }
+
+      function cleanAddressPart(value) {
+        return String(value || "")
+          .replace(/[\u0000-\u001f\u007f]/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function addressIcon(label) {
+        if (label === "Home") return "H";
+        if (label === "Work") return "W";
+        return "O";
+      }
+
+      function renderAddresses(message = "") {
+        const list = el("addressList");
+        list.replaceChildren();
+
+        if (!savedAddresses.length) {
+          const empty = document.createElement("div");
+          empty.className = "address-empty";
+          empty.textContent =
+            message || "No saved addresses yet. Add Home, Work or Other.";
+          list.append(empty);
+          return;
+        }
+
+        savedAddresses.forEach((address) => {
+          const row = document.createElement("article");
+          row.className = "address-row";
+
+          const mark = document.createElement("div");
+          mark.className = "address-mark";
+          mark.setAttribute("aria-hidden", "true");
+          mark.textContent = addressIcon(address.label);
+
+          const copy = document.createElement("div");
+          copy.className = "address-copy";
+          const title = document.createElement("strong");
+          title.textContent = address.label;
+          const detail = document.createElement("span");
+          detail.textContent = [
+            address.address_line,
+            address.postal_code + " " + address.city,
+            address.country_code,
+          ].join(", ");
+          copy.append(title, detail);
+
+          const actions = document.createElement("div");
+          actions.className = "address-actions";
+          const editButton = document.createElement("button");
+          editButton.type = "button";
+          editButton.textContent = "Edit";
+          editButton.addEventListener("click", () => openAddressForm(address));
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "delete-address";
+          deleteButton.textContent = "Delete";
+          deleteButton.addEventListener("click", () => deleteAddress(address));
+          actions.append(editButton, deleteButton);
+
+          row.append(mark, copy, actions);
+          list.append(row);
+        });
+      }
+
+      function openAddressForm(address = null) {
+        editingAddressId = address?.id || null;
+        el("addressFormTitle").textContent = address
+          ? "Edit " + address.label
+          : "Add address";
+        el("addressLabel").value = address?.label || "Home";
+        el("addressCountry").value =
+          address?.country_code || currentProfile?.country_code || "FR";
+        el("addressLine").value = address?.address_line || "";
+        el("addressPostalCode").value = address?.postal_code || "";
+        el("addressCity").value = address?.city || "";
+        el("addressForm").classList.remove("hidden");
+        el("addAddressButton").classList.add("hidden");
+        setAddressStatus("");
+        requestAnimationFrame(() => el("addressLabel").focus());
+      }
+
+      function closeAddressForm() {
+        editingAddressId = null;
+        el("addressForm").reset();
+        el("addressForm").classList.add("hidden");
+        el("addAddressButton").classList.remove("hidden");
+        setAddressStatus("");
+      }
+
+      async function loadAddresses() {
+        const { data, error } = await client
+          .from("customer_saved_addresses")
+          .select(
+            "id,label,address_line,postal_code,city,country_code,created_at,updated_at",
+          )
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          savedAddresses = [];
+          renderAddresses("We could not load your saved addresses.");
+          return;
+        }
+        savedAddresses = data || [];
+        renderAddresses();
+      }
+
+      async function saveAddress(event) {
+        event.preventDefault();
+        if (addressSaving || !currentUser) return;
+
+        const label = el("addressLabel").value;
+        const countryCode = el("addressCountry").value;
+        const addressLine = cleanAddressPart(el("addressLine").value);
+        const postalCode = cleanAddressPart(el("addressPostalCode").value);
+        const city = cleanAddressPart(el("addressCity").value);
+
+        if (!allowedAddressLabels.has(label)) {
+          setAddressStatus("Choose Home, Work or Other.", "error");
+          return;
+        }
+        if (!allowedCountries.has(countryCode)) {
+          setAddressStatus("Choose a supported country.", "error");
+          return;
+        }
+        if (addressLine.length < 3 || addressLine.length > 180) {
+          setAddressStatus("Enter a valid street address.", "error");
+          el("addressLine").focus();
+          return;
+        }
+        if (postalCode.length < 2 || postalCode.length > 16) {
+          setAddressStatus("Enter a valid postal code.", "error");
+          el("addressPostalCode").focus();
+          return;
+        }
+        if (!city || city.length > 80) {
+          setAddressStatus("Enter a valid city.", "error");
+          el("addressCity").focus();
+          return;
+        }
+
+        addressSaving = true;
+        el("saveAddressButton").disabled = true;
+        el("saveAddressButton").textContent = "Saving…";
+        setAddressStatus("Saving your address…");
+
+        const values = {
+          label,
+          address_line: addressLine,
+          postal_code: postalCode,
+          city,
+          country_code: countryCode,
+        };
+
+        try {
+          let request = editingAddressId
+            ? client
+                .from("customer_saved_addresses")
+                .update(values)
+                .eq("id", editingAddressId)
+            : client.from("customer_saved_addresses").insert(values);
+          const { data, error } = await request
+            .select(
+              "id,label,address_line,postal_code,city,country_code,created_at,updated_at",
+            )
+            .single();
+          if (error) throw error;
+
+          const previousId = editingAddressId;
+          if (previousId) {
+            savedAddresses = savedAddresses.map((item) =>
+              item.id === previousId ? data : item,
+            );
+          } else {
+            savedAddresses.push(data);
+          }
+          renderAddresses();
+          closeAddressForm();
+        } catch (error) {
+          setAddressStatus(
+            error?.code === "23505"
+              ? "That label is already saved. Edit the existing address instead."
+              : error?.message || "We could not save your address. Try again.",
+            "error",
+          );
+        } finally {
+          addressSaving = false;
+          el("saveAddressButton").disabled = false;
+          el("saveAddressButton").textContent = "Save address";
+        }
+      }
+
+      async function deleteAddress(address) {
+        if (!currentUser || !confirm("Delete your " + address.label + " address?"))
+          return;
+
+        const { error } = await client
+          .from("customer_saved_addresses")
+          .delete()
+          .eq("id", address.id);
+
+        if (error) {
+          if (!el("addressForm").classList.contains("hidden")) {
+            setAddressStatus(error.message, "error");
+          } else {
+            alert(error.message || "We could not delete that address. Try again.");
+          }
+          return;
+        }
+        savedAddresses = savedAddresses.filter((item) => item.id !== address.id);
+        if (editingAddressId === address.id) closeAddressForm();
+        renderAddresses();
+      }
+
+      function redirectToLogin() {
+        localStorage.setItem("vasi_role", "customer");
+        localStorage.setItem("vasi_return", "account.html");
+        location.replace("auth.html?role=customer");
+      }
+
+      function renderAccount() {
+        const name = cleanName(currentProfile?.full_name);
+        const phone = String(currentUser?.phone || "");
+        const isComplete = name.length >= 2;
+        const isCompleting = setupMode || !isComplete;
+        const isPhoneVerified = Boolean(
+          phone && currentUser?.phone_confirmed_at,
+        );
+        const country = allowedCountries.has(currentProfile?.country_code)
+          ? currentProfile.country_code
+          : inferredCountry(phone);
+        const currency = allowedCurrencies.has(currentProfile?.currency)
+          ? currentProfile.currency
+          : country === "GB"
+            ? "GBP"
+            : country === "CH"
+              ? "CHF"
+              : "EUR";
+
+        el("pageTitle").textContent = isCompleting
+          ? isComplete
+            ? "Confirm your profile"
+            : "Complete your profile"
+          : "Account";
+        el("pageDescription").textContent = isCompleting
+          ? "Check your details once, then continue to VASI."
+          : "Your personal details, preferences and support in one place.";
+        el("profileName").textContent = name || "VASI customer";
+        el("profilePhone").textContent = displayPhone(phone);
+        el("avatar").textContent = initials(name);
+        el("profileBadge").textContent = isComplete
+          ? "✓ Profile ready"
+          : "Profile needs details";
+        el("profileBadge").classList.toggle("success", isComplete);
+        el("completion").classList.toggle("hidden", !isCompleting);
+        el("completionTitle").textContent = isComplete
+          ? "Before you continue."
+          : "One quick step.";
+        el("completionText").textContent = isComplete
+          ? "Confirm your account details, then save to continue."
+          : "Add your name so rides, orders and customer support can identify your account correctly.";
+
+        el("fullName").value = name;
+        el("phone").value = displayPhone(phone);
+        el("phoneBadge").classList.toggle("hidden", !isPhoneVerified);
+        el("email").value = currentUser?.email || "";
+        el("country").value = country;
+        el("currency").value = currency;
+
+        if (currentProfile?.created_at) {
+          const created = new Date(currentProfile.created_at);
+          el("memberSince").textContent = Number.isNaN(created.getTime())
+            ? "VASI customer account"
+            : "Member since " +
+              new Intl.DateTimeFormat("en-GB", {
+                month: "short",
+                year: "numeric",
+              }).format(created);
+        }
+
+        el("loading").classList.add("hidden");
+        el("account").classList.remove("hidden");
+        document.title = (name || "Your account") + " · VASI";
+
+        if (isCompleting && !saving) {
+          requestAnimationFrame(() => el("fullName").focus());
+        }
+      }
+
+      async function loadAccount() {
+        el("retryButton").classList.add("hidden");
+        el("loadingMessage").textContent = "Loading your account…";
+
+        try {
+          const {
+            data: { user },
+            error: userError,
+          } = await client.auth.getUser();
+
+          if (userError || !user) {
+            redirectToLogin();
+            return;
+          }
+
+          currentUser = user;
+          const { data: profile, error: profileError } = await client
+            .from("profiles")
+            .select(
+              "id,full_name,phone,country_code,currency,role,created_at,updated_at",
+            )
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profileError) throw profileError;
+
+          currentProfile = profile || {
+            id: user.id,
+            full_name: "",
+            phone: user.phone || null,
+            country_code: inferredCountry(user.phone || ""),
+            currency: "EUR",
+            created_at: user.created_at,
+          };
+          renderAccount();
+          await loadAddresses();
+        } catch (error) {
+          el("loadingMessage").textContent =
+            error?.message || "We could not load your account. Please try again.";
+          el("retryButton").classList.remove("hidden");
+        }
+      }
+
+      async function saveProfile(event) {
+        event.preventDefault();
+        if (saving || !currentUser) return;
+
+        const fullName = cleanName(el("fullName").value);
+        const email = el("email").value.trim();
+        const countryCode = el("country").value;
+        const currency = el("currency").value;
+
+        if (fullName.length < 2) {
+          setStatus("Enter your full name.", "error");
+          el("fullName").focus();
+          return;
+        }
+        if (fullName.length > 80) {
+          setStatus("Your name must be 80 characters or fewer.", "error");
+          el("fullName").focus();
+          return;
+        }
+        if (email && !validEmail(email)) {
+          setStatus("Enter a valid email address.", "error");
+          el("email").focus();
+          return;
+        }
+        if (currentUser.email && !email) {
+          setStatus(
+            "Keep your current email or enter a new email address.",
+            "error",
+          );
+          el("email").focus();
+          return;
+        }
+        if (!allowedCountries.has(countryCode)) {
+          setStatus("Choose a supported country.", "error");
+          return;
+        }
+        if (!allowedCurrencies.has(currency)) {
+          setStatus("Choose a supported currency.", "error");
+          return;
+        }
+
+        setSaving(true);
+        setStatus("Saving your profile…");
+
+        try {
+          const { data: savedProfile, error: profileError } = await client
+            .from("profiles")
+            .update({
+              full_name: fullName,
+              country_code: countryCode,
+              currency,
+            })
+            .eq("id", currentUser.id)
+            .select(
+              "id,full_name,phone,country_code,currency,role,created_at,updated_at",
+            )
+            .single();
+
+          if (profileError) throw profileError;
+          currentProfile = savedProfile;
+
+          let emailMessage = "";
+          const currentEmail = currentUser.email || "";
+          if (email && email.toLowerCase() !== currentEmail.toLowerCase()) {
+            const { data, error: emailError } = await client.auth.updateUser({
+              email,
+            });
+            if (emailError) {
+              renderAccount();
+              setStatus(
+                "Profile saved, but the email could not be updated: " +
+                  emailError.message,
+                "error",
+              );
+              return;
+            }
+            if (data.user) currentUser = data.user;
+            el("email").value = email;
+            emailMessage = " Check your inbox to confirm the new email.";
+          }
+
+          renderAccount();
+          if (setupMode) {
+            const next = completionDestination();
+            localStorage.removeItem("vasi_return");
+            setStatus(
+              "Your VASI profile is saved." + emailMessage + " Continuing…",
+              "success",
+            );
+            setTimeout(() => location.replace(next), 650);
+          } else {
+            setStatus("Your VASI profile is saved." + emailMessage, "success");
+          }
+        } catch (error) {
+          setStatus(
+            error?.message || "We could not save your profile. Please try again.",
+            "error",
+          );
+        } finally {
+          setSaving(false);
+        }
+      }
+
+      async function signOut() {
+        el("signoutButton").disabled = true;
+        el("signoutButton").textContent = "Signing out…";
+        setStatus("Signing out…");
+        const { error } = await client.auth.signOut();
+        if (error) {
+          el("signoutButton").disabled = false;
+          el("signoutButton").textContent = "Sign out";
+          setStatus(error.message, "error");
+          return;
+        }
+        localStorage.removeItem("vasi_return");
+        localStorage.removeItem("vasi_role");
+        localStorage.removeItem("vasi_active_ride_id");
+        localStorage.removeItem("vasi_eats_basket");
+        location.replace("index.html");
+      }
+
+      el("profileForm").addEventListener("submit", saveProfile);
+      el("addressForm").addEventListener("submit", saveAddress);
+      el("addAddressButton").addEventListener("click", () => openAddressForm());
+      el("cancelAddressButton").addEventListener("click", closeAddressForm);
+      el("signoutButton").addEventListener("click", signOut);
+      el("retryButton").addEventListener("click", loadAccount);
+      loadAccount();
+      VasiNotifications.start(client, { role: "customer" });
+    </script>
+  <script src="/vasi-languages.js"></script></body>
+</html>

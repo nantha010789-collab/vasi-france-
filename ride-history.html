@@ -1,0 +1,358 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#050505" />
+    <title>VASI Activity</title>
+    <style>
+      body {
+        margin: 0;
+        background: #050505;
+        color: #fff;
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 680px;
+        margin: auto;
+        padding: 22px 16px 40px;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .brand {
+        font-size: 30px;
+        font-weight: 950;
+      }
+      .back {
+        border: 1px solid #333;
+        background: #171717;
+        color: #fff;
+        border-radius: 13px;
+        padding: 10px 14px;
+      }
+      .muted {
+        color: #999;
+      }
+      .card {
+        background: #111;
+        border: 1px solid #292929;
+        border-radius: 20px;
+        padding: 16px;
+        margin-top: 12px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .route {
+        margin-top: 12px;
+        display: grid;
+        gap: 9px;
+      }
+      .point {
+        display: flex;
+        gap: 9px;
+      }
+      .point span {
+        color: #aaa;
+      }
+      .fare {
+        font-size: 22px;
+        font-weight: 950;
+      }
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        background: #202020;
+        padding: 5px 9px;
+        font-size: 11px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+      .receipt {
+        margin-top: 13px;
+        border-top: 1px solid #292929;
+        padding-top: 12px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .receipt div {
+        background: #181818;
+        border-radius: 12px;
+        padding: 10px;
+        color: #999;
+        font-size: 11px;
+      }
+      .receipt b {
+        display: block;
+        color: #fff;
+        font-size: 13px;
+        margin-top: 3px;
+      }
+      .receipt small {
+        display: block;
+        color: #aaa;
+        margin-top: 4px;
+        text-transform: capitalize;
+      }
+      .fees {
+        margin-top: 12px;
+        border-top: 1px solid #292929;
+        padding-top: 10px;
+        display: grid;
+        gap: 7px;
+      }
+      .fee {
+        display: flex;
+        justify-content: space-between;
+        color: #aaa;
+        font-size: 13px;
+      }
+      .fee.total {
+        color: #fff;
+        font-weight: 900;
+        font-size: 15px;
+      }
+      .rating-box,
+      .rating-saved {
+        margin-top: 13px;
+        border-top: 1px solid #292929;
+        padding-top: 13px;
+      }
+      .rating-title {
+        margin: 0 0 9px;
+        font-size: 15px;
+      }
+      .stars {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+      .star {
+        width: 44px;
+        height: 44px;
+        border: 1px solid #3a3a3a;
+        border-radius: 13px;
+        background: #191919;
+        color: #777;
+        cursor: pointer;
+        font-size: 24px;
+      }
+      .star.selected {
+        border-color: #fff;
+        background: #fff;
+        color: #050505;
+      }
+      .rating-box textarea {
+        width: 100%;
+        min-height: 84px;
+        resize: vertical;
+        border: 1px solid #353535;
+        border-radius: 13px;
+        outline: none;
+        background: #181818;
+        color: #fff;
+        padding: 12px;
+        font: inherit;
+      }
+      .rating-box textarea:focus {
+        border-color: #fff;
+      }
+      .rate-button {
+        width: 100%;
+        min-height: 46px;
+        margin-top: 9px;
+        border: 0;
+        border-radius: 13px;
+        background: #fff;
+        color: #050505;
+        cursor: pointer;
+        font-weight: 900;
+      }
+      .rate-button:disabled {
+        opacity: 0.5;
+      }
+      .rating-status {
+        min-height: 18px;
+        margin: 8px 0 0;
+        color: #999;
+        font-size: 12px;
+      }
+      .rating-saved strong {
+        color: #fff;
+        letter-spacing: 2px;
+      }
+      .rating-saved p {
+        margin: 7px 0 0;
+        color: #bbb;
+        white-space: pre-wrap;
+      }
+      .empty {
+        text-align: center;
+        padding: 50px 10px;
+        color: #999;
+      }
+      .error {
+        color: #ffb4b4;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <div class="brand">VASI</div>
+        <button class="back" onclick="location.href='app.html'">Home</button>
+      </header>
+      <h1>Activity</h1>
+      <p class="muted">Your VASI rides and receipts.</p>
+      <div id="list"><div class="empty">Loading rides…</div></div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const sb = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      const money = (n, c = "EUR") =>
+        new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: c || "EUR",
+        }).format(Number(n || 0));
+      const date = (v) => (v ? new Date(v).toLocaleString() : "—");
+      const cleanStatus = (v) => String(v || "").replaceAll("_", " ");
+      const selectedRatings = new Map();
+      let ratingsByRide = new Map();
+      function ratingSaved(rating) {
+        return `<section class="rating-saved"><div class="muted">Your driver rating</div><strong aria-label="${rating.rating} out of 5 stars">${"★".repeat(rating.rating)}${"☆".repeat(5 - rating.rating)}</strong>${rating.comment ? `<p>${esc(rating.comment)}</p>` : ""}</section>`;
+      }
+      function ratingForm(rideId) {
+        const stars = [1, 2, 3, 4, 5]
+          .map(
+            (value) =>
+              `<button class="star" type="button" data-ride="${rideId}" data-value="${value}" aria-label="${value} star${value === 1 ? "" : "s"}" aria-pressed="false" onclick="chooseRating('${rideId}',${value})">★</button>`,
+          )
+          .join("");
+        return `<section class="rating-box" id="rating-${rideId}"><h4 class="rating-title">How was your driver?</h4><div class="stars" role="group" aria-label="Choose a rating">${stars}</div><textarea id="comment-${rideId}" maxlength="500" placeholder="Add feedback (optional)" aria-label="Driver feedback"></textarea><button id="submit-${rideId}" class="rate-button" type="button" onclick="submitRating('${rideId}')">Submit rating</button><p id="rating-status-${rideId}" class="rating-status"></p></section>`;
+      }
+      function chooseRating(rideId, value) {
+        selectedRatings.set(rideId, value);
+        document.querySelectorAll(`.star[data-ride="${rideId}"]`).forEach((button) => {
+          const selected = Number(button.dataset.value) <= value;
+          button.classList.toggle("selected", selected);
+          button.setAttribute("aria-pressed", String(Number(button.dataset.value) === value));
+        });
+      }
+      async function submitRating(rideId) {
+        const value = selectedRatings.get(rideId),
+          status = $("rating-status-" + rideId),
+          button = $("submit-" + rideId),
+          comment = $("comment-" + rideId)?.value.trim() || null;
+        if (!value) {
+          status.textContent = "Choose 1 to 5 stars first.";
+          status.className = "rating-status error";
+          return;
+        }
+        button.disabled = true;
+        status.textContent = "Saving your rating…";
+        status.className = "rating-status";
+        const { error } = await sb.from("ride_ratings").insert({
+          ride_id: rideId,
+          rating: value,
+          comment,
+        });
+        if (error) {
+          button.disabled = false;
+          status.textContent = /already been rated/i.test(error.message || "")
+            ? "This ride has already been rated."
+            : "Rating could not be saved. Please try again.";
+          status.className = "rating-status error";
+          return;
+        }
+        await load();
+      }
+      async function load() {
+        const session = (await sb.auth.getSession()).data.session;
+        if (!session) {
+          localStorage.setItem("vasi_role", "customer");
+          localStorage.setItem("vasi_return", "ride-history.html");
+          location.href = "auth.html?role=customer";
+          return;
+        }
+        const [ridesResult, ratingsResult] = await Promise.all([
+          sb.rpc("get_customer_ride_history_v2", { p_limit: 50 }),
+          sb
+            .from("ride_ratings")
+            .select("ride_id,rating,comment,created_at")
+            .order("created_at", { ascending: false }),
+        ]);
+        const { data, error } = ridesResult;
+        if (error) {
+          $("list").innerHTML =
+            '<div class="empty error">' + esc(error.message) + "</div>";
+          return;
+        }
+        ratingsByRide = new Map(
+          (ratingsResult.data || []).map((rating) => [rating.ride_id, rating]),
+        );
+        if (!data?.length) {
+          $("list").innerHTML = '<div class="empty">No rides yet.</div>';
+          return;
+        }
+        $("list").innerHTML = data
+          .map((r) => {
+            const fare = r.final_fare ?? r.estimated_fare;
+            const driver = r.driver_name || "VASI driver";
+            const car =
+              [r.vehicle_make, r.vehicle_model, r.vehicle_plate]
+                .filter(Boolean)
+                .join(" · ") || "Vehicle details unavailable";
+            const waiting = Number(r.waiting_fee || 0),
+              cancel = Number(r.cancellation_fee || 0),
+              base = Number(r.estimated_fare || 0);
+            const paymentMethod = cleanStatus(r.payment_method || "cash");
+            const paymentStatus = cleanStatus(
+              r.payment_status ||
+                (r.payment_method === "cash" ? "cash" : "not authorized"),
+            );
+            const fees =
+              r.status === "cancelled"
+                ? `<div class="fees"><div class="fee"><span>Cancellation fee</span><span>${money(cancel, r.currency)}</span></div><div class="fee total"><span>Total</span><span>${money(fare, r.currency)}</span></div></div>`
+                : `<div class="fees"><div class="fee"><span>Ride fare</span><span>${money(base, r.currency)}</span></div>${waiting > 0 ? `<div class="fee"><span>Waiting fee</span><span>${money(waiting, r.currency)}</span></div>` : ""}<div class="fee total"><span>Total</span><span>${money(fare, r.currency)}</span></div></div>`;
+            const existingRating = ratingsByRide.get(r.id);
+            const rating = existingRating
+              ? ratingSaved(existingRating)
+              : String(r.status) === "completed"
+                ? ratingForm(r.id)
+                : "";
+            return `<article class="card"><div class="row"><div><span class="pill">${esc(r.status)}</span><h3>${esc(r.service || "VASI Ride")}</h3><div class="muted">${esc(date(r.completed_at || r.cancelled_at || r.requested_at))}</div></div><div class="fare">${money(fare, r.currency)}</div></div><div class="route"><div class="point"><span>●</span><div><small class="muted">Pickup</small><br>${esc(r.pickup_address)}</div></div><div class="point"><span>■</span><div><small class="muted">Destination</small><br>${esc(r.destination_address)}</div></div></div>${fees}<div class="receipt"><div>Payment<b>${esc(paymentMethod)}</b><small>Status · ${esc(paymentStatus)}</small></div><div>Driver<b>${esc(driver)}</b></div><div>Vehicle<b>${esc(car)}</b></div><div>Ride ID<b>${esc(String(r.id).slice(0, 8).toUpperCase())}</b></div></div>${rating}</article>`;
+          })
+          .join("");
+      }
+      load();
+    </script>
+  <script src="/vasi-languages.js"></script></body>
+</html>

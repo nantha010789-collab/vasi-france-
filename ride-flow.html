@@ -1,0 +1,1618 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050505" />
+    <title>VASI Ride</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      :root {
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+        color: #fff;
+        background: #050505;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #050505;
+      }
+      .app {
+        min-height: 100vh;
+        max-width: 760px;
+        margin: auto;
+        padding: 14px 14px 28px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 2px;
+      }
+      .brand {
+        font-size: 30px;
+        font-weight: 950;
+        letter-spacing: -1.5px;
+      }
+      .back,
+      .iconbtn {
+        border: 1px solid #333;
+        background: #151515;
+        color: #fff;
+        border-radius: 13px;
+        padding: 9px 13px;
+      }
+      .map {
+        height: 46vh;
+        min-height: 320px;
+        margin: 12px 0;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid #292929;
+      }
+      .panel {
+        border: 1px solid #292929;
+        background: #111;
+        border-radius: 24px;
+        padding: 15px;
+        box-shadow: 0 12px 40px #0007;
+      }
+      .grab {
+        width: 52px;
+        height: 4px;
+        border-radius: 9px;
+        background: #3b3b3b;
+        margin: 0 auto 13px;
+      }
+      .field {
+        padding: 13px;
+        border-radius: 15px;
+        background: #181818;
+        margin-bottom: 8px;
+        color: #999;
+        cursor: pointer;
+        border: 1px solid #252525;
+      }
+      .field b {
+        color: #fff;
+        display: block;
+        margin-top: 4px;
+      }
+      .field input {
+        width: 100%;
+        margin-top: 5px;
+        background: transparent;
+        border: 0;
+        outline: 0;
+        color: #fff;
+        font-size: 15px;
+      }
+      .savedPlaces {
+        margin: 10px 0 4px;
+        padding: 12px;
+        border: 1px solid #2d2d2d;
+        border-radius: 17px;
+        background: #151515;
+      }
+      .savedPlacesHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 9px;
+      }
+      .savedPlacesHead strong {
+        font-size: 14px;
+      }
+      .savedPlacesHead a {
+        color: #bbb;
+        font-size: 12px;
+      }
+      .savedPlace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 9px;
+        align-items: center;
+        padding: 10px 0;
+        border-top: 1px solid #292929;
+      }
+      .savedPlace:first-child {
+        border-top: 0;
+        padding-top: 2px;
+      }
+      .savedPlaceInfo {
+        min-width: 0;
+      }
+      .savedPlaceInfo strong,
+      .savedPlaceInfo small {
+        display: block;
+      }
+      .savedPlaceInfo strong {
+        font-size: 14px;
+      }
+      .savedPlaceInfo small {
+        color: #929292;
+        font-size: 12px;
+        line-height: 1.35;
+        margin-top: 3px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .savedPlaceActions {
+        display: flex;
+        gap: 5px;
+      }
+      .savedPlaceActions button {
+        border: 1px solid #3a3a3a;
+        background: #202020;
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 9px;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .savedPlaceActions button:last-child {
+        background: #fff;
+        color: #090909;
+        border-color: #fff;
+      }
+      .savedPlaceActions button:disabled {
+        opacity: 0.5;
+      }
+      .section {
+        font-size: 13px;
+        font-weight: 900;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin: 14px 0 8px;
+      }
+      .promo {
+        margin: 9px 0;
+        padding: 10px 12px;
+        border: 1px solid #235d3a;
+        background: #112b1c;
+        color: #86efa9;
+        border-radius: 13px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .types {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .type {
+        border: 1px solid #303030;
+        background: #151515;
+        color: #fff;
+        border-radius: 17px;
+        padding: 12px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .type.active {
+        border: 2px solid #fff;
+        background: #222;
+        padding: 11px;
+      }
+      .type strong {
+        display: block;
+        font-size: 16px;
+      }
+      .type span {
+        display: block;
+        color: #999;
+        font-size: 11px;
+        margin-top: 3px;
+      }
+      .type .price {
+        color: #fff;
+        font-weight: 900;
+        font-size: 15px;
+        margin-top: 8px;
+      }
+      .fareRow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 13px 0;
+      }
+      .fareLabel {
+        color: #aaa;
+      }
+      .fare {
+        font-size: 25px;
+        font-weight: 950;
+      }
+      .trip {
+        text-align: center;
+        color: #aaa;
+        font-size: 12px;
+      }
+      .paygrid,
+      .options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 7px;
+      }
+      .pay,
+      .option {
+        border: 1px solid #333;
+        background: #181818;
+        color: #eee;
+        border-radius: 13px;
+        padding: 10px 6px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .pay.active,
+      .option.active {
+        border: 2px solid #fff;
+        padding: 9px;
+        background: #252525;
+      }
+      .cta {
+        width: 100%;
+        border: 0;
+        border-radius: 17px;
+        padding: 16px;
+        background: #fff;
+        color: #050505;
+        font-weight: 900;
+        font-size: 16px;
+        margin-top: 12px;
+      }
+      .cta:disabled {
+        opacity: 0.45;
+      }
+      .safetyBtn {
+        background: #2b1010;
+        color: #ffb7b7;
+        border: 1px solid #7b2929;
+      }
+      .status {
+        text-align: center;
+        color: #888;
+        font-size: 12px;
+        min-height: 18px;
+        margin: 9px 0;
+      }
+      .success {
+        color: #fff;
+        font-weight: 800;
+      }
+      .error {
+        color: #ffb4b4;
+      }
+      .cancel {
+        background: transparent;
+        color: #aaa;
+        border: 0;
+        width: 100%;
+        padding: 12px;
+      }
+      .driverCard {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        background: #181818;
+        border: 1px solid #303030;
+        border-radius: 17px;
+        padding: 13px;
+        margin-top: 10px;
+      }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #292929;
+        font-size: 24px;
+      }
+      .driverCard b {
+        display: block;
+      }
+      .driverCard small {
+        display: block;
+        color: #999;
+        margin-top: 3px;
+      }
+      .driverCard .eta {
+        margin-left: auto;
+        font-weight: 900;
+      }
+      .policy {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+      }
+      .policy div {
+        background: #151515;
+        border-radius: 13px;
+        padding: 9px;
+        color: #999;
+        font-size: 10px;
+      }
+      .policy b {
+        display: block;
+        color: #fff;
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      .waiting {
+        text-align: center;
+        color: #aaa;
+        font-size: 12px;
+        margin: 8px 0;
+      }
+      .stops {
+        display: grid;
+        gap: 7px;
+        margin: 8px 0;
+      }
+      .stop {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 13px;
+        padding: 10px 12px;
+        color: #eee;
+        font-size: 12px;
+      }
+      .stop button {
+        border: 0;
+        background: transparent;
+        color: #aaa;
+        font-size: 16px;
+      }
+      .payModal {
+        position: fixed;
+        z-index: 9999;
+        inset: 0;
+        background: #000c;
+        display: grid;
+        place-items: end center;
+        padding: 14px;
+      }
+      .payBox {
+        width: min(520px, 100%);
+        background: #171717;
+        border: 1px solid #353535;
+        border-radius: 24px;
+        padding: 18px;
+      }
+      .payBox h2 {
+        margin: 0 0 5px;
+      }
+      .payBox p {
+        color: #aaa;
+        font-size: 12px;
+      }
+      .payError {
+        color: #ffb4b4;
+        font-size: 12px;
+        min-height: 18px;
+      }
+      .hidden {
+        display: none !important;
+      }
+      @media (max-width: 480px) {
+        .paygrid,
+        .options {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .savedPlace {
+          grid-template-columns: 1fr;
+        }
+        .savedPlaceActions button {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="top">
+        <div class="brand">VASI</div>
+        <button class="back" onclick="location.href = 'app.html'">Home</button>
+      </header>
+      <div id="map" class="map"></div>
+      <section class="panel">
+        <div class="grab"></div>
+        <div class="field" onclick="useLocation()">
+          📍 Pickup<b id="pickup">Use my current location</b>
+        </div>
+        <div class="field" onclick="focusDestination()">
+          🏁 Destination<b id="destination">Tap map to choose destination</b>
+        </div>
+        <div id="searchWrap" class="hidden">
+          <div class="field">
+            <input
+              id="destSearch"
+              placeholder="Enter destination or place"
+              onkeydown="if (event.key === 'Enter') searchDestination();"
+            /><button class="iconbtn" onclick="searchDestination()">
+              Search
+            </button>
+          </div>
+        </div>
+        <div id="savedPlaces" class="savedPlaces hidden" aria-live="polite">
+          <div class="savedPlacesHead">
+            <strong>Saved places</strong>
+            <a href="account.html#addressesTitle">Manage</a>
+          </div>
+          <div id="savedPlacesList"></div>
+        </div>
+        <div id="booking" class="hidden">
+          <div class="section">Route</div>
+          <div id="stops" class="stops"></div>
+          <button
+            class="option"
+            style="width: 100%; margin-bottom: 8px"
+            onclick="addStop()"
+          >
+            ➕ Add stop <span id="stopCount">0/5</span>
+          </button>
+          <div id="promo" class="promo">VASI offer price</div>
+          <div class="section">Choose vehicle</div>
+          <div id="types" class="types"></div>
+          <div class="fareRow">
+            <span class="fareLabel">Upfront fare</span
+            ><span class="fare" id="fare">—</span>
+          </div>
+          <div id="tripInfo" class="trip"></div>
+          <div class="section">Payment</div>
+          <div class="paygrid">
+            <button class="pay active" onclick="payment(this, 'cash')">
+              💶 Cash</button
+            ><button id="cardPay" class="pay" onclick="payment(this, 'card')">
+              💳 Card</button
+            ><button
+              id="applePay"
+              class="pay"
+              onclick="payment(this, 'apple_pay')"
+            >
+               Apple Pay
+            </button>
+          </div>
+          <div class="section">Pickup time</div>
+          <div class="options">
+            <button id="nowBtn" class="option active" onclick="pickupNow(this)">
+              ⚡ Now</button
+            ><button class="option" onclick="chooseCustomTime()">
+              🗓️ Custom date & time
+            </button>
+          </div>
+          <div id="customTime" class="hidden">
+            <input
+              id="pickupDate"
+              type="date"
+              style="
+                width: 100%;
+                padding: 12px;
+                border-radius: 13px;
+                background: #181818;
+                color: #fff;
+                border: 1px solid #333;
+                margin-top: 7px;
+              "
+            /><input
+              id="pickupClock"
+              type="time"
+              style="
+                width: 100%;
+                padding: 12px;
+                border-radius: 13px;
+                background: #181818;
+                color: #fff;
+                border: 1px solid #333;
+                margin-top: 7px;
+              "
+            /><button
+              class="option"
+              style="width: 100%; margin-top: 7px"
+              onclick="applyCustomTime()"
+            >
+              ✓ Use this pickup time
+            </button>
+          </div>
+          <div class="policy" style="margin-top: 10px">
+            <div>Cancellation<b>€5</b></div>
+            <div>Waiting<b>3 min free · €0.30/min</b></div>
+          </div>
+          <button id="routeBtn" class="cta" onclick="requestRide()">
+            Request VASI ride
+          </button>
+        </div>
+        <div id="driverArea" class="hidden">
+          <div class="driverCard">
+            <div class="avatar" id="driverEmoji">🚗</div>
+            <div>
+              <b id="driverTitle">VASI driver</b
+              ><small id="driverSub">Finding your driver…</small>
+            </div>
+            <div class="eta" id="eta">—</div>
+          </div>
+          <div id="waiting" class="waiting hidden"></div>
+          <button id="chatBtn" class="cta hidden" onclick="openRideChat()">
+            💬 Chat with driver
+          </button>
+          <button id="safetyBtn" class="cta safetyBtn hidden" onclick="openSafety()">
+            🛡️ Safety Centre · PIN · Share trip
+          </button>
+          <button
+            id="receiptBtn"
+            class="cta hidden"
+            onclick="location.href = 'ride-history.html'"
+          >
+            View receipt</button
+          ><button id="cancelBtn" class="cancel" onclick="cancelRide()">
+            Cancel ride · €5
+          </button>
+        </div>
+        <p id="status" class="status">Getting your pickup location…</p>
+      </section>
+      <div id="paymentModal" class="payModal hidden">
+        <div class="payBox">
+          <h2>Authorize your VASI fare</h2>
+          <p id="paymentMessage">
+            Your card or Apple Pay is charged only after the ride is completed.
+          </p>
+          <div id="paymentElement"></div>
+          <div id="paymentError" class="payError"></div>
+          <button
+            id="authorizeBtn"
+            class="cta"
+            onclick="confirmRidePayment()"
+            disabled
+          >
+            Authorize payment</button
+          ><button class="cancel" onclick="closePaymentModal()">Not now</button>
+        </div>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/vasi-notifications.js"></script>
+    <script>
+      const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+        sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      let map,
+        pickupMarker,
+        destMarker,
+        routeLine,
+        driverMarker,
+        pickup = null,
+        destination = null,
+        statusTimer = null,
+        waitTimer = null,
+        waitSeconds = 0,
+        ride = null,
+        selected = "go",
+        pay = "cash",
+        pickupChoice = "Now",
+        customPickup = null,
+        stops = [],
+        route = { km: 0, mins: 0 },
+        etaLastUpdate = 0,
+        homeDestination = localStorage.getItem("vasi_destination_hint") || "",
+        openSchedule = localStorage.getItem("vasi_open_schedule") === "1",
+        stripe = null,
+        stripeElements = null,
+        paymentStarted = false,
+        paymentAuthorized = false,
+        savedAddresses = [];
+      const fallback = [49.189, 2.449],
+        regularClasses = {
+          go: {
+            name: "Go",
+            seats: 4,
+            emoji: "🚗",
+            base: 2.5,
+            km: 0.95,
+            min: 0.2,
+            minFare: 9.5,
+          },
+          comfort: {
+            name: "Comfort",
+            seats: 4,
+            emoji: "🚘",
+            base: 3.2,
+            km: 1.1,
+            min: 0.23,
+            minFare: 10.5,
+          },
+          xl: {
+            name: "XL",
+            seats: 6,
+            emoji: "🚙",
+            base: 4.0,
+            km: 1.25,
+            min: 0.25,
+            minFare: 13.0,
+          },
+          van: {
+            name: "Van",
+            seats: 9,
+            emoji: "🚐",
+            base: 5.0,
+            km: 1.4,
+            min: 0.28,
+            minFare: 16.0,
+          },
+        },
+        offerClasses = {
+          go: {
+            name: "Go",
+            seats: 4,
+            emoji: "🚗",
+            base: 1.5,
+            km: 0.68,
+            min: 0.14,
+            minFare: 7.5,
+          },
+          comfort: {
+            name: "Comfort",
+            seats: 4,
+            emoji: "🚘",
+            base: 2.0,
+            km: 0.78,
+            min: 0.16,
+            minFare: 9.0,
+          },
+          xl: {
+            name: "XL",
+            seats: 6,
+            emoji: "🚙",
+            base: 2.8,
+            km: 0.95,
+            min: 0.18,
+            minFare: 11.5,
+          },
+          van: {
+            name: "Van",
+            seats: 9,
+            emoji: "🚐",
+            base: 3.5,
+            km: 1.05,
+            min: 0.2,
+            minFare: 13.5,
+          },
+        },
+        classes = offerClasses,
+        pricingOffer = {
+          active: true,
+          mode: "fixed",
+          percent: 0,
+          cap: null,
+          threshold: null,
+        },
+        smartOffer = null;
+      const $ = (id) => document.getElementById(id),
+        money = (n) => "€" + Number(n || 0).toFixed(2);
+      function priceFor(km, mins, key) {
+        let fare;
+        if (pricingOffer.active && pricingOffer.mode === "percentage") {
+          const regular = regularClasses[key],
+            regularFare = Math.max(
+              regular.minFare,
+              regular.base + km * regular.km + mins * regular.min,
+            );
+          if (
+            pricingOffer.threshold != null &&
+            regularFare < pricingOffer.threshold
+          )
+            return regularFare;
+          let discount = (regularFare * pricingOffer.percent) / 100;
+          if (pricingOffer.cap != null)
+            discount = Math.min(discount, pricingOffer.cap);
+          return Math.max(regular.minFare, regularFare - discount);
+        }
+        const c = classes[key];
+        fare = Math.max(c.minFare, c.base + km * c.km + mins * c.min);
+        if (smartOffer) {
+          let discount = (fare * Number(smartOffer.discount_percent)) / 100;
+          if (smartOffer.max_discount_eur != null)
+            discount = Math.min(discount, Number(smartOffer.max_discount_eur));
+          fare -= discount;
+        }
+        return fare;
+      }
+      async function loadCustomerOffer() {
+        const session = (await sb.auth.getSession()).data.session;
+        if (!session || pricingOffer.mode === "percentage") return;
+        try {
+          const response = await fetch("/api/customer-offer", {
+            headers: { Authorization: "Bearer " + session.access_token },
+            cache: "no-store",
+          });
+          const offer = await response.json();
+          if (
+            !response.ok ||
+            ![10, 15].includes(Number(offer.discount_percent))
+          )
+            return;
+          smartOffer = offer;
+          $("promo").textContent =
+            `${offer.label} · ${offer.discount_percent}% off · up to €${Number(offer.max_discount_eur).toFixed(2)}`;
+          $("promo").classList.remove("hidden");
+        } catch (error) {}
+      }
+      const savedPlaceIcon = (label) =>
+        ({ home: "🏠", work: "💼", other: "📍" })[
+          String(label || "").toLowerCase()
+        ] || "📍";
+      function savedAddressText(address) {
+        return [
+          address.address_line,
+          [address.postal_code, address.city].filter(Boolean).join(" "),
+          address.country_code,
+        ]
+          .filter(Boolean)
+          .join(", ");
+      }
+      function renderSavedPlaces() {
+        const wrap = $("savedPlaces"),
+          list = $("savedPlacesList");
+        list.replaceChildren();
+        if (!savedAddresses.length) {
+          wrap.classList.add("hidden");
+          return;
+        }
+        savedAddresses.forEach((address) => {
+          const row = document.createElement("div"),
+            info = document.createElement("div"),
+            title = document.createElement("strong"),
+            detail = document.createElement("small"),
+            actions = document.createElement("div"),
+            pickupButton = document.createElement("button"),
+            destinationButton = document.createElement("button");
+          row.className = "savedPlace";
+          info.className = "savedPlaceInfo";
+          actions.className = "savedPlaceActions";
+          title.textContent = `${savedPlaceIcon(address.label)} ${address.label}`;
+          detail.textContent = savedAddressText(address);
+          pickupButton.type = "button";
+          pickupButton.textContent = "Pickup";
+          pickupButton.setAttribute("aria-label", `Use ${address.label} as pickup`);
+          destinationButton.type = "button";
+          destinationButton.textContent = "Destination";
+          destinationButton.setAttribute(
+            "aria-label",
+            `Use ${address.label} as destination`,
+          );
+          pickupButton.onclick = () =>
+            useSavedPlace(address.id, "pickup", pickupButton);
+          destinationButton.onclick = () =>
+            useSavedPlace(address.id, "destination", destinationButton);
+          info.append(title, detail);
+          actions.append(pickupButton, destinationButton);
+          row.append(info, actions);
+          list.append(row);
+        });
+        wrap.classList.remove("hidden");
+      }
+      async function loadSavedPlaces() {
+        const session = (await sb.auth.getSession()).data.session;
+        if (!session) return;
+        try {
+          const { data, error } = await sb
+            .from("customer_saved_addresses")
+            .select("id,label,address_line,postal_code,city,country_code")
+            .order("created_at", { ascending: true });
+          if (error) throw error;
+          savedAddresses = data || [];
+          renderSavedPlaces();
+        } catch (error) {
+          console.warn("Saved places unavailable", error);
+        }
+      }
+      async function useSavedPlace(id, kind, button) {
+        const address = savedAddresses.find((item) => item.id === id);
+        if (!address) return;
+        const query = savedAddressText(address),
+          originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Finding…";
+        $("status").textContent = `Finding ${address.label}…`;
+        try {
+          let found = null;
+          for (const candidate of destinationQueries(query)) {
+            found = await geocodeDestination(candidate);
+            if (found) break;
+          }
+          if (!found) throw Error("not found");
+          const lat = Number(found.lat),
+            lng = Number(found.lon),
+            label = `${savedPlaceIcon(address.label)} ${address.label} · ${query}`;
+          if (!Number.isFinite(lat) || !Number.isFinite(lng))
+            throw Error("invalid coordinates");
+          if (kind === "pickup") setPickup([lat, lng], label);
+          else {
+            setDestination([lat, lng], label);
+            $("destSearch").value = query;
+            $("searchWrap").classList.add("hidden");
+          }
+        } catch (error) {
+          $("status").innerHTML =
+            '<span class="error">Saved address not found on the map — edit the address and postcode</span>';
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
+      async function checkPaymentAvailability() {
+        try {
+          const r = await fetch("/api/payment-config", { cache: "no-store" });
+          const d = await r.json();
+          if (r.ok && d.enabled && d.publishable_key) return;
+          throw Error();
+        } catch (e) {
+          for (const id of ["cardPay", "applePay"]) {
+            const b = $(id);
+            b.disabled = true;
+            b.title = "Coming soon";
+            if (!b.textContent.includes("Soon")) b.textContent += " · Soon";
+          }
+        }
+      }
+      async function loadPricing() {
+        try {
+          const r = await fetch("/api/pricing", { cache: "no-store" });
+          const d = await r.json();
+          if (!r.ok) throw Error();
+          if (d.offer_active) {
+            for (const key of Object.keys(offerClasses))
+              Object.assign(offerClasses[key], d.classes[key]);
+            pricingOffer = {
+              active: true,
+              mode: d.offer_mode || "fixed",
+              percent: Number(d.discount_percent || 0),
+              cap:
+                d.max_discount_eur == null ? null : Number(d.max_discount_eur),
+              threshold:
+                d.minimum_regular_fare == null
+                  ? null
+                  : Number(d.minimum_regular_fare),
+            };
+            classes =
+              pricingOffer.mode === "percentage"
+                ? regularClasses
+                : offerClasses;
+            const detail =
+              pricingOffer.mode === "percentage"
+                ? ` · ${pricingOffer.percent}% off${pricingOffer.cap == null ? "" : ` · up to €${pricingOffer.cap.toFixed(2)}`}`
+                : "";
+            $("promo").textContent =
+              (d.offer_name || "VASI offer price") + detail;
+            $("promo").classList.remove("hidden");
+          } else {
+            pricingOffer = {
+              active: false,
+              mode: "regular",
+              percent: 0,
+              cap: null,
+              threshold: null,
+            };
+            classes = regularClasses;
+            $("promo").classList.add("hidden");
+          }
+        } catch (e) {
+          classes = offerClasses;
+          $("promo").textContent = "VASI offer price";
+        }
+      }
+      async function init() {
+        map = L.map("map", { zoomControl: false }).setView(fallback, 13);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "© OpenStreetMap contributors",
+        }).addTo(map);
+        map.on("click", (e) => {
+          if (!pickup)
+            setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map");
+          else setDestination([e.latlng.lat, e.latlng.lng]);
+        });
+        checkPaymentAvailability();
+        useLocation();
+        Promise.allSettled([
+          loadPricing(),
+          loadCustomerOffer(),
+          loadSavedPlaces(),
+        ]).then(() => {
+          if (route.km > 0) {
+            renderTypes();
+            selectType(selected);
+          }
+        });
+      }
+      function useLocation() {
+        if (!navigator.geolocation) {
+          pickup = null;
+          $("pickup").textContent = "Select pickup location";
+          $("status").innerHTML =
+            '<span class="error">Location is unavailable — tap the map to select your pickup. Price will appear after pickup is confirmed.</span>';
+          return;
+        }
+        $("status").textContent = "Requesting your location…";
+        navigator.geolocation.getCurrentPosition(
+          (p) =>
+            setPickup(
+              [p.coords.latitude, p.coords.longitude],
+              "Current location",
+            ),
+          () => {
+            pickup = null;
+            if (pickupMarker) {
+              pickupMarker.remove();
+              pickupMarker = null;
+            }
+            $("pickup").textContent = "Select pickup location";
+            $("booking").classList.add("hidden");
+            $("fare").textContent = "—";
+            $("status").innerHTML =
+              '<span class="error">Allow location access or tap the map to select your pickup. No price is calculated until pickup is confirmed.</span>';
+          },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+        );
+      }
+      function setPickup(p, label = "Pickup selected") {
+        pickup = p;
+        $("pickup").textContent = label;
+        try {
+          if (pickupMarker) pickupMarker.remove();
+          pickupMarker = L.marker(p)
+            .addTo(map)
+            .bindPopup("VASI pickup")
+            .openPopup();
+          map.setView(p, 14);
+        } catch (mapError) {
+          console.warn("Pickup map preview unavailable", mapError);
+        }
+        if (destination) buildRoute();
+        if (homeDestination) {
+          $("destSearch").value = homeDestination;
+          localStorage.removeItem("vasi_destination_hint");
+          homeDestination = "";
+          searchDestination();
+          return;
+        }
+        if (openSchedule) {
+          focusDestination();
+          $("status").textContent =
+            "Choose your destination, then select your reserve time";
+          return;
+        }
+        $("status").textContent = "Now choose your destination";
+      }
+      function setDestination(p, label = "Destination selected") {
+        destination = p;
+        $("destination").textContent = label;
+        try {
+          if (destMarker) destMarker.remove();
+          destMarker = L.marker(p).addTo(map).bindPopup(label);
+          if (pickup) {
+            map.fitBounds(L.latLngBounds([pickup, destination]), {
+              padding: [35, 35],
+            });
+          } else {
+            map.setView(destination, 14);
+          }
+        } catch (mapError) {
+          console.warn("Destination map preview unavailable", mapError);
+        }
+        if (pickup) buildRoute();
+        else
+          $("status").textContent =
+            "Destination selected — now choose your pickup location";
+      }
+      function focusDestination() {
+        $("searchWrap").classList.remove("hidden");
+        $("destSearch").focus();
+        $("status").textContent = "Enter a destination or tap the map";
+      }
+      function normalizeDestinationQuery(value) {
+        return String(value || "")
+          .replace(/\s+/g, " ")
+          .replace(/([^\s,])(\d{5}\b)/g, "$1, $2")
+          .replace(/\s*,\s*/g, ", ")
+          .trim();
+      }
+      function destinationQueries(raw) {
+        const q = normalizeDestinationQuery(raw),
+          out = [q];
+        if (!/\bFrance\b/i.test(q)) out.push(q + ", France");
+        const fr = q.match(/\b(\d{5})\s+([^,]+?)(?:,\s*France)?$/i);
+        if (fr) {
+          out.push(fr[1] + " " + fr[2].trim() + ", France");
+        }
+        return [...new Set(out.filter(Boolean))];
+      }
+      async function geocodeDestination(q) {
+        const u =
+          "/api/route-preview?q=" +
+          encodeURIComponent(q) +
+          "&_=" +
+          Date.now();
+        const r = await fetch(u, { cache: "no-store" });
+        if (!r.ok) throw Error("Geocoding unavailable");
+        const d = await r.json();
+        return d?.results?.[0] || null;
+      }
+      function formatGeocodedAddress(found, fallbackText = "Destination") {
+        const a = found?.address || {};
+        const street = [a.house_number, a.road || a.pedestrian || a.footway]
+          .filter(Boolean)
+          .join(" ");
+        const place =
+          a.amenity || a.shop || a.tourism || a.building || a.name || "";
+        const city =
+          a.city ||
+          a.town ||
+          a.village ||
+          a.municipality ||
+          a.locality ||
+          a.county ||
+          "";
+        const cityLine = [a.postcode, city].filter(Boolean).join(" ");
+        const parts = [street || place, cityLine, a.country].filter(Boolean);
+        if (parts.length >= 2) return [...new Set(parts)].join(", ");
+        return found?.display_name || fallbackText;
+      }
+      async function searchDestination() {
+        const raw = $("destSearch").value.trim();
+        if (!raw) return;
+        $("status").textContent = "Finding destination…";
+        try {
+          let found = null;
+          for (const q of destinationQueries(raw)) {
+            found = await geocodeDestination(q);
+            if (found) break;
+          }
+          if (!found) throw Error("not found");
+          const lat = Number(found.lat),
+            lng = Number(found.lon);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng))
+            throw Error("invalid coordinates");
+          const label = formatGeocodedAddress(found, raw);
+          setDestination([lat, lng], label);
+          $("destSearch").value = label;
+          $("searchWrap").classList.add("hidden");
+        } catch (e) {
+          $("status").innerHTML =
+            '<span class="error">Destination not found — try the postcode and city</span>';
+        }
+      }
+      async function buildRoute() {
+        if (!pickup || !destination) return;
+        $("status").textContent = "Calculating route…";
+        try {
+          const points = [
+            pickup,
+            ...stops.map((s) => [s.lat, s.lng]),
+            destination,
+          ];
+          const response = await fetch("/api/route-preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              points: points.map((p) => ({ lat: p[0], lng: p[1] })),
+            }),
+          });
+          const r = await response.json();
+          if (!response.ok || !r.geometry)
+            throw Error(r.error || "Route unavailable");
+          route.km = r.distance_km;
+          route.mins = r.duration_min;
+          if (routeLine) routeLine.remove();
+          routeLine = L.geoJSON(r.geometry).addTo(map);
+          map.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
+          renderTypes();
+          $("booking").classList.remove("hidden");
+          selectType(selected);
+          $("tripInfo").textContent =
+            `${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
+          if (openSchedule) {
+            openSchedule = false;
+            localStorage.removeItem("vasi_open_schedule");
+            chooseCustomTime();
+          } else
+            $("status").textContent = stops.length
+              ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
+              : "Choose your vehicle, stops and pickup time";
+        } catch (e) {
+          $("status").innerHTML =
+            '<span class="error">Route service unavailable — try again</span>';
+        }
+      }
+      function renderTypes() {
+        $("types").innerHTML = Object.entries(classes)
+          .map(
+            ([k, c]) =>
+              `<button class="type" id="type-${k}" onclick="selectType('${k}')"><strong>${c.emoji} ${c.name}</strong><span>${c.seats} seats</span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
+          )
+          .join("");
+      }
+      function selectType(k) {
+        selected = k;
+        document
+          .querySelectorAll(".type")
+          .forEach((x) => x.classList.remove("active"));
+        const el = $("type-" + k);
+        if (el) el.classList.add("active");
+        const f = priceFor(route.km, route.mins, k);
+        $("fare").textContent = money(f);
+        $("routeBtn").textContent = `Request ${classes[k].name} · ${money(f)}`;
+      }
+      function payment(el, v) {
+        pay = v;
+        document
+          .querySelectorAll(".pay")
+          .forEach((x) => x.classList.remove("active"));
+        el.classList.add("active");
+      }
+      async function addStop() {
+        if (stops.length >= 5) return toast("Maximum 5 stops");
+        const n = prompt("Enter stop address");
+        if (!n || !n.trim()) return;
+        const address = n.trim();
+        $("status").textContent = "Finding stop…";
+        try {
+          const url = "/api/route-preview?q=" + encodeURIComponent(address);
+          const r = await fetch(url);
+          const d = await r.json();
+          const found = d?.results?.[0];
+          if (!r.ok || !found) throw Error();
+          const lat = Number(found.lat),
+            lng = Number(found.lon);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw Error();
+          const label = formatGeocodedAddress(found, address);
+          stops.push({ address: label, label, lat, lng });
+          renderStops();
+          await buildRoute();
+        } catch (e) {
+          $("status").innerHTML =
+            '<span class="error">Stop not found — try a more specific address</span>';
+        }
+      }
+      function renderStops() {
+        $("stops").innerHTML = stops
+          .map(
+            (s, i) =>
+              `<div class="stop"><span>📍 Stop ${i + 1} · ${esc(s.label || s.address)}</span><button onclick="removeStop(${i})">×</button></div>`,
+          )
+          .join("");
+        $("stopCount").textContent = stops.length + "/5";
+      }
+      async function removeStop(i) {
+        stops.splice(i, 1);
+        renderStops();
+        await buildRoute();
+      }
+      function pickupNow(el) {
+        pickupChoice = "Now";
+        customPickup = null;
+        document
+          .querySelectorAll(".options .option")
+          .forEach((x) => x.classList.remove("active"));
+        el.classList.add("active");
+        $("customTime").classList.add("hidden");
+        $("status").textContent = "Ready to request your VASI ride";
+      }
+      function chooseCustomTime() {
+        $("customTime").classList.remove("hidden");
+        $("pickupDate").min = new Date().toISOString().slice(0, 10);
+        const n = new Date(Date.now() + 60 * 60 * 1000);
+        $("pickupDate").value = n.toISOString().slice(0, 10);
+        $("pickupClock").value =
+          String(n.getHours()).padStart(2, "0") +
+          ":" +
+          String(n.getMinutes()).padStart(2, "0");
+        pickupChoice = "Custom";
+        document
+          .querySelectorAll(".options .option")
+          .forEach((x) => x.classList.remove("active"));
+        $("status").textContent = "Choose your custom pickup date and time";
+      }
+      function applyCustomTime() {
+        const d = $("pickupDate").value,
+          t = $("pickupClock").value;
+        if (!d || !t) return toast("Choose a date and time");
+        const when = new Date(d + "T" + t);
+        if (when.getTime() < Date.now() + 30 * 60 * 1000)
+          return toast("Pickup must be at least 30 minutes from now");
+        customPickup = when.toISOString();
+        pickupChoice = "Custom";
+        $("customTime").classList.add("hidden");
+        $("status").textContent = "Custom pickup: " + d + " " + t;
+      }
+      function toast(msg) {
+        $("status").textContent = msg;
+      }
+      async function getSession() {
+        return (await sb.auth.getSession()).data.session;
+      }
+      async function requestRide() {
+        if (!pickup || !destination) return;
+        const s = await getSession();
+        if (!s) {
+          localStorage.setItem("vasi_role", "customer");
+          localStorage.setItem("vasi_return", "ride-flow.html");
+          $("status").innerHTML =
+            '<span class="error">Please sign in to book a real VASI ride.</span>';
+          setTimeout(() => (location.href = "auth.html?role=customer"), 700);
+          return;
+        }
+        $("routeBtn").disabled = true;
+        $("status").textContent = "Creating your VASI ride…";
+        const scheduled = pickupChoice === "Now" ? null : customPickup;
+        if (pickupChoice === "Custom" && !scheduled) {
+          $("routeBtn").disabled = false;
+          return toast("Please confirm your custom pickup time");
+        }
+        try {
+          const res = await fetch("/api/create-ride", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + s.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              pickup_address: $("pickup").textContent,
+              pickup_lat: pickup[0],
+              pickup_lng: pickup[1],
+              destination_address: $("destination").textContent,
+              destination_lat: destination[0],
+              destination_lng: destination[1],
+              service: "VASI " + classes[selected].name,
+              payment_method: pay,
+              estimated_fare: priceFor(route.km, route.mins, selected),
+              currency: "EUR",
+              scheduled_for: scheduled,
+              stops: stops.map((s) => s.address),
+            }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw Error(d.error || "Could not create ride");
+          ride = d.ride || d;
+          if (!ride.id) throw Error("Ride ID missing");
+          if (d.pricing?.estimated_fare != null) {
+            ride.estimated_fare = d.pricing.estimated_fare;
+            $("fare").textContent = money(d.pricing.estimated_fare);
+          }
+          showRide(ride);
+          startStatusPolling();
+        } catch (e) {
+          $("routeBtn").disabled = false;
+          $("status").innerHTML =
+            '<span class="error">' +
+            esc(e.message || "Booking failed") +
+            "</span>";
+        }
+      }
+      function showRide(r) {
+        $("booking").classList.add("hidden");
+        $("driverArea").classList.remove("hidden");
+        const c = classes[selected];
+        $("driverEmoji").textContent = c.emoji;
+        $("driverTitle").textContent =
+          r.driver_name || "VASI " + c.name + " driver";
+        $("driverSub").textContent =
+          (r.driver_name
+            ? "Driver assigned · "
+            : "Searching nearby drivers · ") +
+          c.seats +
+          " seats · " +
+          payLabel(pay);
+        setRideStatus(r);
+      }
+      function openRideChat() {
+        if (!ride?.id) return;
+        location.href =
+          "ride-chat.html?ride=" +
+          encodeURIComponent(ride.id) +
+          "&from=customer";
+      }
+      function openSafety() {
+        if (!ride?.id) return;
+        location.href =
+          "safety.html?ride=" + encodeURIComponent(ride.id);
+      }
+      function payLabel(v) {
+        return v === "apple_pay" ? "Apple Pay" : v === "card" ? "Card" : "Cash";
+      }
+      function closePaymentModal() {
+        $("paymentModal").classList.add("hidden");
+      }
+      async function prepareRidePayment() {
+        if (pay === "cash" || paymentAuthorized || paymentStarted || !ride?.id)
+          return;
+        paymentStarted = true;
+        $("paymentModal").classList.remove("hidden");
+        $("paymentError").textContent = "Preparing secure payment…";
+        try {
+          const s = await getSession();
+          if (!s) throw Error("Please sign in again");
+          const [cfg, intent] = await Promise.all([
+            fetch("/api/payment-config", { cache: "no-store" }).then(
+              async (r) => {
+                const d = await r.json();
+                if (!r.ok)
+                  throw Error(d.error || "Payment configuration unavailable");
+                if (!d.enabled || !d.publishable_key)
+                  throw Error("Card and Apple Pay are coming soon");
+                return d;
+              },
+            ),
+            fetch("/api/create-payment-intent", {
+              method: "POST",
+              headers: {
+                Authorization: "Bearer " + s.access_token,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ ride_id: ride.id }),
+            }).then(async (r) => {
+              const d = await r.json();
+              if (!r.ok)
+                throw Error(d.error || "Payment authorization unavailable");
+              return d;
+            }),
+          ]);
+          if (!window.Stripe)
+            await new Promise((ok, no) => {
+              const sc = document.createElement("script");
+              sc.src = "https://js.stripe.com/v3/";
+              sc.onload = ok;
+              sc.onerror = () => no(Error("Secure payment could not load"));
+              document.head.appendChild(sc);
+            });
+          stripe = Stripe(cfg.publishable_key);
+          stripeElements = stripe.elements({
+            clientSecret: intent.client_secret,
+            appearance: { theme: "night" },
+          });
+          $("paymentElement").innerHTML = "";
+          stripeElements
+            .create("payment", { layout: "tabs" })
+            .mount("#paymentElement");
+          $("paymentMessage").textContent =
+            `Authorize ${money(intent.amount)}. You are charged only after the ride is completed.`;
+          $("paymentError").textContent = "";
+          $("authorizeBtn").disabled = false;
+        } catch (e) {
+          paymentStarted = false;
+          $("paymentError").textContent =
+            e.message || "Payment could not be prepared";
+          $("authorizeBtn").disabled = true;
+        }
+      }
+      async function confirmRidePayment() {
+        if (!stripe || !stripeElements) return prepareRidePayment();
+        $("authorizeBtn").disabled = true;
+        $("paymentError").textContent = "Authorizing…";
+        const result = await stripe.confirmPayment({
+          elements: stripeElements,
+          confirmParams: { return_url: location.href },
+          redirect: "if_required",
+        });
+        if (result.error) {
+          $("paymentError").textContent =
+            result.error.message || "Payment authorization failed";
+          $("authorizeBtn").disabled = false;
+          return;
+        }
+        paymentAuthorized = true;
+        $("paymentError").textContent = "Payment authorized safely";
+        $("status").innerHTML =
+          '<span class="success">Payment authorized · driver is on the way</span>';
+        setTimeout(closePaymentModal, 700);
+      }
+      async function updateDriverEta(lat, lng, st) {
+        if (!pickup || !["accepted", "driver_arriving"].includes(st)) return;
+        if (Date.now() - etaLastUpdate < 12000) return;
+        etaLastUpdate = Date.now();
+        try {
+          const response = await fetch("/api/route-preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              points: [
+                { lat, lng },
+                { lat: pickup[0], lng: pickup[1] },
+              ],
+            }),
+          });
+          const d = await response.json();
+          const mins = d.duration_min;
+          if (Number.isFinite(mins))
+            $("eta").textContent = Math.max(1, Math.ceil(mins)) + " min";
+        } catch (e) {}
+      }
+      function setRideStatus(r) {
+        const st = String(r.status || "requested").toLowerCase();
+        const driverLat = Number(r.driver_lat ?? r.driver_latitude),
+          driverLng = Number(r.driver_lng ?? r.driver_longitude);
+        if (Number.isFinite(driverLat) && Number.isFinite(driverLng)) {
+          if (!driverMarker)
+            driverMarker = L.marker([driverLat, driverLng])
+              .addTo(map)
+              .bindPopup("VASI driver");
+          else driverMarker.setLatLng([driverLat, driverLng]);
+          updateDriverEta(driverLat, driverLng, st);
+        } else if (!["driver_arriving", "in_progress"].includes(st))
+          $("eta").textContent = "—";
+        if (st === "driver_arriving") $("eta").textContent = "Arrived";
+        if (st === "in_progress") $("eta").textContent = "On trip";
+        $("chatBtn").classList.toggle(
+          "hidden",
+          !r.driver_id ||
+            !["accepted", "driver_arriving", "in_progress"].includes(st),
+        );
+        $("safetyBtn").classList.toggle(
+          "hidden",
+          !r.driver_id ||
+            !["accepted", "driver_arriving", "in_progress"].includes(st),
+        );
+        if (r.driver_name)
+          $("driverTitle").textContent =
+            "VASI " + classes[selected].name + " · " + r.driver_name;
+        const car = [
+          r.driver_vehicle_color,
+          r.driver_vehicle_make,
+          r.driver_vehicle_model,
+          r.driver_vehicle_plate,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        if (car) $("driverSub").textContent = car;
+        const labels = {
+          requested: "Finding a VASI driver…",
+          searching_driver: "Finding a VASI driver…",
+          driver_assigned: "Driver assigned · waiting for acceptance",
+          accepted: "Driver accepted · on the way",
+          driver_arriving: "Driver arrived — waiting for you",
+          in_progress: "Trip in progress",
+          completed: "Trip completed",
+          cancelled: "Ride cancelled",
+          canceled: "Ride cancelled",
+        };
+        $("status").innerHTML =
+          st === "completed"
+            ? '<span class="success">Trip completed</span>'
+            : ["cancelled", "canceled"].includes(st)
+              ? '<span class="error">Ride cancelled</span>'
+              : '<span class="success">' +
+                (labels[st] || st.replaceAll("_", " ")) +
+                "</span>";
+        if (
+          ["accepted", "driver_arriving"].includes(st) &&
+          pay !== "cash" &&
+          !paymentAuthorized
+        )
+          prepareRidePayment();
+        if (st === "driver_arriving" && !waitTimer) startWaiting();
+        if (["in_progress", "completed", "cancelled", "canceled"].includes(st))
+          $("cancelBtn").classList.add("hidden");
+        if (st === "completed") {
+          $("receiptBtn").textContent = "Rate driver & view receipt";
+          $("receiptBtn").classList.remove("hidden");
+        } else if (["cancelled", "canceled"].includes(st)) {
+          $("receiptBtn").textContent = "View cancellation receipt";
+          $("receiptBtn").classList.remove("hidden");
+        } else $("receiptBtn").classList.add("hidden");
+        if (["completed", "cancelled", "canceled"].includes(st)) {
+          closePaymentModal();
+          clearInterval(statusTimer);
+          clearInterval(waitTimer);
+        }
+      }
+      async function startStatusPolling() {
+        clearInterval(statusTimer);
+        statusTimer = setInterval(loadRideStatus, 4000);
+        await loadRideStatus();
+      }
+      async function loadRideStatus() {
+        if (!ride?.id) return;
+        try {
+          const s = await getSession();
+          if (!s) return;
+          const r = await fetch(
+            "/api/ride-status?id=" + encodeURIComponent(ride.id),
+            { headers: { Authorization: "Bearer " + s.access_token } },
+          );
+          const d = await r.json();
+          if (!r.ok) throw Error(d.error || "Status unavailable");
+          ride = d;
+          setRideStatus(ride);
+        } catch (e) {}
+      }
+      function startWaiting() {
+        if (waitTimer) return;
+        waitSeconds = 0;
+        $("waiting").classList.remove("hidden");
+        waitTimer = setInterval(() => {
+          waitSeconds++;
+          const m = Math.floor(waitSeconds / 60),
+            s = waitSeconds % 60,
+            fee = Math.max(0, Math.ceil((waitSeconds - 180) / 60) * 0.3);
+          $("waiting").textContent =
+            waitSeconds <= 180
+              ? `Waiting: ${m}:${String(s).padStart(2, "0")} · Free`
+              : `Waiting: ${m}:${String(s).padStart(2, "0")} · ${money(fee)}`;
+        }, 1000);
+      }
+      async function cancelRide() {
+        if (!ride?.id) return;
+        if (!confirm("Cancel this VASI ride? A €5 cancellation fee applies."))
+          return;
+        const s = await getSession();
+        if (!s) return;
+        try {
+          $("cancelBtn").disabled = true;
+          const r = await fetch(
+            "/api/ride-status?id=" + encodeURIComponent(ride.id),
+            {
+              method: "DELETE",
+              headers: { Authorization: "Bearer " + s.access_token },
+            },
+          );
+          const d = await r.json();
+          if (!r.ok)
+            throw Error(d.error || "Cancellation could not be completed");
+          ride = d.ride || ride;
+          const fee = d.cancellation_fee ?? 5;
+          $("status").innerHTML =
+            '<span class="error">Ride cancelled · ' +
+            money(fee) +
+            " cancellation fee</span>";
+          $("cancelBtn").classList.add("hidden");
+          $("receiptBtn").textContent = "View cancellation receipt";
+          $("receiptBtn").classList.remove("hidden");
+          $("eta").textContent = "—";
+          clearInterval(statusTimer);
+          clearInterval(waitTimer);
+        } catch (e) {
+          $("cancelBtn").disabled = false;
+          $("status").innerHTML =
+            '<span class="error">' + esc(e.message) + "</span>";
+        }
+      }
+      function esc(s) {
+        return String(s || "").replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[m],
+        );
+      }
+      init();
+      VasiNotifications.start(sb, { role: "customer" });
+    </script>
+  <script src="/vasi-languages.js"></script></body>
+</html>

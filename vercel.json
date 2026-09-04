@@ -1,1 +1,78 @@
-{"rewrites":[{"source":"/","destination":"/app.html"}]}
+{
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/app.html", "destination": "/index.html" },
+    { "source": "/app-easy", "destination": "/index.html" },
+    { "source": "/app-easy.html", "destination": "/index.html" },
+    { "source": "/app-fixed", "destination": "/index.html" },
+    { "source": "/app-fixed.html", "destination": "/index.html" },
+    { "source": "/vasi-app", "destination": "/index.html" },
+    { "source": "/vasi-app.html", "destination": "/index.html" },
+    { "source": "/vasi-clean-start", "destination": "/index.html" },
+    { "source": "/vasi-clean-start.html", "destination": "/index.html" },
+    { "source": "/vasi-flow", "destination": "/index.html" },
+    { "source": "/vasi-flow.html", "destination": "/index.html" },
+    { "source": "/vasi-new", "destination": "/index.html" },
+    { "source": "/vasi-new.html", "destination": "/index.html" },
+    { "source": "/vasi-rich", "destination": "/index.html" },
+    { "source": "/vasi-rich.html", "destination": "/index.html" },
+    { "source": "/vasi-ui", "destination": "/index.html" },
+    { "source": "/vasi-ui.html", "destination": "/index.html" },
+    { "source": "/vasi", "destination": "/index.html" },
+    { "source": "/vasi.html", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/app.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/index.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/account",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/account.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/settings.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/auth",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/auth.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    }
+  ],
+  "cleanUrls": true,
+  "functions": {
+    "api/create-ride.js": { "includeFiles": "api/create-ride.js" },
+    "api/ride-status.js": { "includeFiles": "api/ride-status.js" },
+    "api/share-trip.js": { "includeFiles": "api/share-trip.js" },
+    "api/shared-ride.js": { "includeFiles": "api/shared-ride.js" },
+    "api/create-payment-intent.js": {
+      "includeFiles": "api/create-payment-intent.js"
+    },
+    "api/capture-payment.js": { "includeFiles": "api/capture-payment.js" },
+    "api/driver-stripe-onboarding.js": {
+      "includeFiles": "api/driver-stripe-onboarding.js"
+    },
+    "api/admin-bookings.js": { "includeFiles": "api/admin-bookings.js" },
+    "api/admin-documents.js": { "includeFiles": "api/admin-documents.js" },
+    "api/admin-drivers.js": { "includeFiles": "api/admin-drivers.js" },
+    "api/admin-live-gps.js": { "includeFiles": "api/admin-live-gps.js" },
+    "api/admin-stats.js": { "includeFiles": "api/admin-stats.js" }
+  }
+}
