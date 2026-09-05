@@ -19,6 +19,32 @@ const stripeClient = () => {
   return new Stripe(key, { apiVersion: "2025-07-30.basil" });
 };
 
+async function configureWeeklyMondayPayout(accountId: string) {
+  const key = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!key) throw new Error("Stripe payout service is not configured");
+  const params = new URLSearchParams();
+  params.set("payments[payouts][schedule][interval]", "weekly");
+  params.append(
+    "payments[payouts][schedule][weekly_payout_days][]",
+    "monday",
+  );
+  const response = await fetch("https://api.stripe.com/v1/balance_settings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Stripe-Account": accountId,
+    },
+    body: params.toString(),
+  });
+  const data = await response.json();
+  if (!response.ok)
+    throw new Error(
+      data?.error?.message || "Weekly payout schedule could not be configured",
+    );
+  return data;
+}
+
 async function releaseEatsCourierPayout(
   serviceClient: ReturnType<typeof createClient>,
   courier: Record<string, unknown>,
@@ -318,6 +344,8 @@ Deno.serve(async (req: Request) => {
           return json({ error: "Payout account was created but could not be linked" }, 500);
       }
 
+      await configureWeeklyMondayPayout(accountId);
+
       const publicUrl = Deno.env.get("VASI_PUBLIC_URL") || "https://vasi-new.vercel.app";
       const link = await stripe.accountLinks.create({
         account: accountId,
@@ -325,7 +353,11 @@ Deno.serve(async (req: Request) => {
         return_url: `${publicUrl}/delivery-driver.html?stripe=complete`,
         type: "account_onboarding",
       });
-      return json({ connected: true, url: link.url });
+      return json({
+        connected: true,
+        url: link.url,
+        payout_schedule: { interval: "weekly", day: "monday" },
+      });
     } catch (error) {
       return json(
         { error: error instanceof Error ? error.message : "Payout setup failed" },

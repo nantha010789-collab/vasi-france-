@@ -168,7 +168,7 @@
         <b>Payments &amp; RIB</b>
         <p id="payoutStatus" class="status">Checking payout account…</p>
         <button id="payoutBtn" class="btn" onclick="openPayoutSetup()" hidden>
-          Connect my RIB
+          Connect bank account (RIB)
         </button>
         <p id="earnings" class="status"></p>
       </section>
@@ -277,13 +277,15 @@
           return;
         }
         if (data.payouts_enabled) {
-          $("payoutStatus").textContent = "✓ RIB verified · earnings are released after the delivery PIN.";
+          $("payoutStatus").textContent = "✓ RIB verified · delivery earnings are paid automatically every Monday.";
           button.hidden = true;
         } else {
           $("payoutStatus").textContent = data.details_submitted
             ? "Stripe is checking your payout information."
-            : "Connect and verify your RIB before your first delivery.";
-          button.textContent = data.connected ? "Continue RIB verification" : "Connect my RIB";
+            : "Connect and verify your bank account (RIB) before your first delivery.";
+          button.textContent = data.connected
+            ? "Continue RIB verification"
+            : "Connect bank account (RIB)";
           button.hidden = false;
         }
       }
