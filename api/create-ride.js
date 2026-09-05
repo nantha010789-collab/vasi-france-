@@ -20,6 +20,14 @@ const OFFER_PRICING = {
   "VASI Van": { base: 3.5, km: 1.05, min: 0.2, minFare: 13.5 },
 };
 const PAYMENT_METHODS = new Set(["cash", "card", "apple_pay"]);
+const DEFAULT_RIDE_COMMISSION_PERCENT = 15;
+
+function rideCommissionPercent(value) {
+  const percent = Number(value);
+  return Number.isFinite(percent) && percent >= 0 && percent <= 50
+    ? percent
+    : DEFAULT_RIDE_COMMISSION_PERCENT;
+}
 
 async function activePricing() {
   try {
@@ -29,6 +37,9 @@ async function activePricing() {
     );
     const row = (await r.json())?.[0];
     if (!r.ok || !row) throw Error();
+    const commissionPercent = rideCommissionPercent(
+      row.ride_commission_percent,
+    );
     const now = Date.now(),
       starts = row.starts_at ? Date.parse(row.starts_at) : null,
       ends = row.ends_at ? Date.parse(row.ends_at) : null;
@@ -42,6 +53,7 @@ async function activePricing() {
         mode: "regular",
         offer: null,
         endsAt: null,
+        commissionPercent,
       };
     const rates = {};
     for (const [service, key] of [
@@ -68,6 +80,7 @@ async function activePricing() {
           : Number(row.minimum_regular_fare),
       offer: row.offer_name,
       endsAt: row.ends_at,
+      commissionPercent,
     };
   } catch {
     return {
@@ -75,6 +88,7 @@ async function activePricing() {
       mode: "fixed",
       offer: "VASI offer price",
       endsAt: null,
+      commissionPercent: DEFAULT_RIDE_COMMISSION_PERCENT,
     };
   }
 }
@@ -226,9 +240,11 @@ export default async function handler(req, res) {
     const authoritativeFare = Number(
       (preOfferFare - discountAmount).toFixed(2),
     );
-    const driverAmount = Number((preOfferFare * 0.85).toFixed(2));
     const vasiCommission = Number(
-      Math.max(0, authoritativeFare - driverAmount).toFixed(2),
+      ((authoritativeFare * pricing.commissionPercent) / 100).toFixed(2),
+    );
+    const driverAmount = Number(
+      Math.max(0, authoritativeFare - vasiCommission).toFixed(2),
     );
     const headers = {
       apikey: anonKey,
@@ -320,6 +336,7 @@ export default async function handler(req, res) {
         customer_discount: Number(discountAmount.toFixed(2)),
         driver_amount: driverAmount,
         vasi_commission: vasiCommission,
+        commission_percent: pricing.commissionPercent,
         smart_offer: smartOffer,
         currency: "EUR",
         promotion: pricing.offer,
