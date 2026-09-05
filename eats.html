@@ -28,34 +28,38 @@
     <div class="cart-total"><span id="cartRestaurant">Your basket</span><b><span id="count">0</span> items · <span id="basketTotal">€0.00</span></b></div>
     <button class="checkout" onclick="checkout()">View basket →</button>
   </aside>
+  <script src="./vasi-languages.js"></script>
   <script>
     const el=id=>document.getElementById(id);
+    const t=value=>window.VasiLanguage?.translate?.(value)||value;
     let catalog=[],activeCuisine='All',basket=JSON.parse(localStorage.getItem('vasi_eats_basket')||'{"restaurant_id":null,"items":{}}');
     const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const count=()=>Object.values(basket.items||{}).reduce((a,b)=>a+Number(b||0),0);
     const basketRestaurant=()=>catalog.find(r=>r.id===basket.restaurant_id);
     function basketValue(){const restaurant=basketRestaurant();return (restaurant?.items||[]).reduce((sum,item)=>sum+Number(item.price||0)*Number(basket.items[item.id]||0),0)}
-    function save(){localStorage.setItem('vasi_eats_basket',JSON.stringify(basket));const quantity=count(),restaurant=basketRestaurant();el('count').textContent=quantity;el('basketTotal').textContent='€'+basketValue().toFixed(2);el('cartRestaurant').textContent=restaurant?.name||'Your basket';el('cartbar').hidden=!quantity}
-    function add(restaurantId,itemId){if(basket.restaurant_id&&basket.restaurant_id!==restaurantId){basket={restaurant_id:restaurantId,items:{}};el('status').textContent='New basket started. You can order from one restaurant at a time.'}basket.restaurant_id=restaurantId;basket.items[itemId]=(basket.items[itemId]||0)+1;save();render()}
+    function save(){localStorage.setItem('vasi_eats_basket',JSON.stringify(basket));const quantity=count(),restaurant=basketRestaurant();el('count').textContent=quantity;el('basketTotal').textContent='€'+basketValue().toFixed(2);el('cartRestaurant').textContent=restaurant?.name||t('Your basket');el('cartbar').hidden=!quantity}
+    function add(restaurantId,itemId){if(basket.restaurant_id&&basket.restaurant_id!==restaurantId){basket={restaurant_id:restaurantId,items:{}};el('status').textContent=t('New basket started. You can order from one restaurant at a time.')}basket.restaurant_id=restaurantId;basket.items[itemId]=(basket.items[itemId]||0)+1;save();render()}
     function remove(itemId){if(!basket.items[itemId])return;basket.items[itemId]--;if(basket.items[itemId]<=0)delete basket.items[itemId];if(!count())basket.restaurant_id=null;save();render()}
     function setCuisine(value){activeCuisine=value;renderChips();render()}
-    function renderChips(){const cuisines=['All',...new Set(catalog.map(r=>r.cuisine).filter(Boolean))];el('chips').innerHTML=cuisines.map(c=>`<button class="chip ${c===activeCuisine?'active':''}" type="button" data-cuisine="${esc(c)}">${c==='All'?'All food':esc(c)}</button>`).join('')}
+    function renderChips(){const cuisines=['All',...new Set(catalog.map(r=>r.cuisine).filter(Boolean))];el('chips').innerHTML=cuisines.map(c=>`<button class="chip ${c===activeCuisine?'active':''}" type="button" data-cuisine="${esc(c)}">${c==='All'?esc(t('All food')):esc(c)}</button>`).join('')}
     function searchable(restaurant){return [restaurant.name,restaurant.cuisine,...restaurant.items.flatMap(i=>[i.name,i.description,i.category,...(i.allergens||[])])].filter(Boolean).join(' ').toLowerCase()}
     function render(){
       const query=el('search').value.trim().toLowerCase();
       const rows=catalog.filter(r=>(activeCuisine==='All'||r.cuisine===activeCuisine)&&searchable(r).includes(query));
       el('restaurants').innerHTML=rows.map(r=>`<article class="restaurant">
-        <div class="restaurant-head"><div><h2>${r.icon||'🍽️'} ${esc(r.name)}</h2><div class="muted">${esc(r.cuisine||'Local restaurant')}</div></div><span class="open">● OPEN</span></div>
-        <div class="facts"><span class="fact">🕒 ${esc(r.eta)}</span><span class="fact">Delivery €${Number(r.delivery_fee||0).toFixed(2)}</span><span class="fact">Min. €${Number(r.minimum_order||0).toFixed(2)}</span></div>
-        <div class="menu">${r.items.map(i=>{const qty=basket.restaurant_id===r.id?Number(basket.items[i.id]||0):0;return `<div class="item"><div class="food">${i.photo_url?`<img class="food-photo" src="${esc(i.photo_url)}" alt="${esc(i.name)}" loading="lazy">`:'<div class="food-placeholder" aria-hidden="true">🍽️</div>'}<div class="food-copy"><b>${esc(i.name)}</b><div class="muted">${esc(i.description||i.category||'Freshly prepared')}</div>${(i.allergens||[]).length?`<div class="allergen">Allergens: ${esc(i.allergens.join(', '))}</div>`:''}<div><b>€${Number(i.price).toFixed(2)}</b></div></div></div><div class="quantity">${qty?`<button class="remove" aria-label="Remove one ${esc(i.name)}" onclick="remove('${i.id}')">−</button><b>${qty}</b>`:''}<button aria-label="Add ${esc(i.name)}" onclick="add('${r.id}','${i.id}')">+</button></div></div>`}).join('')}</div>
-      </article>`).join('')||`<div class="empty"><b>No matching food found.</b><p class="muted">Try another dish, cuisine or allergen search.</p></div>`;
+        <div class="restaurant-head"><div><h2>${r.icon||'🍽️'} ${esc(r.name)}</h2><div class="muted">${esc(r.cuisine||t('Local restaurant'))}</div></div><span class="open">● ${esc(t('OPEN'))}</span></div>
+        <div class="facts"><span class="fact">🕒 ${esc(r.eta)}</span><span class="fact">${esc(t('Delivery'))} €${Number(r.delivery_fee||0).toFixed(2)}</span><span class="fact">${esc(t('Min.'))} €${Number(r.minimum_order||0).toFixed(2)}</span></div>
+        <div class="menu">${r.items.map(i=>{const qty=basket.restaurant_id===r.id?Number(basket.items[i.id]||0):0;return `<div class="item"><div class="food">${i.photo_url?`<img class="food-photo" src="${esc(i.photo_url)}" alt="${esc(i.name)}" loading="lazy">`:'<div class="food-placeholder" aria-hidden="true">🍽️</div>'}<div class="food-copy"><b>${esc(i.name)}</b><div class="muted">${esc(i.description||i.category||t('Freshly prepared'))}</div>${(i.allergens||[]).length?`<div class="allergen">${esc(t('Allergens'))}: ${esc(i.allergens.join(', '))}</div>`:''}<div><b>€${Number(i.price).toFixed(2)}</b></div></div></div><div class="quantity">${qty?`<button class="remove" aria-label="${esc(t('Remove one'))} ${esc(i.name)}" onclick="remove('${i.id}')">−</button><b>${qty}</b>`:''}<button aria-label="${esc(t('Add'))} ${esc(i.name)}" onclick="add('${r.id}','${i.id}')">+</button></div></div>`}).join('')}</div>
+      </article>`).join('')||(catalog.length
+        ? `<div class="empty"><b>${esc(t('No matching food found.'))}</b><p class="muted">${esc(t('Try another dish, cuisine or allergen search.'))}</p></div>`
+        : `<div class="empty"><b>${esc(t('No restaurants are available yet.'))}</b><p class="muted">${esc(t('Approved partners will appear here as soon as their menus are ready.'))}</p></div>`);
       save();
     }
-    function checkout(){if(!count()){el('status').textContent='Add an item before checkout.';return}location.href='eats-checkout.html'}
+    function checkout(){if(!count()){el('status').textContent=t('Add an item before checkout.');return}location.href='eats-checkout.html'}
     el('chips').addEventListener('click',event=>{const button=event.target.closest('[data-cuisine]');if(button)setCuisine(button.dataset.cuisine)});
-    fetch('/api/eats-order').then(async response=>{const result=await response.json();if(!response.ok)throw Error(result.error);catalog=result.restaurants||[];renderChips();render()}).catch(error=>el('restaurants').innerHTML='<p class="muted">'+esc(error.message||'Menu unavailable')+'</p>');
+    fetch('/api/eats-order').then(async response=>{const result=await response.json();if(!response.ok)throw Error(result.error);catalog=result.restaurants||[];renderChips();render()}).catch(error=>el('restaurants').innerHTML='<p class="muted">'+esc(error.message||t('Menu unavailable'))+'</p>');
+    window.addEventListener('vasi:languagechange',()=>{renderChips();render();save()});
     save();
   </script>
-  <script src="./vasi-languages.js"></script>
 </body>
 </html>

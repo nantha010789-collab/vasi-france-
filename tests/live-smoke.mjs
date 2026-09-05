@@ -56,6 +56,8 @@ const checks = [
       assert.equal(response.headers.get("x-content-type-options"), "nosniff");
       assert.equal(response.headers.get("x-frame-options"), "DENY");
       assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+      assert.match(response.headers.get("content-security-policy") || "", /frame-ancestors 'none'/);
+      assert.match(response.headers.get("permissions-policy") || "", /geolocation=\(self\)/);
       const html = await response.text();
       for (const marker of ["Move.", "vasi-notifications.js", "vasi-languages.js", "apple-touch-icon"]) {
         assert.ok(html.includes(marker), `${production}/ must contain ${marker}`);

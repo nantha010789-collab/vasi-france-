@@ -185,7 +185,7 @@ test("Eats surfaces expose competitor-grade ordering, tracking and operations es
   ]);
 
   assert.match(eats, /Cuisine filters/);
-  assert.match(eats, /Allergens:/);
+  assert.match(eats, /t\('Allergens'\)/);
   assert.match(eats, /View basket/);
   assert.match(eats, /activity\.html\?filter=eats/);
   assert.match(activity, /Order progress/);
@@ -196,6 +196,27 @@ test("Eats surfaces expose competitor-grade ordering, tracking and operations es
   assert.match(courier, /google\.com\/maps\/dir/);
   assert.match(courier, /Navigate to customer/);
   assert.match(courier, /Navigate to pickup/);
+});
+
+test("public surfaces distinguish an empty catalog and ship consistent localization and browser protections", async () => {
+  const [eats, delivery, auth, languages, vercel] = await Promise.all([
+    readFile("eats.html", "utf8"),
+    readFile("delivery.html", "utf8"),
+    readFile("auth.html", "utf8"),
+    readFile("vasi-languages.js", "utf8"),
+    readFile("vercel.json", "utf8"),
+  ]);
+
+  assert.match(eats, /catalog\.length/);
+  assert.match(eats, /No restaurants are available yet\./);
+  assert.match(eats, /Approved partners will appear here/);
+  assert.match(delivery, /Get a new quote for the parcel\./);
+  assert.match(auth, /t\(customer \? "Customer login"/);
+  assert.doesNotMatch(auth, /\$\("title"\)\.textContent = customer \? "Connexion client"/);
+  assert.match(languages, /Aucun restaurant n’est encore disponible\./);
+  assert.match(languages, /இன்னும் எந்த உணவகமும் கிடைக்கவில்லை\./);
+  assert.match(vercel, /Content-Security-Policy/);
+  assert.match(vercel, /Permissions-Policy/);
 });
 
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {
@@ -454,7 +475,9 @@ test("customer login offers phone OTP and email magic-link choices", async () =>
   assert.match(auth, /id="methodSwitch"/);
   assert.match(auth, /id="phoneMethodBtn"/);
   assert.match(auth, /id="emailMethodBtn"/);
-  assert.match(auth, /Continuer avec mon e-mail/);
+  assert.match(auth, /Continue with email/);
+  const languages = await readFile("vasi-languages.js", "utf8");
+  assert.match(languages, /"Continue with email": "Continuer avec mon e-mail"/);
   assert.match(auth, /authMethod === "phone"/);
   assert.match(auth, /role !== "customer"/);
   assert.match(auth, /emailRedirectTo:[\s\S]*&method=email/);

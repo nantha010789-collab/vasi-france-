@@ -232,6 +232,7 @@
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./vasi-languages.js"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
@@ -245,6 +246,7 @@
         },
       });
       const RESEND_WAIT_SECONDS = 90;
+      const t = (value) => window.VasiLanguage?.translate?.(value) || value;
       let phoneAwaitingCode = "";
       let resendTimer = null;
       let resendSeconds = 0;
@@ -339,18 +341,18 @@
       function render() {
         const customer = role === "customer";
         const phone = usesPhone();
-        $("title").textContent = customer ? "Connexion client" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Connexion restaurateur";
-        $("desc").textContent = customer
+        $("title").textContent = t(customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login");
+        $("desc").textContent = t(customer
           ? phone
-            ? "Entrez votre numéro. Nous vous enverrons un code SMS à 6 chiffres."
-            : "Entrez votre e-mail. Nous vous enverrons un lien de connexion sécurisé."
+            ? "Enter your mobile number. We will send a 6-digit SMS code."
+            : "Enter your email. We will send you a secure sign-in link."
           : role === "ride"
             ? "VTC passenger driver account."
             : role === "courier"
               ? "Eats + Delivery courier account."
               : phone
-                ? "Entrez votre numéro. Nous vous enverrons un code SMS à 6 chiffres."
-                : "Manage your restaurant, menu and VASI Eats orders.";
+                ? "Enter your mobile number. We will send a 6-digit SMS code."
+                : "Manage your restaurant, menu and VASI Eats orders.");
         $("methodSwitch").classList.toggle("hidden", !customer);
         $("phoneMethodBtn").classList.toggle("active", customer && phone);
         $("emailMethodBtn").classList.toggle("active", customer && !phone);
@@ -360,11 +362,11 @@
         $("identity").inputMode = phone ? "tel" : "email";
         $("identity").autocomplete = phone ? "tel" : "email";
         $("identity").placeholder = phone ? "06 12 34 56 78" : "you@example.com";
-        $("continueBtn").textContent = phone
+        $("continueBtn").textContent = t(phone
           ? phoneAwaitingCode
-            ? "Vérifier et continuer"
-            : "Envoyer le code SMS"
-          : "Continuer avec mon e-mail";
+            ? "Verify & continue"
+            : "Send SMS code"
+          : "Continue with email");
         $("codeStep").classList.toggle("hidden", !phone || !phoneAwaitingCode);
         ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
           $(id).classList.remove("active"),
@@ -374,7 +376,7 @@
         ).classList.add("active");
         $("register").classList.toggle("hidden", customer);
         $("register").href = role === "restaurant" ? "restaurant-register.html" : "partner-register-v2.html";
-        $("register").textContent = role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →";
+        $("register").textContent = t(role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →");
       }
       async function submitAuth() {
         if (usesPhone()) return phoneAwaitingCode ? verifyPhoneCode() : sendPhoneCode();
@@ -628,6 +630,7 @@
         }
       });
       restoreExistingSession();
+      window.addEventListener("vasi:languagechange", render);
     </script>
-  <script src="./vasi-languages.js"></script></body>
+  </body>
 </html>
