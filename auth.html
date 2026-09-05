@@ -144,18 +144,18 @@
       <header class="top">
         <div class="logo">VASI</div>
         <a class="back" href="index.html" aria-label="Return to VASI home"
-          >← Back</a
+          >← <span>Back</span></a
         >
       </header>
       <section class="card">
         <div class="switch">
           <button id="customerBtn" onclick="setRole('customer')">
             Customer</button
-          ><button id="rideBtn" onclick="setRole('ride')">🚕 Ride</button
+          ><button id="rideBtn" onclick="setRole('ride')">🚕 <span>Ride</span></button
           ><button id="courierBtn" onclick="setRole('courier')">
-            🛵 Courier
+            🛵 <span>Courier</span>
           </button><button id="restaurantBtn" onclick="setRole('restaurant')">
-            🍽️ Restaurant
+            🍽️ <span>Restaurant</span>
           </button>
         </div>
         <h1 id="title">Customer login</h1>
@@ -166,7 +166,7 @@
             type="button"
             onclick="setAuthMethod('phone')"
           >
-            📱 Téléphone
+            📱 <span>Phone</span>
           </button>
           <button
             id="emailMethodBtn"

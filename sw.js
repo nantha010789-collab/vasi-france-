@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v24";
+const CACHE = "vasi-app-v25";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
@@ -35,6 +35,7 @@ self.addEventListener("activate", (e) =>
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
   if (e.request.mode === "navigate") {
     e.respondWith(
