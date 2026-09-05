@@ -257,7 +257,8 @@
       "New partner? Register with VASI →": "Nouveau partenaire ? Inscrivez-vous sur VASI →",
       "Ride = passenger trips. Courier = delivery. Restaurant = food partner.": "Trajet = transport de passagers. Livreur = livraison. Restaurant = partenaire de restauration.",
       "Login help:": "Aide à la connexion :",
-      "Resend code in 90s": "Renvoyer le code dans 90 s"
+      "Resend code in 90s": "Renvoyer le code dans 90 s",
+      "Phone": "Téléphone"
     },
     ta: {
       "Approved local restaurants, live menus and protected delivery.": "அங்கீகரிக்கப்பட்ட உள்ளூர் உணவகங்கள், நேரடி மெனுக்கள் மற்றும் பாதுகாப்பான டெலிவரி.",
@@ -303,7 +304,8 @@
       "New restaurant? Join VASI →": "புதிய உணவகமா? VASI-ல் இணையுங்கள் →",
       "New partner? Register with VASI →": "புதிய பார்ட்னரா? VASI-ல் பதிவு செய்யுங்கள் →",
       "Ride = passenger trips. Courier = delivery. Restaurant = food partner.": "Ride = பயணிகள் பயணம். Courier = டெலிவரி. Restaurant = உணவு பார்ட்னர்.",
-      "Login help:": "உள்நுழைவு உதவி:"
+      "Login help:": "உள்நுழைவு உதவி:",
+      "Phone": "தொலைபேசி"
     }
   };
   Object.entries(surfaceTranslations).forEach(([code, values]) => Object.assign(translations[code], values));
