@@ -217,6 +217,8 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(languages, /இன்னும் எந்த உணவகமும் கிடைக்கவில்லை\./);
   assert.match(vercel, /Content-Security-Policy/);
   assert.match(vercel, /Permissions-Policy/);
+  const serviceWorker = await readFile("sw.js", "utf8");
+  assert.match(serviceWorker, /vasi-app-v24/);
 });
 
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {
