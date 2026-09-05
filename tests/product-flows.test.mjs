@@ -176,6 +176,28 @@ test("restaurant commission is a permanent 10% for every delivery mode", async (
   assert.match(enforcement, /new\.restaurant_commission := round\(new\.subtotal \* 0\.10, 2\)/);
 });
 
+test("Eats surfaces expose competitor-grade ordering, tracking and operations essentials", async () => {
+  const [eats, activity, restaurant, courier] = await Promise.all([
+    readFile("eats.html", "utf8"),
+    readFile("activity.html", "utf8"),
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile("delivery-driver.html", "utf8"),
+  ]);
+
+  assert.match(eats, /Cuisine filters/);
+  assert.match(eats, /Allergens:/);
+  assert.match(eats, /View basket/);
+  assert.match(eats, /activity\.html\?filter=eats/);
+  assert.match(activity, /Order progress/);
+  assert.match(activity, /Courier is on the way/);
+  assert.match(restaurant, /Restaurant performance/);
+  assert.match(restaurant, /Active orders/);
+  assert.match(restaurant, /nextOrderAction/);
+  assert.match(courier, /google\.com\/maps\/dir/);
+  assert.match(courier, /Navigate to customer/);
+  assert.match(courier, /Navigate to pickup/);
+});
+
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {
   global.fetch = async () => response({ id: "user-1" });
   const { default: callConfig } = await import(`../api/call-config.js?test=${Date.now()}`);

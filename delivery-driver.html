@@ -66,6 +66,19 @@
         background: #fff;
         color: #050505;
       }
+      .navigate {
+        display: block;
+        width: 100%;
+        margin-top: 9px;
+        padding: 12px;
+        border: 1px solid #3d3d3d;
+        border-radius: 13px;
+        background: #202020;
+        color: #fff;
+        font-weight: 850;
+        text-align: center;
+        text-decoration: none;
+      }
       .home {
         flex: none;
         text-decoration: none;
@@ -298,6 +311,10 @@
         $("deliveryBtn").classList.toggle("active", next === "delivery");
         loadJobs();
       }
+      function mapUrl(destination) {
+        return "https://www.google.com/maps/dir/?api=1&destination=" +
+          encodeURIComponent(String(destination || ""));
+      }
       async function loadJobs() {
         const current = await service({ action: "get_current_jobs" });
         if (!current.error && (current.eat || current.delivery)) {
@@ -337,8 +354,8 @@
           isEats = type === "eats",
           pickedUp = job.status === "picked_up";
         $("jobs").innerHTML = isEats
-          ? `<article class="job"><span class="badge">ACTIVE EATS</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
-          : `<article class="job"><span class="badge">ACTIVE DELIVERY</span><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="delivery">${pickedUp ? "Complete delivery" : "Parcel picked up"}</button></article>`;
+          ? `<article class="job"><span class="badge">ACTIVE EATS · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<a class="navigate" href="${esc(mapUrl(pickedUp?job.delivery_address:job.restaurant_name))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to customer':'Navigate to restaurant'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
+          : `<article class="job"><span class="badge">ACTIVE DELIVERY · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><a class="navigate" href="${esc(mapUrl(pickedUp?job.dropoff_address:job.pickup_address))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to drop-off':'Navigate to pickup'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="delivery">${pickedUp ? "Complete delivery" : "Parcel picked up"}</button></article>`;
       }
       async function acceptJob(id, type) {
         const data = await service({

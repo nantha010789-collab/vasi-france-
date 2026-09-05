@@ -20,6 +20,9 @@
     .btn.primary{background:#fff;color:#050505;border-color:#fff}
     .on{background:#173d22;color:var(--green);border-color:#2e7b44}
     .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:14px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}
+    .stat{background:#171717;border:1px solid var(--line);border-radius:16px;padding:13px}
+    .stat b{display:block;font-size:clamp(18px,4vw,24px);margin-top:4px}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:clamp(15px,3vw,20px);margin-top:14px;overflow:hidden}
     h1,h2{margin:0 0 10px;letter-spacing:-.025em} h1{font-size:clamp(25px,6vw,38px)} h2{font-size:22px}
     .muted{color:var(--muted);font-size:13px;line-height:1.45}
@@ -41,7 +44,7 @@
     .optional{display:block;margin:7px 0 14px;padding:11px 12px;background:#171717;border:1px solid #292929;border-radius:13px}
     .status{min-height:22px;color:#bbb;text-align:center}
     .busy{opacity:.65;pointer-events:none}
-    @media(max-width:720px){.grid,.form{grid-template-columns:1fr}.form .wide{grid-column:auto}.menu-main{grid-template-columns:76px minmax(0,1fr)}.food-photo,.photo-placeholder{width:76px;height:68px}.item-actions{grid-column:1/-1;justify-content:stretch}.item-actions .btn{flex:1}.photo-note{margin-left:0}.top{align-items:flex-start}}
+    @media(max-width:720px){.grid,.form{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.form .wide{grid-column:auto}.menu-main{grid-template-columns:76px minmax(0,1fr)}.food-photo,.photo-placeholder{width:76px;height:68px}.item-actions{grid-column:1/-1;justify-content:stretch}.item-actions .btn{flex:1}.photo-note{margin-left:0}.top{align-items:flex-start}}
     @media(max-width:390px){.wrap{padding-left:12px;padding-right:12px}.top-actions .btn{padding:9px 10px}.card{border-radius:18px}.menu-main{grid-template-columns:64px minmax(0,1fr)}.food-photo,.photo-placeholder{width:64px;height:60px}}
   </style>
   <link rel="stylesheet" href="./vasi-mobile-fit.css">
@@ -66,6 +69,14 @@
     let token='',data={};
     const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const photoLabel=status=>({none:'No photo',checking:'Checking',approved:'Approved',needs_changes:'Needs changes',admin_review:'Admin review'}[status]||'No photo');
+    const money=value=>'€'+Number(value||0).toFixed(2);
+    const activeStatuses=new Set(['pending','accepted','preparing','ready_for_pickup','picked_up']);
+    function nextOrderAction(order){
+      if(order.status==='pending')return ['accepted','Accept order'];
+      if(order.status==='accepted')return ['preparing','Start preparing'];
+      if(order.status==='preparing')return ['ready_for_pickup','Ready for pickup'];
+      return null;
+    }
 
     async function api(body){
       const response=await fetch('/api/restaurant-partner',{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
@@ -83,7 +94,11 @@
     }
 
     function render(){
-      const restaurant=data.restaurant,rate=(Number(restaurant.commission_rate)*100).toFixed(0);
+      const restaurant=data.restaurant,rate=(Number(restaurant.commission_rate)*100).toFixed(0),orders=data.orders||[];
+      const activeOrders=orders.filter(order=>activeStatuses.has(order.status)).length;
+      const completedOrders=orders.filter(order=>order.status==='delivered');
+      const sales=completedOrders.reduce((sum,order)=>sum+Number(order.total||0),0);
+      const payout=completedOrders.reduce((sum,order)=>sum+Number(order.restaurant_net??Number(order.subtotal||0)*.9),0);
       const menu=(data.menu||[]).map(item=>{
         const status=item.photo_status||'none';
         const preview=item.photo_candidate_url||item.photo_url;
@@ -113,6 +128,12 @@
         <p class="muted">${esc(restaurant.cuisine)} · ${esc(restaurant.delivery_mode==='own'?'Own delivery':'VASI courier')} · ${rate}% restaurant commission</p>
         ${restaurant.status==='pending'?'<p>Your application is being reviewed. You can prepare your menu now.</p>':''}
         ${restaurant.status==='rejected'?`<p>Changes needed: ${esc(restaurant.rejection_reason)}</p>`:''}
+        <div class="stats" aria-label="Restaurant performance">
+          <div class="stat"><span class="muted">Active orders</span><b>${activeOrders}</b></div>
+          <div class="stat"><span class="muted">Delivered</span><b>${completedOrders.length}</b></div>
+          <div class="stat"><span class="muted">Order sales</span><b>${money(sales)}</b></div>
+          <div class="stat"><span class="muted">Your payout</span><b>${money(payout)}</b></div>
+        </div>
       </section>
       <div class="grid">
         <section class="card">
@@ -130,15 +151,13 @@
         </section>
         <section class="card">
           <h2>Orders</h2>
-          <div>${(data.orders||[]).map(order=>`<div class="order">
+          <p class="muted">Live order queue. Each button shows the next required step.</p>
+          <div>${orders.map(order=>{const action=nextOrderAction(order);return `<div class="order">
             <div class="row"><b>#${order.id.slice(0,8).toUpperCase()}</b><span class="badge">${esc(order.status)}</span></div>
-            <p class="muted">Order €${Number(order.total).toFixed(2)} · Restaurant payout €${Number(order.restaurant_net ?? order.subtotal * .9).toFixed(2)} · ${new Date(order.created_at).toLocaleString()}</p>
-            <div class="row">
-              <button class="btn" type="button" onclick="orderStatus('${order.id}','accepted')">Accept</button>
-              <button class="btn" type="button" onclick="orderStatus('${order.id}','preparing')">Preparing</button>
-              <button class="btn" type="button" onclick="orderStatus('${order.id}','ready_for_pickup')">Ready</button>
-            </div>
-          </div>`).join('')||'<p class="muted">No orders yet.</p>'}</div>
+            <p class="muted">Order ${money(order.total)} · Restaurant payout ${money(order.restaurant_net ?? order.subtotal * .9)} · ${new Date(order.created_at).toLocaleString()}</p>
+            <p class="muted">📍 ${esc(order.delivery_address||'Delivery address unavailable')}</p>
+            ${action?`<button class="btn primary" type="button" onclick="orderStatus('${order.id}','${action[0]}')">${action[1]}</button>`:'<span class="badge">No action needed</span>'}
+          </div>`}).join('')||'<p class="muted">No orders yet.</p>'}</div>
         </section>
       </div>`;
     }
