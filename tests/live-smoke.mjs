@@ -69,6 +69,7 @@ const checks = [
   expectPage(production, "/settings.html", ["testNotification", "VASI test successful"]),
   expectPage(production, "/vasi-languages.js", ["fr:", "ta:", "de:", "ar:", "hi:"]),
   expectPage(production, "/manifest.webmanifest", ["vasi-icon-192.png", "vasi-icon-512.png"]),
+  expectPage(production, "/legal.html", ["Legal & Privacy", "Politique de confidentialité", "contact@vasigo.eu"]),
   expectPage(production, "/vasi-clean-start.html", ["location.replace(\"index.html\")"]),
   expectPage(pages, "/vasi-france-/", ["Move.", "vasi-notifications.js"]),
   expectPage(pages, "/vasi-france-/ride-chat.html", ["callButton", "vasi-call.js"]),
