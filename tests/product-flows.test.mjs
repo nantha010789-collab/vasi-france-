@@ -704,6 +704,34 @@ test("customer profile photo remains optional and owner-scoped", async () => {
   assert.match(migration, /for delete\s+to authenticated/);
 });
 
+test("account surfaces reflow safely on narrow phones", async () => {
+  const [account, settings] = await Promise.all([
+    readFile("account.html", "utf8"),
+    readFile("settings.html", "utf8"),
+  ]);
+
+  for (const page of [account, settings]) {
+    assert.match(page, /@media \(max-width: 360px\)/);
+    assert.match(page, /overflow-x:\s*clip/);
+    assert.match(page, /-webkit-text-size-adjust:\s*100%/);
+    assert.match(page, /\.app\s*\{[\s\S]*?max-width:\s*100%/);
+  }
+
+  assert.match(
+    account,
+    /\.section-head\.address-heading\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  );
+  assert.match(
+    account,
+    /\.account-actions\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  );
+  assert.match(
+    settings,
+    /\.required\s*\{[\s\S]*?overflow-wrap:\s*anywhere/,
+  );
+  assert.match(settings, /select\s*\{\s*max-width:\s*112px/);
+});
+
 test("restaurant join and dashboard use restaurant authentication", async () => {
   const [register, dashboard, auth] = await Promise.all([
     readFile("restaurant-register.html", "utf8"),
