@@ -985,3 +985,21 @@ test("PWA install metadata and baseline security headers stay production-ready",
   assert.equal(header("X-Frame-Options"), "DENY");
   assert.equal(header("Referrer-Policy"), "strict-origin-when-cross-origin");
 });
+
+test("public account surfaces expose bilingual legal and privacy information", async () => {
+  const [legal, index, account, settings, migration] = await Promise.all([
+    readFile("legal.html", "utf8"),
+    readFile("index.html", "utf8"),
+    readFile("account.html", "utf8"),
+    readFile("settings.html", "utf8"),
+    readFile("supabase/migrations/20260905220109_harden_postgis_public_access.sql", "utf8"),
+  ]);
+
+  assert.match(legal, /Legal & Privacy/);
+  assert.match(legal, /Politique de confidentialité/);
+  assert.match(legal, /contact@vasigo\.eu/);
+  assert.match(legal, /defaults to 15%/);
+  for (const surface of [index, account, settings]) assert.match(surface, /legal\.html/);
+  assert.match(migration, /alter table public\.spatial_ref_sys enable row level security/i);
+  assert.match(migration, /revoke execute on function public\.st_estimatedextent/i);
+});
