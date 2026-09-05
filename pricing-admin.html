@@ -152,6 +152,26 @@
           any time.
         </p>
       </section>
+      <section class="card">
+        <h2>VASI ride commission</h2>
+        <p class="muted">
+          Applied to new rides. The remaining percentage is the driver's gross
+          earning before any external payment costs.
+        </p>
+        <div class="dates">
+          <div>
+            <label>Commission % (0–50%)</label>
+            <input
+              id="ride_commission_percent"
+              type="number"
+              min="0"
+              max="50"
+              step="0.01"
+              value="15"
+            />
+          </div>
+        </div>
+      </section>
       <section id="percentageCard" class="card" hidden>
         <h2>Percentage offer</h2>
         <p class="muted">
@@ -307,6 +327,7 @@
         val("discount_percent", d.discount_percent ?? 10);
         val("max_discount_eur", d.max_discount_eur);
         val("minimum_regular_fare", d.minimum_regular_fare);
+        val("ride_commission_percent", d.ride_commission_percent ?? 15);
         val("starts_at", local(d.starts_at));
         val("ends_at", local(d.ends_at));
         keys.forEach((k) => {
@@ -326,6 +347,7 @@
           offer_name: val("offer_name"),
           offer_mode: val("offer_mode"),
           discount_percent: Number(val("discount_percent")),
+          ride_commission_percent: Number(val("ride_commission_percent")),
           max_discount_eur:
             val("max_discount_eur") === ""
               ? null

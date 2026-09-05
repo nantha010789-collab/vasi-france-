@@ -12,6 +12,7 @@ const publishableKey =
 const fallback = {
   offer_active: true, offer_name: 'VASI offer price', starts_at: null, ends_at: null,
   offer_mode: 'fixed', discount_percent: 10, max_discount_eur: null,
+  ride_commission_percent: 15,
   minimum_regular_fare: null, go_base: 1.5, go_per_km: 0.68,
   go_per_minute: 0.14, go_minimum: 7.5, comfort_base: 2,
   comfort_per_km: 0.78, comfort_per_minute: 0.16, comfort_minimum: 9,
@@ -42,6 +43,7 @@ function publicShape(row) {
     discount_percent: Number(row.discount_percent || 0),
     max_discount_eur: row.max_discount_eur == null ? null : Number(row.max_discount_eur),
     minimum_regular_fare: row.minimum_regular_fare == null ? null : Number(row.minimum_regular_fare),
+    ride_commission_percent: Number(row.ride_commission_percent ?? 15),
     classes,
   };
 }

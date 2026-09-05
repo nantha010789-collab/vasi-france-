@@ -52,6 +52,7 @@ function pricingShape(row: Record<string, unknown>) {
     discount_percent: Number(row.discount_percent || 0),
     max_discount_eur: row.max_discount_eur == null ? null : Number(row.max_discount_eur),
     minimum_regular_fare: row.minimum_regular_fare == null ? null : Number(row.minimum_regular_fare),
+    ride_commission_percent: Number(row.ride_commission_percent ?? 15),
     classes,
   };
 }
@@ -350,11 +351,13 @@ Deno.serve(async (req) => {
         offer_name: text(body.offer_name, 80),
         offer_mode: body.offer_mode === 'percentage' ? 'percentage' : 'fixed',
         discount_percent: Number(body.discount_percent),
+        ride_commission_percent: Number(body.ride_commission_percent),
         updated_at: new Date().toISOString(),
         updated_by: user.id,
       };
       if (!update.offer_name) return json({ error: 'Offer name is required' }, 400);
       if (!Number.isFinite(update.discount_percent) || Number(update.discount_percent) < 0 || Number(update.discount_percent) > 50) return json({ error: 'Discount must be between 0% and 50%' }, 400);
+      if (!Number.isFinite(update.ride_commission_percent) || Number(update.ride_commission_percent) < 0 || Number(update.ride_commission_percent) > 50) return json({ error: 'Ride commission must be between 0% and 50%' }, 400);
       for (const key of ['max_discount_eur', 'minimum_regular_fare']) {
         const value = body[key] === '' || body[key] == null ? null : Number(body[key]);
         if (value != null && (!Number.isFinite(value) || value < 0 || value > 1000)) return json({ error: `Invalid ${key}` }, 400);
@@ -375,7 +378,7 @@ Deno.serve(async (req) => {
       if (update.starts_at && update.ends_at && Date.parse(String(update.ends_at)) <= Date.parse(String(update.starts_at))) return json({ error: 'End date must be after start date' }, 400);
       const { data, error } = await db.from('vasi_pricing_settings').update(update).eq('id', 'active').select().maybeSingle();
       if (error) throw error;
-      await audit('pricing_update', 'pricing', null, { offer_name: update.offer_name, discount_percent: update.discount_percent });
+      await audit('pricing_update', 'pricing', null, { offer_name: update.offer_name, discount_percent: update.discount_percent, ride_commission_percent: update.ride_commission_percent });
       return json({ ok: true, pricing: pricingShape(data || update) });
     }
 

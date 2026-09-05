@@ -1,9 +1,15 @@
 const supabaseUrl = process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL;
 const anonKey = process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const stripeKey = process.env.STRIPE_SECRET_KEY;
-const PROMO_END = Date.parse('2026-12-01T00:00:00Z');
-const regularCommissionPercent = Number(process.env.VASI_COMMISSION_PERCENT || 20);
-const commissionPercent = () => Date.now() < PROMO_END ? 0 : regularCommissionPercent;
+
+function commissionPercent(ride) {
+  const stored = Number(ride.commission_percent);
+  if (Number.isFinite(stored) && stored >= 0 && stored <= 50) return stored;
+  const fare = Number(ride.estimated_fare || 0);
+  const fee = Number(ride.vasi_commission || 0);
+  if (fare > 0 && fee >= 0) return Math.min(50, (fee / fare) * 100);
+  return 15;
+}
 
 async function sb(path, auth, options = {}) {
   return fetch(`${supabaseUrl}${path}`, { ...options, headers: { apikey: anonKey, Authorization: auth, 'Content-Type': 'application/json', ...(options.headers || {}) } });
@@ -44,7 +50,7 @@ export default async function handler(req, res) {
     if (!stripeAccount) return res.status(409).json({ error: 'Driver Stripe payout account is not onboarded yet' });
     const amount = Math.round(Number(ride.estimated_fare || 0) * 100);
     if (!Number.isFinite(amount) || amount < 50) return res.status(400).json({ error: 'Fare is too low for card payment' });
-    const fee = Math.max(0, Math.min(amount - 1, Math.round(amount * commissionPercent() / 100)));
+    const rideCommissionPercent = commissionPercent(ride);
     const params = new URLSearchParams();
     params.set('amount', String(amount));
     params.set('currency', String(ride.currency || 'eur').toLowerCase());
@@ -54,7 +60,6 @@ export default async function handler(req, res) {
     params.set('metadata[ride_id]', ride.id);
     params.set('metadata[customer_id]', ride.customer_id);
     params.set('metadata[driver_id]', ride.driver_id);
-    if (fee > 0) params.set('application_fee_amount', String(fee));
     params.set('transfer_data[destination]', stripeAccount);
     const stripeResp = await fetch('https://api.stripe.com/v1/payment_intents', { method: 'POST', headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Idempotency-Key': `vasi-ride-auth-${ride.id}` }, body: params });
     const pi = await stripeResp.json();
@@ -65,6 +70,6 @@ export default async function handler(req, res) {
       const pay = await sb('/rest/v1/payments', auth, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ride_id: ride.id, customer_id: ride.customer_id, amount: Number(ride.estimated_fare), currency: ride.currency || 'EUR', provider: 'stripe', provider_payment_id: pi.id, status: 'pending' }) });
       if (!pay.ok) return res.status(500).json({ error: 'Payment intent created but payment record could not be saved' });
     }
-    return res.status(200).json({ payment_intent_id: pi.id, client_secret: pi.client_secret, amount: Number(ride.estimated_fare), currency: ride.currency || 'EUR', commission_percent: commissionPercent(), reused: false });
+    return res.status(200).json({ payment_intent_id: pi.id, client_secret: pi.client_secret, amount: Number(ride.estimated_fare), currency: ride.currency || 'EUR', commission_percent: rideCommissionPercent, reused: false });
   } catch (e) { return res.status(500).json({ error: e?.message || 'Server error' }); }
 }

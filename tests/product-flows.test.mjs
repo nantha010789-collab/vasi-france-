@@ -66,6 +66,19 @@ test("booking creates, prices and dispatches a ride", async () => {
   const payload = JSON.parse(createCall.options.body);
   assert.equal(payload.p_payment_method, "cash");
   assert.equal(payload.p_currency, "EUR");
+  assert.equal(res.body.pricing.commission_percent, 15);
+  assert.equal(
+    Number(
+      (
+        res.body.pricing.driver_amount + res.body.pricing.vasi_commission
+      ).toFixed(2),
+    ),
+    res.body.pricing.estimated_fare,
+  );
+  assert.equal(
+    res.body.pricing.vasi_commission,
+    Number(((res.body.pricing.estimated_fare * 15) / 100).toFixed(2)),
+  );
 });
 
 test("completed cash ride returns a successful payment result", async () => {
@@ -84,6 +97,70 @@ test("completed cash ride returns a successful payment result", async () => {
   await capturePayment(req, res);
   assert.equal(res.statusCode, 200);
   assert.deepEqual(res.body, { ok: true, status: "cash", amount: 18.4, kind: "ride" });
+});
+
+test("completed card ride captures the frozen 15% VASI commission", async () => {
+  let captureBody = "";
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.includes("/rest/v1/rides?")) {
+      return response([{
+        id: "ride-card",
+        customer_id: "customer-1",
+        driver_id: "driver-1",
+        status: "completed",
+        estimated_fare: 18.4,
+        final_fare: 18.4,
+        commission_percent: 15,
+        vasi_commission: 2.76,
+        payment_method: "card",
+      }]);
+    }
+    if (value.endsWith("/auth/v1/user")) return response({ id: "driver-user" });
+    if (value.includes("/rest/v1/drivers?")) return response([{ id: "driver-1" }]);
+    if (value.includes("/rest/v1/payments?") && options.method !== "PATCH") {
+      return response([{ id: "payment-1", provider_payment_id: "pi_test", amount: 18.4 }]);
+    }
+    if (value.endsWith("/payment_intents/pi_test")) {
+      return response({ id: "pi_test", status: "requires_capture", amount: 1840 });
+    }
+    if (value.endsWith("/payment_intents/pi_test/capture")) {
+      captureBody = String(options.body);
+      return response({ id: "pi_test", status: "succeeded" });
+    }
+    if (value.includes("/rest/v1/payments?id=eq.payment-1")) return response(null, 204);
+    throw new Error(`Unexpected request: ${value}`);
+  };
+  const { default: capturePayment } = await import(`../api/capture-payment.js?test=${Date.now()}`);
+  const req = { method: "POST", headers: { authorization: "Bearer driver-token" }, body: { ride_id: "ride-card" } };
+  const res = mockRes();
+  await capturePayment(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(new URLSearchParams(captureBody).get("amount_to_capture"), "1840");
+  assert.equal(new URLSearchParams(captureBody).get("application_fee_amount"), "276");
+  assert.equal(res.body.commission_percent, 15);
+  assert.equal(res.body.vasi_commission, 2.76);
+  assert.equal(res.body.driver_amount, 15.64);
+});
+
+test("ride commission defaults to 15% and remains admin-adjustable", async () => {
+  const [pricingAdmin, pricingApi, adminService, createPayment, migration] = await Promise.all([
+    readFile("pricing-admin.html", "utf8"),
+    readFile("api/pricing.js", "utf8"),
+    readFile("supabase/functions/admin-service/index.ts", "utf8"),
+    readFile("api/create-payment-intent.js", "utf8"),
+    readFile("supabase/migrations/20260905124034_add_admin_ride_commission.sql", "utf8"),
+  ]);
+  assert.match(pricingAdmin, /id="ride_commission_percent"/);
+  assert.match(pricingAdmin, /value="15"/);
+  assert.match(pricingApi, /ride_commission_percent: 15/);
+  assert.match(adminService, /Ride commission must be between 0% and 50%/);
+  assert.doesNotMatch(createPayment, /PROMO_END|VASI_COMMISSION_PERCENT/);
+  assert.match(createPayment, /return 15/);
+  assert.match(migration, /ride_commission_percent numeric not null default 15/);
+  assert.match(migration, /security invoker/);
+  assert.match(migration, /new\.commission_percent := old\.commission_percent/);
+  assert.match(migration, /before insert or update of/);
 });
 
 test("VASI Eats prices a paid order and protects the courier earning", async () => {
