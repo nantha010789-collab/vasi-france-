@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -9,6 +10,125 @@ const json = (body: unknown, status = 200) =>
       "cache-control": "no-store",
     },
   });
+
+const money = (value: unknown) => Math.round(Number(value || 0) * 100);
+
+const stripeClient = () => {
+  const key = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!key) throw new Error("Stripe payout service is not configured");
+  return new Stripe(key, { apiVersion: "2025-07-30.basil" });
+};
+
+async function releaseEatsCourierPayout(
+  serviceClient: ReturnType<typeof createClient>,
+  courier: Record<string, unknown>,
+  orderId: string,
+) {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) return { status: "pending", message: "Payout is queued" };
+
+  const { data: order, error: orderError } = await serviceClient
+    .from("eats_orders")
+    .select(
+      "id,currency,courier_offer_amount,courier_payout_status,courier_transfer_id,stripe_payment_intent_id,delivery_driver_id",
+    )
+    .eq("id", orderId)
+    .single();
+  if (orderError || !order) throw orderError ?? new Error("Order not found");
+  if (order.delivery_driver_id !== courier.id) throw new Error("Courier assignment mismatch");
+  if (order.courier_transfer_id)
+    return { status: "paid", transfer_id: order.courier_transfer_id };
+
+  const accountId = String(courier.stripe_account_id || "");
+  if (!accountId) {
+    await serviceClient
+      .from("eats_orders")
+      .update({ courier_payout_status: "requires_onboarding" })
+      .eq("id", orderId);
+    await serviceClient
+      .from("courier_eats_earnings")
+      .update({ status: "requires_onboarding", updated_at: new Date().toISOString() })
+      .eq("order_id", orderId);
+    return { status: "requires_onboarding", message: "Connect your RIB to receive this earning" };
+  }
+
+  const stripe = stripeClient();
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    if (
+      account.metadata?.vasi_courier_id !== courier.id ||
+      !account.details_submitted ||
+      !account.payouts_enabled
+    ) {
+      await serviceClient
+        .from("eats_orders")
+        .update({ courier_payout_status: "requires_onboarding" })
+        .eq("id", orderId);
+      await serviceClient
+        .from("courier_eats_earnings")
+        .update({ status: "requires_onboarding", updated_at: new Date().toISOString() })
+        .eq("order_id", orderId);
+      return { status: "requires_onboarding", message: "Finish RIB verification to receive this earning" };
+    }
+
+    const paymentIntentId = String(order.stripe_payment_intent_id || "");
+    if (!paymentIntentId) throw new Error("Paid order has no payment reference");
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const chargeId = typeof paymentIntent.latest_charge === "string"
+      ? paymentIntent.latest_charge
+      : paymentIntent.latest_charge?.id;
+    if (paymentIntent.status !== "succeeded" || !chargeId)
+      throw new Error("Customer payment is not settled");
+
+    const amount = money(order.courier_offer_amount);
+    if (amount < 400) throw new Error("Courier protection amount is invalid");
+    const transfer = await stripe.transfers.create(
+      {
+        amount,
+        currency: String(order.currency || "eur").toLowerCase(),
+        destination: accountId,
+        source_transaction: chargeId,
+        transfer_group: `VASI_EATS_${orderId}`,
+        metadata: {
+          vasi_service: "eats",
+          vasi_order_id: orderId,
+          vasi_courier_id: String(courier.id),
+        },
+      },
+      { idempotencyKey: `vasi-eats-courier-${orderId}` },
+    );
+    const paidAt = new Date().toISOString();
+    await serviceClient
+      .from("eats_orders")
+      .update({
+        courier_payout_status: "paid",
+        courier_transfer_id: transfer.id,
+        courier_paid_at: paidAt,
+      })
+      .eq("id", orderId);
+    await serviceClient
+      .from("courier_eats_earnings")
+      .update({
+        status: "paid",
+        stripe_transfer_id: transfer.id,
+        paid_at: paidAt,
+        updated_at: paidAt,
+      })
+      .eq("order_id", orderId);
+    return { status: "paid", amount: amount / 100, currency: order.currency, transfer_id: transfer.id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Payout could not be released";
+    await serviceClient
+      .from("eats_orders")
+      .update({ courier_payout_status: "failed" })
+      .eq("id", orderId);
+    await serviceClient
+      .from("courier_eats_earnings")
+      .update({ status: "failed", failure_reason: message, updated_at: new Date().toISOString() })
+      .eq("order_id", orderId);
+    return { status: "failed", message: "Delivery is complete; payout needs review" };
+  }
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST required" }, 405);
@@ -20,6 +140,10 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: auth } } },
+  );
+  const serviceClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
   const {
     data: { user },
@@ -46,7 +170,7 @@ Deno.serve(async (req: Request) => {
   };
   const currentJobs = async () => {
     const [eats, delivery] = await Promise.all([
-      sb
+      serviceClient
         .from("eats_orders")
         .select("*")
         .eq("delivery_driver_id", courier.id)
@@ -68,7 +192,14 @@ Deno.serve(async (req: Request) => {
     return { eat: eats.data ?? null, delivery: delivery.data ?? null };
   };
 
-  if (action === "get_profile") return json({ driver: courier });
+  if (action === "get_profile") {
+    const { data: earnings } = await sb
+      .from("courier_eats_earnings")
+      .select("amount,currency,status,created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    return json({ driver: courier, earnings: earnings ?? [] });
+  }
   if (action === "set_online") {
     if (!courier.verified && body.online)
       return json({ error: "Delivery driver must be verified" }, 403);
@@ -124,6 +255,85 @@ Deno.serve(async (req: Request) => {
   if (!courier.verified)
     return json({ error: "Delivery driver must be verified" }, 403);
 
+  if (action === "get_payout_account" || action === "create_payout_onboarding") {
+    try {
+      const stripe = stripeClient();
+      let accountId = String(courier.stripe_account_id || "");
+      let account: Stripe.Account | null = null;
+      if (accountId) {
+        account = await stripe.accounts.retrieve(accountId);
+        if (account.metadata?.vasi_courier_id !== courier.id)
+          return json({ error: "Courier payout account does not match" }, 409);
+      }
+
+      if (action === "get_payout_account") {
+        const detailsSubmitted = Boolean(account?.details_submitted);
+        const payoutsEnabled = Boolean(account?.payouts_enabled);
+        if (
+          courier.stripe_details_submitted !== detailsSubmitted ||
+          courier.stripe_payouts_enabled !== payoutsEnabled
+        ) {
+          await serviceClient
+            .from("delivery_drivers")
+            .update({
+              stripe_details_submitted: detailsSubmitted,
+              stripe_payouts_enabled: payoutsEnabled,
+              updated_at: now,
+            })
+            .eq("id", courier.id);
+        }
+        return json({
+          connected: Boolean(accountId),
+          details_submitted: detailsSubmitted,
+          payouts_enabled: payoutsEnabled,
+        });
+      }
+
+      if (!accountId) {
+        account = await stripe.accounts.create({
+          country: "FR",
+          default_currency: "eur",
+          email: user.email || undefined,
+          capabilities: { transfers: { requested: true } },
+          controller: {
+            fees: { payer: "application" },
+            losses: { payments: "application" },
+            stripe_dashboard: { type: "express" },
+          },
+          business_profile: {
+            name: courier.full_name || "VASI Courier",
+            support_phone: courier.phone || undefined,
+          },
+          metadata: {
+            vasi_courier_id: courier.id,
+            vasi_user_id: user.id,
+          },
+        } as Stripe.AccountCreateParams);
+        accountId = account.id;
+        const { error: linkError } = await serviceClient
+          .from("delivery_drivers")
+          .update({ stripe_account_id: accountId, updated_at: now })
+          .eq("id", courier.id);
+        if (linkError)
+          return json({ error: "Payout account was created but could not be linked" }, 500);
+      }
+
+      const publicUrl = Deno.env.get("VASI_PUBLIC_URL") || "https://vasi-new.vercel.app";
+      const link = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: `${publicUrl}/delivery-driver.html?stripe=refresh`,
+        return_url: `${publicUrl}/delivery-driver.html?stripe=complete`,
+        type: "account_onboarding",
+      });
+      return json({ connected: true, url: link.url });
+    } catch (error) {
+      return json(
+        { error: error instanceof Error ? error.message : "Payout setup failed" },
+        500,
+      );
+    }
+  }
+
   if (action === "get_available_jobs") {
     if (!courier.online)
       return json({ error: "Go online to see available courier jobs" }, 403);
@@ -144,10 +354,14 @@ Deno.serve(async (req: Request) => {
       );
     }
     const [eats, deliveries] = await Promise.all([
-      sb
+      serviceClient
         .from("eats_orders")
-        .select("id,restaurant_name,delivery_address,total,currency,created_at,status")
+        .select(
+          "id,restaurant_name,delivery_address,courier_offer_amount,delivery_distance_km,estimated_delivery_minutes,currency,created_at,status,payment_status",
+        )
         .eq("status", "pending")
+        .eq("payment_status", "paid")
+        .eq("delivery_mode", "vasi")
         .is("delivery_driver_id", null)
         .order("created_at", { ascending: false })
         .limit(20),
@@ -181,11 +395,13 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "accept_eats") {
-      const { data, error } = await sb
+      const { data, error } = await serviceClient
         .from("eats_orders")
-        .update({ delivery_driver_id: courier.id, status: "accepted" })
+        .update({ delivery_driver_id: courier.id, status: "accepted", accepted_at: now })
         .eq("id", id)
         .eq("status", "pending")
+        .eq("payment_status", "paid")
+        .eq("delivery_mode", "vasi")
         .is("delivery_driver_id", null)
         .select()
         .single();
@@ -232,14 +448,16 @@ Deno.serve(async (req: Request) => {
       });
       if (error) return json({ error: error.message }, 400);
       if (!data?.ok) return json({ error: data?.error || "Delivery PIN could not be verified" }, 409);
-      return json({ eat: data.eat });
+      const payout = await releaseEatsCourierPayout(serviceClient, courier, id);
+      return json({ eat: data.eat, payout });
     }
 
     const patch: Record<string, unknown> = { status };
     if (status === "picked_up") patch.picked_up_at = now;
     if (status === "delivered") patch.delivered_at = now;
     const table = action === "update_eats" ? "eats_orders" : "delivery_orders";
-    const { data, error } = await sb
+    const orderClient = action === "update_eats" ? serviceClient : sb;
+    const { data, error } = await orderClient
       .from(table)
       .update(patch)
       .eq("id", id)

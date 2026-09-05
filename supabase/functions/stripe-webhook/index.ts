@@ -2,32 +2,91 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@18.5.0";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { apiVersion: "2025-07-30.basil" });
-const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
+  apiVersion: "2025-07-30.basil",
+});
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const signature = req.headers.get("stripe-signature");
-  if (!signature || !Deno.env.get("STRIPE_WEBHOOK_SECRET")) return new Response("Missing signature", { status: 400 });
+  const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+  if (!signature || !webhookSecret)
+    return new Response("Missing signature", { status: 400 });
+
   const body = await req.text();
   let event: Stripe.Event;
-  try { event = await stripe.webhooks.constructEventAsync(body, signature, Deno.env.get("STRIPE_WEBHOOK_SECRET")!); }
-  catch { return new Response("Invalid signature", { status: 400 }); }
+  try {
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+  } catch {
+    return new Response("Invalid signature", { status: 400 });
+  }
 
-  const { data: existing } = await supabase.from("vasi_payment_events").select("id").eq("provider", "stripe").eq("provider_event_id", event.id).maybeSingle();
+  const { data: existing } = await supabase
+    .from("vasi_payment_events")
+    .select("id")
+    .eq("provider", "stripe")
+    .eq("provider_event_id", event.id)
+    .maybeSingle();
   if (existing) return Response.json({ received: true, duplicate: true });
 
-  const obj: any = event.data.object;
-  const orderId = obj?.metadata?.order_id ?? obj?.metadata?.orderId ?? null;
-  const service = obj?.metadata?.service ?? null;
-  const status = event.type === "payment_intent.succeeded" || event.type === "checkout.session.completed" ? "paid" : null;
+  const object: any = event.data.object;
+  const orderId = object?.metadata?.order_id ?? object?.metadata?.orderId ?? null;
+  const service = object?.metadata?.service ?? null;
 
-  await supabase.from("vasi_payment_events").insert({ provider: "stripe", provider_event_id: event.id, event_type: event.type, order_id: orderId });
+  try {
+    if (service === "eats" && orderId && event.type === "payment_intent.succeeded") {
+      const { error } = await supabase
+        .from("eats_orders")
+        .update({ status: "pending", payment_status: "paid" })
+        .eq("id", orderId)
+        .eq("stripe_payment_intent_id", object.id)
+        .in("payment_status", ["unpaid", "requires_payment"]);
+      if (error) throw error;
+    }
 
-  if (status && orderId) {
-    // Keep order dispatch behind payment confirmation. Existing order schemas are not assumed here.
-    // A downstream order worker can consume this event safely using the unique provider event id.
-    await supabase.from("vasi_payment_events").update({ event_type: `${event.type}:paid:${service ?? "unknown"}` }).eq("provider", "stripe").eq("provider_event_id", event.id);
+    if (
+      service === "eats" &&
+      orderId &&
+      event.type === "payment_intent.payment_failed"
+    ) {
+      const { error } = await supabase
+        .from("eats_orders")
+        .update({ payment_status: "failed" })
+        .eq("id", orderId)
+        .eq("stripe_payment_intent_id", object.id)
+        .neq("payment_status", "paid");
+      if (error) throw error;
+    }
+
+    if (event.type === "account.updated" && object?.metadata?.vasi_courier_id) {
+      const { error } = await supabase
+        .from("delivery_drivers")
+        .update({
+          stripe_details_submitted: Boolean(object.details_submitted),
+          stripe_payouts_enabled: Boolean(object.payouts_enabled),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", object.metadata.vasi_courier_id)
+        .eq("stripe_account_id", object.id);
+      if (error) throw error;
+    }
+
+    const { error: eventError } = await supabase.from("vasi_payment_events").insert({
+      provider: "stripe",
+      provider_event_id: event.id,
+      event_type: event.type,
+      order_id: orderId,
+    });
+    if (eventError && eventError.code !== "23505") throw eventError;
+    return Response.json({ received: true });
+  } catch (error) {
+    return Response.json(
+      { received: false, error: error instanceof Error ? error.message : "Webhook failed" },
+      { status: 500 },
+    );
   }
-  return Response.json({ received: true });
 });

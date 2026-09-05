@@ -111,6 +111,22 @@
       .green {
         background: #7dff9b;
       }
+      .money {
+        color: #7dff9b;
+        font-size: 22px;
+        font-weight: 950;
+        margin: 8px 0 2px;
+      }
+      .protect {
+        border: 1px solid #285f37;
+        background: #102116;
+        color: #b9ffc9;
+        border-radius: 12px;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
@@ -136,6 +152,14 @@
         </button>
       </section>
       <section class="card">
+        <b>Payments &amp; RIB</b>
+        <p id="payoutStatus" class="status">Checking payout account…</p>
+        <button id="payoutBtn" class="btn" onclick="openPayoutSetup()" hidden>
+          Connect my RIB
+        </button>
+        <p id="earnings" class="status"></p>
+      </section>
+      <section class="card">
         <div class="toggle">
           <button id="eatsBtn" class="btn active" onclick="setTab('eats')">
             🍔 Eats</button
@@ -159,7 +183,8 @@
           "https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/delivery-driver-service";
       let online = false,
         tab = "eats",
-        activeJob = null;
+        activeJob = null,
+        courierProfile = null;
       const $ = (id) => document.getElementById(id),
         esc = (value) =>
           String(value ?? "").replace(
@@ -203,10 +228,59 @@
         const data = await service({ action: "get_profile" });
         if (data.error) return ($("profile").textContent = data.error);
         const profile = data.driver || data.courier || {};
+        courierProfile = profile;
+        online = !!profile.online;
         $("profile").textContent =
           (profile.full_name || "VASI Courier") +
           (profile.verified ? " · ✓ Verified" : " · Verification pending");
+        $("state").textContent = online ? "Online" : "Offline";
+        $("dot").classList.toggle("green", online);
+        $("onlineBtn").textContent = online ? "Go offline" : "Go online";
+        const paid = (data.earnings || [])
+          .filter((item) => item.status === "paid")
+          .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+        $("earnings").textContent = paid
+          ? `Recent Eats earnings paid: €${paid.toFixed(2)}`
+          : "Your completed Eats earnings will appear here.";
+        await loadPayoutStatus();
         await loadJobs();
+      }
+      async function payoutRequest(create = false) {
+        return service({
+          action: create ? "create_payout_onboarding" : "get_payout_account",
+        });
+      }
+      async function loadPayoutStatus() {
+        const button = $("payoutBtn");
+        if (!courierProfile?.verified) {
+          $("payoutStatus").textContent = "RIB setup becomes available after courier approval.";
+          button.hidden = true;
+          return;
+        }
+        const data = await payoutRequest();
+        if (data.error) {
+          $("payoutStatus").textContent = data.error;
+          button.hidden = false;
+          return;
+        }
+        if (data.payouts_enabled) {
+          $("payoutStatus").textContent = "✓ RIB verified · earnings are released after the delivery PIN.";
+          button.hidden = true;
+        } else {
+          $("payoutStatus").textContent = data.details_submitted
+            ? "Stripe is checking your payout information."
+            : "Connect and verify your RIB before your first delivery.";
+          button.textContent = data.connected ? "Continue RIB verification" : "Connect my RIB";
+          button.hidden = false;
+        }
+      }
+      async function openPayoutSetup() {
+        const button = $("payoutBtn");
+        button.disabled = true;
+        const data = await payoutRequest(true);
+        button.disabled = false;
+        if (data.error) return alert(data.error);
+        if (data.url) location.href = data.url;
       }
       async function toggleOnline() {
         const requested = !online,
@@ -252,7 +326,7 @@
         $("jobs").innerHTML = jobs
           .map((job) =>
             tab === "eats"
-              ? `<article class="job"><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><small>Deliver to: ${esc(job.delivery_address || "—")} · €${esc(job.total ?? "—")}</small><button class="accept" data-id="${esc(job.id)}" data-type="eats">Accept Eats</button></article>`
+              ? `<article class="job"><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">You earn €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small><div class="protect">VASI protection: minimum €4 per delivery and €20/hour based on the estimated active time. You see the guaranteed offer before accepting.</div><button class="accept" data-id="${esc(job.id)}" data-type="eats">Accept · €${Number(job.courier_offer_amount || 0).toFixed(2)}</button></article>`
               : `<article class="job"><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><button class="accept" data-id="${esc(job.id)}" data-type="delivery">Accept Delivery</button></article>`,
           )
           .join("");
@@ -263,7 +337,7 @@
           isEats = type === "eats",
           pickedUp = job.status === "picked_up";
         $("jobs").innerHTML = isEats
-          ? `<article class="job"><span class="badge">ACTIVE EATS</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><small>Deliver to: ${esc(job.delivery_address || "—")} · €${esc(job.total ?? "—")}</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
+          ? `<article class="job"><span class="badge">ACTIVE EATS</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
           : `<article class="job"><span class="badge">ACTIVE DELIVERY</span><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="delivery">${pickedUp ? "Complete delivery" : "Parcel picked up"}</button></article>`;
       }
       async function acceptJob(id, type) {
@@ -299,7 +373,11 @@
         if (status === "delivered") {
           activeJob = null;
           $("state").textContent = "Offline";
-          $("jobs").textContent = "✓ Delivery completed. Go online for another job.";
+          const payoutMessage = data.payout?.status === "paid"
+            ? ` €${Number(data.payout.amount || 0).toFixed(2)} released to your Stripe balance.`
+            : data.payout?.message ? ` ${data.payout.message}.` : "";
+          $("jobs").textContent = "✓ Delivery completed." + payoutMessage + " Go online for another job.";
+          loadProfile();
           return;
         }
         activeJob.job = type === "eats" ? data.eat : data.delivery;
