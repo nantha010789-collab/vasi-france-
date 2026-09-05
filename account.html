@@ -30,9 +30,21 @@
         box-sizing: border-box;
       }
 
+      html {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+
       body {
+        width: 100%;
+        max-width: 100%;
         min-height: 100vh;
         margin: 0;
+        overflow-x: hidden;
+        overflow-x: clip;
         background:
           radial-gradient(circle at 90% -5%, #242424 0, transparent 28rem),
           var(--page);
@@ -41,6 +53,7 @@
       button,
       input,
       select {
+        min-width: 0;
         font: inherit;
       }
 
@@ -51,8 +64,11 @@
 
       .app {
         width: min(100%, 720px);
+        max-width: 100%;
         min-height: 100vh;
         margin: 0 auto;
+        overflow-x: hidden;
+        overflow-x: clip;
         padding: max(22px, env(safe-area-inset-top)) 18px
           calc(42px + env(safe-area-inset-bottom));
       }
@@ -62,6 +78,12 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
+      }
+
+      .top > *,
+      .section-head > *,
+      .account-actions > * {
+        min-width: 0;
       }
 
       .brand {
@@ -86,9 +108,11 @@
 
       .back {
         display: inline-flex;
+        flex: 0 0 auto;
         align-items: center;
         padding: 10px 15px;
         text-decoration: none;
+        white-space: nowrap;
       }
 
       .hero {
@@ -124,6 +148,8 @@
       }
 
       .card {
+        min-width: 0;
+        max-width: 100%;
         border: 1px solid var(--line);
         border-radius: 24px;
         background: rgba(17, 17, 17, 0.96);
@@ -280,6 +306,7 @@
         margin: 0;
         font-size: 21px;
         letter-spacing: -0.5px;
+        overflow-wrap: anywhere;
       }
 
       .section-head p {
@@ -464,6 +491,7 @@
         color: var(--muted);
         font-size: 13px;
         line-height: 1.45;
+        overflow-wrap: anywhere;
       }
 
       .address-actions {
@@ -522,6 +550,8 @@
 
       .link-row {
         display: flex;
+        min-width: 0;
+        max-width: 100%;
         min-height: 62px;
         align-items: center;
         gap: 12px;
@@ -558,9 +588,12 @@
         margin-top: 2px;
         color: var(--muted);
         font-size: 12px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
       }
 
       .arrow {
+        flex: 0 0 auto;
         color: #777;
         font-size: 20px;
       }
@@ -619,6 +652,12 @@
           align-items: flex-start;
         }
 
+        .profile-copy h2,
+        .profile-copy p {
+          overflow-wrap: anywhere;
+          white-space: normal;
+        }
+
         .section-head.address-heading,
         .address-row {
           align-items: stretch;
@@ -635,6 +674,108 @@
         .address-actions {
           width: 100%;
           padding-left: 51px;
+        }
+      }
+
+      @media (max-width: 360px) {
+        .app {
+          padding-top: max(16px, env(safe-area-inset-top));
+          padding-right: 12px;
+          padding-left: 12px;
+        }
+
+        .top {
+          gap: 8px;
+        }
+
+        .brand {
+          font-size: 27px;
+          letter-spacing: -1.2px;
+        }
+
+        .back {
+          padding-right: 12px;
+          padding-left: 12px;
+        }
+
+        .hero {
+          padding: 24px 1px 16px;
+        }
+
+        h1 {
+          font-size: 36px;
+          letter-spacing: -1.9px;
+        }
+
+        .card {
+          border-radius: 19px;
+          padding: 15px;
+        }
+
+        .profile-card {
+          gap: 12px;
+        }
+
+        .avatar {
+          width: 58px;
+          height: 58px;
+          flex-basis: 58px;
+          border-radius: 18px;
+        }
+
+        .avatar-actions {
+          gap: 6px;
+        }
+
+        .avatar-action {
+          padding-right: 9px;
+          padding-left: 9px;
+        }
+
+        .section-head {
+          gap: 10px;
+        }
+
+        .section-head.address-heading {
+          flex-wrap: wrap;
+        }
+
+        .section-head.address-heading > div {
+          flex: 1 1 190px;
+        }
+
+        .section-action {
+          align-self: flex-start;
+        }
+
+        .address-actions {
+          justify-content: flex-end;
+          padding-left: 0;
+        }
+
+        .address-form-actions {
+          flex-wrap: wrap;
+        }
+
+        .link-row {
+          gap: 10px;
+          padding: 10px 11px;
+        }
+
+        .link-icon {
+          width: 36px;
+          height: 36px;
+          flex-basis: 36px;
+          border-radius: 12px;
+        }
+
+        .account-actions {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .signout {
+          margin-left: auto;
         }
       }
 

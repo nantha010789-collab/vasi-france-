@@ -28,11 +28,22 @@
 
       * { box-sizing: border-box; }
 
-      html { scroll-behavior: smooth; }
+      html {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
 
       body {
+        width: 100%;
+        max-width: 100%;
         min-height: 100vh;
         margin: 0;
+        overflow-x: hidden;
+        overflow-x: clip;
         background:
           radial-gradient(circle at 90% -5%, #242424 0, transparent 28rem),
           var(--page);
@@ -46,13 +57,16 @@
         animation-iteration-count: 1 !important;
       }
 
-      button, select { font: inherit; }
+      button, select { min-width: 0; font: inherit; }
       button, a { -webkit-tap-highlight-color: transparent; }
 
       .app {
         width: min(100%, 720px);
+        max-width: 100%;
         min-height: 100vh;
         margin: 0 auto;
+        overflow-x: hidden;
+        overflow-x: clip;
         padding: max(22px, env(safe-area-inset-top)) 18px
           calc(42px + env(safe-area-inset-bottom));
       }
@@ -63,6 +77,8 @@
         justify-content: space-between;
         gap: 16px;
       }
+
+      .top > *, .row > * { min-width: 0; }
 
       .brand {
         color: #fff;
@@ -85,9 +101,11 @@
 
       .back {
         display: inline-flex;
+        flex: 0 0 auto;
         align-items: center;
         padding: 10px 15px;
         text-decoration: none;
+        white-space: nowrap;
       }
 
       .hero { padding: 34px 2px 20px; }
@@ -118,6 +136,8 @@
       .stack { display: grid; gap: 14px; }
 
       .card {
+        min-width: 0;
+        max-width: 100%;
         border: 1px solid var(--line);
         border-radius: 24px;
         background: rgba(17, 17, 17, 0.96);
@@ -126,7 +146,12 @@
       }
 
       .section-head { margin-bottom: 7px; }
-      .section-head h2 { margin: 0; font-size: 21px; letter-spacing: -0.5px; }
+      .section-head h2 {
+        margin: 0;
+        font-size: 21px;
+        letter-spacing: -0.5px;
+        overflow-wrap: anywhere;
+      }
       .section-head p {
         margin: 6px 0 0;
         color: var(--muted);
@@ -166,30 +191,37 @@
 
       .copy { min-width: 0; flex: 1; }
       .copy strong, .copy span { display: block; }
-      .copy strong { font-size: 15px; }
+      .copy strong { font-size: 15px; overflow-wrap: anywhere; }
       .copy span {
         margin-top: 4px;
         color: var(--muted);
         font-size: 12px;
         line-height: 1.4;
+        overflow-wrap: anywhere;
       }
 
       .value {
+        min-width: 0;
+        flex: 0 1 auto;
         max-width: 120px;
         color: #aaa;
         font-size: 12px;
         text-align: right;
+        overflow-wrap: anywhere;
       }
 
-      .arrow { color: #737373; font-size: 21px; }
+      .arrow { flex: 0 0 auto; color: #737373; font-size: 21px; }
 
       .required {
+        flex: 0 1 auto;
         border-radius: 999px;
         background: #213323;
         color: #a8e4af;
         padding: 6px 9px;
         font-size: 10px;
         font-weight: 900;
+        overflow-wrap: anywhere;
+        text-align: center;
         text-transform: uppercase;
       }
 
@@ -283,6 +315,31 @@
         .hero { padding-top: 30px; }
         .card { border-radius: 21px; padding: 17px; }
         .value { max-width: 95px; }
+      }
+
+      @media (max-width: 360px) {
+        .app {
+          padding-top: max(16px, env(safe-area-inset-top));
+          padding-right: 12px;
+          padding-left: 12px;
+        }
+
+        .top { gap: 8px; }
+        .brand { font-size: 27px; letter-spacing: -1.2px; }
+        .back { padding-right: 12px; padding-left: 12px; }
+        .hero { padding: 24px 1px 16px; }
+        h1 { font-size: 36px; letter-spacing: -1.9px; }
+        .card { border-radius: 19px; padding: 15px; }
+        .row { gap: 9px; padding: 12px 0; }
+        .icon {
+          width: 38px;
+          height: 38px;
+          flex-basis: 38px;
+          border-radius: 12px;
+        }
+        .value { max-width: 78px; }
+        .required { max-width: 76px; padding: 6px 7px; }
+        select { max-width: 112px; }
       }
 
       @media (prefers-reduced-motion: reduce) {

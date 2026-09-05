@@ -124,6 +124,9 @@ test("completed card ride captures the frozen 15% VASI commission", async () => 
     if (value.endsWith("/payment_intents/pi_test")) {
       return response({ id: "pi_test", status: "requires_capture", amount: 1840 });
     }
+    if (value.includes("/rpc/reserve_ride_cash_commission_offset")) {
+      return response({ ok: true, amount: 0, currency: "EUR", status: "none" });
+    }
     if (value.endsWith("/payment_intents/pi_test/capture")) {
       captureBody = String(options.body);
       return response({ id: "pi_test", status: "succeeded" });
@@ -141,6 +144,75 @@ test("completed card ride captures the frozen 15% VASI commission", async () => 
   assert.equal(res.body.commission_percent, 15);
   assert.equal(res.body.vasi_commission, 2.76);
   assert.equal(res.body.driver_amount, 15.64);
+  assert.equal(res.body.cash_commission_debt_deducted, 0);
+  assert.equal(res.body.bank_payout_credit, 15.64);
+});
+
+test("cash commission debt is withheld automatically from the next card ride", async () => {
+  let captureBody = "";
+  let captureHeaders = {};
+  const rpcCalls = [];
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.includes("/rest/v1/rides?")) {
+      return response([{
+        id: "ride-card-offset",
+        customer_id: "customer-1",
+        driver_id: "driver-1",
+        status: "completed",
+        estimated_fare: 20,
+        final_fare: 20,
+        commission_percent: 15,
+        vasi_commission: 3,
+        driver_amount: 17,
+        payment_method: "card",
+      }]);
+    }
+    if (value.endsWith("/auth/v1/user")) return response({ id: "driver-user" });
+    if (value.includes("/rest/v1/drivers?")) return response([{ id: "driver-1" }]);
+    if (value.includes("/rest/v1/payments?") && options.method !== "PATCH") {
+      return response([{ id: "payment-offset", provider_payment_id: "pi_offset", amount: 20 }]);
+    }
+    if (value.endsWith("/payment_intents/pi_offset")) {
+      return response({ id: "pi_offset", status: "requires_capture", amount: 2000 });
+    }
+    if (value.includes("/rpc/reserve_ride_cash_commission_offset")) {
+      rpcCalls.push("reserve");
+      return response({ ok: true, amount: 5, currency: "EUR", status: "reserved" });
+    }
+    if (value.endsWith("/payment_intents/pi_offset/capture")) {
+      captureBody = String(options.body);
+      captureHeaders = options.headers;
+      return response({ id: "pi_offset", status: "succeeded" });
+    }
+    if (value.includes("/rest/v1/payments?id=eq.payment-offset")) {
+      return response(null, 204);
+    }
+    throw new Error(`Unexpected request: ${value}`);
+  };
+
+  const { default: capturePayment } = await import(
+    `../api/capture-payment.js?test=${Date.now()}`
+  );
+  const req = {
+    method: "POST",
+    headers: { authorization: "Bearer driver-token" },
+    body: { ride_id: "ride-card-offset" },
+  };
+  const res = mockRes();
+  await capturePayment(req, res);
+
+  const capture = new URLSearchParams(captureBody);
+  assert.equal(res.statusCode, 200);
+  assert.equal(capture.get("amount_to_capture"), "2000");
+  assert.equal(capture.get("application_fee_amount"), "800");
+  assert.equal(captureHeaders["Idempotency-Key"], "vasi-ride-capture-ride-card-offset");
+  assert.deepEqual(rpcCalls, ["reserve"]);
+  assert.equal(res.body.vasi_commission, 3);
+  assert.equal(res.body.driver_amount, 17);
+  assert.equal(res.body.cash_commission_debt_deducted, 5);
+  assert.equal(res.body.bank_payout_credit, 12);
+  assert.equal(res.body.cash_commission_status, "pending_stripe_confirmation");
 });
 
 test("ride commission defaults to 15% and remains admin-adjustable", async () => {
@@ -237,6 +309,38 @@ test("ride drivers onboard their RIB with weekly Monday automatic payouts", asyn
   assert.match(driverPage, /Connect bank account \(RIB\)/);
   assert.match(driverPage, /automatically to your RIB every Monday/);
   assert.match(driverPage, /\/api\/driver-stripe-onboarding/);
+  assert.match(driverPage, /get_driver_cash_commission_balance/);
+  assert.match(driverPage, /deduct automatically from future card earnings/);
+});
+
+test("cash ride commission ledger is private, idempotent and card-offset aware", async () => {
+  const migration = await readFile(
+    "supabase/migrations/20260905143000_add_ride_cash_commission_offsets.sql",
+    "utf8",
+  );
+  assert.match(migration, /driver_cash_commission_debts/);
+  assert.match(migration, /unique references public\.rides/);
+  assert.match(migration, /enable row level security/);
+  assert.match(migration, /reserve_ride_cash_commission_offset/);
+  assert.match(migration, /apply_ride_cash_commission_offset/);
+  assert.match(migration, /release_ride_cash_commission_offset/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /grant execute.*to authenticated/s);
+});
+
+test("only the Stripe-signed webhook finalizes or releases cash debt offsets", async () => {
+  const [capture, intent, webhook] = await Promise.all([
+    readFile("api/capture-payment.js", "utf8"),
+    readFile("api/create-payment-intent.js", "utf8"),
+    readFile("supabase/functions/stripe-webhook/index.ts", "utf8"),
+  ]);
+  assert.doesNotMatch(capture, /apply_ride_cash_commission_offset/);
+  assert.doesNotMatch(capture, /release_ride_cash_commission_offset/);
+  assert.match(intent, /metadata\[service\].*ride/);
+  assert.match(webhook, /payment_intent\.succeeded/);
+  assert.match(webhook, /apply_ride_cash_commission_offset/);
+  assert.match(webhook, /payment_intent\.canceled/);
+  assert.match(webhook, /release_ride_cash_commission_offset/);
 });
 
 test("VASI Eats prices a paid order and protects the courier earning", async () => {
@@ -598,6 +702,34 @@ test("customer profile photo remains optional and owner-scoped", async () => {
   assert.match(migration, /file_size_limit/);
   assert.match(migration, /\(storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
   assert.match(migration, /for delete\s+to authenticated/);
+});
+
+test("account surfaces reflow safely on narrow phones", async () => {
+  const [account, settings] = await Promise.all([
+    readFile("account.html", "utf8"),
+    readFile("settings.html", "utf8"),
+  ]);
+
+  for (const page of [account, settings]) {
+    assert.match(page, /@media \(max-width: 360px\)/);
+    assert.match(page, /overflow-x:\s*clip/);
+    assert.match(page, /-webkit-text-size-adjust:\s*100%/);
+    assert.match(page, /\.app\s*\{[\s\S]*?max-width:\s*100%/);
+  }
+
+  assert.match(
+    account,
+    /\.section-head\.address-heading\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  );
+  assert.match(
+    account,
+    /\.account-actions\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  );
+  assert.match(
+    settings,
+    /\.required\s*\{[\s\S]*?overflow-wrap:\s*anywhere/,
+  );
+  assert.match(settings, /select\s*\{\s*max-width:\s*112px/);
 });
 
 test("restaurant join and dashboard use restaurant authentication", async () => {

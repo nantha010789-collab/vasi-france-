@@ -58,6 +58,7 @@ export default async function handler(req, res) {
     params.set('automatic_payment_methods[enabled]', 'true');
     params.set('description', `VASI ride ${ride.id}`);
     params.set('metadata[ride_id]', ride.id);
+    params.set('metadata[service]', 'ride');
     params.set('metadata[customer_id]', ride.customer_id);
     params.set('metadata[driver_id]', ride.driver_id);
     params.set('transfer_data[destination]', stripeAccount);
