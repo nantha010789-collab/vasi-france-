@@ -402,9 +402,13 @@ test("Eats checkout and courier app enforce payment then PIN-gated RIB payout", 
   assert.match(checkout, /js\.stripe\.com\/v3/);
   assert.match(checkout, /eats-payment/);
   assert.match(checkout, /Continue to secure payment/);
-  assert.match(courier, /Connect my RIB/);
+  assert.match(courier, /Connect bank account \(RIB\)/);
   assert.match(courier, /create_payout_onboarding/);
+  assert.match(courier, /paid automatically every Monday/);
   assert.match(courier, /minimum €4 per delivery and €20\/hour/);
+  assert.match(service, /\/v1\/balance_settings/);
+  assert.match(service, /weekly_payout_days/);
+  assert.match(service, /"monday"/);
   assert.match(service, /source_transaction/);
   assert.match(service, /idempotencyKey: `vasi-eats-courier-/);
   assert.match(service, /vasi_courier_complete_eats_order/);
