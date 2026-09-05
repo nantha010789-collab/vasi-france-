@@ -30,7 +30,9 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.supabase.co https://*.stripe.com https://maps.gstatic.com https://maps.googleapis.com; font-src 'self' data:; connect-src 'self' https://vhfyvkrvysrooaqzcxsp.supabase.co wss://vhfyvkrvysrooaqzcxsp.supabase.co https://api.stripe.com https://m.stripe.network https://*.googleapis.com https://*.google.com stun: turn: turns:; frame-src https://js.stripe.com https://hooks.stripe.com; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests" },
+        { "key": "Permissions-Policy", "value": "accelerometer=(), autoplay=(), browsing-topics=(), camera=(self), display-capture=(), geolocation=(self), gyroscope=(), magnetometer=(), microphone=(self), payment=(self \"https://js.stripe.com\"), publickey-credentials-create=(self), publickey-credentials-get=(self), usb=()" }
       ]
     },
     {
