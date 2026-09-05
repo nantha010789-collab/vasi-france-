@@ -163,6 +163,82 @@ test("ride commission defaults to 15% and remains admin-adjustable", async () =>
   assert.match(migration, /before insert or update of/);
 });
 
+test("ride drivers onboard their RIB with weekly Monday automatic payouts", async () => {
+  let payoutBody = "";
+  let payoutAccount = "";
+  let onboardingBody = "";
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.endsWith("/auth/v1/user")) return response({ id: "driver-user" });
+    if (value.includes("/rest/v1/drivers?")) {
+      return response([
+        {
+          id: "driver-1",
+          user_id: "driver-user",
+          verified: true,
+          stripe_account_id: "acct_driver",
+        },
+      ]);
+    }
+    if (value.endsWith("/v1/balance_settings")) {
+      payoutBody = String(options.body);
+      payoutAccount = options.headers["Stripe-Account"];
+      return response({
+        payments: {
+          payouts: {
+            schedule: {
+              interval: "weekly",
+              weekly_payout_days: ["monday"],
+            },
+          },
+        },
+      });
+    }
+    if (value.endsWith("/v1/account_links")) {
+      onboardingBody = String(options.body);
+      return response({ url: "https://connect.stripe.test/onboarding" });
+    }
+    throw new Error(`Unexpected request: ${value}`);
+  };
+
+  const { default: onboardDriver } = await import(
+    `../api/driver-stripe-onboarding.js?test=${Date.now()}`
+  );
+  const req = {
+    method: "POST",
+    headers: { authorization: "Bearer driver-token" },
+    body: { country: "FR" },
+  };
+  const res = mockRes();
+  await onboardDriver(req, res);
+
+  const payout = new URLSearchParams(payoutBody);
+  const onboarding = new URLSearchParams(onboardingBody);
+  assert.equal(res.statusCode, 200);
+  assert.equal(payoutAccount, "acct_driver");
+  assert.equal(
+    payout.get("payments[payouts][schedule][interval]"),
+    "weekly",
+  );
+  assert.deepEqual(
+    payout.getAll("payments[payouts][schedule][weekly_payout_days][]"),
+    ["monday"],
+  );
+  assert.equal(
+    onboarding.get("return_url"),
+    "https://vasi-new.vercel.app/driver.html?stripe=complete",
+  );
+  assert.deepEqual(res.body.payout_schedule, {
+    interval: "weekly",
+    day: "monday",
+  });
+
+  const driverPage = await readFile("driver.html", "utf8");
+  assert.match(driverPage, /Connect bank account \(RIB\)/);
+  assert.match(driverPage, /automatically to your RIB every Monday/);
+  assert.match(driverPage, /\/api\/driver-stripe-onboarding/);
+});
+
 test("VASI Eats prices a paid order and protects the courier earning", async () => {
   let insertedOrder = null;
   global.fetch = async (url, options = {}) => {

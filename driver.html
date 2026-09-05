@@ -199,6 +199,20 @@
         </p>
         <div id="ride" class="ride"></div>
       </section>
+      <section class="card">
+        <h2>Bank payouts</h2>
+        <p id="payoutStatus" class="muted">
+          Card-ride earnings are paid automatically to your RIB every Monday
+          after Stripe makes the funds available.
+        </p>
+        <button id="payoutButton" class="btn" onclick="connectBankAccount()">
+          Connect bank account (RIB)
+        </button>
+        <p class="muted">
+          Cash rides are paid directly by the passenger and are not included in
+          the bank payout.
+        </p>
+      </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
@@ -220,8 +234,41 @@
           localStorage.setItem("vasi_role", "ride");
           return (location.href = "auth.html?role=ride");
         }
+        const stripeReturn = new URLSearchParams(location.search).get("stripe");
+        if (stripeReturn === "complete") {
+          document.getElementById("payoutStatus").textContent =
+            "RIB details submitted. Stripe will confirm verification; weekly payout day is Monday.";
+        } else if (stripeReturn === "refresh") {
+          document.getElementById("payoutStatus").textContent =
+            "Stripe onboarding needs to be completed. Tap the button to continue.";
+        }
         await loadActiveRide();
       });
+      async function connectBankAccount() {
+        const button = document.getElementById("payoutButton");
+        const status = document.getElementById("payoutStatus");
+        const session = (await client.auth.getSession()).data.session;
+        if (!session) return (location.href = "auth.html?role=ride");
+        button.disabled = true;
+        status.textContent = "Opening secure Stripe RIB setup…";
+        try {
+          const response = await fetch("/api/driver-stripe-onboarding", {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + session.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ country: "FR" }),
+          });
+          const data = await response.json();
+          if (!response.ok)
+            throw new Error(data.error || "Stripe onboarding failed");
+          location.href = data.url;
+        } catch (error) {
+          status.textContent = error.message;
+          button.disabled = false;
+        }
+      }
       async function setPresence(value, pos) {
         const args = {
           p_online: value,

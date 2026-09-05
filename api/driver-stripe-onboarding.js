@@ -1,3 +1,164 @@
-const u=process.env.VASI_SUPABASE_URL||process.env.SUPABASE_URL;const k=process.env.VASI_SUPABASE_ANON_KEY||process.env.SUPABASE_ANON_KEY;const sk=process.env.STRIPE_SECRET_KEY;
-async function sb(path,auth,opt={}){return fetch(`${u}${path}`,{...opt,headers:{apikey:k,Authorization:auth,'Content-Type':'application/json',...(opt.headers||{})}})}
-export default async function handler(req,res){if(req.method!=='POST')return res.status(405).json({error:'POST required'});const auth=req.headers.authorization||'';if(!auth.startsWith('Bearer '))return res.status(401).json({error:'Unauthorized'});if(!u||!k||!sk)return res.status(503).json({error:'Stripe/Supabase environment is not configured'});try{const me=await sb('/auth/v1/user',auth,{headers:{apikey:k}});const user=await me.json();if(!user?.id)return res.status(401).json({error:'Unauthorized'});const dr=await sb(`/rest/v1/drivers?select=*&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,auth);const drivers=await dr.json();if(!drivers?.length)return res.status(404).json({error:'Driver profile required'});const d=drivers[0];if(!d.verified)return res.status(403).json({error:'Driver must be verified before Stripe onboarding'});let accountId=d.stripe_account_id;if(!accountId){const p=new URLSearchParams();p.set('controller[fees][payer]','application');p.set('controller[losses][payments]','application');p.set('controller[stripe_dashboard][type]','express');p.set('country',String(req.body?.country||'FR').toUpperCase());if(d.full_name)p.set('business_profile[name]',d.full_name);if(d.phone)p.set('business_profile[support_phone]',d.phone);const ar=await fetch('https://api.stripe.com/v1/accounts',{method:'POST',headers:{Authorization:`Bearer ${sk}`,'Content-Type':'application/x-www-form-urlencoded'},body:p.toString()});const a=await ar.json();if(!ar.ok)return res.status(ar.status).json({error:a?.error?.message||'Stripe account creation failed'});accountId=a.id;const up=await sb(`/rest/v1/drivers?id=eq.${encodeURIComponent(d.id)}`,auth,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({stripe_account_id:accountId})});if(!up.ok)return res.status(500).json({error:'Stripe account created but driver record could not be updated'});}const base=process.env.VASI_PUBLIC_URL||'https://vasi-france.vercel.app';const p2=new URLSearchParams();p2.set('account',accountId);p2.set('refresh_url',`${base}/driver-app.html?stripe=refresh`);p2.set('return_url',`${base}/driver-app.html?stripe=complete`);p2.set('type','account_onboarding');const lr=await fetch('https://api.stripe.com/v1/account_links',{method:'POST',headers:{Authorization:`Bearer ${sk}`,'Content-Type':'application/x-www-form-urlencoded'},body:p2.toString()});const link=await lr.json();if(!lr.ok)return res.status(lr.status).json({error:link?.error?.message||'Stripe onboarding link failed'});return res.status(200).json({account_id:accountId,url:link.url});}catch(e){return res.status(500).json({error:e?.message||'Server error'})}}
+const supabaseUrl =
+  process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL;
+const anonKey =
+  process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const publicUrl = (
+  process.env.VASI_PUBLIC_URL || "https://vasi-new.vercel.app"
+).replace(/\/$/, "");
+
+async function sb(path, auth, options = {}) {
+  return fetch(`${supabaseUrl}${path}`, {
+    ...options,
+    headers: {
+      apikey: anonKey,
+      Authorization: auth,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+}
+
+async function stripeForm(path, params, headers = {}) {
+  const response = await fetch(`https://api.stripe.com${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${stripeKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...headers,
+    },
+    body: params.toString(),
+  });
+  const data = await response.json();
+  return { response, data };
+}
+
+async function configureWeeklyMondayPayout(accountId) {
+  const params = new URLSearchParams();
+  params.set("payments[payouts][schedule][interval]", "weekly");
+  params.append(
+    "payments[payouts][schedule][weekly_payout_days][]",
+    "monday",
+  );
+  const { response, data } = await stripeForm(
+    "/v1/balance_settings",
+    params,
+    { "Stripe-Account": accountId },
+  );
+  if (!response.ok) {
+    const error = new Error(
+      data?.error?.message || "Weekly payout schedule could not be configured",
+    );
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+function driverCountry(value) {
+  const country = String(value || "FR").trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(country) ? country : "FR";
+}
+
+export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "POST required" });
+
+  const auth = req.headers.authorization || "";
+  if (!auth.startsWith("Bearer "))
+    return res.status(401).json({ error: "Unauthorized" });
+  if (!supabaseUrl || !anonKey || !stripeKey)
+    return res
+      .status(503)
+      .json({ error: "Stripe/Supabase environment is not configured" });
+
+  try {
+    const userResponse = await sb("/auth/v1/user", auth, {
+      headers: { apikey: anonKey },
+    });
+    const user = await userResponse.json();
+    if (!user?.id) return res.status(401).json({ error: "Unauthorized" });
+
+    const driverResponse = await sb(
+      `/rest/v1/drivers?select=*&user_id=eq.${encodeURIComponent(user.id)}&limit=1`,
+      auth,
+    );
+    const drivers = await driverResponse.json();
+    if (!driverResponse.ok || !drivers?.length)
+      return res.status(404).json({ error: "Driver profile required" });
+
+    const driver = drivers[0];
+    if (!driver.verified)
+      return res
+        .status(403)
+        .json({ error: "Driver must be verified before Stripe onboarding" });
+
+    let accountId = driver.stripe_account_id;
+    if (!accountId) {
+      const params = new URLSearchParams();
+      params.set("controller[fees][payer]", "application");
+      params.set("controller[losses][payments]", "application");
+      params.set("controller[stripe_dashboard][type]", "express");
+      params.set("country", driverCountry(req.body?.country));
+      if (driver.full_name)
+        params.set("business_profile[name]", driver.full_name);
+      if (driver.phone)
+        params.set("business_profile[support_phone]", driver.phone);
+
+      const { response, data } = await stripeForm("/v1/accounts", params);
+      if (!response.ok)
+        return res.status(response.status).json({
+          error: data?.error?.message || "Stripe account creation failed",
+        });
+
+      accountId = data.id;
+      const updateResponse = await sb(
+        `/rest/v1/drivers?id=eq.${encodeURIComponent(driver.id)}`,
+        auth,
+        {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({ stripe_account_id: accountId }),
+        },
+      );
+      if (!updateResponse.ok)
+        return res.status(500).json({
+          error: "Stripe account created but driver record could not be updated",
+        });
+    }
+
+    await configureWeeklyMondayPayout(accountId);
+
+    const linkParams = new URLSearchParams();
+    linkParams.set("account", accountId);
+    linkParams.set(
+      "refresh_url",
+      `${publicUrl}/driver.html?stripe=refresh`,
+    );
+    linkParams.set(
+      "return_url",
+      `${publicUrl}/driver.html?stripe=complete`,
+    );
+    linkParams.set("type", "account_onboarding");
+
+    const { response, data } = await stripeForm(
+      "/v1/account_links",
+      linkParams,
+    );
+    if (!response.ok)
+      return res.status(response.status).json({
+        error: data?.error?.message || "Stripe onboarding link failed",
+      });
+
+    return res.status(200).json({
+      account_id: accountId,
+      url: data.url,
+      payout_schedule: { interval: "weekly", day: "monday" },
+    });
+  } catch (error) {
+    return res
+      .status(Number(error?.status) || 500)
+      .json({ error: error?.message || "Server error" });
+  }
+}
