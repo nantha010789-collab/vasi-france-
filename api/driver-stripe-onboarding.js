@@ -1,7 +1,11 @@
 const supabaseUrl =
-  process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL;
+  process.env.VASI_SUPABASE_URL ||
+  process.env.SUPABASE_URL ||
+  "https://vhfyvkrvysrooaqzcxsp.supabase.co";
 const anonKey =
-  process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  process.env.VASI_SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 const publicUrl = (
   process.env.VASI_PUBLIC_URL || "https://vasi-new.vercel.app"
