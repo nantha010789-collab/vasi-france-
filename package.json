@@ -9,6 +9,6 @@
     "smoke:live": "node tests/live-smoke.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   }
 }
