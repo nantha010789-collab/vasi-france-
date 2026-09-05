@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 
 process.env.VASI_SUPABASE_URL = "https://unit-test.supabase.co";
 process.env.VASI_SUPABASE_ANON_KEY = "test-publishable-key";
@@ -594,6 +595,36 @@ test("customer, driver, restaurant and admin surfaces load the shared language r
     const source = await readFile(page, "utf8");
     assert.match(source, /vasi-languages\.js/, `${page} must load the language runtime`);
   }
+});
+
+test("shared language runtime translates English and French source pages both ways", async () => {
+  const source = await readFile("vasi-languages.js", "utf8");
+  const runtime = (selectedLanguage) => {
+    const window = { dispatchEvent() {} };
+    runInNewContext(source, {
+      window,
+      document: { readyState: "loading", addEventListener() {} },
+      localStorage: { getItem: () => selectedLanguage, setItem() {} },
+      CustomEvent: class {},
+    });
+    return window.VasiLanguage;
+  };
+
+  const french = runtime("fr");
+  assert.equal(french.translate("Book a ride"), "Commander un trajet");
+  assert.equal(french.translate("🚗 Ride"), "🚗 Trajet");
+  assert.equal(french.translate("Account →"), "Compte →");
+  assert.equal(french.translate("🗓️ Custom date & time"), "🗓️ Date et heure personnalisées");
+
+  const english = runtime("en");
+  assert.equal(english.translate("Commander un trajet"), "Book a ride");
+  assert.equal(english.translate("← Retour"), "← Back");
+  assert.equal(english.translate("Envoyez vos colis."), "Send anything.");
+  assert.equal(english.translate("(facultatif)"), "(optional)");
+  assert.equal(
+    english.translate("Créez un seul compte pour conduire des passagers ou effectuer des livraisons."),
+    "Create one account to drive passengers or make deliveries.",
+  );
 });
 
 test("legacy public pages redirect to the current product", async () => {
