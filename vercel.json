@@ -97,6 +97,7 @@
     "api/admin-drivers.js": { "includeFiles": "api/admin-drivers.js" },
     "api/admin-live-gps.js": { "includeFiles": "api/admin-live-gps.js" },
     "api/admin-stats.js": { "includeFiles": "api/admin-stats.js" },
+    "api/admin-partners.js": { "includeFiles": "api/admin-partners.js" },
     "api/restaurant-admin.js": { "includeFiles": "api/restaurant-admin.js" },
     "api/support.js": { "includeFiles": "api/support.js" },
     "api/pricing.js": { "includeFiles": "api/pricing.js" }
