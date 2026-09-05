@@ -935,6 +935,8 @@ test("legacy public pages redirect to the current product", async () => {
 
 test("bicycle couriers are not asked for motor-vehicle licence documents", async () => {
   const registration = await readFile("partner-register-v2.html", "utf8");
+  assert.doesNotMatch(registration, /\.page-nav\{position:sticky/);
+  assert.match(registration, /\.page-nav\{display:flex/);
   assert.match(registration, /Aucun permis de conduire requis/);
   assert.match(registration, /const motorVehicles = new Set\(\['scooter', 'moto', 'car'\]\)/);
   assert.match(registration, /const cycle = role === 'courier' && !motor/);
