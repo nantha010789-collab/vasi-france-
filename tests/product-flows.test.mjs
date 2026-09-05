@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 process.env.VASI_SUPABASE_URL = "https://unit-test.supabase.co";
 process.env.VASI_SUPABASE_ANON_KEY = "test-publishable-key";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 process.env.STRIPE_SECRET_KEY = "sk_test_unit";
 
 const response = (data, status = 200) => ({
@@ -84,23 +85,23 @@ test("completed cash ride returns a successful payment result", async () => {
   assert.deepEqual(res.body, { ok: true, status: "cash", amount: 18.4, kind: "ride" });
 });
 
-test("VASI Eats validates a live menu and creates an order with delivery PIN", async () => {
-  let createdOrder;
+test("VASI Eats prices a paid order and protects the courier earning", async () => {
+  let insertedOrder = null;
   global.fetch = async (url, options = {}) => {
     const value = String(url);
     if (value.includes("/rest/v1/restaurants?")) {
-      return response([{ id: "restaurant-1", name: "VASI Test Kitchen", cuisine: "French", preparation_minutes: 20, minimum_order: 8, delivery_fee: 2.5, delivery_mode: "vasi", commission_rate: 0.10 }]);
+      return response([{ id: "restaurant-1", name: "VASI Test Kitchen", cuisine: "French", preparation_minutes: 20, minimum_order: 8, delivery_fee: 2.5, delivery_mode: "vasi", delivery_radius_km: 8, commission_rate: 0.1, address: "10 Rue de Paris", city: "Creil", postal_code: "60100" }]);
     }
     if (value.includes("/rest/v1/restaurant_menu_items?")) {
       return response([{ id: "item-1", restaurant_id: "restaurant-1", name: "Meal", category: "Menu", price: 10, allergens: [] }]);
     }
     if (value.endsWith("/auth/v1/user")) return response({ id: "customer-1" });
-    if (value.includes("nominatim.openstreetmap.org")) return response([{ display_name: "1 Rue de Paris, 60100 Creil" }]);
+    if (value.includes("nominatim.openstreetmap.org")) return response([{ display_name: "1 Rue de Paris, 60100 Creil", lat: "49.2583", lon: "2.4829" }]);
+    if (value.includes("router.project-osrm.org")) return response({ routes: [{ distance: 3_000, duration: 600 }] });
     if (value.endsWith("/rest/v1/eats_orders") && options.method === "POST") {
-      createdOrder = JSON.parse(options.body);
+      insertedOrder = JSON.parse(options.body);
       return response([{ id: "order-123" }], 201);
     }
-    if (value.includes("/rest/v1/eats_order_safety?")) return response([{ delivery_pin: "2468" }]);
     throw new Error(`Unexpected request: ${value}`);
   };
   const { default: eatsOrder } = await import(`../api/eats-order.js?test=${Date.now()}`);
@@ -113,13 +114,44 @@ test("VASI Eats validates a live menu and creates an order with delivery PIN", a
   await eatsOrder(req, res);
   assert.equal(res.statusCode, 201);
   assert.equal(res.body.order_id, "order-123");
-  assert.equal(res.body.delivery_pin, "2468");
-  assert.equal(res.body.total, 22.5);
-  assert.equal(res.body.commission_rate, 0.10);
+  assert.equal(res.body.payment_required, true);
+  assert.equal(res.body.courier_offer_amount, 7.35);
+  assert.equal(res.body.service_fee, 1);
+  assert.equal(res.body.total, 26.35);
+  assert.equal(res.body.commission_rate, 0.1);
   assert.equal(res.body.restaurant_commission, 2);
   assert.equal(res.body.restaurant_net, 18);
-  assert.equal(createdOrder.restaurant_commission, 2);
-  assert.equal(createdOrder.restaurant_net, 18);
+  assert.equal(insertedOrder.status, "awaiting_payment");
+  assert.equal(insertedOrder.payment_status, "unpaid");
+  assert.equal(insertedOrder.courier_offer_amount, 7.35);
+});
+
+test("Eats courier pricing is always at least €4 and €20 per estimated active hour", async () => {
+  const { calculateEatsPricing } = await import(`../api/eats-pricing.js?test=${Date.now()}`);
+  const shortJob = calculateEatsPricing({ subtotal: 10, distanceKm: 0.5, routeMinutes: 2 });
+  assert.equal(shortJob.courierOfferAmount, 4);
+  const longJob = calculateEatsPricing({ subtotal: 30, distanceKm: 1, routeMinutes: 52 });
+  assert.ok(longJob.courierOfferAmount >= 20);
+});
+
+test("Eats checkout and courier app enforce payment then PIN-gated RIB payout", async () => {
+  const [checkout, courier, service, migration] = await Promise.all([
+    readFile("eats-checkout.html", "utf8"),
+    readFile("delivery-driver.html", "utf8"),
+    readFile("supabase/functions/delivery-driver-service/index.ts", "utf8"),
+    readFile("supabase/migrations/20260905000000_add_eats_courier_payouts.sql", "utf8"),
+  ]);
+  assert.match(checkout, /js\.stripe\.com\/v3/);
+  assert.match(checkout, /eats-payment/);
+  assert.match(checkout, /Continue to secure payment/);
+  assert.match(courier, /Connect my RIB/);
+  assert.match(courier, /create_payout_onboarding/);
+  assert.match(courier, /minimum €4 per delivery and €20\/hour/);
+  assert.match(service, /source_transaction/);
+  assert.match(service, /idempotencyKey: `vasi-eats-courier-/);
+  assert.match(service, /vasi_courier_complete_eats_order/);
+  assert.match(migration, /payment_status text/);
+  assert.match(migration, /courier_eats_earnings/);
 });
 
 test("restaurant commission is a permanent 10% for every delivery mode", async () => {
