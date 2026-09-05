@@ -480,7 +480,7 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(vercel, /Content-Security-Policy/);
   assert.match(vercel, /Permissions-Policy/);
   const serviceWorker = await readFile("sw.js", "utf8");
-  assert.match(serviceWorker, /vasi-app-v27/);
+  assert.match(serviceWorker, /vasi-app-v28/);
   assert.match(serviceWorker, /url\.origin !== self\.location\.origin/);
   assert.match(serviceWorker, /new Request\(url, \{ cache: "reload" \}\)/);
 });
@@ -902,6 +902,10 @@ test("shared language runtime translates English and French source pages both wa
   const french = runtime("fr");
   assert.equal(french.translate("Book a ride"), "Commander un trajet");
   assert.equal(french.translate("🚗 Ride"), "🚗 Trajet");
+  assert.equal(french.translate("Fast city trips"), "Trajets en ville");
+  assert.equal(french.translate("Food delivery"), "Repas livrés");
+  assert.equal(french.translate("Send anything"), "Envoyez un colis");
+  assert.equal(french.translate("Legal & Privacy"), "Juridique & confidentialité");
   assert.equal(french.translate("Account →"), "Compte →");
   assert.equal(french.translate("🗓️ Custom date & time"), "🗓️ Date et heure personnalisées");
 
