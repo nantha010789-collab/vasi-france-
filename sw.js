@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v25";
+const CACHE = "vasi-app-v26";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
@@ -16,7 +16,7 @@ self.addEventListener("install", (e) =>
   e.waitUntil(
     caches
       .open(CACHE)
-      .then((c) => c.addAll(CORE))
+      .then((c) => c.addAll(CORE.map((url) => new Request(url, { cache: "reload" }))))
       .then(() => self.skipWaiting()),
   ),
 );
