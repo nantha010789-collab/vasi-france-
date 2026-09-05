@@ -16,6 +16,24 @@ async function sb(path, auth, options = {}) {
   });
 }
 
+async function reserveCashCommissionOffset(rideId, auth) {
+  const response = await sb(
+    "/rest/v1/rpc/reserve_ride_cash_commission_offset",
+    auth,
+    {
+    method: "POST",
+      body: JSON.stringify({ p_ride_id: rideId }),
+    },
+  );
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      data?.message || data?.error || "Cash commission balance could not be updated",
+    );
+  }
+  return data || { amount: 0, status: "none" };
+}
+
 function rideCommissionPercent(ride) {
   const stored = Number(ride.commission_percent);
   if (Number.isFinite(stored) && stored >= 0 && stored <= 50) return stored;
@@ -114,7 +132,7 @@ export default async function handler(req, res) {
       return res
         .status(intentResponse.status)
         .json({ error: paymentIntent?.error?.message || "Stripe lookup failed" });
-    if (paymentIntent.status === "succeeded")
+    if (paymentIntent.status === "succeeded") {
       return res.status(200).json({
         ok: true,
         status: "succeeded",
@@ -122,6 +140,7 @@ export default async function handler(req, res) {
         kind,
         already_captured: true,
       });
+    }
     if (paymentIntent.status !== "requires_capture")
       return res.status(409).json({
         error: "Payment is not available for capture",
@@ -138,13 +157,22 @@ export default async function handler(req, res) {
       });
 
     const commissionPercent = rideCommissionPercent(ride);
-    const applicationFee = Math.max(
+    const rideCommission = Math.max(
       0,
       Math.min(
         captureAmount,
         Math.round((captureAmount * commissionPercent) / 100),
       ),
     );
+    const reservedOffset = await reserveCashCommissionOffset(id, auth);
+    const cashDebtOffset = Math.max(
+      0,
+      Math.min(
+        captureAmount - rideCommission,
+        Math.round(Number(reservedOffset.amount || 0) * 100),
+      ),
+    );
+    const applicationFee = rideCommission + cashDebtOffset;
     const captureParams = new URLSearchParams({
       amount_to_capture: String(captureAmount),
     });
@@ -158,15 +186,17 @@ export default async function handler(req, res) {
         headers: {
           Authorization: `Bearer ${stripeKey}`,
           "Content-Type": "application/x-www-form-urlencoded",
+          "Idempotency-Key": `vasi-ride-capture-${id}`,
         },
         body: captureParams.toString(),
       },
     );
     const captured = await captureResponse.json();
-    if (!captureResponse.ok)
+    if (!captureResponse.ok) {
       return res
         .status(captureResponse.status)
         .json({ error: captured?.error?.message || "Capture failed" });
+    }
 
     await sb(`/rest/v1/payments?id=eq.${encodeURIComponent(payment.id)}`, auth, {
       method: "PATCH",
@@ -182,8 +212,11 @@ export default async function handler(req, res) {
       amount: fare,
       kind,
       commission_percent: commissionPercent,
-      vasi_commission: applicationFee / 100,
-      driver_amount: (captureAmount - applicationFee) / 100,
+      vasi_commission: rideCommission / 100,
+      driver_amount: (captureAmount - rideCommission) / 100,
+      cash_commission_debt_deducted: cashDebtOffset / 100,
+      bank_payout_credit: (captureAmount - applicationFee) / 100,
+      cash_commission_status: "pending_stripe_confirmation",
     });
   } catch (error) {
     return res.status(500).json({ error: error?.message || "Server error" });

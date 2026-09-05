@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
 
   const object: any = event.data.object;
   const orderId = object?.metadata?.order_id ?? object?.metadata?.orderId ?? null;
+  const rideId = object?.metadata?.ride_id ?? object?.metadata?.rideId ?? null;
   const service = object?.metadata?.service ?? null;
 
   try {
@@ -46,6 +47,36 @@ Deno.serve(async (req) => {
         .eq("stripe_payment_intent_id", object.id)
         .in("payment_status", ["unpaid", "requires_payment"]);
       if (error) throw error;
+    }
+
+    if (rideId && event.type === "payment_intent.succeeded") {
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .update({ status: "completed", amount: Number(object.amount_received || 0) / 100 })
+        .eq("ride_id", rideId)
+        .eq("provider", "stripe")
+        .eq("provider_payment_id", object.id);
+      if (paymentError) throw paymentError;
+
+      const { error: offsetError } = await supabase.rpc(
+        "apply_ride_cash_commission_offset",
+        {
+          p_ride_id: rideId,
+          p_stripe_payment_intent_id: object.id,
+        },
+      );
+      if (offsetError) throw offsetError;
+    }
+
+    if (
+      rideId &&
+      ["payment_intent.canceled", "payment_intent.payment_failed"].includes(event.type)
+    ) {
+      const { error: offsetError } = await supabase.rpc(
+        "release_ride_cash_commission_offset",
+        { p_ride_id: rideId },
+      );
+      if (offsetError) throw offsetError;
     }
 
     if (

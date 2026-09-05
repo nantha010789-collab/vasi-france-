@@ -212,6 +212,9 @@
           Cash rides are paid directly by the passenger and are not included in
           the bank payout.
         </p>
+        <p id="cashDebtStatus" class="muted">
+          Checking cash-ride commission balance…
+        </p>
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
@@ -242,8 +245,22 @@
           document.getElementById("payoutStatus").textContent =
             "Stripe onboarding needs to be completed. Tap the button to continue.";
         }
-        await loadActiveRide();
+        await Promise.all([loadActiveRide(), loadPayoutBalance()]);
       });
+      async function loadPayoutBalance() {
+        const status = document.getElementById("cashDebtStatus");
+        const { data, error } = await client.rpc(
+          "get_driver_cash_commission_balance",
+        );
+        if (error) {
+          status.textContent = "Cash-ride commission balance is temporarily unavailable.";
+          return;
+        }
+        const debt = Number(data?.cash_commission_debt || 0);
+        status.textContent = debt > 0
+          ? `Cash-ride commission to deduct automatically from future card earnings: €${debt.toFixed(2)}`
+          : "No cash-ride commission is waiting to be deducted.";
+      }
       async function connectBankAccount() {
         const button = document.getElementById("payoutButton");
         const status = document.getElementById("payoutStatus");
@@ -649,6 +666,7 @@
         if (action === "complete") {
           const completedRide = activeRide;
           const payment = await captureCardPayment(completedRide);
+          await loadPayoutBalance();
           document.getElementById("ride").innerHTML =
             '<div class="offer"><h2>✅ Ride Completed</h2><p class="muted">Final fare: €' +
             Number(
