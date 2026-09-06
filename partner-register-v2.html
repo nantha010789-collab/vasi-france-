@@ -74,7 +74,6 @@
 
         <div id="courierDocs" class="docs hidden">
           <label class="doc"><span class="label">SIREN / KBIS / RNE</span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Preuve de votre activité indépendante en France.</span></label>
-          <label class="doc"><span class="label">RIB à votre nom</span><input id="rib" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Utilisé uniquement pour le versement de vos revenus.</span></label>
           <label class="doc"><span class="label">Photo du sac isotherme</span><input id="bag" class="file" type="file" accept="image/jpeg,image/png" /></label>
           <label class="doc"><span class="label" id="vehiclePhotoLabel">Photo du vélo</span><input id="vehicle_photo" class="file" type="file" accept="image/jpeg,image/png" /></label>
           <div id="motorDocs" class="docs hidden">
@@ -83,6 +82,14 @@
             <label class="doc"><span class="label">Carte grise</span><input id="courier_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
             <label class="doc"><span class="label">Capacité / licence de transport léger</span><input id="transport_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
           </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="payout-title">
+        <h2 id="payout-title">Compte bancaire et versements</h2>
+        <div class="rule" role="status">
+          <span aria-hidden="true">€</span>
+          <span><strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.</span>
         </div>
       </section>
 
@@ -150,7 +157,7 @@
           insurance:selected('ride_insurance'), carte_grise:selected('ride_carte_grise')
         };
         const files = {
-          identity:selected('identity'), business:selected('courier_business'), rib:selected('rib'), bag:selected('bag'), vehicle_photo:selected('vehicle_photo')
+          identity:selected('identity'), business:selected('courier_business'), bag:selected('bag'), vehicle_photo:selected('vehicle_photo')
         };
         if (motorVehicles.has(vehicle)) Object.assign(files, {
           licence:selected('courier_licence'), insurance:selected('courier_insurance'), carte_grise:selected('courier_carte_grise'), transport_licence:selected('transport_licence')
@@ -203,7 +210,7 @@
           const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending'};
           if (role === 'ride') metadata.vasi_partner_documents = docs;
           await sb.auth.updateUser({data:metadata});
-          $('msg').innerHTML = '<span class="ok">✓ Dossier envoyé. VASI vous informera après la vérification.</span>';
+          $('msg').innerHTML = '<span class="ok">✓ Dossier envoyé. Après validation, connectez vous-même votre compte bancaire (RIB) dans l’application VASI.</span>';
           $('submitButton').textContent = 'Dossier envoyé';
         } catch (error) {
           showError('Envoi impossible : ' + (error.message || 'réessayez.'));

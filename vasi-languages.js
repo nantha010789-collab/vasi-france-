@@ -211,6 +211,10 @@
 
   const surfaceTranslations = {
     fr: {
+      "Bank account and payouts": "Compte bancaire et versements",
+      "You add your own RIB": "Vous ajoutez vous-même votre RIB",
+      "After VASI approves your documents, open the Driver or Courier app and tap “Connect bank account (RIB)”. You enter your IBAN on Stripe’s secure page. VASI does not store your full IBAN.": "Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.",
+      "Application sent. After approval, connect your bank account (RIB) yourself in the VASI app.": "Dossier envoyé. Après validation, connectez vous-même votre compte bancaire (RIB) dans l’application VASI.",
       "Approved local restaurants, live menus and protected delivery.": "Restaurants locaux approuvés, menus à jour et livraison sécurisée.",
       "Search restaurants, dishes or allergens": "Rechercher des restaurants, plats ou allergènes",
       "Search restaurant, dish or cuisine…": "Rechercher un restaurant, un plat ou une cuisine…",

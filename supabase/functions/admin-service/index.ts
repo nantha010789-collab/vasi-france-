@@ -13,7 +13,7 @@ const text = (value: unknown, max = 500) => String(value ?? '').trim().slice(0, 
 
 const motorCourierVehicles = new Set(['scooter', 'moto', 'car']);
 function courierRequiredDocuments(vehicleType: string) {
-  const required = ['identity', 'business', 'rib', 'bag', 'vehicle_photo', 'selfie'];
+  const required = ['identity', 'business', 'bag', 'vehicle_photo', 'selfie'];
   if (motorCourierVehicles.has(vehicleType)) {
     required.push('licence', 'insurance', 'carte_grise', 'transport_licence');
   }

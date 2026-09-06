@@ -229,6 +229,17 @@ Deno.serve(async (req: Request) => {
   if (action === "set_online") {
     if (!courier.verified && body.online)
       return json({ error: "Delivery driver must be verified" }, 403);
+    if (
+      body.online &&
+      (!courier.stripe_account_id || !courier.stripe_payouts_enabled)
+    )
+      return json(
+        {
+          error:
+            "Connect and verify your bank account (RIB) before going online",
+        },
+        403,
+      );
     if (body.online) {
       const jobs = await currentJobs().catch(() => ({ eat: null, delivery: null }));
       if (jobs.eat || jobs.delivery)
