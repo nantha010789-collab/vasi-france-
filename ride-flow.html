@@ -1698,6 +1698,12 @@
               ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
               : "Choose your vehicle, stops and pickup time";
         } catch (e) {
+          console.error("[ride-route] Route UI processing failed", {
+            message: e?.message || String(e),
+            stack: e?.stack || "",
+            distance_km: route?.km,
+            duration_min: route?.mins,
+          });
           $("mapTripSummary").classList.add("hidden");
           $("status").innerHTML =
             '<span class="error">Route service unavailable — try again</span>';
