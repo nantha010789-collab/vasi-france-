@@ -393,12 +393,15 @@ test("restaurant owners connect their own RIB with weekly Monday payouts", async
 });
 
 test("all paid provider roles require a verified RIB and restaurants receive idempotent transfers", async () => {
-  const [migration, dashboard, partnerApi, courierService, webhook, vercel] = await Promise.all([
+  const [migration, dashboard, partnerApi, courierService, providerPayout, webhook, driverOnboarding, restaurantOnboarding, vercel] = await Promise.all([
     readFile("supabase/migrations/20260906023000_add_provider_stripe_payout_readiness.sql", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("api/restaurant-partner.js", "utf8"),
     readFile("supabase/functions/delivery-driver-service/index.ts", "utf8"),
+    readFile("supabase/functions/provider-payout-service/index.ts", "utf8"),
     readFile("supabase/functions/stripe-webhook/index.ts", "utf8"),
+    readFile("api/driver-stripe-onboarding.js", "utf8"),
+    readFile("api/restaurant-stripe-onboarding.js", "utf8"),
     readFile("vercel.json", "utf8"),
   ]);
   assert.match(migration, /stripe_payouts_enabled = true/);
@@ -409,8 +412,16 @@ test("all paid provider roles require a verified RIB and restaurants receive ide
   assert.match(dashboard, /Complete delivery · enter PIN/);
   assert.match(partnerApi, /idempotencyKey: `vasi-eats-restaurant-/);
   assert.match(partnerApi, /source_transaction/);
+  assert.match(partnerApi, /provider-payout-service/);
   assert.match(courierService, /releaseEatsRestaurantPayout/);
+  assert.match(providerPayout, /driver_onboarding/);
+  assert.match(providerPayout, /restaurant_onboarding/);
+  assert.match(providerPayout, /restaurant_complete_own_delivery/);
+  assert.match(providerPayout, /idempotencyKey: `vasi-eats-restaurant-/);
+  assert.match(providerPayout, /source_transaction/);
   assert.match(webhook, /vasi_restaurant_id/);
+  assert.match(driverOnboarding, /provider-payout-service/);
+  assert.match(restaurantOnboarding, /provider-payout-service/);
   assert.match(vercel, /api\/restaurant-stripe-onboarding\.js/);
 });
 

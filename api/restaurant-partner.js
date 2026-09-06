@@ -47,6 +47,22 @@ async function rpc(name, body) {
   });
 }
 
+async function providerPayout(action, body = {}) {
+  const response = await fetch(`${url}/functions/v1/provider-payout-service`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: auth,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action, ...body }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok)
+    throw httpError(response.status, data?.error || "Payout service unavailable");
+  return data;
+}
+
 async function serviceDb(path, options = {}) {
   if (!serviceKey) throw httpError(503, "Restaurant payout database is not configured");
   const response = await fetch(`${url}/rest/v1/${path}`, {
@@ -514,31 +530,16 @@ export default async function handler(req, res) {
         }),
       });
     if (action === "complete_own_delivery") {
-      const completed = await rpc("vasi_restaurant_complete_own_delivery", {
-        p_order_id: clean(body.id, 60),
-        p_pin: clean(body.pin, 4),
-      });
-      if (!completed?.ok)
-        return res
-          .status(409)
-          .json({ error: completed?.error || "Delivery could not be completed" });
-      const order = completed.eat;
-      return res.status(200).json({
-        order,
-        payout: await releaseRestaurantPayout(restaurant, order),
-      });
+      return res.status(200).json(await providerPayout(
+        "restaurant_complete_own_delivery",
+        { order_id: clean(body.id, 60), pin: clean(body.pin, 4) },
+      ));
     }
     if (action === "retry_restaurant_payout") {
-      const order = (
-        await db(
-          `eats_orders?select=id,subtotal,delivery_fee,currency,delivery_mode,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id&restaurant_id=eq.${restaurant.id}&id=eq.${encodeURIComponent(clean(body.id, 60))}&limit=1`,
-        )
-      )[0];
-      if (!order || order.status !== "delivered" || order.payment_status !== "paid")
-        return res.status(409).json({ error: "Only delivered paid orders can be paid out" });
-      return res.status(200).json({
-        payout: await releaseRestaurantPayout(restaurant, order),
-      });
+      return res.status(200).json(await providerPayout(
+        "restaurant_retry_payout",
+        { order_id: clean(body.id, 60) },
+      ));
     }
     if (action === "order_status")
       return res.status(200).json({

@@ -100,6 +100,20 @@ function driverCountry(value) {
   return /^[A-Z]{2}$/.test(country) ? country : "FR";
 }
 
+async function edgePayout(auth, action) {
+  const response = await fetch(`${supabaseUrl}/functions/v1/provider-payout-service`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: auth,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action }),
+  });
+  const data = await response.json().catch(() => ({ error: "Payout service unavailable" }));
+  return { response, data };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (!["GET", "POST"].includes(req.method))
@@ -108,10 +122,13 @@ export default async function handler(req, res) {
   const auth = req.headers.authorization || "";
   if (!auth.startsWith("Bearer "))
     return res.status(401).json({ error: "Unauthorized" });
-  if (!supabaseUrl || !anonKey || !stripeKey || !serviceKey)
-    return res
-      .status(503)
-      .json({ error: "Stripe/Supabase environment is not configured" });
+  if (!stripeKey || !serviceKey) {
+    const { response, data } = await edgePayout(
+      auth,
+      req.method === "GET" ? "driver_status" : "driver_onboarding",
+    );
+    return res.status(response.status).json(data);
+  }
 
   try {
     const userResponse = await sb("/auth/v1/user", auth, {
