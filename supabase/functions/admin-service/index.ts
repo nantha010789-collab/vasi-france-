@@ -403,6 +403,41 @@ Deno.serve(async (req) => {
       return json({ ok: true, events: data || [] });
     }
 
+    if (action === 'list_discounts') {
+      const { data, error } = await db.from('vasi_discounts').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return json({ ok: true, discounts: (data || []).map((row: any) => ({
+        ...row, type: row.discount_type, value: Number(row.discount_value),
+      })) });
+    }
+    if (action === 'create_discount') {
+      const input = body.discount || {};
+      const code = text(input.code, 32).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      const type = input.type === 'fixed' ? 'fixed' : 'percent';
+      const value = Number(input.value);
+      const usageLimit = input.usage_limit == null || input.usage_limit === '' ? null : Number(input.usage_limit);
+      if (code.length < 3) return json({ error: 'Promo code must contain at least 3 letters or numbers' }, 400);
+      if (!Number.isFinite(value) || value <= 0 || (type === 'percent' && value > 100) || (type === 'fixed' && value > 1000)) return json({ error: 'Invalid promo value' }, 400);
+      if (usageLimit != null && (!Number.isInteger(usageLimit) || usageLimit < 1 || usageLimit > 1000000)) return json({ error: 'Invalid usage limit' }, 400);
+      const startsAt = input.starts_at ? new Date(input.starts_at).toISOString() : new Date().toISOString();
+      const endsAt = input.ends_at ? new Date(input.ends_at).toISOString() : null;
+      if (endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) return json({ error: 'Promo end must be after its start' }, 400);
+      const row = { code, discount_type: type, discount_value: value, starts_at: startsAt, ends_at: endsAt, usage_limit: usageLimit, active: input.active !== false };
+      const { data, error } = await db.from('vasi_discounts').insert(row).select().single();
+      if (error) throw error;
+      await audit('discount_create', 'discount', data.id, { code, type, value, usage_limit: usageLimit });
+      return json({ ok: true, discount: data });
+    }
+    if (action === 'disable_discount') {
+      const id = text(body.discount_id, 80);
+      if (!id) return json({ error: 'Discount id required' }, 400);
+      const { data, error } = await db.from('vasi_discounts').update({ active: false }).eq('id', id).select().maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: 'Discount not found' }, 404);
+      await audit('discount_disable', 'discount', id, { code: data.code });
+      return json({ ok: true, discount: data });
+    }
+
     if (action === 'update_pricing') {
       const update: Record<string, unknown> = {
         offer_active: Boolean(body.offer_active),

@@ -53,8 +53,9 @@ test('edge admin service authorizes every operation and keeps privileged keys se
   assert.match(source, /admin_allowlist/);
   assert.match(source, /userClient\.auth\.getUser\(\)/);
   assert.match(source, /SUPABASE_SECRET_KEYS/);
-  for (const action of ['stats','list_bookings','update_booking','list_drivers','update_driver','live_gps','list_partners','review_partner','list_documents','review_document','list_restaurants','review_restaurant','list_orders','list_finance','list_audit','update_pricing','list_support','update_support']) {
+  for (const action of ['stats','list_bookings','update_booking','list_drivers','update_driver','live_gps','list_partners','review_partner','list_documents','review_document','list_restaurants','review_restaurant','list_orders','list_finance','list_audit','list_discounts','create_discount','disable_discount','update_pricing','list_support','update_support']) {
     assert.match(source, new RegExp(`action === '${action}'`));
   }
   assert.match(source, /Verified Stripe bank payout is required before going online/);
+  assert.match(source, /discount_create/);
 });
