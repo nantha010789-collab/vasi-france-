@@ -45,7 +45,7 @@
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
-  <body>
+  <body data-scroll-mode="viewport">
     <main class="app">
       <header class="top"><div class="brand">VASI</div><button class="back" type="button" onclick="goBack()">← Back</button></header>
       <section class="chat">
@@ -54,7 +54,7 @@
           <div id="route" class="route">Loading your ride…</div>
           <div id="connection" class="connection">Connecting…</div>
         </div>
-        <div id="messages" class="messages" aria-live="polite"><div class="empty">Loading messages…</div></div>
+        <div id="messages" class="messages" data-scroll-region aria-live="polite"><div class="empty">Loading messages…</div></div>
         <p id="notice" class="notice"></p>
         <form id="composer" class="composer" onsubmit="sendMessage(event)">
           <textarea id="message" maxlength="1000" rows="1" aria-label="Message" placeholder="Write a message" onkeydown="handleMessageKey(event)"></textarea>

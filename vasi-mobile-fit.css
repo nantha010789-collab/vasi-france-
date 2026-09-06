@@ -13,24 +13,27 @@
 
 html {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   max-width: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   background: #050505;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
+/*
+ * Default: document pages have one natural page scroller.
+ * Full-screen working surfaces opt in with data-scroll-mode="viewport".
+ */
 body {
-  position: fixed;
-  inset: 0;
   width: 100%;
-  height: 100%;
-  min-height: 0;
+  min-height: 100%;
+  min-height: 100svh;
   max-width: 100%;
   margin: 0;
   overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior-x: none;
   -webkit-overflow-scrolling: touch;
@@ -48,9 +51,61 @@ body > main {
   min-width: 0;
   margin-inline: auto;
   min-height: calc(100vh - var(--vasi-safe-top) - var(--vasi-safe-bottom));
-  min-height: calc(100dvh - var(--vasi-safe-top) - var(--vasi-safe-bottom));
+  min-height: calc(100svh - var(--vasi-safe-top) - var(--vasi-safe-bottom));
   overflow-x: hidden;
   overflow-x: clip;
+}
+
+body[data-scroll-mode="viewport"] {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+body[data-scroll-mode="viewport"] > .app,
+body[data-scroll-mode="viewport"] > main {
+  position: relative;
+  width: min(100%, 760px);
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+body[data-scroll-mode="viewport"] [data-scroll-region] {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+body[data-scroll-mode="viewport"] .chat {
+  min-height: 0 !important;
+  height: auto;
+  overflow: hidden;
+}
+
+body[data-scroll-mode="viewport"] .messages[data-scroll-region] {
+  max-height: none !important;
+}
+
+body[data-scroll-mode="viewport"] .payModal {
+  overflow: hidden;
+}
+
+body[data-scroll-mode="viewport"] .payBox[data-scroll-region] {
+  max-height: calc(100dvh - max(28px, var(--vasi-safe-top)) - max(28px, var(--vasi-safe-bottom)));
 }
 
 body > .app > *,
@@ -134,7 +189,7 @@ button {
     line-height: 1.25;
   }
 
-  body {
+  body:not([data-scroll-mode="viewport"]) {
     scroll-padding-bottom: 45vh;
   }
 }

@@ -725,7 +725,7 @@
       }
     </style>
   </head>
-  <body>
+  <body data-scroll-mode="viewport">
     <main class="app">
       <header class="top">
         <div class="brand">VASI</div>
@@ -742,7 +742,7 @@
         ◎
       </button>
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
-      <section class="panel">
+      <section class="panel" data-scroll-region>
         <div class="grab"></div>
         <div class="field" onclick="useLocation()">
           <span class="fieldDot" aria-hidden="true"></span>Pickup<b id="pickup">Use my current location</b>
@@ -897,7 +897,7 @@
         <p id="status" class="status">Getting your pickup location…</p>
       </section>
       <div id="paymentModal" class="payModal hidden">
-        <div class="payBox">
+        <div class="payBox" data-scroll-region>
           <h2>Authorize your VASI fare</h2>
           <p id="paymentMessage">
             Your card or Apple Pay is charged only after the ride is completed.
