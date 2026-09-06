@@ -1,8 +1,12 @@
-const CACHE = "vasi-app-v28";
+const CACHE = "vasi-app-v29";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
+  appUrl("app.html"),
   appUrl("index.html"),
+  appUrl("assets/ride-service.webp"),
+  appUrl("assets/eats-service.webp"),
+  appUrl("assets/delivery-service.webp"),
   appUrl("manifest.webmanifest"),
   appUrl("vasi-mobile-fit.css"),
   appUrl("vasi-icon.svg"),
@@ -46,7 +50,7 @@ self.addEventListener("fetch", (e) => {
           return n;
         })
         .catch(() =>
-          caches.match(e.request).then((r) => r || caches.match(appUrl("index.html"))),
+          caches.match(e.request).then((r) => r || caches.match(url.pathname === "/" || url.pathname.endsWith("/index.html") ? appUrl("index.html") : appUrl("app.html"))),
         ),
     );
     return;
