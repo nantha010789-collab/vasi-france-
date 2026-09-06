@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="VASI" />
     <link rel="icon" href="https://vasi-new.vercel.app/vasi-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="https://vasi-new.vercel.app/vasi-icon-192.png" />
-    <link rel="preload" href="https://vasi-new.vercel.app/assets/vasi-mobility-hero.webp" as="image" type="image/webp" />
+    <link rel="preload" href="./assets/hero-mobility-v1.webp" as="image" type="image/webp" />
     <link rel="stylesheet" href="./business.css" />
     <title>VASI — Trajets, repas et livraisons</title>
   </head>
@@ -38,7 +38,7 @@
     </header>
     <main id="main">
       <section class="hero" aria-labelledby="hero-title">
-        <img class="hero-image" src="https://vasi-new.vercel.app/assets/vasi-mobility-hero.webp" alt="Voiture et coursier VASI circulant dans une ville française" data-i18n-alt="heroAlt" />
+        <img class="hero-image" src="./assets/hero-mobility-v1.webp" alt="Voiture et coursier VASI circulant dans une ville française" data-i18n-alt="heroAlt" />
         <div class="hero-shade"></div>
         <div class="hero-accent" aria-hidden="true"><span></span><span></span><span></span></div>
         <div class="hero-content shell">
@@ -68,23 +68,23 @@
           <a class="service-card service-ride" href="https://vasi-new.vercel.app/ride-flow.html">
             <div class="service-media" aria-hidden="true"><img src="./assets/service-ride-v1.webp" alt="" loading="lazy" decoding="async" /></div>
             <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 20h20l-2-7a3 3 0 0 0-3-2H11a3 3 0 0 0-3 2l-2 7Z"/><path d="M4 20h24v5H4zM8 25v3M24 25v3M10 16h12"/></svg></div><div class="service-number">01</div>
-            <div class="service-card-copy"><h3 data-i18n="rideTitle">VASI Ride</h3><p data-i18n="rideCopy">Réservez votre trajet et suivez votre chauffeur en temps réel.</p><span class="text-link"><span data-i18n="bookRide">Réserver un trajet</span><span aria-hidden="true">↗</span></span></div>
+            <div class="service-card-copy"><h3 data-i18n="rideTitle">VASI Ride</h3><p data-i18n="rideCopy">Réservez votre trajet et suivez votre chauffeur en temps réel.</p><ul class="service-features"><li data-i18n="rideFeatureOne">Réservation simple</li><li data-i18n="rideFeatureTwo">Suivi du chauffeur</li><li data-i18n="rideFeatureThree">Assistance accessible</li></ul><span class="text-link"><span data-i18n="bookRide">Réserver un trajet</span><span aria-hidden="true">↗</span></span></div>
           </a>
           <a class="service-card service-eats" href="https://vasi-new.vercel.app/eats.html">
             <div class="service-media" aria-hidden="true"><img src="./assets/service-eats-v1.webp" alt="" loading="lazy" decoding="async" /></div>
             <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 7v8a4 4 0 0 0 4 4V7M8 12h4M12 19v7M22 7c3 3 3 9 0 12v7M22 7v12"/></svg></div><div class="service-number">02</div>
-            <div class="service-card-copy"><h3 data-i18n="eatsTitle">VASI Eats</h3><p data-i18n="eatsCopy">Commandez auprès de restaurants partenaires, simplement.</p><span class="text-link"><span data-i18n="orderMeal">Commander un repas</span><span aria-hidden="true">↗</span></span></div>
+            <div class="service-card-copy"><h3 data-i18n="eatsTitle">VASI Eats</h3><p data-i18n="eatsCopy">Commandez auprès de restaurants partenaires, simplement.</p><ul class="service-features"><li data-i18n="eatsFeatureOne">Restaurants partenaires</li><li data-i18n="eatsFeatureTwo">Commande claire</li><li data-i18n="eatsFeatureThree">Suivi de livraison</li></ul><span class="text-link"><span data-i18n="orderMeal">Commander un repas</span><span aria-hidden="true">↗</span></span></div>
           </a>
           <a class="service-card service-delivery" href="https://vasi-new.vercel.app/delivery.html">
             <div class="service-media" aria-hidden="true"><img src="./assets/service-delivery-v1.webp" alt="" loading="lazy" decoding="async" /></div>
             <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m6 11 10-5 10 5-10 5-10-5Z"/><path d="m6 11 10 5 10-5v11l-10 5-10-5V11ZM16 16v11"/></svg></div><div class="service-number">03</div>
-            <div class="service-card-copy"><h3 data-i18n="deliveryTitle">VASI Delivery</h3><p data-i18n="deliveryCopy">Envoyez un colis local et suivez sa progression.</p><span class="text-link"><span data-i18n="sendParcel">Envoyer un colis</span><span aria-hidden="true">↗</span></span></div>
+            <div class="service-card-copy"><h3 data-i18n="deliveryTitle">VASI Delivery</h3><p data-i18n="deliveryCopy">Envoyez un colis local et suivez sa progression.</p><ul class="service-features"><li data-i18n="deliveryFeatureOne">Envois locaux</li><li data-i18n="deliveryFeatureTwo">Progression en direct</li><li data-i18n="deliveryFeatureThree">Aide accessible</li></ul><span class="text-link"><span data-i18n="sendParcel">Envoyer un colis</span><span aria-hidden="true">↗</span></span></div>
           </a>
         </div>
       </section>
-      <section class="availability shell" aria-labelledby="availability-title">
-        <div><p class="section-kicker" data-i18n="availabilityKicker">Disponibilité</p><h2 id="availability-title" data-i18n="availabilityTitle">Votre adresse décide. VASI vous répond.</h2></div>
-        <div class="availability-copy"><p data-i18n="availabilityCopy">Les services sont activés progressivement selon la zone et la disponibilité des partenaires. Saisissez votre adresse dans l’application pour voir les options disponibles en temps réel.</p><div class="availability-tags" aria-label="Services disponibles"><span>VASI Ride</span><span>VASI Eats</span><span>VASI Delivery</span></div><a class="text-button" href="https://vasi-new.vercel.app/"><span data-i18n="checkAvailability">Vérifier ma zone</span><span aria-hidden="true">→</span></a></div>
+      <section class="coverage shell" id="coverage" aria-labelledby="coverage-title">
+        <div class="coverage-copy"><p class="section-kicker" data-i18n="availabilityKicker">Notre couverture</p><h2 id="coverage-title" data-i18n="availabilityTitle">VASI se développe progressivement en France.</h2><p data-i18n="availabilityCopy">La disponibilité dépend de votre adresse et des partenaires actifs. Vérifiez directement dans l’application les services accessibles près de vous.</p><form class="coverage-search" id="coverageForm"><label class="visually-hidden" for="coverageAddress" data-i18n="coverageLabel">Votre adresse</label><input id="coverageAddress" type="text" autocomplete="street-address" data-i18n-placeholder="coveragePlaceholder" placeholder="Entrez votre adresse" required /><button type="submit" aria-label="Vérifier dans l’application"><span data-i18n="checkAvailability">Vérifier dans l’app</span><span aria-hidden="true">→</span></button></form><p class="coverage-note" data-i18n="coverageNote">Les zones sont activées au fur et à mesure du lancement.</p></div>
+        <div class="coverage-visual" aria-hidden="true"><img src="./assets/coverage-france-v1.webp" alt="" loading="lazy" decoding="async" /><span data-i18n="coverageBadge">Déploiement progressif</span></div>
       </section>
       <section class="experience" aria-labelledby="experience-title">
         <div class="shell experience-grid">
@@ -112,10 +112,12 @@
           <article><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5Z"/><path d="M8 9h8M8 12h5"/></svg><div><h3 data-i18n="supportTitle">Assistance VASI</h3><p data-i18n="supportCopy">Une aide accessible depuis l’application.</p></div></article>
         </div>
       </section>
-      <section class="app-access shell" aria-labelledby="app-access-title">
-        <div class="app-access-mark" aria-hidden="true"><img src="https://vasi-new.vercel.app/vasi-icon-192.png" alt="" /></div>
-        <div><p class="section-kicker light" data-i18n="appKicker">VASI sur votre téléphone</p><h2 id="app-access-title" data-i18n="appTitle">Ouvrez l’app. Gardez-la à portée de main.</h2><p data-i18n="appCopy">VASI fonctionne directement dans votre navigateur. Sur mobile, utilisez « Ajouter à l’écran d’accueil » pour y accéder comme à une application.</p></div>
-        <a class="button button-primary button-white" href="https://vasi-new.vercel.app/" data-i18n="openApp">Ouvrir l’app</a>
+      <section class="app-showcase" aria-labelledby="app-access-title">
+        <div class="shell app-showcase-grid">
+          <div class="app-showcase-copy"><p class="section-kicker light" data-i18n="appKicker">VASI sur votre téléphone</p><h2 id="app-access-title" data-i18n="appTitle">Tout VASI dans votre poche.</h2><p data-i18n="appCopy">Réservez un trajet, commandez un repas ou envoyez un colis depuis une expérience claire conçue pour votre mobile.</p><div class="app-benefits"><span data-i18n="appBenefitOne">Simple</span><span data-i18n="appBenefitTwo">Sécurisé</span><span data-i18n="appBenefitThree">Toujours accessible</span></div><a class="button button-primary button-white" href="https://vasi-new.vercel.app/" data-i18n="openApp">Ouvrir l’app</a></div>
+          <div class="app-phone" aria-hidden="true"><img src="./assets/app-phone-v1.webp" alt="" loading="lazy" decoding="async" /></div>
+          <div class="qr-card"><p data-i18n="qrTitle">Scannez pour ouvrir VASI</p><a class="qr-code" href="https://vasi-new.vercel.app/" aria-label="Ouvrir l’application VASI"><img src="./assets/vasi-app-qr.svg" alt="QR code vers l’application VASI" data-i18n-alt="qrAlt" loading="lazy" /></a><p class="qr-help" data-i18n="qrHelp">Ou ouvrez directement l’application sur votre téléphone.</p><a class="button button-light" href="https://vasi-new.vercel.app/" data-i18n="openApp">Ouvrir l’app</a></div>
+        </div>
       </section>
       <section class="contact shell" id="contact">
         <div><p class="section-kicker light" data-i18n="contactKicker">Parlons de votre projet</p><h2 data-i18n="contactTitle">Une question sur VASI&nbsp;?</h2><p data-i18n="contactCopy">Notre équipe est disponible pour les clients et les futurs partenaires.</p></div>
