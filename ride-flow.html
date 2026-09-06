@@ -880,6 +880,7 @@
         stops = [],
         route = { km: 0, mins: 0 },
         etaLastUpdate = 0,
+        homePickup = localStorage.getItem("vasi_pickup_hint") || "",
         homeDestination = localStorage.getItem("vasi_destination_hint") || "",
         openSchedule = localStorage.getItem("vasi_open_schedule") === "1",
         stripe = null,
@@ -1231,7 +1232,8 @@
             );
         });
         checkPaymentAvailability();
-        useLocation();
+        if (homePickup) useHomePickup();
+        else useLocation();
         Promise.allSettled([
           loadPricing(),
           loadCustomerOffer(),
@@ -1242,6 +1244,22 @@
             selectType(selected);
           }
         });
+      }
+      async function useHomePickup() {
+        const raw = homePickup;
+        homePickup = "";
+        localStorage.removeItem("vasi_pickup_hint");
+        $("status").textContent = "Finding pickup…";
+        try {
+          const resolved = await resolveMapPlace(raw, "pickup"),
+            found = resolved?.found,
+            lat = Number(found?.lat),
+            lng = Number(found?.lon);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw Error("Pickup unavailable");
+          setPickup([lat, lng], formatGeocodedAddress(found, raw));
+        } catch (error) {
+          useLocation();
+        }
       }
       function useLocation() {
         if (!navigator.geolocation) {
