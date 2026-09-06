@@ -103,18 +103,34 @@ function accountState(account) {
   };
 }
 
+async function edgePayout(authorization, action) {
+  const response = await fetch(`${supabaseUrl}/functions/v1/provider-payout-service`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: authorization,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action }),
+  });
+  const data = await response.json().catch(() => ({ error: "Payout service unavailable" }));
+  return { response, data };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   if (!["GET", "POST"].includes(req.method))
     return res.status(405).json({ error: "GET or POST required" });
-  if (!stripeKey || !supabaseUrl || !anonKey || !serviceKey)
-    return res
-      .status(503)
-      .json({ error: "Stripe/Supabase payout service is not configured" });
-
   const authorization = req.headers.authorization || "";
   if (!authorization.startsWith("Bearer "))
     return res.status(401).json({ error: "Unauthorized" });
+  if (!stripeKey || !serviceKey) {
+    const { response, data } = await edgePayout(
+      authorization,
+      req.method === "GET" ? "restaurant_status" : "restaurant_onboarding",
+    );
+    return res.status(response.status).json(data);
+  }
 
   try {
     const { response: userResponse, data: user } = await supabase(
