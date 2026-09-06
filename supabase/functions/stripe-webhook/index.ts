@@ -94,14 +94,46 @@ Deno.serve(async (req) => {
     }
 
     if (event.type === "account.updated" && object?.metadata?.vasi_courier_id) {
+      const payoutsEnabled = Boolean(object.payouts_enabled);
       const { error } = await supabase
         .from("delivery_drivers")
         .update({
           stripe_details_submitted: Boolean(object.details_submitted),
-          stripe_payouts_enabled: Boolean(object.payouts_enabled),
+          stripe_payouts_enabled: payoutsEnabled,
+          ...(payoutsEnabled ? {} : { online: false }),
           updated_at: new Date().toISOString(),
         })
         .eq("id", object.metadata.vasi_courier_id)
+        .eq("stripe_account_id", object.id);
+      if (error) throw error;
+    }
+
+    if (event.type === "account.updated" && object?.metadata?.vasi_driver_id) {
+      const payoutsEnabled = Boolean(object.payouts_enabled);
+      const { error } = await supabase
+        .from("drivers")
+        .update({
+          stripe_details_submitted: Boolean(object.details_submitted),
+          stripe_payouts_enabled: payoutsEnabled,
+          ...(payoutsEnabled ? {} : { online: false }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", object.metadata.vasi_driver_id)
+        .eq("stripe_account_id", object.id);
+      if (error) throw error;
+    }
+
+    if (event.type === "account.updated" && object?.metadata?.vasi_restaurant_id) {
+      const payoutsEnabled = Boolean(object.payouts_enabled);
+      const { error } = await supabase
+        .from("restaurants")
+        .update({
+          stripe_details_submitted: Boolean(object.details_submitted),
+          stripe_payouts_enabled: payoutsEnabled,
+          ...(payoutsEnabled ? {} : { is_open: false }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", object.metadata.vasi_restaurant_id)
         .eq("stripe_account_id", object.id);
       if (error) throw error;
     }

@@ -6,7 +6,12 @@ const anonKey =
   process.env.VASI_SUPABASE_ANON_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
-const stripeKey = process.env.STRIPE_SECRET_KEY;
+const serviceKey =
+  process.env.VASI_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
+  "";
+const stripeKey = process.env.STRIPE_SECRET_KEY || "";
 const publicUrl = (
   process.env.VASI_PUBLIC_URL || "https://vasi-new.vercel.app"
 ).replace(/\/$/, "");
@@ -21,6 +26,37 @@ async function sb(path, auth, options = {}) {
       ...(options.headers || {}),
     },
   });
+}
+
+async function saveDriverPayoutState(driverId, patch) {
+  const response = await sb(
+    `/rest/v1/drivers?id=eq.${encodeURIComponent(driverId)}`,
+    `Bearer ${serviceKey}`,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }),
+    },
+  );
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const error = new Error(data?.message || "Driver payout account could not be saved");
+    error.status = response.status;
+    throw error;
+  }
+}
+
+async function stripeGet(path) {
+  const response = await fetch(`https://api.stripe.com${path}`, {
+    headers: { Authorization: `Bearer ${stripeKey}` },
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(data?.error?.message || "Stripe request failed");
+    error.status = response.status;
+    throw error;
+  }
+  return data;
 }
 
 async function stripeForm(path, params, headers = {}) {
@@ -65,14 +101,14 @@ function driverCountry(value) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
-  if (req.method !== "POST")
-    return res.status(405).json({ error: "POST required" });
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  if (!["GET", "POST"].includes(req.method))
+    return res.status(405).json({ error: "GET or POST required" });
 
   const auth = req.headers.authorization || "";
   if (!auth.startsWith("Bearer "))
     return res.status(401).json({ error: "Unauthorized" });
-  if (!supabaseUrl || !anonKey || !stripeKey)
+  if (!supabaseUrl || !anonKey || !stripeKey || !serviceKey)
     return res
       .status(503)
       .json({ error: "Stripe/Supabase environment is not configured" });
@@ -99,16 +135,51 @@ export default async function handler(req, res) {
         .json({ error: "Driver must be verified before Stripe onboarding" });
 
     let accountId = driver.stripe_account_id;
+    let account = accountId
+      ? await stripeGet(`/v1/accounts/${encodeURIComponent(accountId)}`)
+      : null;
+
+    if (
+      account?.metadata?.vasi_driver_id &&
+      account.metadata.vasi_driver_id !== driver.id
+    )
+      return res.status(409).json({ error: "Driver payout account does not match" });
+
+    if (req.method === "GET") {
+      const detailsSubmitted = Boolean(account?.details_submitted);
+      const payoutsEnabled = Boolean(account?.payouts_enabled);
+      if (
+        driver.stripe_details_submitted !== detailsSubmitted ||
+        driver.stripe_payouts_enabled !== payoutsEnabled
+      )
+        await saveDriverPayoutState(driver.id, {
+          stripe_details_submitted: detailsSubmitted,
+          stripe_payouts_enabled: payoutsEnabled,
+          ...(payoutsEnabled ? {} : { online: false }),
+        });
+      return res.status(200).json({
+        connected: Boolean(accountId),
+        details_submitted: detailsSubmitted,
+        payouts_enabled: payoutsEnabled,
+        payout_schedule: { interval: "weekly", day: "monday" },
+      });
+    }
+
     if (!accountId) {
       const params = new URLSearchParams();
       params.set("controller[fees][payer]", "application");
       params.set("controller[losses][payments]", "application");
       params.set("controller[stripe_dashboard][type]", "express");
+      params.set("capabilities[transfers][requested]", "true");
       params.set("country", driverCountry(req.body?.country));
+      params.set("default_currency", "eur");
       if (driver.full_name)
         params.set("business_profile[name]", driver.full_name);
       if (driver.phone)
         params.set("business_profile[support_phone]", driver.phone);
+      if (user.email) params.set("email", user.email);
+      params.set("metadata[vasi_driver_id]", driver.id);
+      params.set("metadata[vasi_user_id]", user.id);
 
       const { response, data } = await stripeForm("/v1/accounts", params);
       if (!response.ok)
@@ -117,19 +188,12 @@ export default async function handler(req, res) {
         });
 
       accountId = data.id;
-      const updateResponse = await sb(
-        `/rest/v1/drivers?id=eq.${encodeURIComponent(driver.id)}`,
-        auth,
-        {
-          method: "PATCH",
-          headers: { Prefer: "return=minimal" },
-          body: JSON.stringify({ stripe_account_id: accountId }),
-        },
-      );
-      if (!updateResponse.ok)
-        return res.status(500).json({
-          error: "Stripe account created but driver record could not be updated",
-        });
+      account = data;
+      await saveDriverPayoutState(driver.id, {
+        stripe_account_id: accountId,
+        stripe_details_submitted: Boolean(account.details_submitted),
+        stripe_payouts_enabled: Boolean(account.payouts_enabled),
+      });
     }
 
     await configureWeeklyMondayPayout(accountId);
