@@ -1,10 +1,16 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#07111f" />
-    <meta name="description" content="VASI réunit trajets, livraison de repas et envoi de colis dans une seule expérience simple et fiable." />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050505" />
+    <meta
+      name="description"
+      content="Book VASI rides, food delivery and local courier services across France and Europe."
+    />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -12,136 +18,508 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./vasi-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./vasi-icon-192.png" />
-    <link rel="preload" href="./assets/vasi-mobility-hero.webp" as="image" type="image/webp" />
-    <link rel="stylesheet" href="./business.css" />
-    <title>VASI — Trajets, repas et livraisons</title>
-    <script>
-      (() => {
-        const installed =
-          window.matchMedia?.("(display-mode: standalone)").matches ||
-          window.navigator.standalone === true;
-        if (installed && !location.pathname.endsWith("/app.html")) {
-          location.replace("./app.html");
+    <title>VASI — Move. Eat. Deliver.</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, sans-serif;
+        color: #fff;
+        background: #050505;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #050505;
+      }
+      body {
+        margin: 0;
+      }
+      .app {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        width: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        display: flex;
+        flex-direction: column;
+        max-width: 720px;
+        margin: auto;
+        padding:
+          calc(env(safe-area-inset-top, 0px) + 18px)
+          max(18px, env(safe-area-inset-right, 0px))
+          calc(env(safe-area-inset-bottom, 0px) + 40px)
+          max(18px, env(safe-area-inset-left, 0px));
+      }
+      .app::-webkit-scrollbar {
+        display: none;
+      }
+      .top {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand {
+        font-size: 30px;
+        font-weight: 900;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+      .pill {
+        border: 1px solid #303030;
+        background: #151515;
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: #ddd;
+        text-decoration: none;
+      }
+      #accountBtn {
+        max-width: 112px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .hero {
+        padding: clamp(26px, 5.5vh, 42px) 0 clamp(18px, 3.2vh, 26px);
+      }
+      .eyebrow {
+        color: #aaa;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+      }
+      .hero h1 {
+        font-size: clamp(34px, 9.5vw, 44px);
+        line-height: 1.02;
+        margin: 10px 0 14px;
+        letter-spacing: clamp(-2.5px, -0.55vw, -1.5px);
+      }
+      .hero p {
+        color: #aaa;
+        font-size: 16px;
+      }
+      .services {
+        flex: 0 0 auto;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .card {
+        min-width: 0;
+        min-height: clamp(118px, 18vh, 145px);
+        border: 1px solid #292929;
+        border-radius: 22px;
+        padding: clamp(12px, 4vw, 17px);
+        background: #111;
+        cursor: pointer;
+        text-align: left;
+        color: #fff;
+      }
+      .card strong {
+        display: block;
+        font-size: clamp(16px, 4.8vw, 19px);
+        margin-top: clamp(24px, 5.2vh, 42px);
+        overflow-wrap: anywhere;
+      }
+      .card span {
+        color: #999;
+        font-size: clamp(11px, 3.1vw, 12px);
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .section {
+        flex: 0 0 auto;
+        margin-top: clamp(20px, 3.8vh, 30px);
+      }
+      .panel {
+        border: 1px solid #292929;
+        background: #101010;
+        border-radius: 22px;
+        padding: clamp(14px, 4.5vw, 18px);
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #222;
+      }
+      .muted {
+        color: #999;
+      }
+      .cta {
+        width: 100%;
+        border: 0;
+        border-radius: 16px;
+        padding: 16px;
+        margin-top: 14px;
+        background: #fff;
+        color: #050505;
+        font-weight: 800;
+        font-size: 16px;
+      }
+      .driver {
+        display: block;
+        width: 100%;
+        border: 1px solid #303030;
+        border-radius: 16px;
+        padding: 14px;
+        margin-top: 10px;
+        background: #171717;
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        text-align: center;
+      }
+      @media (max-width: 520px) and (max-height: 950px) {
+        .app {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
         }
-      })();
-    </script>
+        .hero {
+          padding-top: clamp(18px, 3dvh, 26px);
+          padding-bottom: clamp(12px, 2dvh, 18px);
+        }
+        .hero p {
+          margin-block: 10px 0;
+        }
+        .card {
+          min-height: clamp(108px, 14dvh, 132px);
+        }
+        .card strong {
+          margin-top: clamp(18px, 3.4dvh, 30px);
+        }
+        .section {
+          margin-top: clamp(14px, 2.2dvh, 20px);
+        }
+        .panel {
+          padding: 14px;
+        }
+        .row {
+          padding-block: 10px;
+        }
+        .cta {
+          padding-block: 13px;
+          margin-top: 12px;
+        }
+        .driver {
+          padding-block: 11px;
+          margin-top: 8px;
+        }
+      }
+      @media (max-height: 740px) {
+        .app {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+        }
+        .hero {
+          padding-top: 22px;
+          padding-bottom: 14px;
+        }
+        .hero h1 {
+          font-size: clamp(32px, 8.8vw, 38px);
+          margin-block: 8px 10px;
+        }
+        .hero p {
+          margin-block: 8px;
+        }
+        .card {
+          min-height: 108px;
+        }
+        .card strong {
+          margin-top: 20px;
+        }
+        .section {
+          margin-top: 16px;
+        }
+        .panel {
+          padding: 13px;
+        }
+        .row {
+          padding-block: 8px;
+        }
+        .cta {
+          padding-block: 12px;
+          margin-top: 10px;
+        }
+        .driver {
+          padding-block: 11px;
+          margin-top: 8px;
+        }
+      }
+      @media (max-height: 620px) {
+        .hero {
+          padding-top: 14px;
+          padding-bottom: 10px;
+        }
+        .eyebrow {
+          font-size: 12px;
+        }
+        .hero h1 {
+          font-size: 30px;
+        }
+        .hero p {
+          font-size: 14px;
+        }
+        .card {
+          min-height: 96px;
+        }
+        .card strong {
+          margin-top: 12px;
+        }
+      }
+      @media (max-width: 520px) and (min-height: 760px) {
+        .app {
+          justify-content: space-between;
+        }
+        .hero {
+          padding-block: 0;
+        }
+        .section {
+          margin-top: 0;
+        }
+      }
+      @media (max-width: 520px) {
+        .brand {
+          flex: 0 0 auto;
+          font-size: 27px;
+        }
+        .actions {
+          min-width: 0;
+          justify-content: flex-end;
+          gap: 6px;
+        }
+        .pill {
+          min-height: 42px;
+          padding: 8px 10px;
+          font-size: 14px;
+          line-height: 1;
+        }
+        #accountBtn {
+          max-width: 100px;
+        }
+        #langBtn {
+          flex: 0 0 42px;
+          width: 42px;
+          padding-inline: 0;
+        }
+      }
+      @media (max-width: 360px) {
+        .app {
+          padding-left: max(12px, env(safe-area-inset-left, 0px));
+          padding-right: max(12px, env(safe-area-inset-right, 0px));
+        }
+        .top {
+          gap: 8px;
+        }
+        .brand {
+          font-size: 24px;
+        }
+        .pill {
+          padding-inline: 8px;
+          font-size: 13px;
+        }
+        #accountBtn {
+          max-width: 86px;
+        }
+      }
+      @media (max-width: 520px) {
+        html[lang="fr"] .eyebrow {
+          font-size: 12px;
+          letter-spacing: 1.15px;
+        }
+        html[lang="fr"] .hero h1 {
+          font-size: clamp(33px, 8.8vw, 39px);
+          line-height: 1.04;
+        }
+        html[lang="fr"] .hero p {
+          font-size: 15px;
+          line-height: 1.35;
+        }
+        html[lang="fr"] .services {
+          gap: 8px;
+        }
+        html[lang="fr"] .card {
+          padding-inline: 10px;
+        }
+        html[lang="fr"] .card strong {
+          font-size: clamp(13px, 3.7vw, 15px);
+          white-space: nowrap;
+          overflow-wrap: normal;
+          word-break: normal;
+        }
+        html[lang="fr"] .card span {
+          font-size: clamp(10px, 2.8vw, 11px);
+          overflow-wrap: normal;
+          word-break: normal;
+          hyphens: none;
+        }
+        html[lang="fr"] .section {
+          margin-top: clamp(16px, 2.2dvh, 20px);
+        }
+        html[lang="fr"] .driver {
+          font-size: clamp(13px, 3.7vw, 15px);
+        }
+      }
+    </style>
+    <style id="vasi-service-photo-cards">
+      .card {
+        min-height: clamp(154px, 21dvh, 180px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 9px;
+        background: #101010;
+      }
+      .card > .service-photo {
+        width: 100%;
+        height: clamp(66px, 9.5dvh, 86px);
+        flex: 0 0 auto;
+        display: block;
+        overflow: hidden;
+        border: 1px solid #2d2d2d;
+        border-radius: 14px;
+        background: #071a42;
+      }
+      .card > .service-photo img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        object-position: center;
+      }
+      .card > strong {
+        margin: 9px 2px 0;
+        line-height: 1.05;
+      }
+      .card > span:not(.service-photo) {
+        margin: 3px 2px 0;
+        line-height: 1.25;
+      }
+      .card:active .service-photo img { transform: scale(.98); }
+      @media (max-height: 700px) {
+        .card { min-height: 138px; padding: 7px; }
+        .card > .service-photo { height: 58px; border-radius: 12px; }
+        .card > strong { margin-top: 7px; }
+      }
+      @media (max-width: 360px) {
+        .services { gap: 7px; }
+        .card { padding: 6px; border-radius: 18px; }
+        .card > .service-photo { height: 54px; border-radius: 11px; }
+        .card > strong { font-size: 13px; }
+        .card > span:not(.service-photo) { font-size: 10px; }
+      }
+    </style>
   </head>
-  <body data-vasi-business>
-    <a class="skip-link" href="#main" data-i18n="skip">Aller au contenu</a>
-    <header class="site-header">
-      <div class="header-inner">
-        <a class="brand" href="./" aria-label="VASI accueil"><span class="brand-mark" aria-hidden="true">V</span><span>VASI</span></a>
-        <nav class="desktop-nav" aria-label="Navigation principale">
-          <a href="#services" data-i18n="navServices">Services</a>
-          <a href="#partners" data-i18n="navPartners">Partenaires</a>
-          <a href="#safety" data-i18n="navSafety">Sécurité</a>
-          <a href="./help.html" data-i18n="navHelp">Aide</a>
-          <a href="./contact.html" data-i18n="navContact">Contact</a>
-        </nav>
-        <div class="header-actions">
-          <div class="language-switch" role="group" aria-label="Choisir la langue">
-            <button class="lang-button is-active" type="button" data-lang="fr" aria-pressed="true">FR</button>
-            <button class="lang-button" type="button" data-lang="en" aria-pressed="false">EN</button>
+  <body>
+    <main class="app">
+      <header class="top">
+        <div class="brand">VASI</div>
+        <div class="actions">
+          <button class="pill" onclick="location.href='activity.html'">
+            Activity
+          </button>
+          <button
+            id="accountBtn"
+            class="pill"
+            onclick="openAccount()"
+          >
+            Login</button
+          ><button id="langBtn" class="pill" onclick="openLanguageSettings()" aria-label="Language">🌐</button>
+        </div>
+      </header>
+      <section class="hero">
+        <div class="eyebrow">Europe mobility platform</div>
+        <h1>Move.<br />Eat.<br />Deliver.</h1>
+        <p>One VASI app for rides, food and delivery.</p>
+      </section>
+      <section class="services" aria-label="VASI services">
+        <button class="card" onclick="location.href='ride-flow.html'">
+          <span class="service-photo" aria-hidden="true"><img src="./assets/ride-service.webp" alt="" loading="eager" decoding="async" /></span>
+          <strong>Ride</strong><span>Fast city trips</span>
+        </button>
+        <button class="card" onclick="location.href='eats.html'">
+          <span class="service-photo" aria-hidden="true"><img src="./assets/eats-service.webp" alt="" loading="eager" decoding="async" /></span>
+          <strong>Eats</strong><span>Food delivery</span>
+        </button>
+        <button class="card" onclick="location.href='delivery.html'">
+          <span class="service-photo" aria-hidden="true"><img src="./assets/delivery-service.webp" alt="" loading="eager" decoding="async" /></span>
+          <strong>Delivery</strong><span>Send anything</span>
+        </button>
+      </section>
+      <section class="section">
+        <div class="panel">
+          <div class="row">
+            <span class="muted">France & Europe</span
+            ><span class="muted">VASI</span>
           </div>
-          <a class="button button-small button-light" href="./app" data-i18n="openApp">Ouvrir l’app</a>
+          <button class="cta" onclick="location.href='ride-flow.html'">
+            Book a ride</button
+          ><button class="driver" onclick="location.href='auth.html?role=ride'">
+            🚕 Driver app
+          </button>
+          <button class="driver" onclick="location.href='support.html'">
+            💬 AI Customer Service
+          </button>
+          <button class="driver" onclick="location.href='legal.html'">
+            § Legal & Privacy
+          </button>
         </div>
-      </div>
-    </header>
-    <main id="main">
-      <section class="hero" aria-labelledby="hero-title">
-        <img class="hero-image" src="./assets/vasi-mobility-hero.webp" alt="Voiture et coursier VASI circulant dans une ville française" data-i18n-alt="heroAlt" />
-        <div class="hero-shade"></div>
-        <div class="hero-accent" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div class="hero-content shell">
-          <p class="eyebrow" data-i18n="heroEyebrow">Mobilité • Repas • Livraison</p>
-          <h1 id="hero-title" data-i18n-html="heroTitle">La ville avance.<br />VASI aussi.</h1>
-          <p class="hero-copy" data-i18n="heroCopy">Réservez un trajet, commandez un repas ou envoyez un colis depuis une seule expérience pensée pour la France.</p>
-          <form class="quick-booking" id="quickBooking" aria-label="Réserver rapidement un trajet">
-            <label><span data-i18n="pickupLabel">Départ</span><input id="quickPickup" type="text" autocomplete="street-address" data-i18n-placeholder="pickupPlaceholder" placeholder="Votre adresse de départ" /></label>
-            <label><span data-i18n="destinationLabel">Destination</span><input id="quickDestination" type="text" autocomplete="street-address" data-i18n-placeholder="destinationPlaceholder" placeholder="Où allez-vous ?" required /></label>
-            <button type="submit" aria-label="Rechercher un trajet"><span data-i18n="searchRide">Rechercher</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></button>
-          </form>
-          <div class="hero-actions">
-            <a class="button button-primary" href="./app"><span data-i18n="startNow">Commencer maintenant</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
-            <a class="button button-ghost" href="#partners" data-i18n="becomePartner">Devenir partenaire</a>
-          </div>
-          <div class="hero-proof" aria-label="Services VASI"><span data-i18n="proofOne">Une seule application</span><span aria-hidden="true"></span><span data-i18n="proofTwo">Trois services essentiels</span></div>
-        </div>
-      </section>
-      <section class="intro shell" aria-label="Présentation VASI">
-        <p class="section-kicker" data-i18n="introKicker">VASI, simplement</p>
-        <h2 data-i18n="introTitle">Tout ce dont votre journée a besoin, au même endroit.</h2>
-        <p data-i18n="introCopy">Du premier trajet du matin au dîner livré le soir, VASI vous aide à avancer avec une expérience claire, rapide et locale.</p>
-      </section>
-      <section class="services shell" id="services" aria-labelledby="services-title">
-        <div class="section-heading"><div><p class="section-kicker" data-i18n="servicesKicker">Nos services</p><h2 id="services-title" data-i18n="servicesTitle">Choisissez. Réservez. Avancez.</h2></div><p data-i18n="servicesCopy">Chaque service VASI est conçu pour aller droit à l’essentiel.</p></div>
-        <div class="service-grid">
-          <a class="service-card service-ride" href="./ride-flow.html">
-            <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 20h20l-2-7a3 3 0 0 0-3-2H11a3 3 0 0 0-3 2l-2 7Z"/><path d="M4 20h24v5H4zM8 25v3M24 25v3M10 16h12"/></svg></div><div class="service-number">01</div>
-            <div class="service-card-copy"><h3 data-i18n="rideTitle">VASI Ride</h3><p data-i18n="rideCopy">Réservez votre trajet et suivez votre chauffeur en temps réel.</p><span class="text-link"><span data-i18n="bookRide">Réserver un trajet</span><span aria-hidden="true">↗</span></span></div>
-          </a>
-          <a class="service-card service-eats" href="./eats.html">
-            <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M8 7v8a4 4 0 0 0 4 4V7M8 12h4M12 19v7M22 7c3 3 3 9 0 12v7M22 7v12"/></svg></div><div class="service-number">02</div>
-            <div class="service-card-copy"><h3 data-i18n="eatsTitle">VASI Eats</h3><p data-i18n="eatsCopy">Commandez auprès de restaurants partenaires, simplement.</p><span class="text-link"><span data-i18n="orderMeal">Commander un repas</span><span aria-hidden="true">↗</span></span></div>
-          </a>
-          <a class="service-card service-delivery" href="./delivery.html">
-            <div class="service-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m6 11 10-5 10 5-10 5-10-5Z"/><path d="m6 11 10 5 10-5v11l-10 5-10-5V11ZM16 16v11"/></svg></div><div class="service-number">03</div>
-            <div class="service-card-copy"><h3 data-i18n="deliveryTitle">VASI Delivery</h3><p data-i18n="deliveryCopy">Envoyez un colis local et suivez sa progression.</p><span class="text-link"><span data-i18n="sendParcel">Envoyer un colis</span><span aria-hidden="true">↗</span></span></div>
-          </a>
-        </div>
-      </section>
-      <section class="availability shell" aria-labelledby="availability-title">
-        <div><p class="section-kicker" data-i18n="availabilityKicker">Disponibilité</p><h2 id="availability-title" data-i18n="availabilityTitle">Votre adresse décide. VASI vous répond.</h2></div>
-        <div class="availability-copy"><p data-i18n="availabilityCopy">Les services sont activés progressivement selon la zone et la disponibilité des partenaires. Saisissez votre adresse dans l’application pour voir les options disponibles en temps réel.</p><div class="availability-tags" aria-label="Services disponibles"><span>VASI Ride</span><span>VASI Eats</span><span>VASI Delivery</span></div><a class="text-button" href="./app"><span data-i18n="checkAvailability">Vérifier ma zone</span><span aria-hidden="true">→</span></a></div>
-      </section>
-      <section class="experience" aria-labelledby="experience-title">
-        <div class="shell experience-grid">
-          <div class="experience-panel"><p class="section-kicker light" data-i18n="experienceKicker">Une expérience cohérente</p><h2 id="experience-title" data-i18n="experienceTitle">Un compte. Une ville. Toutes vos possibilités.</h2></div>
-          <div class="experience-list">
-            <article><span>01</span><div><h3 data-i18n="experienceOneTitle">Simple à utiliser</h3><p data-i18n="experienceOneCopy">Des parcours courts et clairs, du choix au suivi.</p></div></article>
-            <article><span>02</span><div><h3 data-i18n="experienceTwoTitle">Pensé pour le mobile</h3><p data-i18n="experienceTwoCopy">Une expérience fluide, où que vous soyez.</p></div></article>
-            <article><span>03</span><div><h3 data-i18n="experienceThreeTitle">Assistance accessible</h3><p data-i18n="experienceThreeCopy">Retrouvez rapidement l’aide et les informations utiles.</p></div></article>
-          </div>
-        </div>
-      </section>
-      <section class="partners shell" id="partners" aria-labelledby="partners-title">
-        <div class="section-heading partners-heading"><div><p class="section-kicker" data-i18n="partnersKicker">Grandir avec VASI</p><h2 id="partners-title" data-i18n="partnersTitle">Votre activité. Votre rythme.</h2></div><p data-i18n="partnersCopy">Rejoignez la plateforme en tant que chauffeur, coursier ou restaurant partenaire.</p></div>
-        <div class="partner-grid">
-          <a class="partner-card" href="./partners.html#driver"><span class="partner-label" data-i18n="driverLabel">Chauffeurs</span><h3 data-i18n="driverTitle">Conduisez avec VASI</h3><p data-i18n="driverCopy">Créez votre profil chauffeur et gérez vos courses.</p><span class="circle-arrow" aria-hidden="true">↗</span></a>
-          <a class="partner-card" href="./partners.html#courier"><span class="partner-label" data-i18n="courierLabel">Coursiers</span><h3 data-i18n="courierTitle">Livrez avec souplesse</h3><p data-i18n="courierCopy">Rejoignez VASI Delivery et VASI Eats.</p><span class="circle-arrow" aria-hidden="true">↗</span></a>
-          <a class="partner-card partner-featured" href="./partners.html#restaurant"><span class="partner-label" data-i18n="restaurantLabel">Restaurants</span><h3 data-i18n="restaurantTitle">Développez vos commandes</h3><p data-i18n="restaurantCopy">Présentez votre menu et recevez des commandes en ligne.</p><span class="circle-arrow" aria-hidden="true">↗</span></a>
-        </div>
-      </section>
-      <section class="safety shell" id="safety" aria-labelledby="safety-title">
-        <div class="safety-copy"><p class="section-kicker" data-i18n="safetyKicker">Confiance et sécurité</p><h2 id="safety-title" data-i18n="safetyTitle">La tranquillité fait partie du trajet.</h2><p data-i18n="safetyCopy">VASI rassemble les outils utiles pour suivre vos activités, protéger votre compte et demander de l’aide.</p><a class="text-button" href="./safety.html"><span data-i18n="discoverSafety">Découvrir la sécurité VASI</span><span aria-hidden="true">→</span></a></div>
-        <div class="safety-features">
-          <article><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg><div><h3 data-i18n="secureAccount">Compte protégé</h3><p data-i18n="secureAccountCopy">Connexion sécurisée et préférences de confidentialité.</p></div></article>
-          <article><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 7v5l3 2"/></svg><div><h3 data-i18n="liveTracking">Suivi en direct</h3><p data-i18n="liveTrackingCopy">Les informations essentielles de votre activité au même endroit.</p></div></article>
-          <article><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5Z"/><path d="M8 9h8M8 12h5"/></svg><div><h3 data-i18n="supportTitle">Assistance VASI</h3><p data-i18n="supportCopy">Une aide accessible depuis l’application.</p></div></article>
-        </div>
-      </section>
-      <section class="app-access shell" aria-labelledby="app-access-title">
-        <div class="app-access-mark" aria-hidden="true"><img src="./vasi-icon-192.png" alt="" /></div>
-        <div><p class="section-kicker light" data-i18n="appKicker">VASI sur votre téléphone</p><h2 id="app-access-title" data-i18n="appTitle">Ouvrez l’app. Gardez-la à portée de main.</h2><p data-i18n="appCopy">VASI fonctionne directement dans votre navigateur. Sur mobile, utilisez « Ajouter à l’écran d’accueil » pour y accéder comme à une application.</p></div>
-        <a class="button button-primary button-white" href="./app" data-i18n="openApp">Ouvrir l’app</a>
-      </section>
-      <section class="contact shell" id="contact">
-        <div><p class="section-kicker light" data-i18n="contactKicker">Parlons de votre projet</p><h2 data-i18n="contactTitle">Une question sur VASI&nbsp;?</h2><p data-i18n="contactCopy">Notre équipe est disponible pour les clients et les futurs partenaires.</p></div>
-        <a class="button button-primary button-white" href="./contact.html" data-i18n="contactUs">Nous contacter</a>
       </section>
     </main>
-    <footer class="site-footer">
-      <div class="shell footer-top">
-        <div><a class="brand footer-brand" href="./" aria-label="VASI accueil"><span class="brand-mark" aria-hidden="true">V</span><span>VASI</span></a><p data-i18n="footerCopy">Trajets, repas et livraisons dans une seule application.</p></div>
-        <div class="footer-links">
-          <div><h3 data-i18n="footerServices">Services</h3><a href="./ride-flow.html" data-i18n="rideTitle">VASI Ride</a><a href="./eats.html" data-i18n="eatsTitle">VASI Eats</a><a href="./delivery.html" data-i18n="deliveryTitle">VASI Delivery</a></div>
-          <div><h3 data-i18n="footerCompany">VASI</h3><a href="./partners.html" data-i18n="navPartners">Partenaires</a><a href="./help.html" data-i18n="helpCentre">Centre d’aide</a><a href="./contact.html" data-i18n="navContact">Contact</a></div>
-          <div><h3 data-i18n="footerLegal">Informations</h3><a href="./legal.html" data-i18n="legalPrivacy">Mentions légales & confidentialité</a><a href="./safety.html" data-i18n="navSafety">Sécurité</a><a href="mailto:contact@vasigo.eu">contact@vasigo.eu</a></div>
-        </div>
-      </div>
-      <div class="shell footer-bottom"><span>© 2026 VASI</span><span data-i18n="madeForFrance">Conçu pour la France.</span></div>
-    </footer>
-    <script src="./vasi-languages.js" defer></script>
-    <script src="./business.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
+    <script src="./vasi-notifications.js"></script>
+    <script src="./vasi-languages.js"></script>
+    <script>
+      const client = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      let signedIn = false;
+      function openAccount() {
+        location.href = signedIn ? "account.html" : "auth.html?role=customer";
+      }
+      async function showAccountState() {
+        const { data } = await client.auth.getSession();
+        const session = data.session;
+        if (!session) {
+          signedIn = false;
+          document.getElementById("accountBtn").textContent = "Login";
+          return;
+        }
+        signedIn = true;
+        const { data: profile } = await client
+          .from("profiles")
+          .select("full_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+        const firstName = profile?.full_name?.trim().split(/\s+/)[0];
+        document.getElementById("accountBtn").textContent =
+          firstName || "Account";
+      }
+      client.auth.onAuthStateChange(() => {
+        setTimeout(showAccountState, 0);
+      });
+      function openLanguageSettings() {
+        location.href = signedIn
+          ? "settings.html#preferences"
+          : "auth.html?role=customer&next=settings.html";
+      }
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+      showAccountState();
+      VasiNotifications.start(client, { role: "customer" });
+    </script>
   </body>
 </html>
