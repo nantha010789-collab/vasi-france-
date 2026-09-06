@@ -436,7 +436,7 @@
         background: #050505;
         opacity: 1;
         visibility: visible;
-        transition: opacity 280ms ease, visibility 280ms ease;
+        transition: opacity 260ms ease, visibility 260ms ease;
       }
       #vasiLaunchSplash.is-leaving {
         opacity: 0;
@@ -446,47 +446,77 @@
       .vasi-launch-lockup {
         display: grid;
         justify-items: center;
-        gap: 24px;
+        gap: 14px;
         padding: max(24px, env(safe-area-inset-top, 0px))
           max(24px, env(safe-area-inset-right, 0px))
           max(24px, env(safe-area-inset-bottom, 0px))
           max(24px, env(safe-area-inset-left, 0px));
-        animation: vasiLaunchIn 620ms cubic-bezier(.2,.75,.25,1) both;
+        transition: opacity 240ms ease, transform 240ms ease;
       }
-      .vasi-launch-logo {
+      #vasiLaunchSplash.is-leaving .vasi-launch-lockup {
+        opacity: 0;
+        transform: scale(1.045);
+      }
+      .vasi-launch-mark {
         display: block;
-        width: min(66vw, 260px);
-        max-height: 112px;
-        height: auto;
+        width: clamp(106px, 29vw, 132px);
+        height: clamp(106px, 29vw, 132px);
         object-fit: contain;
+        animation: vasiMarkIn 480ms cubic-bezier(.18,.8,.22,1) both;
       }
-      .vasi-launch-tagline {
-        margin: 0;
-        color: #a7a7ad;
-        font: 750 clamp(12px, 3.2vw, 14px)/1.3 Inter, system-ui, sans-serif;
-        letter-spacing: .13em;
-        text-align: center;
-        text-transform: uppercase;
+      .vasi-launch-name {
+        display: flex;
+        align-items: baseline;
+        margin: -4px 0 0;
+        font: 950 clamp(38px, 11vw, 52px)/1 Inter, system-ui, sans-serif;
+        letter-spacing: .025em;
       }
-      .vasi-launch-tagline span {
-        color: #ff3153;
-        padding-inline: .45em;
+      .vasi-launch-name span {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(12px);
+        animation: vasiLetterIn 340ms cubic-bezier(.2,.75,.25,1) forwards;
       }
-      @keyframes vasiLaunchIn {
-        from { opacity: 0; transform: scale(.94); }
+      .vasi-launch-name span:nth-child(1) { color: #1765ff; animation-delay: 180ms; }
+      .vasi-launch-name span:nth-child(2) { color: #fff; animation-delay: 235ms; }
+      .vasi-launch-name span:nth-child(3) { color: #ff3153; animation-delay: 290ms; }
+      .vasi-launch-name span:nth-child(4) { color: #ff3153; animation-delay: 345ms; }
+      .vasi-launch-rule {
+        width: 78px;
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #1765ff 0 33.33%, #fff 33.33% 66.66%, #ff3153 66.66% 100%);
+        transform: scaleX(0);
+        animation: vasiRuleIn 360ms cubic-bezier(.2,.75,.25,1) 520ms forwards;
+      }
+      @keyframes vasiMarkIn {
+        from { opacity: 0; transform: scale(.72); }
+        70% { opacity: 1; transform: scale(1.045); }
         to { opacity: 1; transform: scale(1); }
       }
+      @keyframes vasiLetterIn {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes vasiRuleIn {
+        to { transform: scaleX(1); }
+      }
       @media (prefers-reduced-motion: reduce) {
-        .vasi-launch-lockup { animation: none; }
-        #vasiLaunchSplash { transition-duration: 120ms; }
+        .vasi-launch-mark,
+        .vasi-launch-name span,
+        .vasi-launch-rule { animation: none; opacity: 1; transform: none; }
+        #vasiLaunchSplash,
+        .vasi-launch-lockup { transition-duration: 120ms; }
       }
     </style>
   </head>
   <body>
     <div id="vasiLaunchSplash" aria-hidden="true">
       <div class="vasi-launch-lockup">
-        <img class="vasi-launch-logo" src="./assets/vasi-logo.png" alt="" />
-        <p class="vasi-launch-tagline">Move<span>•</span>Eat<span>•</span>Deliver</p>
+        <img class="vasi-launch-mark" src="./vasi-icon-192.png" alt="" />
+        <div class="vasi-launch-name">
+          <span>V</span><span>A</span><span>S</span><span>I</span>
+        </div>
+        <div class="vasi-launch-rule"></div>
       </div>
     </div>
     <script id="vasi-launch-script">
@@ -505,8 +535,8 @@
         const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
         window.setTimeout(() => {
           splash.classList.add("is-leaving");
-          window.setTimeout(() => splash.remove(), reduced ? 140 : 300);
-        }, reduced ? 260 : 900);
+          window.setTimeout(() => splash.remove(), reduced ? 140 : 280);
+        }, reduced ? 260 : 1080);
       })();
     </script>
     <main class="app">
