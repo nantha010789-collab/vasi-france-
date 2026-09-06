@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v32";
+const CACHE = "vasi-app-v33";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
@@ -8,9 +8,9 @@ const CORE = [
   appUrl("assets/eats-service.webp"),
   appUrl("assets/delivery-service.webp"),
   appUrl("assets/vasi-logo.png"),
+  appUrl("assets/vasi-mark.png"),
   appUrl("manifest.webmanifest"),
   appUrl("vasi-mobile-fit.css"),
-  appUrl("vasi-icon-192.png"),
   appUrl("vasi-icon-192.png"),
   appUrl("vasi-icon-512.png"),
   appUrl("vasi-notifications.js"),
