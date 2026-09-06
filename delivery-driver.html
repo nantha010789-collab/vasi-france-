@@ -197,7 +197,8 @@
       let online = false,
         tab = "eats",
         activeJob = null,
-        courierProfile = null;
+        courierProfile = null,
+        payoutReady = false;
       const $ = (id) => document.getElementById(id),
         esc = (value) =>
           String(value ?? "").replace(
@@ -268,17 +269,23 @@
         if (!courierProfile?.verified) {
           $("payoutStatus").textContent = "RIB setup becomes available after courier approval.";
           button.hidden = true;
+          payoutReady = false;
+          $("onlineBtn").disabled = !online;
           return;
         }
         const data = await payoutRequest();
         if (data.error) {
           $("payoutStatus").textContent = data.error;
           button.hidden = false;
+          payoutReady = false;
+          $("onlineBtn").disabled = !online;
           return;
         }
         if (data.payouts_enabled) {
           $("payoutStatus").textContent = "✓ RIB verified · delivery earnings are paid automatically every Monday.";
           button.hidden = true;
+          payoutReady = true;
+          $("onlineBtn").disabled = false;
         } else {
           $("payoutStatus").textContent = data.details_submitted
             ? "Stripe is checking your payout information."
@@ -287,6 +294,8 @@
             ? "Continue RIB verification"
             : "Connect bank account (RIB)";
           button.hidden = false;
+          payoutReady = false;
+          $("onlineBtn").disabled = !online;
         }
       }
       async function openPayoutSetup() {
@@ -298,6 +307,9 @@
         if (data.url) location.href = data.url;
       }
       async function toggleOnline() {
+        if (!payoutReady && !online)
+          return ($("jobs").textContent =
+            "Connect and verify your bank account (RIB) before going online.");
         const requested = !online,
           data = await service({ action: "set_online", online: requested });
         if (data.error) return ($("jobs").textContent = data.error);

@@ -945,7 +945,10 @@ test("bicycle couriers are not asked for motor-vehicle licence documents", async
   assert.match(registration, /const motorVehicles = new Set\(\['scooter', 'moto', 'car'\]\)/);
   assert.match(registration, /const cycle = role === 'courier' && !motor/);
   assert.match(registration, /\$\('motorDocs'\)\.classList\.toggle\('hidden', !motor\)/);
-  assert.match(registration, /identity:selected\('identity'\), business:selected\('courier_business'\), rib:selected\('rib'\), bag:selected\('bag'\), vehicle_photo:selected\('vehicle_photo'\)/);
+  assert.match(registration, /identity:selected\('identity'\), business:selected\('courier_business'\), bag:selected\('bag'\), vehicle_photo:selected\('vehicle_photo'\)/);
+  assert.doesNotMatch(registration, /id="rib"/);
+  assert.match(registration, /Vous ajoutez vous-même votre RIB/);
+  assert.match(registration, /VASI ne stocke pas votre IBAN complet/);
   assert.match(registration, /if \(motorVehicles\.has\(vehicle\)\) Object\.assign\(files/);
   assert.match(registration, /Photo de profil <span class="optional">Facultatif<\/span>/);
 });
@@ -956,12 +959,24 @@ test("courier approval validates documents and protects review fields", async ()
     readFile("supabase/migrations/20260904234000_secure_courier_document_review.sql", "utf8"),
   ]);
   assert.match(adminService, /function courierRequiredDocuments/);
+  assert.doesNotMatch(adminService, /\['identity', 'business', 'rib'/);
   assert.match(adminService, /if \(motorCourierVehicles\.has\(vehicleType\)\)/);
   assert.match(adminService, /Missing required documents/);
   assert.match(adminService, /createSignedUrl\(path, 600\)/);
   assert.match(migration, /new\.verified := old\.verified/);
   assert.match(migration, /request_role <> 'service_role'/);
   assert.match(migration, /application_status in \('pending', 'approved', 'rejected'\)/);
+});
+
+test("approved couriers must self-connect a verified RIB before going online", async () => {
+  const [courier, service] = await Promise.all([
+    readFile("delivery-driver.html", "utf8"),
+    readFile("supabase/functions/delivery-driver-service/index.ts", "utf8"),
+  ]);
+  assert.match(courier, /payoutReady = false/);
+  assert.match(courier, /Connect and verify your bank account \(RIB\) before going online/);
+  assert.match(service, /!courier\.stripe_account_id \|\| !courier\.stripe_payouts_enabled/);
+  assert.match(service, /Connect and verify your bank account \(RIB\) before going online/);
 });
 
 test("PWA install metadata and baseline security headers stay production-ready", async () => {
