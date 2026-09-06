@@ -742,7 +742,7 @@
         ◎
       </button>
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
-      <section class="panel" data-scroll-region>
+      <section id="panel" class="panel" data-scroll-region>
         <div class="grab"></div>
         <div class="field" onclick="useLocation()">
           <span class="fieldDot" aria-hidden="true"></span>Pickup<b id="pickup">Use my current location</b>
@@ -1028,8 +1028,8 @@
             min: 0.2,
             minFare: 13.5,
           },
-        },
-        classes = offerClasses,
+        };
+      let classes = offerClasses,
         pricingOffer = {
           active: true,
           mode: "fixed",
