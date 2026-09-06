@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
     const [
       drivers, customers, bookings, documents, payments, activeRides, onlineDrivers,
       verifiedDrivers, pendingDocuments, completedToday, bookingToday, paymentToday,
+      pendingCouriers, pendingRestaurants, payoutReadyDrivers, payoutReadyCouriers, payoutReadyRestaurants,
     ] = await Promise.all([
       count('drivers'),
       count('profiles', q => q.eq('role', 'customer')),
@@ -119,6 +120,11 @@ Deno.serve(async (req) => {
       count('rides', q => q.eq('status', 'completed').gte('requested_at', iso)),
       count('bookings', q => q.gte('created_at', iso)),
       count('payments', q => q.gte('created_at', iso)),
+      count('delivery_drivers', q => q.eq('application_status', 'pending')),
+      count('restaurants', q => q.eq('status', 'pending')),
+      count('drivers', q => q.eq('stripe_payouts_enabled', true)),
+      count('delivery_drivers', q => q.eq('stripe_payouts_enabled', true)),
+      count('restaurants', q => q.eq('stripe_payouts_enabled', true)),
     ]);
     const [{ data: todayBookings, error: bookingError }, { data: todayRides, error: rideError }, { data: todayPayments, error: paymentError }] =
       await Promise.all([
@@ -131,6 +137,7 @@ Deno.serve(async (req) => {
     return {
       drivers, customers, bookings, documents, payments, activeRides, onlineDrivers,
       verifiedDrivers, pendingDocuments, completedToday, bookingToday, paymentToday,
+      pendingCouriers, pendingRestaurants, payoutReadyDrivers, payoutReadyCouriers, payoutReadyRestaurants,
       todayGross: sum(todayBookings, 'estimated_price') || sum(todayRides, 'final_fare'),
       todayCommission: sum(todayBookings, 'vasi_commission'),
       todayDriverAmount: sum(todayBookings, 'driver_amount'),
@@ -164,7 +171,7 @@ Deno.serve(async (req) => {
 
     if (action === 'list_drivers') {
       const { data, error } = await db.from('drivers')
-        .select('id,full_name,phone,role,status,rejection_reason,online,verified,latitude,longitude,vehicle_type,vehicle_make,vehicle_model,vehicle_plate,vehicle_color,rating,created_at,updated_at')
+        .select('id,full_name,phone,role,status,rejection_reason,online,verified,latitude,longitude,vehicle_type,vehicle_make,vehicle_model,vehicle_plate,vehicle_color,rating,stripe_account_id,stripe_details_submitted,stripe_payouts_enabled,created_at,updated_at')
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       return json({ ok: true, drivers: data || [] });
@@ -179,7 +186,16 @@ Deno.serve(async (req) => {
         patch.rejection_reason = null;
         if (!body.verified) patch.online = false;
       }
-      if (typeof body.online === 'boolean') patch.online = body.online;
+      if (typeof body.online === 'boolean') {
+        if (body.online) {
+          const { data: driver, error: driverError } = await db.from('drivers')
+            .select('verified,status,stripe_details_submitted,stripe_payouts_enabled').eq('id', id).maybeSingle();
+          if (driverError) throw driverError;
+          if (!driver?.verified || driver.status !== 'approved') return json({ error: 'Driver approval is required before going online' }, 409);
+          if (!driver.stripe_details_submitted || !driver.stripe_payouts_enabled) return json({ error: 'Verified Stripe bank payout is required before going online' }, 409);
+        }
+        patch.online = body.online;
+      }
       if (!Object.keys(patch).length) return json({ error: 'No supported driver change' }, 400);
       const { data, error } = await db.from('drivers').update(patch).eq('id', id).select().maybeSingle();
       if (error) throw error;
@@ -209,7 +225,7 @@ Deno.serve(async (req) => {
     if (action === 'list_partners') {
       const status = ['pending', 'approved', 'rejected'].includes(body.status) ? body.status : 'pending';
       const { data, error } = await db.from('delivery_drivers')
-        .select('id,user_id,full_name,phone,address,vehicle_type,online,verified,documents,application_status,rejection_reason,reviewed_at,created_at,updated_at')
+        .select('id,user_id,full_name,phone,address,vehicle_type,online,verified,documents,application_status,rejection_reason,reviewed_at,stripe_account_id,stripe_details_submitted,stripe_payouts_enabled,created_at,updated_at')
         .eq('application_status', status)
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
@@ -343,6 +359,48 @@ Deno.serve(async (req) => {
       if (error) throw error;
       await audit('restaurant_review', 'restaurant', id, { status, reason: patch.rejection_reason, commission_rate: commission });
       return json({ ok: true, restaurant: data });
+    }
+
+    if (action === 'list_orders') {
+      const [{ data: eats, error: eatsError }, { data: deliveries, error: deliveryError }] = await Promise.all([
+        db.from('eats_orders')
+          .select('id,restaurant_id,restaurant_name,delivery_address,total,subtotal,delivery_fee,service_fee,currency,status,payment_status,delivery_mode,delivery_driver_id,driver_id,courier_offer_amount,courier_payout_status,courier_transfer_id,courier_paid_at,restaurant_commission,restaurant_net,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,created_at,picked_up_at,delivered_at')
+          .order('created_at', { ascending: false }).limit(150),
+        db.from('delivery_orders')
+          .select('id,pickup_address,dropoff_address,item_type,quote,currency,status,driver_id,delivery_driver_id,created_at,picked_up_at,delivered_at')
+          .order('created_at', { ascending: false }).limit(150),
+      ]);
+      if (eatsError || deliveryError) throw eatsError || deliveryError;
+      return json({ ok: true, eats_orders: eats || [], delivery_orders: deliveries || [] });
+    }
+
+    if (action === 'list_finance') {
+      const [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult] = await Promise.all([
+        db.from('drivers').select('id,full_name,phone,verified,status,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
+        db.from('delivery_drivers').select('id,full_name,phone,verified,application_status,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
+        db.from('restaurants').select('id,name,email,status,active,is_open,commission_rate,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
+        db.from('driver_cash_commission_debts').select('driver_id,remaining_amount,currency,settled_at').is('settled_at', null),
+        db.from('driver_payouts').select('id,driver_id,amount,currency,status,failure_reason,requested_at,processed_at').order('created_at', { ascending: false }).limit(100),
+        db.from('courier_eats_earnings').select('id,courier_id,order_id,final_amount,currency,status,failure_reason,stripe_transfer_id,paid_at,created_at').order('created_at', { ascending: false }).limit(100),
+      ]);
+      const failure = [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult].find(result => result.error)?.error;
+      if (failure) throw failure;
+      const debtByDriver: Record<string, number> = {};
+      for (const debt of debtsResult.data || []) debtByDriver[debt.driver_id] = (debtByDriver[debt.driver_id] || 0) + Number(debt.remaining_amount || 0);
+      return json({
+        ok: true,
+        drivers: (driversResult.data || []).map((driver: any) => ({ ...driver, cash_commission_debt: debtByDriver[driver.id] || 0 })),
+        couriers: couriersResult.data || [], restaurants: restaurantsResult.data || [],
+        driver_payouts: payoutsResult.data || [], courier_earnings: earningsResult.data || [],
+      });
+    }
+
+    if (action === 'list_audit') {
+      const { data, error } = await db.from('admin_audit_log')
+        .select('id,admin_id,action,target_type,target_id,details,created_at')
+        .order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return json({ ok: true, events: data || [] });
     }
 
     if (action === 'update_pricing') {
