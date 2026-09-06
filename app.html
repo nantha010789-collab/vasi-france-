@@ -373,6 +373,54 @@
         }
       }
     </style>
+    <style id="vasi-service-photo-cards">
+      .card {
+        min-height: clamp(154px, 21dvh, 180px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 9px;
+        background: #101010;
+      }
+      .card > .service-photo {
+        width: 100%;
+        height: clamp(66px, 9.5dvh, 86px);
+        flex: 0 0 auto;
+        display: block;
+        overflow: hidden;
+        border: 1px solid #2d2d2d;
+        border-radius: 14px;
+        background: #071a42;
+      }
+      .card > .service-photo img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        object-position: center;
+      }
+      .card > strong {
+        margin: 9px 2px 0;
+        line-height: 1.05;
+      }
+      .card > span:not(.service-photo) {
+        margin: 3px 2px 0;
+        line-height: 1.25;
+      }
+      .card:active .service-photo img { transform: scale(.98); }
+      @media (max-height: 700px) {
+        .card { min-height: 138px; padding: 7px; }
+        .card > .service-photo { height: 58px; border-radius: 12px; }
+        .card > strong { margin-top: 7px; }
+      }
+      @media (max-width: 360px) {
+        .services { gap: 7px; }
+        .card { padding: 6px; border-radius: 18px; }
+        .card > .service-photo { height: 54px; border-radius: 11px; }
+        .card > strong { font-size: 13px; }
+        .card > span:not(.service-photo) { font-size: 10px; }
+      }
+    </style>
   </head>
   <body>
     <main class="app">
@@ -396,13 +444,18 @@
         <h1>Move.<br />Eat.<br />Deliver.</h1>
         <p>One VASI app for rides, food and delivery.</p>
       </section>
-      <section class="services">
+      <section class="services" aria-label="VASI services">
         <button class="card" onclick="location.href='ride-flow.html'">
-          <strong>🚗 Ride</strong><span>Fast city trips</span></button
-        ><button class="card" onclick="location.href='eats.html'">
-          <strong>🍔 Eats</strong><span>Food delivery</span></button
-        ><button class="card" onclick="location.href='delivery.html'">
-          <strong>📦 Delivery</strong><span>Send anything</span>
+          <span class="service-photo" aria-hidden="true"><img src="./assets/ride-service.webp" alt="" loading="eager" decoding="async" /></span>
+          <strong>Ride</strong><span>Fast city trips</span>
+        </button>
+        <button class="card" onclick="location.href='eats.html'">
+          <span class="service-photo" aria-hidden="true"><img src="./assets/eats-service.webp" alt="" loading="eager" decoding="async" /></span>
+          <strong>Eats</strong><span>Food delivery</span>
+        </button>
+        <button class="card" onclick="location.href='delivery.html'">
+          <span class="service-photo" aria-hidden="true"><img src="./assets/delivery-service.webp" alt="" loading="eager" decoding="async" /></span>
+          <strong>Delivery</strong><span>Send anything</span>
         </button>
       </section>
       <section class="section">

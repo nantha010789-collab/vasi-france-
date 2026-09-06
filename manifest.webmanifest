@@ -2,7 +2,7 @@
   "id": "./",
   "name": "VASI — France & Europe",
   "short_name": "VASI",
-  "start_url": "./index.html",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
