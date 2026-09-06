@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v29";
+const CACHE = "vasi-app-v30";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
