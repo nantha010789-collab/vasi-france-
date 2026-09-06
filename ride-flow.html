@@ -660,6 +660,70 @@
       }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+    <style id="vasi-ride-fixed-viewport">
+      /* Keep this map screen locked to the visible mobile viewport. */
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden !important;
+        overscroll-behavior: none;
+        background: #0a0a0a;
+      }
+
+      body {
+        position: fixed !important;
+        inset: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        touch-action: none;
+      }
+
+      body > .app {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100% !important;
+        max-width: 760px !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 auto !important;
+        overflow: hidden !important;
+      }
+
+      .top {
+        top: 0 !important;
+        padding-top: max(15px, env(safe-area-inset-top)) !important;
+        padding-right: max(16px, env(safe-area-inset-right)) !important;
+        padding-left: max(16px, env(safe-area-inset-left)) !important;
+      }
+
+      .locateBtn,
+      .mapTripSummary {
+        top: max(86px, calc(env(safe-area-inset-top) + 68px)) !important;
+      }
+
+      .leaflet-control-attribution {
+        margin-top: max(74px, calc(env(safe-area-inset-top) + 62px)) !important;
+      }
+
+      .panel {
+        right: max(8px, env(safe-area-inset-right)) !important;
+        bottom: max(8px, env(safe-area-inset-bottom)) !important;
+        left: max(8px, env(safe-area-inset-left)) !important;
+        max-height: min(56dvh, 610px) !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+      }
+
+      @supports not (height: 100dvh) {
+        .panel {
+          max-height: min(56vh, 610px) !important;
+        }
+      }
+    </style>
   </head>
   <body>
     <main class="app">
