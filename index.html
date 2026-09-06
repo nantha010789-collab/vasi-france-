@@ -15,6 +15,16 @@
     <link rel="preload" href="./assets/vasi-mobility-hero.webp" as="image" type="image/webp" />
     <link rel="stylesheet" href="./business.css" />
     <title>VASI — Trajets, repas et livraisons</title>
+    <script>
+      (() => {
+        const installed =
+          window.matchMedia?.("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true;
+        if (installed && !location.pathname.endsWith("/app.html")) {
+          location.replace("./app.html");
+        }
+      })();
+    </script>
   </head>
   <body data-vasi-business>
     <a class="skip-link" href="#main" data-i18n="skip">Aller au contenu</a>
