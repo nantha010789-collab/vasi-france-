@@ -223,6 +223,7 @@
       "Details": "Détails",
       "Pricing & offers": "Tarifs & offres",
       "Edit pricing": "Modifier les tarifs",
+      "Manage promo codes": "Gérer les codes promo",
       "Customer and partner tickets": "Tickets clients et partenaires",
       "Account type": "Compte",
       "Message": "Message",
