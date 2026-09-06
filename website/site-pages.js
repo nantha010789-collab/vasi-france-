@@ -9,6 +9,9 @@ function setPageLanguage(language) {
     button.classList.toggle("is-active",active);
     button.setAttribute("aria-pressed",String(active));
   });
+  document.querySelectorAll("[data-language-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.languagePanel !== lang;
+  });
   const body = document.body;
   if (body.dataset[`${lang}Title`]) document.title = body.dataset[`${lang}Title`];
   const description = document.querySelector('meta[name="description"]');
