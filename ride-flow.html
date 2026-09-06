@@ -31,44 +31,141 @@
         background: #050505;
       }
       .app {
-        min-height: 100vh;
+        position: relative;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 560px;
         max-width: 760px;
         margin: auto;
-        padding: 14px 14px 28px;
+        padding: 0;
+        overflow: hidden;
+        background: #0a0a0a;
       }
       .top {
+        position: absolute;
+        z-index: 800;
+        top: 0;
+        left: 0;
+        right: 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 4px 2px;
+        padding: 15px 16px;
+        pointer-events: none;
       }
       .brand {
-        font-size: 30px;
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border: 1px solid #ffffff33;
+        border-radius: 18px;
+        background: #050505e8;
+        box-shadow: 0 12px 32px #0006;
+        font-size: 22px;
         font-weight: 950;
         letter-spacing: -1.5px;
+        pointer-events: auto;
       }
       .back,
       .iconbtn {
         border: 1px solid #333;
-        background: #151515;
+        background: #050505e8;
         color: #fff;
-        border-radius: 13px;
-        padding: 9px 13px;
+        border-radius: 16px;
+        padding: 12px 16px;
+        box-shadow: 0 12px 32px #0006;
+        font-size: 14px;
+        font-weight: 800;
+        pointer-events: auto;
       }
       .map {
-        height: 46vh;
-        min-height: 320px;
-        margin: 12px 0;
-        border-radius: 24px;
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        margin: 0;
+        border-radius: 0;
         overflow: hidden;
-        border: 1px solid #292929;
+        border: 0;
+        background: #d8dde0;
+      }
+      .map .leaflet-tile-pane {
+        filter: grayscale(0.78) saturate(0.48) contrast(1.04) brightness(1.02);
+      }
+      .map::after {
+        position: absolute;
+        z-index: 450;
+        inset: 0;
+        content: "";
+        pointer-events: none;
+        background: linear-gradient(180deg, #0000002b 0, transparent 26%, transparent 64%, #00000038 100%);
+      }
+      .leaflet-control-attribution {
+        margin: 74px 12px 0 0 !important;
+        padding: 3px 7px !important;
+        border-radius: 8px;
+        background: #ffffffdc !important;
+        color: #3f4549 !important;
+        font-size: 10px !important;
+        line-height: 1.15 !important;
+        white-space: nowrap !important;
+      }
+      .leaflet-control-attribution a {
+        color: #265d91 !important;
+      }
+      .locateBtn {
+        position: absolute;
+        z-index: 800;
+        top: 86px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+        border: 1px solid #ffffff33;
+        border-radius: 16px;
+        background: #050505e8;
+        color: #fff;
+        box-shadow: 0 12px 32px #0007;
+        font-size: 26px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .mapTripSummary {
+        position: absolute;
+        z-index: 800;
+        top: 86px;
+        left: 16px;
+        max-width: calc(100% - 88px);
+        padding: 10px 13px;
+        border: 1px solid #ffffff33;
+        border-radius: 15px;
+        background: #050505e8;
+        color: #fff;
+        box-shadow: 0 12px 32px #0007;
+        font-size: 13px;
+        font-weight: 850;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
       }
       .panel {
-        border: 1px solid #292929;
-        background: #111;
-        border-radius: 24px;
-        padding: 15px;
-        box-shadow: 0 12px 40px #0007;
+        position: absolute;
+        z-index: 900;
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        max-height: min(58vh, 610px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        border: 1px solid #ffffff24;
+        background: #0b0b0bf2;
+        border-radius: 28px;
+        padding: 11px 14px 14px;
+        box-shadow: 0 24px 70px #000b;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        overscroll-behavior: contain;
       }
       .grab {
         width: 52px;
@@ -78,18 +175,40 @@
         margin: 0 auto 13px;
       }
       .field {
-        padding: 13px;
-        border-radius: 15px;
-        background: #181818;
-        margin-bottom: 8px;
-        color: #999;
+        position: relative;
+        padding: 10px 12px 10px 36px;
+        border-radius: 14px;
+        background: #181818d9;
+        margin-bottom: 7px;
+        color: #a4a4a4;
         cursor: pointer;
-        border: 1px solid #252525;
+        border: 1px solid #303030;
+        font-size: 13px;
       }
       .field b {
         color: #fff;
         display: block;
-        margin-top: 4px;
+        margin-top: 2px;
+        overflow: hidden;
+        font-size: 15px;
+        line-height: 1.3;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .fieldDot {
+        position: absolute;
+        top: 18px;
+        left: 15px;
+        width: 10px;
+        height: 10px;
+        border: 3px solid #166cff;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .fieldDot.destination {
+        border-radius: 3px;
+        border-color: #fff;
+        background: #166cff;
       }
       .field input {
         width: 100%;
@@ -484,6 +603,42 @@
       .hidden {
         display: none !important;
       }
+      .vasi-marker-host {
+        border: 0;
+        background: transparent;
+      }
+      .vasi-pin {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border: 4px solid #fff;
+        border-radius: 50% 50% 50% 8px;
+        background: #166cff;
+        color: #fff;
+        box-shadow: 0 8px 22px #0007;
+        font-size: 13px;
+        font-weight: 950;
+        transform: rotate(-45deg);
+      }
+      .vasi-pin span {
+        transform: rotate(45deg);
+      }
+      .vasi-pin.destination {
+        background: #090909;
+      }
+      .vasi-driver-pin {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border: 3px solid #fff;
+        border-radius: 15px;
+        background: #166cff;
+        box-shadow: 0 8px 22px #0007;
+        font-size: 22px;
+      }
       @media (max-width: 480px) {
         .paygrid,
         .options {
@@ -494,6 +649,13 @@
         }
         .savedPlaceActions button {
           flex: 1;
+        }
+        .panel {
+          right: 8px;
+          bottom: 8px;
+          left: 8px;
+          max-height: 56vh;
+          border-radius: 25px;
         }
       }
     </style>
@@ -506,13 +668,23 @@
         <button class="back" onclick="location.href = 'app.html'">Home</button>
       </header>
       <div id="map" class="map"></div>
+      <button
+        class="locateBtn"
+        type="button"
+        aria-label="Use my current location"
+        title="Use my current location"
+        onclick="useLocation()"
+      >
+        ◎
+      </button>
+      <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section class="panel">
         <div class="grab"></div>
         <div class="field" onclick="useLocation()">
-          📍 Pickup<b id="pickup">Use my current location</b>
+          <span class="fieldDot" aria-hidden="true"></span>Pickup<b id="pickup">Use my current location</b>
         </div>
         <div class="field" onclick="focusDestination()">
-          🏁 Destination<b id="destination">Tap map to choose destination</b>
+          <span class="fieldDot destination" aria-hidden="true"></span>Destination<b id="destination">Tap map to choose destination</b>
         </div>
         <div id="searchWrap" class="hidden">
           <div class="field">
@@ -803,6 +975,24 @@
         smartOffer = null;
       const $ = (id) => document.getElementById(id),
         money = (n) => "€" + Number(n || 0).toFixed(2);
+      const pickupIcon = L.divIcon({
+          className: "vasi-marker-host",
+          html: '<div class="vasi-pin"><span>V</span></div>',
+          iconSize: [38, 44],
+          iconAnchor: [19, 42],
+        }),
+        destinationIcon = L.divIcon({
+          className: "vasi-marker-host",
+          html: '<div class="vasi-pin destination"><span>◆</span></div>',
+          iconSize: [38, 44],
+          iconAnchor: [19, 42],
+        }),
+        driverIcon = L.divIcon({
+          className: "vasi-marker-host",
+          html: '<div class="vasi-driver-pin">🚗</div>',
+          iconSize: [42, 42],
+          iconAnchor: [21, 21],
+        });
       const VASI_API_ORIGIN = location.hostname.endsWith(".github.io")
         ? "https://vasi-new.vercel.app"
         : "";
@@ -1020,7 +1210,13 @@
         }
       }
       async function init() {
-        map = L.map("map", { zoomControl: false }).setView(fallback, 13);
+        map = L.map("map", {
+          zoomControl: false,
+          attributionControl: false,
+        }).setView(fallback, 13);
+        L.control
+          .attribution({ position: "topright", prefix: false })
+          .addTo(map);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
           attribution: "© OpenStreetMap contributors",
@@ -1082,10 +1278,11 @@
         $("pickup").textContent = label;
         try {
           if (pickupMarker) pickupMarker.remove();
-          pickupMarker = L.marker(p)
-            .addTo(map)
-            .bindPopup("VASI pickup")
-            .openPopup();
+          pickupMarker = L.marker(p, {
+            icon: pickupIcon,
+            keyboard: true,
+            title: "VASI pickup",
+          }).addTo(map);
           map.setView(p, 14);
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
@@ -1111,6 +1308,7 @@
         destinationConfirmed = false;
         $("destination").textContent = label;
         $("booking").classList.add("hidden");
+        $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
         $("pinConfirm").classList.remove("hidden");
         $("searchWrap").classList.add("hidden");
@@ -1118,9 +1316,8 @@
         try {
           if (destMarker) destMarker.remove();
           destMarker = L.marker(p, { draggable: true })
-            .addTo(map)
-            .bindPopup(label)
-            .openPopup();
+            .setIcon(destinationIcon)
+            .addTo(map);
           destMarker.on("dragend", () => {
             const pin = destMarker.getLatLng();
             destination = [pin.lat, pin.lng];
@@ -1386,13 +1583,30 @@
           route.km = r.distance_km;
           route.mins = r.duration_min;
           if (routeLine) routeLine.remove();
-          routeLine = L.geoJSON(r.geometry).addTo(map);
-          map.fitBounds(routeLine.getBounds(), { padding: [35, 35] });
+          routeLine = L.geoJSON(r.geometry, {
+            style: {
+              color: "#166cff",
+              weight: 6,
+              opacity: 0.96,
+              lineCap: "round",
+              lineJoin: "round",
+            },
+          }).addTo(map);
+          const bottomPadding = Math.min(
+            Math.max($("panel").offsetHeight + 20, 220),
+            Math.round($("map").offsetHeight * 0.48),
+          );
+          map.fitBounds(routeLine.getBounds(), {
+            paddingTopLeft: [28, 118],
+            paddingBottomRight: [28, bottomPadding],
+          });
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
-          $("tripInfo").textContent =
-            `${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
+          const routeSummary = `${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
+          $("tripInfo").textContent = routeSummary;
+          $("mapTripSummary").textContent = routeSummary;
+          $("mapTripSummary").classList.remove("hidden");
           if (openSchedule) {
             openSchedule = false;
             localStorage.removeItem("vasi_open_schedule");
@@ -1402,6 +1616,7 @@
               ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
               : "Choose your vehicle, stops and pickup time";
         } catch (e) {
+          $("mapTripSummary").classList.add("hidden");
           $("status").innerHTML =
             '<span class="error">Route service unavailable — try again</span>';
         }
@@ -1746,15 +1961,28 @@
         updateCancellationUI(r);
         const driverLat = Number(r.driver_lat ?? r.driver_latitude),
           driverLng = Number(r.driver_lng ?? r.driver_longitude);
-        if (Number.isFinite(driverLat) && Number.isFinite(driverLng)) {
+        const showLiveDriver =
+          Boolean(r.driver_id) &&
+          ["accepted", "driver_arriving", "in_progress"].includes(st) &&
+          Number.isFinite(driverLat) &&
+          Number.isFinite(driverLng);
+        if (showLiveDriver) {
           if (!driverMarker)
-            driverMarker = L.marker([driverLat, driverLng])
-              .addTo(map)
-              .bindPopup("VASI driver");
+            driverMarker = L.marker([driverLat, driverLng], {
+              icon: driverIcon,
+              keyboard: true,
+              title: "VASI driver",
+            }).addTo(map);
           else driverMarker.setLatLng([driverLat, driverLng]);
           updateDriverEta(driverLat, driverLng, st);
-        } else if (!["driver_arriving", "in_progress"].includes(st))
-          $("eta").textContent = "—";
+        } else {
+          if (driverMarker) {
+            driverMarker.remove();
+            driverMarker = null;
+          }
+          if (!["driver_arriving", "in_progress"].includes(st))
+            $("eta").textContent = "—";
+        }
         if (st === "driver_arriving") $("eta").textContent = "Arrived";
         if (st === "in_progress") $("eta").textContent = "On trip";
         $("chatBtn").classList.toggle(
