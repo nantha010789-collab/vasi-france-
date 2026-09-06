@@ -1060,6 +1060,7 @@
   }
 
   function init() {
+    if (document.body?.hasAttribute("data-vasi-business")) return;
     const style = document.createElement("style");
     style.textContent = "html[dir='rtl'] input[type='tel'],html[dir='rtl'] input[inputmode='numeric'],html[dir='rtl'] .price{direction:ltr}html[dir='rtl'] input[type='tel'],html[dir='rtl'] input[inputmode='numeric']{text-align:right}";
     document.head.appendChild(style);
