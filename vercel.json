@@ -2,7 +2,7 @@
   "rewrites": [
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
-    { "source": "/", "destination": "/index.html" },
+    { "source": "/", "destination": "/app.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app.html", "destination": "/app.html" },
     { "source": "/app-easy", "destination": "/app.html" },

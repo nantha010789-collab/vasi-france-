@@ -592,7 +592,7 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(vercel, /Content-Security-Policy/);
   assert.match(vercel, /Permissions-Policy/);
   const serviceWorker = await readFile("sw.js", "utf8");
-  assert.match(serviceWorker, /vasi-app-v28/);
+  assert.match(serviceWorker, /vasi-app-v29/);
   assert.match(serviceWorker, /url\.origin !== self\.location\.origin/);
   assert.match(serviceWorker, /new Request\(url, \{ cache: "reload" \}\)/);
 });
