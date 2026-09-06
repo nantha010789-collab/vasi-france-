@@ -11,6 +11,7 @@ const serviceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SECRET_KEY ||
   "";
+const stripeKey = process.env.STRIPE_SECRET_KEY || "";
 const PHOTO_BUCKET = "restaurant-menu-photos";
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 const clean = (value, length = 160) =>
@@ -44,6 +45,144 @@ async function rpc(name, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+async function serviceDb(path, options = {}) {
+  if (!serviceKey) throw httpError(503, "Restaurant payout database is not configured");
+  const response = await fetch(`${url}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok)
+    throw httpError(response.status, data?.message || "Database request failed");
+  return data;
+}
+
+async function stripeRequest(path, { method = "GET", params, idempotencyKey } = {}) {
+  if (!stripeKey) throw httpError(503, "Stripe payout service is not configured");
+  const response = await fetch(`https://api.stripe.com${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${stripeKey}`,
+      ...(params ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+      ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+    },
+    body: params?.toString(),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok)
+    throw httpError(response.status, data?.error?.message || "Stripe request failed");
+  return data;
+}
+
+async function setRestaurantPayoutStatus(orderId, patch) {
+  await serviceDb(`eats_orders?id=eq.${encodeURIComponent(orderId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(patch),
+  });
+}
+
+async function releaseRestaurantPayout(restaurant, order) {
+  if (order.restaurant_transfer_id)
+    return {
+      status: "paid",
+      amount:
+        Number(order.restaurant_net || 0) +
+        (order.delivery_mode === "own" ? Number(order.delivery_fee || 0) : 0),
+      transfer_id: order.restaurant_transfer_id,
+    };
+
+  const accountId = String(restaurant.stripe_account_id || "");
+  if (!accountId || !restaurant.stripe_payouts_enabled) {
+    await setRestaurantPayoutStatus(order.id, {
+      restaurant_payout_status: "requires_onboarding",
+    });
+    return {
+      status: "requires_onboarding",
+      message: "Connect and verify your RIB to receive this earning",
+    };
+  }
+
+  try {
+    const account = await stripeRequest(
+      `/v1/accounts/${encodeURIComponent(accountId)}`,
+    );
+    if (
+      (account.metadata?.vasi_restaurant_id &&
+        account.metadata.vasi_restaurant_id !== restaurant.id) ||
+      !account.details_submitted ||
+      !account.payouts_enabled
+    ) {
+      await setRestaurantPayoutStatus(order.id, {
+        restaurant_payout_status: "requires_onboarding",
+      });
+      return {
+        status: "requires_onboarding",
+        message: "Finish RIB verification to receive this earning",
+      };
+    }
+
+    const paymentIntentId = String(order.stripe_payment_intent_id || "");
+    if (!paymentIntentId) throw new Error("Paid order has no payment reference");
+    const paymentIntent = await stripeRequest(
+      `/v1/payment_intents/${encodeURIComponent(paymentIntentId)}`,
+    );
+    const chargeId =
+      typeof paymentIntent.latest_charge === "string"
+        ? paymentIntent.latest_charge
+        : paymentIntent.latest_charge?.id;
+    if (paymentIntent.status !== "succeeded" || !chargeId)
+      throw new Error("Customer payment is not settled");
+
+    const amountValue =
+      Number(order.restaurant_net || 0) +
+      (order.delivery_mode === "own" ? Number(order.delivery_fee || 0) : 0);
+    const amount = Math.round(amountValue * 100);
+    if (!Number.isFinite(amount) || amount < 1)
+      throw new Error("Restaurant payout amount is invalid");
+
+    const params = new URLSearchParams();
+    params.set("amount", String(amount));
+    params.set("currency", String(order.currency || "eur").toLowerCase());
+    params.set("destination", accountId);
+    params.set("source_transaction", chargeId);
+    params.set("transfer_group", `VASI_EATS_${order.id}`);
+    params.set("metadata[vasi_service]", "eats");
+    params.set("metadata[vasi_order_id]", order.id);
+    params.set("metadata[vasi_restaurant_id]", restaurant.id);
+    const transfer = await stripeRequest("/v1/transfers", {
+      method: "POST",
+      params,
+      idempotencyKey: `vasi-eats-restaurant-${order.id}`,
+    });
+    const paidAt = new Date().toISOString();
+    await setRestaurantPayoutStatus(order.id, {
+      restaurant_payout_status: "paid",
+      restaurant_transfer_id: transfer.id,
+      restaurant_paid_at: paidAt,
+    });
+    return {
+      status: "paid",
+      amount: amount / 100,
+      currency: order.currency || "EUR",
+      transfer_id: transfer.id,
+    };
+  } catch (error) {
+    await setRestaurantPayoutStatus(order.id, {
+      restaurant_payout_status: "failed",
+    });
+    return {
+      status: "failed",
+      message: error?.message || "Restaurant payout needs review",
+    };
+  }
 }
 
 async function user(req) {
@@ -297,7 +436,7 @@ export default async function handler(req, res) {
           `restaurant_menu_items?select=*&restaurant_id=eq.${restaurant.id}&order=sort_order.asc,created_at.asc`,
         ),
         db(
-          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,commission_rate,restaurant_commission,restaurant_net,status,delivery_address&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
+          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,currency,delivery_mode,commission_rate,restaurant_commission,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,delivery_address&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
         ),
       ]);
       return res.status(200).json({ restaurant, menu, orders });
@@ -374,6 +513,33 @@ export default async function handler(req, res) {
           p_is_open: Boolean(body.is_open),
         }),
       });
+    if (action === "complete_own_delivery") {
+      const completed = await rpc("vasi_restaurant_complete_own_delivery", {
+        p_order_id: clean(body.id, 60),
+        p_pin: clean(body.pin, 4),
+      });
+      if (!completed?.ok)
+        return res
+          .status(409)
+          .json({ error: completed?.error || "Delivery could not be completed" });
+      const order = completed.eat;
+      return res.status(200).json({
+        order,
+        payout: await releaseRestaurantPayout(restaurant, order),
+      });
+    }
+    if (action === "retry_restaurant_payout") {
+      const order = (
+        await db(
+          `eats_orders?select=id,subtotal,delivery_fee,currency,delivery_mode,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id&restaurant_id=eq.${restaurant.id}&id=eq.${encodeURIComponent(clean(body.id, 60))}&limit=1`,
+        )
+      )[0];
+      if (!order || order.status !== "delivered" || order.payment_status !== "paid")
+        return res.status(409).json({ error: "Only delivered paid orders can be paid out" });
+      return res.status(200).json({
+        payout: await releaseRestaurantPayout(restaurant, order),
+      });
+    }
     if (action === "order_status")
       return res.status(200).json({
         order: await rpc("vasi_restaurant_order_status", {

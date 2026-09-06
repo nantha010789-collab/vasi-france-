@@ -92,6 +92,9 @@
     "api/driver-stripe-onboarding.js": {
       "includeFiles": "api/driver-stripe-onboarding.js"
     },
+    "api/restaurant-stripe-onboarding.js": {
+      "includeFiles": "api/restaurant-stripe-onboarding.js"
+    },
     "api/admin-bookings.js": { "includeFiles": "api/admin-bookings.js" },
     "api/admin-documents.js": { "includeFiles": "api/admin-documents.js" },
     "api/admin-drivers.js": { "includeFiles": "api/admin-drivers.js" },

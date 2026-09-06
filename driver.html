@@ -225,6 +225,7 @@
         "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
       );
       let online = false,
+        payoutReady = false,
         watch = null,
         channel = null,
         offered = null,
@@ -245,8 +246,40 @@
           document.getElementById("payoutStatus").textContent =
             "Stripe onboarding needs to be completed. Tap the button to continue.";
         }
-        await Promise.all([loadActiveRide(), loadPayoutBalance()]);
+        await Promise.all([loadActiveRide(), loadPayoutBalance(), loadPayoutAccount()]);
       });
+      async function loadPayoutAccount() {
+        const status = document.getElementById("payoutStatus");
+        const button = document.getElementById("payoutButton");
+        const session = (await client.auth.getSession()).data.session;
+        if (!session) return;
+        try {
+          const response = await fetch("/api/driver-stripe-onboarding", {
+            headers: { Authorization: "Bearer " + session.access_token },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Payout status unavailable");
+          payoutReady = Boolean(data.payouts_enabled);
+          if (payoutReady) {
+            status.textContent =
+              "✓ RIB verified · card-ride earnings are paid automatically every Monday.";
+            button.hidden = true;
+          } else {
+            status.textContent = data.details_submitted
+              ? "Stripe is checking your payout information."
+              : "Connect and verify your bank account (RIB) before going online.";
+            button.textContent = data.connected
+              ? "Continue RIB verification"
+              : "Connect bank account (RIB)";
+            button.hidden = false;
+          }
+          render();
+        } catch (error) {
+          payoutReady = false;
+          status.textContent = error.message;
+          render();
+        }
+      }
       async function loadPayoutBalance() {
         const status = document.getElementById("cashDebtStatus");
         const { data, error } = await client.rpc(
@@ -348,6 +381,10 @@
           stopGps();
           return;
         }
+        if (!payoutReady) {
+          alert("Connect and verify your bank account (RIB) before going online.");
+          return;
+        }
         startGps("online");
         startOffers();
       }
@@ -363,7 +400,7 @@
         document.getElementById("toggle").textContent = online
           ? "Go offline"
           : "Go online";
-        document.getElementById("toggle").disabled = !!activeRide;
+        document.getElementById("toggle").disabled = !!activeRide || (!online && !payoutReady);
         document.getElementById("gps").textContent =
           watch !== null ? "GPS live" : "GPS off";
       }

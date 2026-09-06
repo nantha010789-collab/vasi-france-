@@ -249,8 +249,18 @@ test("ride drivers onboard their RIB with weekly Monday automatic payouts", asyn
           user_id: "driver-user",
           verified: true,
           stripe_account_id: "acct_driver",
+          stripe_details_submitted: true,
+          stripe_payouts_enabled: true,
         },
       ]);
+    }
+    if (value.endsWith("/v1/accounts/acct_driver")) {
+      return response({
+        id: "acct_driver",
+        details_submitted: true,
+        payouts_enabled: true,
+        metadata: { vasi_driver_id: "driver-1" },
+      });
     }
     if (value.endsWith("/v1/balance_settings")) {
       payoutBody = String(options.body);
@@ -311,6 +321,97 @@ test("ride drivers onboard their RIB with weekly Monday automatic payouts", asyn
   assert.match(driverPage, /\/api\/driver-stripe-onboarding/);
   assert.match(driverPage, /get_driver_cash_commission_balance/);
   assert.match(driverPage, /deduct automatically from future card earnings/);
+});
+
+test("restaurant owners connect their own RIB with weekly Monday payouts", async () => {
+  let accountBody = "";
+  let payoutBody = "";
+  let payoutAccount = "";
+  let onboardingBody = "";
+  const servicePatches = [];
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.endsWith("/auth/v1/user"))
+      return response({ id: "owner-1" });
+    if (value.includes("/rest/v1/restaurants?") && options.method !== "PATCH") {
+      return response([{
+        id: "restaurant-1",
+        owner_id: "owner-1",
+        name: "VASI Test Kitchen",
+        legal_name: "VASI Test Kitchen SAS",
+        email: "owner@example.test",
+        phone: "+33600000000",
+        status: "approved",
+        stripe_account_id: null,
+        stripe_details_submitted: false,
+        stripe_payouts_enabled: false,
+      }]);
+    }
+    if (value.includes("/rest/v1/restaurants?id=eq.restaurant-1") && options.method === "PATCH") {
+      servicePatches.push(JSON.parse(options.body));
+      return response([{}]);
+    }
+    if (value.endsWith("/v1/accounts")) {
+      accountBody = String(options.body);
+      return response({ id: "acct_restaurant", details_submitted: false, payouts_enabled: false });
+    }
+    if (value.endsWith("/v1/balance_settings")) {
+      payoutBody = String(options.body);
+      payoutAccount = options.headers["Stripe-Account"];
+      return response({});
+    }
+    if (value.endsWith("/v1/account_links")) {
+      onboardingBody = String(options.body);
+      return response({ url: "https://connect.stripe.test/restaurant" });
+    }
+    throw new Error(`Unexpected request: ${value}`);
+  };
+
+  const { default: onboardRestaurant } = await import(
+    `../api/restaurant-stripe-onboarding.js?test=${Date.now()}`
+  );
+  const res = mockRes();
+  await onboardRestaurant({
+    method: "POST",
+    headers: { authorization: "Bearer owner-token" },
+    body: {},
+  }, res);
+
+  const account = new URLSearchParams(accountBody);
+  const payout = new URLSearchParams(payoutBody);
+  const onboarding = new URLSearchParams(onboardingBody);
+  assert.equal(res.statusCode, 200);
+  assert.equal(account.get("capabilities[transfers][requested]"), "true");
+  assert.equal(account.get("metadata[vasi_restaurant_id]"), "restaurant-1");
+  assert.equal(account.get("metadata[vasi_user_id]"), "owner-1");
+  assert.equal(payoutAccount, "acct_restaurant");
+  assert.equal(payout.get("payments[payouts][schedule][interval]"), "weekly");
+  assert.deepEqual(payout.getAll("payments[payouts][schedule][weekly_payout_days][]"), ["monday"]);
+  assert.equal(onboarding.get("return_url"), "https://vasi-new.vercel.app/restaurant-dashboard.html?stripe=complete");
+  assert.equal(servicePatches[0].stripe_account_id, "acct_restaurant");
+  assert.deepEqual(res.body.payout_schedule, { interval: "weekly", day: "monday" });
+});
+
+test("all paid provider roles require a verified RIB and restaurants receive idempotent transfers", async () => {
+  const [migration, dashboard, partnerApi, courierService, webhook, vercel] = await Promise.all([
+    readFile("supabase/migrations/20260906023000_add_provider_stripe_payout_readiness.sql", "utf8"),
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile("api/restaurant-partner.js", "utf8"),
+    readFile("supabase/functions/delivery-driver-service/index.ts", "utf8"),
+    readFile("supabase/functions/stripe-webhook/index.ts", "utf8"),
+    readFile("vercel.json", "utf8"),
+  ]);
+  assert.match(migration, /stripe_payouts_enabled = true/);
+  assert.match(migration, /vasi_restaurant_toggle_open/);
+  assert.match(migration, /vasi_restaurant_complete_own_delivery/);
+  assert.match(migration, /delivery_pin/);
+  assert.match(dashboard, /\/api\/restaurant-stripe-onboarding/);
+  assert.match(dashboard, /Complete delivery · enter PIN/);
+  assert.match(partnerApi, /idempotencyKey: `vasi-eats-restaurant-/);
+  assert.match(partnerApi, /source_transaction/);
+  assert.match(courierService, /releaseEatsRestaurantPayout/);
+  assert.match(webhook, /vasi_restaurant_id/);
+  assert.match(vercel, /api\/restaurant-stripe-onboarding\.js/);
 });
 
 test("cash ride commission ledger is private, idempotent and card-offset aware", async () => {

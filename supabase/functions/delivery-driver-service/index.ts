@@ -156,6 +156,121 @@ async function releaseEatsCourierPayout(
   }
 }
 
+async function releaseEatsRestaurantPayout(
+  serviceClient: ReturnType<typeof createClient>,
+  orderId: string,
+) {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) return { status: "pending", message: "Restaurant payout is queued" };
+
+  const { data: order, error: orderError } = await serviceClient
+    .from("eats_orders")
+    .select(
+      "id,restaurant_id,restaurant_net,delivery_fee,delivery_mode,currency,restaurant_payout_status,restaurant_transfer_id,stripe_payment_intent_id,payment_status,status",
+    )
+    .eq("id", orderId)
+    .single();
+  if (orderError || !order) throw orderError ?? new Error("Order not found");
+  if (order.status !== "delivered" || order.payment_status !== "paid")
+    throw new Error("Restaurant payout requires a delivered paid order");
+  if (order.restaurant_transfer_id)
+    return { status: "paid", transfer_id: order.restaurant_transfer_id };
+
+  const { data: restaurant, error: restaurantError } = await serviceClient
+    .from("restaurants")
+    .select("id,stripe_account_id,stripe_payouts_enabled")
+    .eq("id", order.restaurant_id)
+    .single();
+  if (restaurantError || !restaurant)
+    throw restaurantError ?? new Error("Restaurant not found");
+
+  const accountId = String(restaurant.stripe_account_id || "");
+  if (!accountId || !restaurant.stripe_payouts_enabled) {
+    await serviceClient
+      .from("eats_orders")
+      .update({ restaurant_payout_status: "requires_onboarding" })
+      .eq("id", orderId);
+    return {
+      status: "requires_onboarding",
+      message: "Restaurant must connect and verify its RIB",
+    };
+  }
+
+  const stripe = stripeClient();
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    if (
+      (account.metadata?.vasi_restaurant_id &&
+        account.metadata.vasi_restaurant_id !== restaurant.id) ||
+      !account.details_submitted ||
+      !account.payouts_enabled
+    ) {
+      await serviceClient
+        .from("eats_orders")
+        .update({ restaurant_payout_status: "requires_onboarding" })
+        .eq("id", orderId);
+      return {
+        status: "requires_onboarding",
+        message: "Restaurant RIB verification is incomplete",
+      };
+    }
+
+    const paymentIntentId = String(order.stripe_payment_intent_id || "");
+    if (!paymentIntentId) throw new Error("Paid order has no payment reference");
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const chargeId = typeof paymentIntent.latest_charge === "string"
+      ? paymentIntent.latest_charge
+      : paymentIntent.latest_charge?.id;
+    if (paymentIntent.status !== "succeeded" || !chargeId)
+      throw new Error("Customer payment is not settled");
+
+    const amount = money(
+      Number(order.restaurant_net || 0) +
+        (order.delivery_mode === "own" ? Number(order.delivery_fee || 0) : 0),
+    );
+    if (amount < 1) throw new Error("Restaurant payout amount is invalid");
+    const transfer = await stripe.transfers.create(
+      {
+        amount,
+        currency: String(order.currency || "eur").toLowerCase(),
+        destination: accountId,
+        source_transaction: chargeId,
+        transfer_group: `VASI_EATS_${orderId}`,
+        metadata: {
+          vasi_service: "eats",
+          vasi_order_id: orderId,
+          vasi_restaurant_id: String(restaurant.id),
+        },
+      },
+      { idempotencyKey: `vasi-eats-restaurant-${orderId}` },
+    );
+    const paidAt = new Date().toISOString();
+    await serviceClient
+      .from("eats_orders")
+      .update({
+        restaurant_payout_status: "paid",
+        restaurant_transfer_id: transfer.id,
+        restaurant_paid_at: paidAt,
+      })
+      .eq("id", orderId);
+    return {
+      status: "paid",
+      amount: amount / 100,
+      currency: order.currency,
+      transfer_id: transfer.id,
+    };
+  } catch (error) {
+    await serviceClient
+      .from("eats_orders")
+      .update({ restaurant_payout_status: "failed" })
+      .eq("id", orderId);
+    return {
+      status: "failed",
+      message: error instanceof Error ? error.message : "Restaurant payout needs review",
+    };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST required" }, 405);
 
@@ -492,7 +607,8 @@ Deno.serve(async (req: Request) => {
       if (error) return json({ error: error.message }, 400);
       if (!data?.ok) return json({ error: data?.error || "Delivery PIN could not be verified" }, 409);
       const payout = await releaseEatsCourierPayout(serviceClient, courier, id);
-      return json({ eat: data.eat, payout });
+      const restaurantPayout = await releaseEatsRestaurantPayout(serviceClient, id);
+      return json({ eat: data.eat, payout, restaurant_payout: restaurantPayout });
     }
 
     const patch: Record<string, unknown> = { status };

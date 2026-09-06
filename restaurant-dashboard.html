@@ -42,9 +42,11 @@
     .item-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .photo-note{margin:9px 0 0 105px}
     .optional{display:block;margin:7px 0 14px;padding:11px 12px;background:#171717;border:1px solid #292929;border-radius:13px}
+    .payout-box{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:13px;background:#171717;border:1px solid var(--line);border-radius:16px}
+    .payout-box p{margin:4px 0 0}.payout-box .btn{flex:none}
     .status{min-height:22px;color:#bbb;text-align:center}
     .busy{opacity:.65;pointer-events:none}
-    @media(max-width:720px){.grid,.form{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.form .wide{grid-column:auto}.menu-main{grid-template-columns:76px minmax(0,1fr)}.food-photo,.photo-placeholder{width:76px;height:68px}.item-actions{grid-column:1/-1;justify-content:stretch}.item-actions .btn{flex:1}.photo-note{margin-left:0}.top{align-items:flex-start}}
+    @media(max-width:720px){.grid,.form{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.form .wide{grid-column:auto}.menu-main{grid-template-columns:76px minmax(0,1fr)}.food-photo,.photo-placeholder{width:76px;height:68px}.item-actions{grid-column:1/-1;justify-content:stretch}.item-actions .btn{flex:1}.photo-note{margin-left:0}.top{align-items:flex-start}.payout-box{align-items:stretch;flex-direction:column}.payout-box .btn{width:100%}}
     @media(max-width:390px){.wrap{padding-left:12px;padding-right:12px}.top-actions .btn{padding:9px 10px}.card{border-radius:18px}.menu-main{grid-template-columns:64px minmax(0,1fr)}.food-photo,.photo-placeholder{width:64px;height:60px}}
   </style>
   <link rel="stylesheet" href="./vasi-mobile-fit.css">
@@ -75,6 +77,7 @@
       if(order.status==='pending')return ['accepted','Accept order'];
       if(order.status==='accepted')return ['preparing','Start preparing'];
       if(order.status==='preparing')return ['ready_for_pickup','Ready for pickup'];
+      if(order.status==='ready_for_pickup'&&order.delivery_mode==='own')return ['delivered','Complete delivery · enter PIN'];
       return null;
     }
 
@@ -89,8 +92,25 @@
       try{
         data=await api();
         if(!data.restaurant){location.href='restaurant-register.html';return}
+        if(data.restaurant.status==='approved')await refreshPayoutAccount();
         render();
+        const stripeReturn=new URLSearchParams(location.search).get('stripe');
+        if(stripeReturn==='complete'&&!data.restaurant.stripe_payouts_enabled)msg.textContent='RIB details submitted. Stripe is checking your information.';
+        if(stripeReturn==='refresh')msg.textContent='Finish the secure Stripe RIB setup to receive payouts.';
       }catch(error){msg.textContent=error.message}
+    }
+
+    async function refreshPayoutAccount(){
+      try{
+        const response=await fetch('/api/restaurant-stripe-onboarding',{headers:{Authorization:'Bearer '+token}});
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok)throw Error(result.error||'Payout status unavailable');
+        Object.assign(data.restaurant,{
+          stripe_connected:Boolean(result.connected),
+          stripe_details_submitted:Boolean(result.details_submitted),
+          stripe_payouts_enabled:Boolean(result.payouts_enabled),
+        });
+      }catch(error){data.restaurant.payout_status_error=error.message}
     }
 
     function render(){
@@ -98,7 +118,17 @@
       const activeOrders=orders.filter(order=>activeStatuses.has(order.status)).length;
       const completedOrders=orders.filter(order=>order.status==='delivered');
       const sales=completedOrders.reduce((sum,order)=>sum+Number(order.total||0),0);
-      const payout=completedOrders.reduce((sum,order)=>sum+Number(order.restaurant_net??Number(order.subtotal||0)*.9),0);
+      const payout=completedOrders.reduce((sum,order)=>sum+Number(order.restaurant_net??Number(order.subtotal||0)*.9)+(order.delivery_mode==='own'?Number(order.delivery_fee||0):0),0);
+      const payoutReady=Boolean(restaurant.stripe_payouts_enabled);
+      const payoutText=restaurant.payout_status_error
+        ? restaurant.payout_status_error
+        : restaurant.status!=='approved'
+          ? 'RIB setup becomes available after restaurant approval.'
+          : payoutReady
+            ? '✓ RIB verified · restaurant earnings are paid automatically every Monday.'
+            : restaurant.stripe_details_submitted
+              ? 'Stripe is checking your payout information.'
+              : 'Connect and verify your bank account (RIB) before opening your restaurant.';
       const menu=(data.menu||[]).map(item=>{
         const status=item.photo_status||'none';
         const preview=item.photo_candidate_url||item.photo_url;
@@ -123,11 +153,15 @@
       app.innerHTML=`<section class="card">
         <div class="row">
           <div><h1>${esc(restaurant.name)}</h1><span class="badge">${esc(restaurant.status)}</span></div>
-          <button class="btn ${restaurant.is_open?'on':''}" type="button" onclick="toggleOpen(${!restaurant.is_open})">${restaurant.is_open?'Online':'Offline'}</button>
+          <button class="btn ${restaurant.is_open?'on':''}" type="button" onclick="toggleOpen(${!restaurant.is_open})" ${!restaurant.is_open&&!payoutReady?'disabled':''}>${restaurant.is_open?'Online':payoutReady?'Offline':'RIB required'}</button>
         </div>
         <p class="muted">${esc(restaurant.cuisine)} · ${esc(restaurant.delivery_mode==='own'?'Own delivery':'VASI courier')} · ${rate}% restaurant commission</p>
         ${restaurant.status==='pending'?'<p>Your application is being reviewed. You can prepare your menu now.</p>':''}
         ${restaurant.status==='rejected'?`<p>Changes needed: ${esc(restaurant.rejection_reason)}</p>`:''}
+        <div class="payout-box">
+          <div><b>Payments &amp; RIB</b><p class="muted">${esc(payoutText)}</p></div>
+          ${restaurant.status==='approved'&&!payoutReady?`<button class="btn primary" type="button" onclick="connectBankAccount()">${restaurant.stripe_connected?'Continue RIB verification':'Connect bank account (RIB)'}</button>`:''}
+        </div>
         <div class="stats" aria-label="Restaurant performance">
           <div class="stat"><span class="muted">Active orders</span><b>${activeOrders}</b></div>
           <div class="stat"><span class="muted">Delivered</span><b>${completedOrders.length}</b></div>
@@ -154,9 +188,10 @@
           <p class="muted">Live order queue. Each button shows the next required step.</p>
           <div>${orders.map(order=>{const action=nextOrderAction(order);return `<div class="order">
             <div class="row"><b>#${order.id.slice(0,8).toUpperCase()}</b><span class="badge">${esc(order.status)}</span></div>
-            <p class="muted">Order ${money(order.total)} · Restaurant payout ${money(order.restaurant_net ?? order.subtotal * .9)} · ${new Date(order.created_at).toLocaleString()}</p>
+            <p class="muted">Order ${money(order.total)} · Restaurant payout ${money(Number(order.restaurant_net ?? order.subtotal * .9)+(order.delivery_mode==='own'?Number(order.delivery_fee||0):0))} · ${new Date(order.created_at).toLocaleString()}</p>
+            ${order.status==='delivered'?`<p class="muted">Payout: ${esc(order.restaurant_payout_status||'pending')}</p>`:''}
             <p class="muted">📍 ${esc(order.delivery_address||'Delivery address unavailable')}</p>
-            ${action?`<button class="btn primary" type="button" onclick="orderStatus('${order.id}','${action[0]}')">${action[1]}</button>`:'<span class="badge">No action needed</span>'}
+            ${action?`<button class="btn primary" type="button" onclick="orderStatus('${order.id}','${action[0]}')">${action[1]}</button>`:order.status==='delivered'&&['failed','requires_onboarding'].includes(order.restaurant_payout_status)&&payoutReady?`<button class="btn" type="button" onclick="retryPayout('${order.id}')">Retry payout</button>`:'<span class="badge">No action needed</span>'}
           </div>`}).join('')||'<p class="muted">No orders yet.</p>'}</div>
         </section>
       </div>`;
@@ -206,7 +241,24 @@
     async function addItem(event){event.preventDefault();await act({action:'add_item',...Object.fromEntries(new FormData(event.target))},'Menu item added. Photo is optional.');event.target.reset()}
     function toggleItem(id,active){act({action:'toggle_item',id,active})}
     function toggleOpen(is_open){act({action:'toggle_open',is_open})}
-    function orderStatus(id,status){act({action:'order_status',id,status})}
+    function orderStatus(id,status){
+      if(status==='delivered'){
+        const pin=prompt('Enter the customer’s 4-digit delivery PIN');
+        if(pin===null)return;
+        return act({action:'complete_own_delivery',id,pin},'Delivery completed. Restaurant payout released.');
+      }
+      return act({action:'order_status',id,status});
+    }
+    function retryPayout(id){return act({action:'retry_restaurant_payout',id},'Restaurant payout checked.');}
+    async function connectBankAccount(){
+      msg.textContent='Opening secure Stripe RIB setup…';
+      try{
+        const response=await fetch('/api/restaurant-stripe-onboarding',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok)throw Error(result.error||'Stripe onboarding failed');
+        location.href=result.url;
+      }catch(error){msg.textContent=error.message}
+    }
     async function logout(){await client.auth.signOut();location.href='index.html'}
 
     client.auth.getSession().then(({data:{session}})=>{
