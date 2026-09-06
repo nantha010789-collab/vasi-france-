@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v33";
+const CACHE = "vasi-app-v34";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
@@ -11,8 +11,8 @@ const CORE = [
   appUrl("assets/vasi-mark.png"),
   appUrl("manifest.webmanifest"),
   appUrl("vasi-mobile-fit.css"),
-  appUrl("vasi-icon-192.png"),
-  appUrl("vasi-icon-512.png"),
+  appUrl("vasi-word-icon-192.png"),
+  appUrl("vasi-word-icon-512.png"),
   appUrl("vasi-notifications.js"),
   appUrl("vasi-languages.js"),
   appUrl("vasi-call.js"),
@@ -79,8 +79,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "VASI", {
       body: data.body || "You have a new update.",
-      icon: appUrl("vasi-icon-192.png"),
-      badge: appUrl("vasi-icon-192.png"),
+      icon: appUrl("vasi-word-icon-192.png"),
+      badge: appUrl("vasi-word-icon-192.png"),
       tag: data.tag || "vasi-update",
       renotify: false,
       silent: Boolean(data.silent),
