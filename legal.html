@@ -12,10 +12,10 @@
   </head>
   <body>
     <main class="wrap">
-      <header class="top"><div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div><a class="button" href="index.html">Home</a></header>
-      <section class="hero"><p class="muted">Pre-launch legal information</p><h1>Legal & Privacy</h1><p class="muted">Terms, privacy choices and contact information for VASI.</p></section>
+      <header class="top"><div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div></header>
+      <section class="hero"><p id="legalKicker" class="muted">Pre-launch legal information</p><h1 id="legalTitle">Legal & Privacy</h1><p id="legalIntro" class="muted">Terms, privacy choices and contact information for VASI.</p></section>
       <div class="language" role="group" aria-label="Legal document language"><button id="englishButton" class="button" type="button" aria-selected="true">English</button><button id="frenchButton" class="button" type="button" aria-selected="false">Français</button></div>
-      <p class="notice"><strong>Commercial launch gate:</strong> the registered operator name, legal form, address, SIRET/RCS, publication director and hosting contact must be completed here before VASI accepts real paid bookings.</p>
+      <p class="notice"><strong id="launchNoticeLabel">Commercial launch gate:</strong> <span id="launchNoticeText">the registered operator name, legal form, address, SIRET/RCS, publication director and hosting contact must be completed here before VASI accepts real paid bookings.</span></p>
 
       <div id="englishLegal">
         <section class="card"><h2>Legal notice</h2><p><strong>Service:</strong> VASI, a pre-launch mobility and delivery platform for France and Europe.</p><p><strong>Contact:</strong> <a href="mailto:contact@vasi.eu">contact@vasi.eu</a></p><p><strong>Hosting:</strong> Vercel. Database and authentication services are provided through Supabase.</p><p>The registered operator identity and applicable French and European registration details are pending commercial activation. VASI must not accept real paid bookings until those details, required insurance and applicable transport registrations have been verified.</p></section>
@@ -28,21 +28,56 @@
         <section class="card"><h2>Politique de confidentialité</h2><h3>Données utilisées</h3><p>Coordonnées du compte, documents des partenaires vérifiés, adresses de départ et d'arrivée, position en direct pendant un service actif, historique, références de paiement, messages d'assistance et journaux de sécurité.</p><h3>Finalités</h3><ul><li>Fournir les courses, commandes Eats et livraisons.</li><li>Mettre en relation les clients avec les chauffeurs, livreurs et restaurants vérifiés.</li><li>Traiter les paiements, commissions, remboursements et virements bancaires.</li><li>Protéger les utilisateurs, prévenir la fraude et respecter les obligations légales.</li></ul><h3>Localisation et autorisations</h3><p>La localisation au premier plan sert à choisir les points de départ et de livraison. La position du chauffeur ou du livreur est utilisée uniquement lorsqu'il est en ligne ou exécute une mission attribuée. La caméra et le microphone ne sont demandés que pour la fonction choisie.</p><h3>Prestataires</h3><p>VASI peut utiliser Supabase, Vercel, Stripe, des fournisseurs de cartographie et les fournisseurs d'e-mail ou de SMS configurés. Seules les données nécessaires à chaque service doivent être transmises.</p><h3>Conservation et droits</h3><p>Les données sont conservées pendant les durées opérationnelles, de sécurité, comptables et légales nécessaires. Vous pouvez demander l'accès, la rectification, la portabilité ou la limitation via <a href="support.html">l'assistance VASI</a>. La suppression du compte peut être demandée sur la page <a href="delete-account.html">Supprimer le compte VASI</a>. Certaines données de transaction doivent être conservées légalement.</p><h3>Marketing</h3><p>Les notifications promotionnelles sont facultatives et peuvent être désactivées dans les réglages. Les messages indispensables concernant une course, une commande, un virement ou la sécurité restent des communications de service.</p></section>
         <section class="card"><h2>Conditions d'utilisation</h2><h3>Rôle de la plateforme</h3><p>VASI met en relation les clients avec des partenaires indépendants approuvés. Le statut, l'assurance, les documents professionnels et l'éligibilité du partenaire doivent être vérifiés avant l'accès aux missions réelles.</p><h3>Prix et paiement</h3><p>Le prix estimé ou forfaitaire, les frais et le moyen de paiement sont affichés avant confirmation. La commission course est de 15% par défaut et peut être modifiée par un administrateur VASI autorisé.</p><h3>Annulations, remboursements et litiges</h3><p>Les frais d'annulation applicables doivent être affichés avant confirmation ou dans les détails de la réservation. Les remboursements et litiges nécessitent la vérification de la transaction. Ne transmettez jamais vos données de carte ou codes de connexion à l'assistance.</p><h3>Sécurité et utilisation</h3><p>Les informations fournies doivent être exactes. La fraude, le harcèlement, les marchandises dangereuses, le transport illégal et l'utilisation de l'identité d'autrui sont interdits. En cas de danger immédiat, appelez le 112.</p><h3>Disponibilité</h3><p>Le service dépend des partenaires, du réseau, de la cartographie et des paiements. Une réservation n'est acceptée que lorsque l'application la confirme. Le droit français applicable régit ces conditions, sans limiter les droits impératifs des consommateurs.</p></section>
       </div>
-      <nav class="legal-footer"><a class="button" href="settings.html#privacy">Privacy settings</a><a class="button" href="delete-account.html">Delete account</a><a class="button" href="support.html">Support</a></nav>
+      <nav class="legal-footer"><a id="privacySettingsLink" class="button" href="settings.html#privacy">Privacy settings</a><a id="deleteAccountLink" class="button" href="delete-account.html">Delete account</a><a id="supportLink" class="button" href="support.html">Support</a></nav>
     </main>
     <script>
       const english = document.getElementById("englishLegal");
       const french = document.getElementById("frenchLegal");
       const englishButton = document.getElementById("englishButton");
       const frenchButton = document.getElementById("frenchButton");
+      const interfaceCopy = {
+        en: {
+          kicker: "Pre-launch legal information",
+          title: "Legal & Privacy",
+          intro: "Terms, privacy choices and contact information for VASI.",
+          noticeLabel: "Commercial launch gate:",
+          noticeText: "the registered operator name, legal form, address, SIRET/RCS, publication director and hosting contact must be completed here before VASI accepts real paid bookings.",
+          privacy: "Privacy settings",
+          deleteAccount: "Delete account",
+          support: "Support",
+          pageTitle: "VASI — Legal & Privacy"
+        },
+        fr: {
+          kicker: "Informations juridiques avant lancement",
+          title: "Mentions légales et confidentialité",
+          intro: "Conditions, choix de confidentialité et coordonnées de VASI.",
+          noticeLabel: "Avant le lancement commercial :",
+          noticeText: "le nom de l’exploitant, la forme juridique, l’adresse, le SIRET/RCS, le directeur de publication et les coordonnées d’hébergement doivent être complétés avant que VASI accepte des réservations réelles payantes.",
+          privacy: "Réglages de confidentialité",
+          deleteAccount: "Supprimer le compte",
+          support: "Assistance",
+          pageTitle: "VASI — Mentions légales et confidentialité"
+        }
+      };
       function showLanguage(language) {
         const useFrench = language === "fr";
+        const copy = interfaceCopy[useFrench ? "fr" : "en"];
         english.classList.toggle("hidden", useFrench);
         french.classList.toggle("hidden", !useFrench);
         englishButton.setAttribute("aria-selected", String(!useFrench));
         frenchButton.setAttribute("aria-selected", String(useFrench));
         document.documentElement.lang = useFrench ? "fr" : "en";
+        document.getElementById("legalKicker").textContent = copy.kicker;
+        document.getElementById("legalTitle").textContent = copy.title;
+        document.getElementById("legalIntro").textContent = copy.intro;
+        document.getElementById("launchNoticeLabel").textContent = copy.noticeLabel;
+        document.getElementById("launchNoticeText").textContent = copy.noticeText;
+        document.getElementById("privacySettingsLink").textContent = copy.privacy;
+        document.getElementById("deleteAccountLink").textContent = copy.deleteAccount;
+        document.getElementById("supportLink").textContent = copy.support;
+        document.title = copy.pageTitle;
         localStorage.setItem("vasi_language", useFrench ? "fr" : "en");
+        window.dispatchEvent(new CustomEvent("vasi:languagechange"));
       }
       englishButton.onclick = () => showLanguage("en");
       frenchButton.onclick = () => showLanguage("fr");
