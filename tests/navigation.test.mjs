@@ -85,9 +85,15 @@ test("the shared return control is valid JavaScript and has safe navigation rule
   assert.doesNotThrow(() => new vm.Script(source));
   assert.match(source, /previous\.origin === location\.origin/);
   assert.match(source, /history\.length <= 1/);
+  assert.match(source, /\["admin", "publicity"\]\.includes\(lastSegment\)/);
+  assert.doesNotMatch(source, /nestedIndex[^;]+segments\.length === 1/);
   assert.match(source, /"eats-checkout\.html": "eats\.html"/);
   assert.match(source, /"settings\.html": "account\.html"/);
   assert.match(source, /"admin-login\.html": "index\.html"/);
   assert.match(source, /min-width: 44px/);
   assert.match(source, /aria-label/);
+});
+
+test("the return control is available in the offline app cache", () => {
+  assert.match(readFileSync("sw.js", "utf8"), /appUrl\("vasi-navigation\.js"\)/);
 });

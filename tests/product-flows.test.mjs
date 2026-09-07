@@ -1022,6 +1022,7 @@ test("shared language runtime translates English and French source pages both wa
   assert.equal(french.translate("Fast city trips"), "Trajets en ville");
   assert.equal(french.translate("Eats"), "Eats");
   assert.equal(french.translate("Food delivery"), "Livraison de plats");
+  assert.equal(french.translate("Food, your way."), "Eats, à votre façon.");
   assert.equal(
     french.translate("One VASI app for rides, food and delivery."),
     "VASI pour vos trajets, Eats et livraisons."
@@ -1186,11 +1187,26 @@ test("public account surfaces expose bilingual legal and privacy information", a
 
   assert.match(legal, /Legal & Privacy/);
   assert.match(legal, /Politique de confidentialité/);
-  assert.match(legal, /contact@vasigo\.eu/);
+  assert.match(legal, /contact@vasi\.eu/);
   assert.match(legal, /defaults to 15%/);
   for (const surface of [index, account, settings]) assert.match(surface, /legal\.html/);
   assert.match(migration, /alter table public\.spatial_ref_sys enable row level security/i);
   assert.match(migration, /revoke execute on function public\.st_estimatedextent/i);
+});
+
+test("home language selector works before customer sign-in", async () => {
+  for (const file of ["app.html", "index.html"]) {
+    const home = await readFile(file, "utf8");
+    assert.match(home, /id="languageDialog"/);
+    assert.match(home, /data-language="fr"/);
+    assert.match(home, /data-language="en"/);
+    assert.match(home, /window\.VasiLanguage\?\.setLanguage\?\.\(language\)/);
+    assert.doesNotMatch(
+      home,
+      /function openLanguageSettings\(\)[\s\S]{0,500}auth\.html/,
+      `${file} must not require login just to change language`,
+    );
+  }
 });
 
 test("users can securely initiate account deletion in the app", async () => {
@@ -1299,7 +1315,7 @@ test("European mobility growth features are connected end to end", async () => {
   assert.match(migration, /release-vasi-scheduled-eats/);
   assert.match(migration, /private\.is_business_member/);
   assert.match(flightApi, /AVIATIONSTACK_API_KEY/);
-  assert.match(worker, /vasi-app-v46/);
+  assert.match(worker, /vasi-app-v47/);
 });
 
 test("airport ride input rejects malformed flight numbers before database work", async () => {

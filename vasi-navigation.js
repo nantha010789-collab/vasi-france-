@@ -3,7 +3,7 @@
 
   const segments = location.pathname.split("/").filter(Boolean);
   const lastSegment = (segments.at(-1) || "").toLowerCase();
-  const nestedIndex = ["admin", "publicity"].includes(lastSegment) && segments.length === 1;
+  const nestedIndex = ["admin", "publicity"].includes(lastSegment);
   const page = lastSegment.includes(".")
     ? lastSegment
     : (lastSegment && !nestedIndex ? `${lastSegment}.html` : "index.html");
