@@ -1181,11 +1181,14 @@ test("users can securely initiate account deletion in the app", async () => {
 });
 
 test("background Web Push subscription is VAPID-backed and user-scoped", async () => {
-  const [notifications, worker, configApi, migration] = await Promise.all([
+  const [notifications, worker, configApi, subscriptionMigration, dispatch, dispatchConfig, dispatchMigration] = await Promise.all([
     readFile("vasi-notifications.js", "utf8"),
     readFile("sw.js", "utf8"),
     readFile("api/push-config.js", "utf8"),
     readFile("supabase/migrations/20260907021104_add_account_deletion_push_and_google_pay.sql", "utf8"),
+    readFile("supabase/functions/push-dispatch/index.ts", "utf8"),
+    readFile("supabase/functions/push-dispatch/deno.json", "utf8"),
+    readFile("supabase/migrations/20260907033000_enable_background_web_push.sql", "utf8"),
   ]);
   assert.match(notifications, /pushManager\.subscribe/);
   assert.match(notifications, /applicationServerKey/);
@@ -1193,8 +1196,23 @@ test("background Web Push subscription is VAPID-backed and user-scoped", async (
   assert.match(worker, /addEventListener\("push"/);
   assert.match(configApi, /VAPID_PUBLIC_KEY/);
   assert.match(configApi, /public_key: publicKey \|\| null/);
-  assert.match(migration, /alter table public\.push_subscriptions enable row level security/i);
-  assert.match(migration, /push_subscriptions_update_own/);
+  assert.match(subscriptionMigration, /alter table public\.push_subscriptions enable row level security/i);
+  assert.match(subscriptionMigration, /push_subscriptions_update_own/);
+  assert.match(dispatchConfig, /npm:web-push@3\.6\.7/);
+  assert.match(dispatch, /x-vasi-hook-secret/);
+  assert.match(dispatch, /safeEqual/);
+  assert.match(dispatch, /push_notification_events/);
+  assert.match(dispatch, /webpush\.sendNotification/);
+  assert.match(dispatch, /statusCode === 404 \|\| statusCode === 410/);
+  assert.match(dispatchMigration, /create extension if not exists pg_net/i);
+  assert.match(dispatchMigration, /vault\.decrypted_secrets/);
+  assert.match(dispatchMigration, /after update of status on public\.rides/i);
+  assert.match(dispatchMigration, /after update of status on public\.eats_orders/i);
+  assert.match(dispatchMigration, /after update of status on public\.delivery_orders/i);
+  assert.doesNotMatch(
+    dispatchMigration,
+    /vault\.create_secret\(\s*'[A-Za-z0-9_-]{20,}'\s*,\s*'vasi_vapid_private_key'/i,
+  );
 });
 
 test("ride checkout accepts Google Pay through Stripe wallets", async () => {
