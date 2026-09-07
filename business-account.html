@@ -16,5 +16,5 @@ function render(){el('createCard').classList.toggle('hidden',!!business);el('das
 async function load(){const result=await client.from('business_accounts').select('*').eq('active',true).order('created_at').limit(1);business=result.data?.[0]||null;rides=[];invoices=[];if(business){const [rideResult,invoiceResult]=await Promise.all([client.from('rides').select('id,final_fare,estimated_fare,currency,completed_at,company_reference').eq('business_account_id',business.id).eq('status','completed').order('completed_at',{ascending:false}),client.from('business_monthly_invoices').select('*').eq('business_id',business.id).order('invoice_month',{ascending:false})]);rides=rideResult.data||[];invoices=invoiceResult.data||[]}render()}
 async function init(){session=(await client.auth.getSession()).data.session;if(!session){localStorage.setItem('vasi_role','customer');localStorage.setItem('vasi_return','business-account.html');return location.replace('auth.html?role=customer')}el('billingEmail').value=session.user.email||'';el('invoiceMonth').value=new Date().toISOString().slice(0,7);await load()}init();
 </script>  <script src="./vasi-languages.js?v=4"></script>
-    <script src="./vasi-navigation.js?v=3"></script>
+    <script src="./vasi-navigation.js?v=4"></script>
 </body></html>
