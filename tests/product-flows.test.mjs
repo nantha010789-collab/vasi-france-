@@ -1007,7 +1007,10 @@ test("shared language runtime translates English and French source pages both wa
     runInNewContext(source, {
       window,
       document: { readyState: "loading", addEventListener() {} },
-      localStorage: { getItem: () => selectedLanguage, setItem() {} },
+      localStorage: {
+        getItem: (key) => key === "vasi_language_default_policy" ? "fr-first-v1" : selectedLanguage,
+        setItem() {},
+      },
       CustomEvent: class {},
     });
     return window.VasiLanguage;
@@ -1032,6 +1035,29 @@ test("shared language runtime translates English and French source pages both wa
     english.translate("Créez un seul compte pour conduire des passagers ou effectuer des livraisons."),
     "Create one account to drive passengers or make deliveries.",
   );
+});
+
+test("French is applied once as the app default and later language choices persist", async () => {
+  const source = await readFile("vasi-languages.js", "utf8");
+  const storage = new Map([["vasi_language", "en"]]);
+  const window = { dispatchEvent() {} };
+  runInNewContext(source, {
+    window,
+    document: { readyState: "loading", addEventListener() {} },
+    localStorage: { getItem: (key) => storage.get(key) || null, setItem: (key, value) => storage.set(key, value) },
+    CustomEvent: class {},
+  });
+  assert.equal(window.VasiLanguage.getLanguage(), "fr");
+  assert.equal(storage.get("vasi_language_default_policy"), "fr-first-v1");
+  storage.set("vasi_language", "en");
+  const nextWindow = { dispatchEvent() {} };
+  runInNewContext(source, {
+    window: nextWindow,
+    document: { readyState: "loading", addEventListener() {} },
+    localStorage: { getItem: (key) => storage.get(key) || null, setItem: (key, value) => storage.set(key, value) },
+    CustomEvent: class {},
+  });
+  assert.equal(nextWindow.VasiLanguage.getLanguage(), "en");
 });
 
 test("one VASI region runtime switches France and UK rules safely", async () => {
@@ -1268,7 +1294,7 @@ test("European mobility growth features are connected end to end", async () => {
   assert.match(migration, /release-vasi-scheduled-eats/);
   assert.match(migration, /private\.is_business_member/);
   assert.match(flightApi, /AVIATIONSTACK_API_KEY/);
-  assert.match(worker, /vasi-app-v42/);
+  assert.match(worker, /vasi-app-v43/);
 });
 
 test("airport ride input rejects malformed flight numbers before database work", async () => {
