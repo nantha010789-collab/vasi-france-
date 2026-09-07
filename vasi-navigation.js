@@ -109,7 +109,7 @@
 
   function install() {
     const explicit = document.querySelector(
-      "[data-vasi-return], header .back-btn, header .back, .top .back, a[aria-label*='Return' i], button[onclick*='history.back']"
+      "[data-vasi-return], .back-btn, header .back, .top .back, a[aria-label*='Return' i], button[onclick*='history.back']"
     );
     const host = document.querySelector("header .header-inner, header, .top") || document.body;
     const control = explicit || document.createElement("button");

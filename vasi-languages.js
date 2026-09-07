@@ -1418,6 +1418,9 @@
     "Enter a valid email address.": "Saisissez une adresse e-mail valide.",
     "RIB verified · restaurant earnings are paid automatically every Monday.": "RIB vérifié · les revenus du restaurant sont versés automatiquement chaque lundi."
   };
+  Object.assign(finalFrenchTranslations, {
+    "Allow location access or tap the map to select your pickup. No price is calculated until pickup is confirmed.": "Autorisez la localisation ou touchez la carte pour choisir votre point de départ. Aucun prix n’est calculé tant que le départ n’est pas confirmé."
+  });
   Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 
   // Every page does not currently use the same source language: most customer
