@@ -29,7 +29,7 @@
       "Move.": "Déplacez-vous.",
       "Eat.": "Mangez.",
       "Deliver.": "Faites livrer.",
-      "One VASI app for rides, food and delivery.": "VASI pour vos trajets, repas et livraisons.",
+      "One VASI app for rides, food and delivery.": "VASI pour vos trajets, Eats et livraisons.",
       "Ride": "Trajet",
       "Fast city trips": "Trajets en ville",
       "Eats": "Eats",
