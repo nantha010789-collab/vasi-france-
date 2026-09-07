@@ -1020,6 +1020,7 @@ test("shared language runtime translates English and French source pages both wa
   assert.equal(french.translate("Book a ride"), "Commander un trajet");
   assert.equal(french.translate("🚗 Ride"), "🚗 Trajet");
   assert.equal(french.translate("Fast city trips"), "Trajets en ville");
+  assert.equal(french.translate("Eats"), "Eats");
   assert.equal(french.translate("Food delivery"), "Repas livrés");
   assert.equal(french.translate("Send anything"), "Envoyez un colis");
   assert.equal(french.translate("Legal & Privacy"), "Juridique & confidentialité");
@@ -1294,7 +1295,7 @@ test("European mobility growth features are connected end to end", async () => {
   assert.match(migration, /release-vasi-scheduled-eats/);
   assert.match(migration, /private\.is_business_member/);
   assert.match(flightApi, /AVIATIONSTACK_API_KEY/);
-  assert.match(worker, /vasi-app-v43/);
+  assert.match(worker, /vasi-app-v44/);
 });
 
 test("airport ride input rejects malformed flight numbers before database work", async () => {
