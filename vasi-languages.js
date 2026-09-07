@@ -1419,7 +1419,26 @@
     "RIB verified · restaurant earnings are paid automatically every Monday.": "RIB vérifié · les revenus du restaurant sont versés automatiquement chaque lundi."
   };
   Object.assign(finalFrenchTranslations, {
-    "Allow location access or tap the map to select your pickup. No price is calculated until pickup is confirmed.": "Autorisez la localisation ou touchez la carte pour choisir votre point de départ. Aucun prix n’est calculé tant que le départ n’est pas confirmé."
+    "Allow location access or tap the map to select your pickup. No price is calculated until pickup is confirmed.": "Autorisez la localisation ou touchez la carte pour choisir votre point de départ. Aucun prix n’est calculé tant que le départ n’est pas confirmé.",
+    "Airport pickup": "Prise en charge à l’aéroport",
+    "Passengers": "Passagers",
+    "Passenger": "Passager",
+    "passenger": "passager",
+    "passengers": "passagers",
+    "Luggage": "Bagages",
+    "luggage": "bagages",
+    "Arrival terminal (optional)": "Terminal d’arrivée (facultatif)",
+    "Pickup zone or meeting point (optional)": "Zone de prise en charge ou point de rencontre (facultatif)",
+    "Choose the expected arrival time. VASI tracks your flight, adjusts pickup automatically and shows the official terminal details when available.": "Choisissez l’heure d’arrivée prévue. VASI suit votre vol, ajuste automatiquement la prise en charge et affiche les informations officielles du terminal lorsqu’elles sont disponibles.",
+    "I’m ready for pickup": "Je suis prêt pour la prise en charge",
+    "Notifying your driver…": "Notification de votre chauffeur…",
+    "Driver notified — you’re ready": "Chauffeur informé — vous êtes prêt",
+    "Your driver knows you are ready at the pickup point": "Votre chauffeur sait que vous êtes prêt au point de prise en charge",
+    "Could not notify the driver": "Impossible d’informer le chauffeur",
+    "Passenger is ready at the pickup point": "Le passager est prêt au point de prise en charge",
+    "Waiting for the passenger’s ready signal": "En attente du signal du passager",
+    "Pickup:": "Prise en charge :",
+    "selected for your passengers and luggage": "sélectionné pour vos passagers et vos bagages"
   });
   Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 

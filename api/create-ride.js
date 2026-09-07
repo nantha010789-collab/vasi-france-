@@ -169,6 +169,16 @@ function normalizeFlight(value, airportPickup) {
     throw new Error("Enter a valid flight number, for example AF1234");
   return flight;
 }
+function normalizeAirportCount(value, fallback, min, max, label) {
+  if (value === null || value === undefined || value === "") return fallback;
+  const count = Number(value);
+  if (!Number.isInteger(count) || count < min || count > max)
+    throw new Error(`${label} must be between ${min} and ${max}`);
+  return count;
+}
+function normalizeAirportText(value, maxLength) {
+  return String(value || "").trim().slice(0, maxLength) || null;
+}
 function normalizeRideOptions(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.map((item) => String(item || "").trim()))].filter(
@@ -230,6 +240,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Airport pickup requires a valid flight number" });
     if (airportPickup && !scheduledFor)
       return res.status(400).json({ error: "Airport pickup requires the expected arrival date and time" });
+    const passengerCount = airportPickup
+      ? normalizeAirportCount(b.passenger_count, 1, 1, 8, "Passenger count")
+      : 1;
+    const luggageCount = airportPickup
+      ? normalizeAirportCount(b.luggage_count, 0, 0, 8, "Luggage count")
+      : 0;
+    const customerArrivalTerminal = airportPickup
+      ? normalizeAirportText(b.customer_arrival_terminal, 40)
+      : null;
+    const airportPickupZone = airportPickup
+      ? normalizeAirportText(b.airport_pickup_zone, 120)
+      : null;
     const serviceOptions = normalizeRideOptions(b.service_options);
     const businessAccountId = /^[0-9a-f-]{36}$/i.test(
       String(b.business_account_id || ""),
@@ -339,9 +361,40 @@ export default async function handler(req, res) {
       return res.status(create.status).json({
         error: created?.message || created?.error || "Could not create ride",
       });
-    const ride = Array.isArray(created) ? created[0] : created;
+    let ride = Array.isArray(created) ? created[0] : created;
     if (!ride?.id)
       return res.status(500).json({ error: "Ride was not created" });
+
+    if (airportPickup) {
+      const detailsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/rpc/vasi_set_airport_booking_details`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            p_ride_id: ride.id,
+            p_passenger_count: passengerCount,
+            p_luggage_count: luggageCount,
+            p_customer_arrival_terminal: customerArrivalTerminal,
+            p_airport_pickup_zone: airportPickupZone,
+          }),
+        },
+      );
+      const details = await detailsResponse.json();
+      if (!detailsResponse.ok) {
+        await fetch(
+          `${supabaseUrl}/rest/v1/rides?id=eq.${encodeURIComponent(ride.id)}`,
+          { method: "DELETE", headers },
+        );
+        return res.status(detailsResponse.status).json({
+          error:
+            details?.message ||
+            details?.error ||
+            "Airport pickup details could not be saved",
+        });
+      }
+      ride = Array.isArray(details) ? details[0] : details;
+    }
 
     if (stops.length) {
       const stopRows = stops.map((s, i) => ({
@@ -405,6 +458,10 @@ export default async function handler(req, res) {
       ride_preferences: {
         airport_pickup: airportPickup,
         flight_number: flightNumber,
+        passenger_count: passengerCount,
+        luggage_count: luggageCount,
+        customer_arrival_terminal: customerArrivalTerminal,
+        airport_pickup_zone: airportPickupZone,
         service_options: serviceOptions,
         business_account_id: businessAccountId,
         company_reference: companyReference,
@@ -416,7 +473,7 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     const message = e?.message || "Server error";
-    const badRequest = /scheduled pickup|invalid scheduled|flight number|ride option|business account/i.test(message);
+    const badRequest = /scheduled pickup|invalid scheduled|flight number|passenger count|luggage count|ride option|business account/i.test(message);
     return res.status(badRequest ? 400 : 500).json({ error: message });
   }
 }
