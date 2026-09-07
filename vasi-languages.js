@@ -1438,7 +1438,11 @@
     "Passenger is ready at the pickup point": "Le passager est prêt au point de prise en charge",
     "Waiting for the passenger’s ready signal": "En attente du signal du passager",
     "Pickup:": "Prise en charge :",
-    "selected for your passengers and luggage": "sélectionné pour vos passagers et vos bagages"
+    "selected for your passengers and luggage": "sélectionné pour vos passagers et vos bagages",
+    "Open terminal map": "Ouvrir le plan du terminal",
+    "Select your terminal": "Sélectionnez votre terminal",
+    "Airport not detected. Enter your terminal and confirm the meeting point with the driver.": "Aéroport non détecté. Saisissez votre terminal et confirmez le point de rencontre avec le chauffeur.",
+    "The live flight terminal will automatically replace your selection when available.": "Le terminal suivi du vol remplacera automatiquement votre sélection lorsqu’il sera disponible."
   });
   Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 
