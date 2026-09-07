@@ -78,17 +78,6 @@
         display: flex;
         gap: 8px;
       }
-      .country-select {
-        appearance: none;
-        cursor: pointer;
-        width: 52px;
-        min-height: 42px;
-        padding: 8px 22px 8px 8px;
-        background-image: linear-gradient(45deg, transparent 50%, #aaa 50%), linear-gradient(135deg, #aaa 50%, transparent 50%);
-        background-position: calc(100% - 15px) 17px, calc(100% - 10px) 17px;
-        background-repeat: no-repeat;
-        background-size: 5px 5px;
-      }
       .pill {
         border: 1px solid #303030;
         background: #151515;
@@ -586,10 +575,6 @@
       <header class="top">
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
         <div class="actions">
-          <select id="countrySelect" class="pill country-select" aria-label="Service country">
-            <option value="FR">🇫🇷</option>
-            <option value="GB">🇬🇧</option>
-          </select>
           <button class="pill" onclick="location.href='activity.html'">
             Activity
           </button>
@@ -651,17 +636,11 @@
         "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
       );
       let signedIn = false;
-      const countrySelect = document.getElementById("countrySelect");
       function renderCountry() {
         const region = VasiRegion.getRegion();
-        countrySelect.value = region.code;
         document.getElementById("serviceCountry").textContent =
           region.flag + " " + region.name + " · " + region.currency;
       }
-      countrySelect.addEventListener("change", (event) => {
-        VasiRegion.setCountry(event.target.value);
-        renderCountry();
-      });
       function openAccount() {
         location.href = signedIn ? "account.html" : "auth.html?role=customer";
       }
