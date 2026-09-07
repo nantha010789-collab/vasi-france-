@@ -57,7 +57,7 @@ async function getJson(url, label) {
     const timer = setTimeout(() => controller.abort(), 9000);
     try {
       const response = await fetch(url, {
-        headers: { "User-Agent": "VASI/1.0 (support@vasi.fr)" },
+        headers: { "User-Agent": "VASI/1.0 (contact@vasi.eu)" },
         signal: controller.signal,
       });
       if (!response.ok) throw new Error(`${label} returned ${response.status}`);
