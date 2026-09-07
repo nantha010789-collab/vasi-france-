@@ -572,7 +572,7 @@
         const { data, error } = await client
           .from("rides")
           .select(
-            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,waiting_fee,payment_method,accepted_at,arrived_at,started_at,airport_pickup,flight_number,flight_status,service_options,business_account_id,company_reference",
+            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,waiting_fee,payment_method,accepted_at,arrived_at,started_at,scheduled_for,airport_pickup,flight_number,flight_status,flight_timing,flight_delay_minutes,flight_estimated_arrival_at,flight_actual_arrival_at,flight_arrival_terminal,flight_arrival_gate,flight_arrival_baggage,service_options,business_account_id,company_reference",
           )
           .in("status", ["accepted", "driver_arriving", "in_progress"])
           .order("accepted_at", { ascending: false })
@@ -675,8 +675,17 @@
         }
         const wait = Number(activeRide.waiting_fee || 0);
         const preferences = [activeRide.airport_pickup ? `✈️ Airport${activeRide.flight_number ? ` · ${esc(activeRide.flight_number)}` : ""}` : "", ...(activeRide.service_options || []).map((item)=>({wheelchair_accessible:"♿ Wheelchair",child_seat:"🧒 Child seat",pet_friendly:"🐾 Pet friendly"}[item]||item)), activeRide.company_reference ? `🏢 ${esc(activeRide.company_reference)}` : ""].filter(Boolean).join(" · ");
+        const flightTime = activeRide.scheduled_for ? new Date(activeRide.scheduled_for).toLocaleString([], { dateStyle:"medium", timeStyle:"short" }) : "being confirmed";
+        const flightArrivalRaw = activeRide.flight_actual_arrival_at || activeRide.flight_estimated_arrival_at;
+        const flightArrival = flightArrivalRaw ? new Date(flightArrivalRaw).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "—";
+        const flightPlace = [activeRide.flight_arrival_terminal ? `Terminal ${esc(activeRide.flight_arrival_terminal)}` : "", activeRide.flight_arrival_gate ? `Gate ${esc(activeRide.flight_arrival_gate)}` : "", activeRide.flight_arrival_baggage ? `Baggage ${esc(activeRide.flight_arrival_baggage)}` : ""].filter(Boolean).join(" · ");
+        const delay = Number(activeRide.flight_delay_minutes || 0);
+        const flightDetails = activeRide.airport_pickup && activeRide.flight_number
+          ? `<div class="fee"><b>Live flight · ${esc(String(activeRide.flight_status || "tracking").replaceAll("_"," "))}</b>${activeRide.flight_timing === "delayed" ? ` · ${Math.max(0,delay)} min delayed` : activeRide.flight_timing === "early" ? ` · ${Math.abs(delay)} min early` : ""}<br>Arrival ${flightArrival}${flightPlace ? ` · ${flightPlace}` : ""}<br><b>Driver pickup time: ${esc(flightTime)}</b></div>`
+          : "";
+        const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',

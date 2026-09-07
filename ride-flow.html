@@ -842,6 +842,7 @@
             <label class="preference"><input id="petOption" type="checkbox" /> 🐾 Pet friendly</label>
           </div>
           <input id="flightNumber" class="bookingInput hidden" maxlength="8" autocomplete="off" placeholder="Flight number · AF1234" />
+          <div id="airportHint" class="waiting hidden">Choose the expected arrival date and time. VASI tracks the flight and moves pickup automatically to 30 minutes after landing.</div>
           <div id="businessRide" class="hidden">
             <select id="businessAccount" class="bookingInput"><option value="">Personal ride</option></select>
             <input id="companyReference" class="bookingInput" maxlength="80" placeholder="Company cost centre / reference (optional)" />
@@ -910,7 +911,7 @@
           </div>
           <div class="policy" style="margin-top: 10px">
             <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
-            <div>Waiting<b>3 min free · €0.30/min</b></div>
+            <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
           </div>
           <button id="routeBtn" class="cta" onclick="requestRide()">
             Request VASI ride
@@ -926,6 +927,7 @@
             <div class="eta" id="eta">—</div>
           </div>
           <div id="waiting" class="waiting hidden"></div>
+          <div id="flightTracking" class="waiting hidden"></div>
           <button id="chatBtn" class="cta hidden" onclick="openRideChat()">
             💬 Chat · 📞 Voice call
           </button>
@@ -1252,8 +1254,17 @@
         $("businessRide").classList.remove("hidden");
       }
       function toggleAirport() {
-        $("flightNumber").classList.toggle("hidden", !$("airportPickup").checked);
-        if (!$("airportPickup").checked) $("flightNumber").value = "";
+        const enabled = $("airportPickup").checked;
+        $("flightNumber").classList.toggle("hidden", !enabled);
+        $("airportHint").classList.toggle("hidden", !enabled);
+        $("waitingPolicy").textContent = enabled
+          ? (classes[selected]?.name === "Go" ? "45 min free after airport arrival · €0.30/min" : "60 min free after airport arrival · €0.30/min")
+          : "3 min free · €0.30/min";
+        if (!enabled) $("flightNumber").value = "";
+        else if (pickupChoice === "Now") {
+          chooseCustomTime();
+          toast("Choose the flight arrival date and time");
+        }
       }
       async function useSavedPlace(id, kind, button) {
         const address = savedAddresses.find((item) => item.id === id);
@@ -1935,7 +1946,15 @@
           if ($("petOption").checked) serviceOptions.push("pet_friendly");
           const airportPickup = $("airportPickup").checked;
           const flightNumber = $("flightNumber").value.trim().toUpperCase();
-          if (airportPickup && flightNumber && !/^[A-Z0-9]{2,3}\s?[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
+          if (airportPickup && !scheduled) {
+            $("routeBtn").disabled = false;
+            return toast("Airport pickup needs the flight arrival date and time");
+          }
+          if (airportPickup && !flightNumber) {
+            $("routeBtn").disabled = false;
+            return toast("Enter the arriving flight number, for example AF1234");
+          }
+          if (airportPickup && !/^[A-Z0-9]{2,3}\s?[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
             $("routeBtn").disabled = false;
             return toast("Enter a valid flight number, for example AF1234");
           }
@@ -2187,6 +2206,7 @@
         }
         if (st === "driver_arriving") $("eta").textContent = "Arrived";
         if (st === "in_progress") $("eta").textContent = "On trip";
+        renderFlightTracking(r);
         $("chatBtn").classList.toggle(
           "hidden",
           !r.driver_id ||
@@ -2250,6 +2270,23 @@
           clearInterval(waitTimer);
         }
       }
+      function renderFlightTracking(r) {
+        const box = $("flightTracking");
+        if (!box || !r.airport_pickup || !r.flight_number) {
+          box?.classList.add("hidden");
+          return;
+        }
+        const state = String(r.flight_status || "tracking_requested").replaceAll("_", " ");
+        const timing = String(r.flight_timing || "unknown");
+        const delay = Number(r.flight_delay_minutes || 0);
+        const pickupAt = r.scheduled_for ? new Date(r.scheduled_for).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "being confirmed";
+        const arrivalAt = r.flight_actual_arrival_at || r.flight_estimated_arrival_at;
+        const arrival = arrivalAt ? new Date(arrivalAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
+        const place = [r.flight_arrival_terminal ? `Terminal ${esc(r.flight_arrival_terminal)}` : "", r.flight_arrival_gate ? `Gate ${esc(r.flight_arrival_gate)}` : "", r.flight_arrival_baggage ? `Baggage ${esc(r.flight_arrival_baggage)}` : ""].filter(Boolean).join(" · ");
+        const timingText = timing === "delayed" ? ` · ${Math.max(0, delay)} min delayed` : timing === "early" ? ` · ${Math.abs(delay)} min early` : timing === "on_time" ? " · on time" : "";
+        box.innerHTML = `<b>✈️ ${esc(r.flight_number)} · ${esc(state)}${timingText}</b><br>Arrival ${arrival}${place ? ` · ${place}` : ""}<br><b>Automatic pickup: ${esc(pickupAt)}</b>`;
+        box.classList.remove("hidden");
+      }
       async function startStatusPolling() {
         clearInterval(statusTimer);
         statusTimer = setInterval(loadRideStatus, 4000);
@@ -2272,16 +2309,18 @@
       }
       function startWaiting() {
         if (waitTimer) return;
-        waitSeconds = 0;
+        waitSeconds = ride?.arrived_at ? Math.max(0, Math.floor((Date.now() - new Date(ride.arrived_at).getTime()) / 1000)) : 0;
         $("waiting").classList.remove("hidden");
         waitTimer = setInterval(() => {
           waitSeconds++;
+          const airportGrace = String(ride?.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 3600 : 2700;
+          const freeSeconds = ride?.airport_pickup ? airportGrace : 180;
           const m = Math.floor(waitSeconds / 60),
             s = waitSeconds % 60,
-            fee = Math.max(0, Math.ceil((waitSeconds - 180) / 60) * 0.3);
+            fee = Math.max(0, Math.ceil((waitSeconds - freeSeconds) / 60) * 0.3);
           $("waiting").textContent =
-            waitSeconds <= 180
-              ? `Waiting: ${m}:${String(s).padStart(2, "0")} · Free`
+            waitSeconds <= freeSeconds
+              ? `Waiting: ${m}:${String(s).padStart(2, "0")} · Free (${Math.ceil((freeSeconds - waitSeconds) / 60)} min remaining)`
               : `Waiting: ${m}:${String(s).padStart(2, "0")} · ${money(fee)}`;
         }, 1000);
       }
