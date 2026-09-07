@@ -95,6 +95,38 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .language-dialog {
+        width: min(420px, calc(100vw - 32px));
+        border: 1px solid #303030;
+        border-radius: 24px;
+        padding: 20px;
+        background: #111;
+        color: #fff;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, .6);
+      }
+      .language-dialog::backdrop { background: rgba(0, 0, 0, .72); }
+      .language-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .language-dialog h2 { margin: 0; font-size: 22px; }
+      .language-close {
+        width: 44px;
+        height: 44px;
+        border: 1px solid #333;
+        border-radius: 999px;
+        background: #191919;
+        color: #fff;
+        font-size: 22px;
+      }
+      .language-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+      .language-option {
+        min-height: 48px;
+        border: 1px solid #333;
+        border-radius: 14px;
+        padding: 12px;
+        background: #191919;
+        color: #fff;
+        font: 750 15px/1.2 Inter, system-ui, sans-serif;
+      }
+      .language-option[aria-pressed="true"] { border-color: #fff; background: #fff; color: #050505; }
       .hero {
         padding: clamp(26px, 5.5vh, 42px) 0 clamp(18px, 3.2vh, 26px);
       }
@@ -633,9 +665,23 @@
         </div>
       </section>
     </main>
+    <dialog id="languageDialog" class="language-dialog" aria-labelledby="languageDialogTitle">
+      <div class="language-dialog-head">
+        <h2 id="languageDialogTitle">Langue / Language</h2>
+        <button class="language-close" type="button" onclick="closeLanguageSettings()" aria-label="Fermer">×</button>
+      </div>
+      <div class="language-options" role="group" aria-label="VASI language">
+        <button class="language-option" type="button" data-language="fr" onclick="setAppLanguage('fr')">Français</button>
+        <button class="language-option" type="button" data-language="en" onclick="setAppLanguage('en')">English</button>
+        <button class="language-option" type="button" data-language="ta" onclick="setAppLanguage('ta')">தமிழ்</button>
+        <button class="language-option" type="button" data-language="de" onclick="setAppLanguage('de')">Deutsch</button>
+        <button class="language-option" type="button" data-language="ar" onclick="setAppLanguage('ar')">العربية</button>
+        <button class="language-option" type="button" data-language="hi" onclick="setAppLanguage('hi')">हिन्दी</button>
+      </div>
+    </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
-    <script src="./vasi-languages.js?v=fr4"></script>
+    <script src="./vasi-languages.js?v=fr5"></script>
     <script src="./vasi-region.js"></script>
     <script>
       const client = supabase.createClient(
@@ -673,9 +719,22 @@
         setTimeout(showAccountState, 0);
       });
       function openLanguageSettings() {
-        location.href = signedIn
-          ? "settings.html#preferences"
-          : "auth.html?role=customer&next=settings.html";
+        const dialog = document.getElementById("languageDialog");
+        const current = window.VasiLanguage?.getLanguage?.() || "fr";
+        dialog.querySelectorAll("[data-language]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.language === current));
+        });
+        if (typeof dialog.showModal === "function") dialog.showModal();
+        else dialog.setAttribute("open", "");
+      }
+      function closeLanguageSettings() {
+        const dialog = document.getElementById("languageDialog");
+        if (typeof dialog.close === "function") dialog.close();
+        else dialog.removeAttribute("open");
+      }
+      function setAppLanguage(language) {
+        window.VasiLanguage?.setLanguage?.(language);
+        closeLanguageSettings();
       }
       if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       window.scrollTo(0, 0);
