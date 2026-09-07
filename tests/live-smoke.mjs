@@ -65,7 +65,8 @@ const checks = [
     });
   })(),
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
-  expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn"]),
+  expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn", "airportGuidance", "vasi-airports.js"]),
+  expectPage(production, "/vasi-airports.js", ["Paris–Charles de Gaulle", "Paris–Orly", "Paris Beauvais–Tillé"]),
   expectPage(production, "/driver.html", ["Passenger is ready at the pickup point", "customer_ready_at"]),
   expectPage(production, "/auth.html", ["vasi_pending_phone", "otp_expired"]),
   expectPage(production, "/settings.html", ["testNotification", "VASI test successful"]),

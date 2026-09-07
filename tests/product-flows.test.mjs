@@ -1332,7 +1332,7 @@ test("airport ride input rejects malformed flight numbers before database work",
 });
 
 test("airport flights adjust pickup automatically and notify customer and driver", async () => {
-  const [sync, push, migration, coordination, rideFlow, driver, activity, createRide, readyApi] = await Promise.all([
+  const [sync, push, migration, coordination, rideFlow, driver, activity, createRide, readyApi, airportGuide] = await Promise.all([
     readFile("supabase/functions/flight-sync/index.ts", "utf8"),
     readFile("supabase/functions/push-dispatch/index.ts", "utf8"),
     readFile("supabase/migrations/20260907170000_automate_airport_flight_tracking.sql", "utf8"),
@@ -1342,6 +1342,7 @@ test("airport flights adjust pickup automatically and notify customer and driver
     readFile("activity.html", "utf8"),
     readFile("api/create-ride.js", "utf8"),
     readFile("api/airport-ready.js", "utf8"),
+    readFile("vasi-airports.js", "utf8"),
   ]);
   assert.match(sync, /get_vasi_flight_sync_credentials/);
   assert.match(sync, /flight_iata/);
@@ -1360,6 +1361,12 @@ test("airport flights adjust pickup automatically and notify customer and driver
   assert.match(rideFlow, /id="passengerCount"/);
   assert.match(rideFlow, /id="luggageCount"/);
   assert.match(rideFlow, /id="airportReadyBtn"/);
+  assert.match(rideFlow, /id="arrivalTerminalOptions"/);
+  assert.match(rideFlow, /id="airportGuidance"/);
+  assert.match(rideFlow, /flight_arrival_terminal \|\| r\.customer_arrival_terminal/);
+  assert.match(airportGuide, /Paris–Charles de Gaulle/);
+  assert.match(airportGuide, /Paris–Orly/);
+  assert.match(airportGuide, /Paris Beauvais–Tillé/);
   assert.match(driver, /Driver pickup time:/);
   assert.match(driver, /Passenger is ready at the pickup point/);
   assert.match(activity, /Automatic pickup:/);

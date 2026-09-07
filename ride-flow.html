@@ -594,6 +594,48 @@
         font-weight: 750;
       }
       .airportFieldLabel .bookingInput { margin-top: 0; }
+      .airportGuidance {
+        margin-top: 10px;
+        border: 1px solid #284b75;
+        border-radius: 15px;
+        background: linear-gradient(145deg, #0d1724, #111);
+        padding: 13px;
+        color: #e9f3ff;
+      }
+      .airportGuidanceHead {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .airportGuidanceHead strong { font-size: 14px; }
+      .airportCode {
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: #1267c4;
+        padding: 4px 8px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 900;
+      }
+      .airportZone { margin: 8px 0; color: #fff; font-size: 13px; font-weight: 850; }
+      .airportSteps { margin: 0; padding-left: 20px; color: #c7d5e5; font-size: 12px; line-height: 1.45; }
+      .airportSteps li + li { margin-top: 5px; }
+      .airportGuidanceActions { display: flex; gap: 8px; margin-top: 10px; }
+      .airportGuidanceActions a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border: 1px solid #3f6289;
+        border-radius: 11px;
+        padding: 8px 11px;
+        color: #fff;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .airportNotice { margin: 9px 0 0; color: #91a3b7; font-size: 11px; line-height: 1.35; }
       .waiting {
         text-align: center;
         color: #aaa;
@@ -876,8 +918,10 @@
                 </select>
               </label>
             </div>
-            <input id="arrivalTerminal" class="bookingInput" maxlength="40" autocomplete="off" placeholder="Arrival terminal (optional)" />
-            <input id="airportPickupZone" class="bookingInput" maxlength="120" autocomplete="off" placeholder="Pickup zone or meeting point (optional)" />
+            <input id="arrivalTerminal" class="bookingInput" list="arrivalTerminalOptions" maxlength="40" autocomplete="off" placeholder="Arrival terminal (optional)" oninput="refreshAirportGuidance()" />
+            <datalist id="arrivalTerminalOptions"></datalist>
+            <input id="airportPickupZone" class="bookingInput" maxlength="120" autocomplete="off" placeholder="Pickup zone or meeting point (optional)" oninput="this.dataset.manual='true'" />
+            <div id="airportGuidance" class="airportGuidance hidden" aria-live="polite"></div>
             <div id="airportHint" class="waiting">Choose the expected arrival time. VASI tracks your flight, adjusts pickup automatically and shows the official terminal details when available.</div>
           </div>
           <div id="businessRide" class="hidden">
@@ -965,6 +1009,7 @@
           </div>
           <div id="waiting" class="waiting hidden"></div>
           <div id="flightTracking" class="waiting hidden"></div>
+          <div id="activeAirportGuidance" class="airportGuidance hidden" aria-live="polite"></div>
           <button id="airportReadyBtn" class="cta hidden" onclick="sendAirportReady()">
             ✈️ I’m ready for pickup
           </button>
@@ -1009,6 +1054,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-airports.js?v=1"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
@@ -1043,7 +1089,8 @@
         paymentStarted = false,
         paymentAuthorized = false,
         savedAddresses = [],
-        businessAccounts = [];
+        businessAccounts = [],
+        detectedAirportCode = null;
       const region = VasiRegion.getRegion(),
         country = region.code,
         fallback = region.defaultMap,
@@ -1293,6 +1340,63 @@
           businessAccounts.map((account) => `<option value="${esc(account.id)}">${esc(account.legal_name)}</option>`).join("");
         $("businessRide").classList.remove("hidden");
       }
+      function airportLanguage() {
+        const selectedLanguage = localStorage.getItem("vasi_language");
+        return !selectedLanguage || selectedLanguage === "fr" ? "fr" : "en";
+      }
+      function findAirportCode(providerAirport = "") {
+        if (!window.VasiAirports) return null;
+        return VasiAirports.detect({
+          code: providerAirport,
+          address: providerAirport || $("pickup").textContent,
+          lat: pickup?.[0],
+          lng: pickup?.[1],
+        });
+      }
+      function refreshAirportGuidance(providerAirport = "", preferredTerminal = "") {
+        const box = $("airportGuidance");
+        const activeBox = $("activeAirportGuidance");
+        if (!box || !window.VasiAirports || !$("airportPickup").checked) {
+          box?.classList.add("hidden");
+          activeBox?.classList.add("hidden");
+          return;
+        }
+        const code = findAirportCode(providerAirport);
+        detectedAirportCode = code;
+        const options = $("arrivalTerminalOptions");
+        const terminals = code ? VasiAirports.AIRPORTS[code].terminals : [];
+        options.innerHTML = terminals.map((terminal) => `<option value="${esc(terminal)}"></option>`).join("");
+        if (preferredTerminal) $("arrivalTerminal").value = VasiAirports.terminalKey(preferredTerminal);
+        if (!code) {
+          box.classList.add("hidden");
+          activeBox?.classList.add("hidden");
+          $("airportHint").textContent = airportLanguage() === "fr"
+            ? "Aéroport non détecté. Saisissez votre terminal et confirmez le point de rencontre avec le chauffeur."
+            : "Airport not detected. Enter your terminal and confirm the meeting point with the driver.";
+          return;
+        }
+        const guide = VasiAirports.guidance(code, $("arrivalTerminal").value, airportLanguage());
+        if (!guide) return;
+        const terminalText = guide.terminal
+          ? `${airportLanguage() === "fr" ? "Terminal" : "Terminal"} ${guide.terminal}`
+          : (airportLanguage() === "fr" ? "Sélectionnez votre terminal" : "Select your terminal");
+        box.innerHTML = `
+          <div class="airportGuidanceHead"><strong>✈️ ${esc(guide.name)} · ${esc(terminalText)}</strong><span class="airportCode">${esc(guide.code)}</span></div>
+          <div class="airportZone">📍 ${esc(guide.zone)}</div>
+          <ol class="airportSteps">${guide.steps.map((step) => `<li>${esc(step)}</li>`).join("")}</ol>
+          <div class="airportGuidanceActions"><a href="${esc(guide.mapUrl)}" target="_blank" rel="noopener">${airportLanguage() === "fr" ? "Ouvrir le plan du terminal" : "Open terminal map"}</a></div>
+          <p class="airportNotice">${esc(guide.notice)}</p>`;
+        box.classList.remove("hidden");
+        if (activeBox) {
+          activeBox.innerHTML = box.innerHTML;
+          activeBox.classList.remove("hidden");
+        }
+        $("airportHint").textContent = airportLanguage() === "fr"
+          ? "Le terminal suivi du vol remplacera automatiquement votre sélection lorsqu’il sera disponible."
+          : "The live flight terminal will automatically replace your selection when available.";
+        const zoneInput = $("airportPickupZone");
+        if (guide.specific && zoneInput.dataset.manual !== "true") zoneInput.value = guide.zone;
+      }
       function toggleAirport() {
         const enabled = $("airportPickup").checked;
         $("airportFields").classList.toggle("hidden", !enabled);
@@ -1303,13 +1407,17 @@
           $("flightNumber").value = "";
           $("arrivalTerminal").value = "";
           $("airportPickupZone").value = "";
+          delete $("airportPickupZone").dataset.manual;
           $("passengerCount").value = "1";
           $("luggageCount").value = "0";
+          $("airportGuidance").classList.add("hidden");
+          $("activeAirportGuidance").classList.add("hidden");
         }
         else if (pickupChoice === "Now") {
           chooseCustomTime();
           toast("Choose the flight arrival date and time");
         }
+        if (enabled) refreshAirportGuidance();
       }
       function recommendAirportVehicle() {
         if (!$("airportPickup").checked || !route.km) return;
@@ -1524,6 +1632,7 @@
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
         }
+        if ($("airportPickup")?.checked) refreshAirportGuidance();
         if (destination && destinationConfirmed) buildRoute();
         if (homeDestination) {
           $("destSearch").value = homeDestination;
@@ -2363,6 +2472,10 @@
         const timingText = timing === "delayed" ? ` · ${Math.max(0, delay)} min delayed` : timing === "early" ? ` · ${Math.abs(delay)} min early` : timing === "on_time" ? " · on time" : "";
         box.innerHTML = `<b>✈️ ${esc(r.flight_number)} · ${esc(state)}${timingText}</b><br>Arrival ${arrival}${place ? ` · ${place}` : ""}<br>${tripDetails}<br><b>Automatic pickup: ${esc(pickupAt)}</b>`;
         box.classList.remove("hidden");
+        refreshAirportGuidance(
+          r.flight_arrival_airport || r.pickup_address || "",
+          r.flight_arrival_terminal || r.customer_arrival_terminal || "",
+        );
       }
       async function sendAirportReady() {
         if (!ride?.id || ride.customer_ready_at) return;
@@ -2483,6 +2596,14 @@
             })[m],
         );
       }
+      window.addEventListener("vasi:languagechange", () => {
+        if ($("airportPickup")?.checked) {
+          refreshAirportGuidance(
+            ride?.flight_arrival_airport || ride?.pickup_address || "",
+            ride?.flight_arrival_terminal || ride?.customer_arrival_terminal || $("arrivalTerminal").value,
+          );
+        }
+      });
       init();
       VasiNotifications.start(sb, { role: "customer" });
     </script>
