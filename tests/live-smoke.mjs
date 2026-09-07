@@ -65,6 +65,8 @@ const checks = [
     });
   })(),
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
+  expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn"]),
+  expectPage(production, "/driver.html", ["Passenger is ready at the pickup point", "customer_ready_at"]),
   expectPage(production, "/auth.html", ["vasi_pending_phone", "otp_expired"]),
   expectPage(production, "/settings.html", ["testNotification", "VASI test successful"]),
   expectPage(production, "/vasi-languages.js", ["fr:", "ta:", "de:", "ar:", "hi:"]),
@@ -78,6 +80,11 @@ const checks = [
     const callConfig = await fetchWithRetry(`${production}/api/call-config`, { redirect: "manual" });
     assert.equal(callConfig.status, 401, "call configuration must reject unauthenticated requests");
     assert.match(callConfig.headers.get("cache-control") || "", /no-store/);
+  })(),
+  (async () => {
+    const airportReady = await fetchWithRetry(`${production}/api/airport-ready`, { redirect: "manual" });
+    assert.equal(airportReady.status, 405, "airport ready endpoint must require POST");
+    assert.match(airportReady.headers.get("cache-control") || "", /no-store/);
   })(),
 ];
 await Promise.all(checks);
