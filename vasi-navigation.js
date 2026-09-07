@@ -3,10 +3,13 @@
 
   const segments = location.pathname.split("/").filter(Boolean);
   const lastSegment = (segments.at(-1) || "").toLowerCase();
-  const page = lastSegment.includes(".") ? lastSegment : "index.html";
-  const parent = lastSegment.includes(".")
-    ? (segments.at(-2) || "").toLowerCase()
-    : lastSegment;
+  const nestedIndex = ["admin", "publicity"].includes(lastSegment) && segments.length === 1;
+  const page = lastSegment.includes(".")
+    ? lastSegment
+    : (lastSegment && !nestedIndex ? `${lastSegment}.html` : "index.html");
+  const parent = nestedIndex
+    ? lastSegment
+    : (segments.at(-2) || "").toLowerCase();
 
   const rootPages = new Set([
     "index.html",
