@@ -80,7 +80,11 @@
   };
 
   function currentLanguage() {
-    const stored = localStorage.getItem("vasi_language") || localStorage.getItem("vasiBusinessLanguage");
+    const usesPageLanguage = document.body?.hasAttribute("data-fr-title") &&
+      document.body?.hasAttribute("data-en-title");
+    const stored = usesPageLanguage
+      ? localStorage.getItem("vasiBusinessLanguage")
+      : (localStorage.getItem("vasi_language") || localStorage.getItem("vasiBusinessLanguage"));
     return labels[stored] ? stored : (document.documentElement.lang || "fr").slice(0, 2).toLowerCase();
   }
 
