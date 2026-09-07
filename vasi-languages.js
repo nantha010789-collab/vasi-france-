@@ -32,7 +32,7 @@
       "One VASI app for rides, food and delivery.": "VASI pour vos trajets, repas et livraisons.",
       "Ride": "Trajet",
       "Fast city trips": "Trajets en ville",
-      "Eats": "Repas",
+      "Eats": "Eats",
       "Food delivery": "Repas livrés",
       "Delivery": "Livraison",
       "Send anything": "Envoyez un colis",
