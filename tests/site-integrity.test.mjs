@@ -120,9 +120,17 @@ test("static page element IDs are unique", () => {
 });
 
 test("public French branding consistently uses Eats", () => {
-  const failures = appBrandFiles
-    .filter((file) => /\brepas\b/i.test(readFileSync(file, "utf8")))
-    .map((file) => file.slice(root.length + 1));
+  const outdatedBranding = [
+    /["']Eats["']\s*:\s*["']Repas["']/i,
+    /VASI pour vos trajets,\s*repas et livraisons/i,
+    /<strong>\s*Repas\s*<\/strong>/i,
+  ];
+  const failures = appBrandFiles.flatMap((file) => {
+    const source = readFileSync(file, "utf8");
+    return outdatedBranding.some((pattern) => pattern.test(source))
+      ? [file.slice(root.length + 1)]
+      : [];
+  });
   assert.deepEqual(failures, []);
 });
 
