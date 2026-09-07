@@ -1366,7 +1366,59 @@
     "Preparing and checking food photo…": "Préparation et vérification de la photo du plat…",
     "Saved.": "Enregistré."
   };
-  Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations);
+  const finalFrenchTranslations = {
+    "Settings · VASI": "Paramètres · VASI",
+    "💬 Chat · 📞 Voice call": "💬 Chat · 📞 Appel vocal",
+    "items ·": "articles ·",
+    "Enter a valid": "Saisissez un",
+    "mobile number, for example": "numéro de mobile valide, par exemple",
+    "Customer profile": "Profil client",
+    "Choose an image file.": "Choisissez un fichier image.",
+    "Choose a photo smaller than 10 MB.": "Choisissez une photo de moins de 10 Mo.",
+    "This photo could not be prepared.": "Cette photo n’a pas pu être préparée.",
+    "This photo could not be compressed below 2 MB.": "Cette photo n’a pas pu être compressée en dessous de 2 Mo.",
+    "✓ Profile ready": "✓ Profil complet",
+    "Scheduled order confirmed": "Commande planifiée confirmée",
+    "Flight number": "Numéro de vol",
+    "Company cost centre / reference (optional)": "Centre de coûts / référence de l’entreprise (facultatif)",
+    "UK launch pricing": "Tarifs de lancement au Royaume-Uni",
+    "Finding pickup…": "Recherche du lieu de départ…",
+    "Driver assigned": "Chauffeur attribué",
+    "Searching nearby drivers": "Recherche de chauffeurs à proximité",
+    "seats": "places",
+    "Saving your rating…": "Enregistrement de votre note…",
+    "Add an item before starting a group order.": "Ajoutez un article avant de démarrer une commande groupée.",
+    "Creating your group ordering link…": "Création de votre lien de commande groupée…",
+    "Could not create group order": "Impossible de créer la commande groupée",
+    "Driver is at pickup": "Le chauffeur est au lieu de départ",
+    "Ride unavailable": "Trajet indisponible",
+    "My VASI trip": "Mon trajet VASI",
+    "Follow my VASI trip live": "Suivez mon trajet VASI en direct",
+    "Tell us what happened": "Expliquez-nous ce qui s’est passé",
+    "Company legal name": "Raison sociale",
+    "Billing email": "E-mail de facturation",
+    "Billing address": "Adresse de facturation",
+    "VASI operating country": "Pays d’activité VASI",
+    "Private hire driver licence": "Licence de chauffeur VTC",
+    "UK driving licence": "Permis de conduire britannique",
+    "Sole trader or company registration": "Immatriculation d’indépendant ou de société",
+    "Private hire insurance": "Assurance VTC",
+    "V5C vehicle logbook": "Certificat d’immatriculation V5C",
+    "Self-employment or company proof": "Justificatif d’activité indépendante ou de société",
+    "Proof that you may work as a self-employed courier in the UK.": "Justificatif vous autorisant à travailler comme livreur indépendant au Royaume-Uni.",
+    "Submission failed:": "Envoi impossible :",
+    "Stripe onboarding needs to be completed. Tap the button to continue.": "L’activation Stripe doit être terminée. Touchez le bouton pour continuer.",
+    "Driver email": "E-mail du chauffeur",
+    "VASI Go": "VASI Go",
+    "RIB verified · delivery earnings are paid automatically every Monday.": "RIB vérifié · les revenus de livraison sont versés automatiquement chaque lundi.",
+    "No Eats jobs right now.": "Aucune livraison Eats disponible actuellement.",
+    "No Delivery jobs right now.": "Aucune livraison de colis disponible actuellement.",
+    "✓ Delivery completed.": "✓ Livraison terminée.",
+    "Company number / UTR": "Numéro d’entreprise / UTR",
+    "Enter a valid email address.": "Saisissez une adresse e-mail valide.",
+    "RIB verified · restaurant earnings are paid automatically every Monday.": "RIB vérifié · les revenus du restaurant sont versés automatiquement chaque lundi."
+  };
+  Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 
   // Every page does not currently use the same source language: most customer
   // pages start in English, while a few partner/admin pages start in French.
@@ -1428,6 +1480,45 @@
     return /^[\p{P}\p{S}\p{Z}\p{M}\d]*$/u.test(value);
   }
 
+  function replaceBoundedPhrase(value, phrase, replacement) {
+    let cursor = 0;
+    let output = "";
+    let changed = false;
+    const word = (character) => character ? /[\p{L}\p{N}]/u.test(character) : false;
+    while (cursor < value.length) {
+      const index = value.indexOf(phrase, cursor);
+      if (index < 0) {
+        output += value.slice(cursor);
+        break;
+      }
+      const before = index > 0 ? value[index - 1] : "";
+      const afterIndex = index + phrase.length;
+      const after = afterIndex < value.length ? value[afterIndex] : "";
+      const startIsWord = word(phrase[0]);
+      const endIsWord = word(phrase[phrase.length - 1]);
+      if ((!startIsWord || !word(before)) && (!endIsWord || !word(after))) {
+        output += value.slice(cursor, index) + replacement;
+        cursor = afterIndex;
+        changed = true;
+      } else {
+        output += value.slice(cursor, index + phrase.length);
+        cursor = index + phrase.length;
+      }
+    }
+    return changed ? output : value;
+  }
+
+  function translateComposite(source) {
+    let rendered = source;
+    for (const phrase of knownPhrases) {
+      if (phrase.length < 4 || !/[\p{L}\p{N}]/u.test(phrase)) continue;
+      const localized = translateExact(phrase);
+      if (!localized || localized === phrase) continue;
+      rendered = replaceBoundedPhrase(rendered, phrase, localized);
+    }
+    return rendered;
+  }
+
   function translate(source) {
     const cacheKey = `${language}\u0000${source}`;
     if (translationCache.has(cacheKey)) return translationCache.get(cacheKey);
@@ -1445,6 +1536,8 @@
         }
       }
     }
+
+    if (rendered === source) rendered = translateComposite(source);
 
     translationCache.set(cacheKey, rendered);
     return rendered;
