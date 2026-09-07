@@ -1283,3 +1283,28 @@ test("airport ride input rejects malformed flight numbers before database work",
   assert.equal(res.statusCode, 400);
   assert.match(res.body.error, /valid flight number/i);
 });
+
+test("airport flights adjust pickup automatically and notify customer and driver", async () => {
+  const [sync, push, migration, rideFlow, driver, activity, createRide] = await Promise.all([
+    readFile("supabase/functions/flight-sync/index.ts", "utf8"),
+    readFile("supabase/functions/push-dispatch/index.ts", "utf8"),
+    readFile("supabase/migrations/20260907170000_automate_airport_flight_tracking.sql", "utf8"),
+    readFile("ride-flow.html", "utf8"),
+    readFile("driver.html", "utf8"),
+    readFile("activity.html", "utf8"),
+    readFile("api/create-ride.js", "utf8"),
+  ]);
+  assert.match(sync, /get_vasi_flight_sync_credentials/);
+  assert.match(sync, /flight_iata/);
+  assert.match(sync, /update\.scheduled_for = pickupAt/);
+  assert.match(sync, /slice\(0, 5\)/);
+  assert.match(push, /eventType === "flight"/);
+  assert.match(push, /recipients\.push\(\{ id: driver\.user_id/);
+  assert.match(migration, /sync-vasi-flight-status/);
+  assert.match(migration, /flight_pickup_buffer_minutes/);
+  assert.match(migration, /rides_waiting_fee_policy/);
+  assert.match(rideFlow, /Automatic pickup:/);
+  assert.match(driver, /Driver pickup time:/);
+  assert.match(activity, /Automatic pickup:/);
+  assert.match(createRide, /Airport pickup requires the expected arrival date and time/);
+});

@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const table = String(body?.table || "") as keyof typeof tableConfig;
+  const eventType = String(body?.event || "status");
   const id = String(body?.record?.id || "");
   const requestedStatus = String(body?.record?.status || "").toLowerCase();
   const config = tableConfig[table];
@@ -76,11 +77,95 @@ Deno.serve(async (req) => {
     return Response.json({ ok: false }, { status: 401 });
   }
 
-  const { data: current, error: rowError } = await supabase
-    .from(table)
-    .select("id,customer_id,status")
-    .eq("id", id)
-    .maybeSingle();
+  const { data: current, error: rowError } = eventType === "flight"
+    ? await supabase.from("rides").select("id,customer_id,driver_id,status,flight_number,flight_status,flight_timing,flight_delay_minutes,scheduled_for,flight_arrival_terminal,flight_arrival_gate").eq("id", id).maybeSingle()
+    : await supabase.from(table).select("id,customer_id,status").eq("id", id).maybeSingle();
+
+  if (eventType === "flight") {
+    if (rowError || !current?.customer_id || !current?.flight_number)
+      return Response.json({ ok: true, ignored: true }, { status: 202 });
+
+    const flightStatus = String(current.flight_status || "unknown").toLowerCase();
+    const timing = String(current.flight_timing || "unknown").toLowerCase();
+    const delay = Number(current.flight_delay_minutes || 0);
+    const pickup = current.scheduled_for ? new Date(current.scheduled_for) : null;
+    const pickupText = pickup && Number.isFinite(pickup.getTime())
+      ? pickup.toLocaleString("en-GB", { timeZone: "Europe/Paris", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+      : "the confirmed time";
+    const place = [current.flight_arrival_terminal ? `Terminal ${current.flight_arrival_terminal}` : "", current.flight_arrival_gate ? `Gate ${current.flight_arrival_gate}` : ""].filter(Boolean).join(" · ");
+    let title = `Flight ${current.flight_number} update`;
+    let message = `Pickup is scheduled for ${pickupText}.`;
+    if (flightStatus === "landed") {
+      title = `Flight ${current.flight_number} has landed`;
+      message = `${place ? place + ". " : ""}Pickup is scheduled for ${pickupText}.`;
+    } else if (flightStatus === "cancelled") {
+      title = `Flight ${current.flight_number} cancelled`;
+      message = "Open VASI to review or cancel the airport pickup.";
+    } else if (timing === "delayed") {
+      title = `Flight ${current.flight_number} delayed`;
+      message = `${delay > 0 ? `About ${delay} minutes late. ` : ""}Pickup moved automatically to ${pickupText}.`;
+    } else if (timing === "early") {
+      title = `Flight ${current.flight_number} arriving early`;
+      message = `Pickup moved automatically to ${pickupText}.`;
+    } else if (flightStatus === "active") {
+      title = `Flight ${current.flight_number} is in the air`;
+    }
+
+    const delayBand = Math.round(delay / 15) * 15;
+    const pickupBand = pickup ? Math.round(pickup.getTime() / 900_000) : 0;
+    const recipients: Array<{ id: string; role: string; url: string }> = [
+      { id: current.customer_id, role: "customer", url: "ride-flow.html" },
+    ];
+    if (current.driver_id) {
+      const { data: driver } = await supabase.from("drivers").select("user_id").eq("id", current.driver_id).maybeSingle();
+      if (driver?.user_id) recipients.push({ id: driver.user_id, role: "driver", url: "driver.html" });
+    }
+
+    webpush.setVapidDetails(credentials.subject, credentials.public_key, credentials.private_key);
+    let attempted = 0;
+    let sent = 0;
+    for (const recipient of recipients) {
+      const eventKey = `flight:${id}:${recipient.role}:${flightStatus}:${timing}:${delayBand}:${pickupBand}`;
+      const { data: event, error: eventError } = await supabase.from("push_notification_events").insert({
+        event_key: eventKey,
+        customer_id: recipient.id,
+        service: "ride",
+        entity_id: id,
+        status: `flight_${flightStatus}_${timing}`.slice(0, 80),
+      }).select("id").single();
+      if (eventError?.code === "23505") continue;
+      if (eventError || !event) continue;
+      const { data: subscriptions } = await supabase.from("push_subscriptions").select("id,endpoint,p256dh,auth_key").eq("user_id", recipient.id).eq("active", true);
+      let recipientSent = 0;
+      for (const subscription of subscriptions || []) {
+        attempted += 1;
+        try {
+          await webpush.sendNotification({ endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth_key } }, JSON.stringify({
+            title,
+            body: recipient.role === "driver" ? `Passenger flight update. ${message}` : message,
+            icon: "vasi-word-icon-192.png",
+            badge: "vasi-word-icon-192.png",
+            tag: `vasi-${eventKey.replaceAll(":", "-")}`,
+            url: recipient.url,
+          }), { TTL: 600, urgency: "high" });
+          sent += 1;
+          recipientSent += 1;
+        } catch (error) {
+          const statusCode = Number((error as { statusCode?: number })?.statusCode || 0);
+          if (statusCode === 404 || statusCode === 410)
+            await supabase.from("push_subscriptions").update({ active: false }).eq("id", subscription.id);
+        }
+      }
+      await supabase.from("push_notification_events").update({
+        delivery_status: !subscriptions?.length ? "no_subscriptions" : recipientSent === subscriptions.length ? "sent" : recipientSent > 0 ? "partial" : "failed",
+        attempted_count: subscriptions?.length || 0,
+        sent_count: recipientSent,
+        completed_at: new Date().toISOString(),
+      }).eq("id", event.id);
+    }
+    return Response.json({ ok: true, recipients: recipients.length, attempted, sent });
+  }
+
   const status = String(current?.status || "").toLowerCase();
   const copy = (config.statuses as Record<string, readonly [string, string, string]>)[status];
   if (rowError || !current?.customer_id || status !== requestedStatus || !copy)
@@ -171,4 +256,3 @@ Deno.serve(async (req) => {
 
   return Response.json({ ok: true, attempted: subscriptions.length, sent });
 });
-

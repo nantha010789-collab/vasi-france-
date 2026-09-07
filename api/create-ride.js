@@ -226,6 +226,10 @@ export default async function handler(req, res) {
     const scheduledFor = normalizeSchedule(b.scheduled_for);
     const airportPickup = Boolean(b.airport_pickup);
     const flightNumber = normalizeFlight(b.flight_number, airportPickup);
+    if (airportPickup && !flightNumber)
+      return res.status(400).json({ error: "Airport pickup requires a valid flight number" });
+    if (airportPickup && !scheduledFor)
+      return res.status(400).json({ error: "Airport pickup requires the expected arrival date and time" });
     const serviceOptions = normalizeRideOptions(b.service_options);
     const businessAccountId = /^[0-9a-f-]{36}$/i.test(
       String(b.business_account_id || ""),
