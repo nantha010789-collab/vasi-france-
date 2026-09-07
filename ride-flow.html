@@ -817,6 +817,13 @@
               onclick="payment(this, 'apple_pay')"
             >
                Apple Pay
+            </button
+            ><button
+              id="googlePay"
+              class="pay"
+              onclick="payment(this, 'google_pay')"
+            >
+              G Pay
             </button>
           </div>
           <div class="section">Pickup time</div>
@@ -918,6 +925,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./vasi-notifications.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
@@ -952,7 +960,9 @@
         paymentStarted = false,
         paymentAuthorized = false,
         savedAddresses = [];
-      const fallback = [49.189, 2.449],
+      const region = VasiRegion.getRegion(),
+        country = region.code,
+        fallback = region.defaultMap,
         regularClasses = {
           go: {
             name: "Go",
@@ -1028,8 +1038,14 @@
             min: 0.2,
             minFare: 13.5,
           },
+        },
+        ukClasses = {
+          go: { name: "Go", seats: 4, emoji: "🚗", base: 2.2, km: 1.1, min: 0.18, minFare: 6.5 },
+          comfort: { name: "Comfort", seats: 4, emoji: "🚘", base: 3, km: 1.35, min: 0.22, minFare: 9 },
+          xl: { name: "XL", seats: 6, emoji: "🚙", base: 4, km: 1.6, min: 0.25, minFare: 12 },
+          van: { name: "Van", seats: 9, emoji: "🚐", base: 5, km: 1.8, min: 0.28, minFare: 15 },
         };
-      let classes = offerClasses,
+      let classes = country === "GB" ? ukClasses : offerClasses,
         pricingOffer = {
           active: true,
           mode: "fixed",
@@ -1039,7 +1055,7 @@
         },
         smartOffer = null;
       const $ = (id) => document.getElementById(id),
-        money = (n) => "€" + Number(n || 0).toFixed(2);
+        money = (n) => VasiRegion.money(n, country);
       const pickupIcon = L.divIcon({
           className: "vasi-marker-host",
           html: '<div class="vasi-pin"><span>V</span></div>',
@@ -1220,7 +1236,7 @@
           if (r.ok && d.enabled && d.publishable_key) return;
           throw Error();
         } catch (e) {
-          for (const id of ["cardPay", "applePay"]) {
+          for (const id of ["cardPay", "applePay", "googlePay"]) {
             const b = $(id);
             b.disabled = true;
             b.title = "Coming soon";
@@ -1229,6 +1245,13 @@
         }
       }
       async function loadPricing() {
+        if (country === "GB") {
+          classes = ukClasses;
+          pricingOffer = { active: false, mode: "regular", percent: 0, cap: null, threshold: null };
+          $("promo").textContent = "UK launch pricing";
+          $("promo").classList.remove("hidden");
+          return;
+        }
         try {
           const r = await fetch("/api/pricing", { cache: "no-store" });
           const d = await r.json();
@@ -1484,6 +1507,7 @@
             body: JSON.stringify({
               action: "autocomplete",
               input,
+              country,
               location: pickup ? { lat: pickup[0], lng: pickup[1] } : null,
             }),
           });
@@ -1513,6 +1537,7 @@
             body: JSON.stringify({
               action: "resolve",
               place_id: suggestion.place_id,
+              country,
             }),
           });
           const data = await response.json();
@@ -1543,10 +1568,11 @@
       function destinationQueries(raw) {
         const q = normalizeDestinationQuery(raw),
           out = [q];
-        if (!/\bFrance\b/i.test(q)) out.push(q + ", France");
-        const fr = q.match(/\b(\d{5})\s+([^,]+?)(?:,\s*France)?$/i);
-        if (fr) {
-          out.push(fr[1] + " " + fr[2].trim() + ", France");
+        if (!new RegExp("\\b" + region.addressSuffix + "\\b", "i").test(q))
+          out.push(q + ", " + region.addressSuffix);
+        if (country === "FR") {
+          const fr = q.match(/\b(\d{5})\s+([^,]+?)(?:,\s*France)?$/i);
+          if (fr) out.push(fr[1] + " " + fr[2].trim() + ", France");
         }
         return [...new Set(out.filter(Boolean))];
       }
@@ -1554,6 +1580,8 @@
         const u = apiUrl(
           "/api/route-preview?q=" +
           encodeURIComponent(q) +
+          "&country=" +
+          encodeURIComponent(country) +
           "&_=" +
           Date.now(),
         );
@@ -1745,7 +1773,8 @@
         $("status").textContent = "Finding stop…";
         try {
           const url = apiUrl(
-            "/api/route-preview?q=" + encodeURIComponent(address),
+            "/api/route-preview?q=" + encodeURIComponent(address) +
+              "&country=" + encodeURIComponent(country),
           );
           const r = await fetch(url);
           const d = await r.json();
@@ -1855,7 +1884,8 @@
               service: "VASI " + classes[selected].name,
               payment_method: pay,
               estimated_fare: priceFor(route.km, route.mins, selected),
-              currency: "EUR",
+              country,
+              currency: region.currency,
               scheduled_for: scheduled,
               stops: stops.map((s) => s.address),
             }),
@@ -1907,7 +1937,13 @@
           "safety.html?ride=" + encodeURIComponent(ride.id);
       }
       function payLabel(v) {
-        return v === "apple_pay" ? "Apple Pay" : v === "card" ? "Card" : "Cash";
+        return v === "apple_pay"
+          ? "Apple Pay"
+          : v === "google_pay"
+            ? "Google Pay"
+            : v === "card"
+              ? "Card"
+              : "Cash";
       }
       function closePaymentModal() {
         $("paymentModal").classList.add("hidden");
@@ -1928,7 +1964,7 @@
                 if (!r.ok)
                   throw Error(d.error || "Payment configuration unavailable");
                 if (!d.enabled || !d.publishable_key)
-                  throw Error("Card and Apple Pay are coming soon");
+                  throw Error("Card, Apple Pay and Google Pay are coming soon");
                 return d;
               },
             ),

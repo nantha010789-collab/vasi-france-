@@ -429,7 +429,7 @@
             </button>
             <button id="deleteAccount" class="row" type="button">
               <span class="icon" aria-hidden="true">×</span>
-              <span class="copy"><strong class="danger">Delete account</strong><span>Contact support for identity verification</span></span>
+              <span class="copy"><strong class="danger">Delete account</strong><span>Start a secure deletion request</span></span>
               <span class="arrow" aria-hidden="true">›</span>
             </button>
             <a class="row" href="legal.html">
@@ -512,11 +512,14 @@
                 <span></span>
               </label>
             </div>
-            <a class="row" href="account.html#personalInformation">
-              <span class="icon" aria-hidden="true">€</span>
-              <span class="copy"><strong>Country & currency</strong><span>Edit your regional account preferences</span></span>
-              <span class="arrow" aria-hidden="true">›</span>
-            </a>
+            <div class="row">
+              <span id="countryIcon" class="icon" aria-hidden="true">🇫🇷</span>
+              <span class="copy"><strong>Country & currency</strong><span id="countryHelp">France · EUR (€)</span></span>
+              <select id="country" aria-label="VASI service country">
+                <option value="FR">France · EUR (€)</option>
+                <option value="GB">United Kingdom · GBP (£)</option>
+              </select>
+            </div>
           </div>
         </section>
       </div>
@@ -525,6 +528,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-languages.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -553,6 +557,10 @@
         if (/^\+33\d{9}$/.test(value)) {
           const local = "0" + value.slice(3);
           return local.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+        }
+        if (/^\+44\d{10}$/.test(value)) {
+          const local = "0" + value.slice(3);
+          return local.replace(/(\d{5})(\d{6})/, "$1 $2");
         }
         return value || "Verified VASI account";
       }
@@ -676,6 +684,19 @@
           window.VasiLanguage?.setLanguage?.(event.target.value);
         });
 
+        const renderCountry = () => {
+          const region = VasiRegion.getRegion();
+          $("country").value = region.code;
+          $("countryIcon").textContent = region.flag;
+          $("countryHelp").textContent =
+            region.name + " · " + region.currency + " (" + region.currencySymbol + ")";
+        };
+        renderCountry();
+        $("country").addEventListener("change", (event) => {
+          VasiRegion.setCountry(event.target.value);
+          renderCountry();
+        });
+
         const reduceMotion = localStorage.getItem("vasi_reduce_motion") === "true";
         $("motionToggle").checked = reduceMotion;
         document.body.classList.toggle("reduce-motion", reduceMotion);
@@ -701,8 +722,7 @@
       $("locationButton").addEventListener("click", checkLocation);
       $("downloadData").addEventListener("click", downloadMyData);
       $("deleteAccount").addEventListener("click", () => {
-        sessionStorage.setItem("vasi_support_intent", "Delete my VASI account");
-        location.href = "support.html";
+        location.href = "delete-account.html";
       });
       $("signoutAll").addEventListener("click", signOutAllDevices);
 

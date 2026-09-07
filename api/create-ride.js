@@ -19,7 +19,13 @@ const OFFER_PRICING = {
   "VASI XL": { base: 2.8, km: 0.95, min: 0.18, minFare: 11.5 },
   "VASI Van": { base: 3.5, km: 1.05, min: 0.2, minFare: 13.5 },
 };
-const PAYMENT_METHODS = new Set(["cash", "card", "apple_pay"]);
+const UK_PRICING = {
+  "VASI Go": { base: 2.2, km: 1.1, min: 0.18, minFare: 6.5 },
+  "VASI Comfort": { base: 3, km: 1.35, min: 0.22, minFare: 9 },
+  "VASI XL": { base: 4, km: 1.6, min: 0.25, minFare: 12 },
+  "VASI Van": { base: 5, km: 1.8, min: 0.28, minFare: 15 },
+};
+const PAYMENT_METHODS = new Set(["cash", "card", "apple_pay", "google_pay"]);
 const DEFAULT_RIDE_COMMISSION_PERCENT = 15;
 
 function rideCommissionPercent(value) {
@@ -29,7 +35,15 @@ function rideCommissionPercent(value) {
     : DEFAULT_RIDE_COMMISSION_PERCENT;
 }
 
-async function activePricing() {
+async function activePricing(country = "FR") {
+  if (country === "GB")
+    return {
+      rates: UK_PRICING,
+      mode: "fixed",
+      offer: "UK launch pricing",
+      endsAt: null,
+      commissionPercent: DEFAULT_RIDE_COMMISSION_PERCENT,
+    };
   try {
     const r = await fetch(
       `${supabaseUrl}/rest/v1/vasi_pricing_settings?id=eq.active&select=*`,
@@ -143,8 +157,9 @@ function normalizeSchedule(value) {
     throw new Error("Scheduled pickup must be within 90 days");
   return when.toISOString();
 }
-async function geocodeStop(address) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr,gb,be,de,nl,lu,ch,es,it,pt&addressdetails=0&q=${encodeURIComponent(address)}`;
+async function geocodeStop(address, country) {
+  const countryCode = country === "GB" ? "gb" : "fr";
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${countryCode}&addressdetails=0&q=${encodeURIComponent(address)}`;
   const response = await fetch(url, {
     headers: { "User-Agent": "VASI/1.0 (ride-booking)" },
   });
@@ -181,8 +196,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   try {
     const b = req.body || {};
+    const country = String(b.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+    const currency = country === "GB" ? "GBP" : "EUR";
     const service = String(b.service || "VASI Go");
-    const pricing = await activePricing();
+    const pricing = await activePricing(country);
     if (!pricing.rates[service])
       return res.status(400).json({ error: "Unsupported VASI ride service" });
     const paymentMethod = String(b.payment_method || "cash").toLowerCase();
@@ -218,7 +235,8 @@ export default async function handler(req, res) {
     if (stopAddresses.some((x) => x.length > 200))
       return res.status(400).json({ error: "Stop address is too long" });
     const stops = [];
-    for (const address of stopAddresses) stops.push(await geocodeStop(address));
+    for (const address of stopAddresses)
+      stops.push(await geocodeStop(address, country));
 
     const points = [
       { lat: pickupLat, lng: pickupLng },
@@ -228,7 +246,9 @@ export default async function handler(req, res) {
     const metrics = await routeMetrics(points);
     const preOfferFare = fareFor(service, metrics.km, metrics.mins, pricing);
     const smartOffer =
-      pricing.mode === "percentage" ? null : await customerOffer(auth);
+      pricing.mode === "percentage" || country === "GB"
+        ? null
+        : await customerOffer(auth);
     let discountAmount = smartOffer
       ? (preOfferFare * Number(smartOffer.discount_percent)) / 100
       : 0;
@@ -270,7 +290,7 @@ export default async function handler(req, res) {
           p_customer_discount: Number(discountAmount.toFixed(2)),
           p_driver_amount: driverAmount,
           p_vasi_commission: vasiCommission,
-          p_currency: "EUR",
+          p_currency: currency,
           p_scheduled_for: scheduledFor,
           p_passenger_name: b.passenger_name || null,
           p_passenger_phone: b.passenger_phone || null,
@@ -338,7 +358,8 @@ export default async function handler(req, res) {
         vasi_commission: vasiCommission,
         commission_percent: pricing.commissionPercent,
         smart_offer: smartOffer,
-        currency: "EUR",
+        currency,
+        country,
         promotion: pricing.offer,
         promotion_ends_at: pricing.endsAt,
       },

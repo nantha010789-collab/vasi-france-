@@ -233,6 +233,7 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-languages.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
@@ -361,7 +362,9 @@
         $("identity").type = phone ? "tel" : "email";
         $("identity").inputMode = phone ? "tel" : "email";
         $("identity").autocomplete = phone ? "tel" : "email";
-        $("identity").placeholder = phone ? "06 12 34 56 78" : "you@example.com";
+        $("identity").placeholder = phone
+          ? VasiRegion.getRegion().phonePlaceholder
+          : "you@example.com";
         $("continueBtn").textContent = t(phone
           ? phoneAwaitingCode
             ? "Verify & continue"
@@ -383,16 +386,17 @@
         return sendEmailLink();
       }
       function normalizePhone(value) {
-        const compact = value.replace(/[\s().-]/g, "");
-        if (/^0[1-9]\d{8}$/.test(compact)) return "+33" + compact.slice(1);
-        if (/^33[1-9]\d{8}$/.test(compact)) return "+" + compact;
-        if (/^\+[1-9]\d{7,14}$/.test(compact)) return compact;
-        return "";
+        return VasiRegion.normalizePhone(value);
       }
       async function sendPhoneCode() {
         if (sendingPhoneCode) return;
         const phone = normalizePhone($("identity").value.trim());
-        if (!phone) return show("Enter a valid mobile number, for example 06 12 34 56 78.");
+        if (!phone)
+          return show(
+            "Enter a valid " + VasiRegion.getRegion().shortName +
+              " mobile number, for example " +
+              VasiRegion.getRegion().phonePlaceholder + ".",
+          );
         sendingPhoneCode = true;
         $("continueBtn").disabled = true;
         show("Sending your SMS code…");

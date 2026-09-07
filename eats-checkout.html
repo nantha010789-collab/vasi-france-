@@ -33,6 +33,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script src="./vasi-notifications.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -46,7 +47,8 @@
         restaurant_id: basket.restaurant_id,
         items: Object.entries(basket.items || {}).map(([id, quantity]) => ({ id, quantity })),
       });
-      const money = (amount) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR" }).format(Number(amount));
+      const region = VasiRegion.getRegion();
+      const money = (amount) => VasiRegion.money(amount, region.code);
       let stripeInstance = null;
       let stripeElements = null;
       let orderId = null;
@@ -76,7 +78,7 @@
           const response = await fetch("/api/eats-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...basketPayload(), action: "quote" }),
+            body: JSON.stringify({ ...basketPayload(), action: "quote", country: region.code }),
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "Could not price basket");
@@ -106,7 +108,7 @@
           const orderResponse = await fetch("/api/eats-order", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
-            body: JSON.stringify({ ...basketPayload(), action: "book", delivery_address: address }),
+            body: JSON.stringify({ ...basketPayload(), action: "book", country: region.code, delivery_address: address }),
           });
           const order = await orderResponse.json();
           if (!orderResponse.ok) throw new Error(order.error || "Could not prepare order");

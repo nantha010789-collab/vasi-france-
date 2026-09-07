@@ -1,4 +1,10 @@
-const COUNTRIES = "fr,gb,be,de,nl,lu,ch,es,it,pt";
+const REGIONS = {
+  FR: { countryCode: "fr", language: "fr", googleRegion: "fr" },
+  GB: { countryCode: "gb", language: "en", googleRegion: "uk" },
+};
+function region(value) {
+  return REGIONS[String(value || "FR").toUpperCase()] || REGIONS.FR;
+}
 const ALLOWED_ORIGINS = new Set([
   "https://nantha010789-collab.github.io",
   "https://vasi-new.vercel.app",
@@ -83,6 +89,7 @@ export default async function handler(req, res) {
         .slice(0, 240);
       if (query.length < 3)
         return res.status(400).json({ error: "Enter a destination" });
+      const selectedRegion = region(req.query?.country);
       let results = [];
       const googleKey = String(
         process.env.GOOGLE_MAPS_SERVER_KEY ||
@@ -94,7 +101,7 @@ export default async function handler(req, res) {
       if (googleKey) {
         try {
           const google = await getJson(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&language=fr&region=fr&key=${encodeURIComponent(googleKey)}`,
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&language=${selectedRegion.language}&region=${selectedRegion.googleRegion}&key=${encodeURIComponent(googleKey)}`,
             "Google Geocoding",
           );
           results = (google?.results || []).slice(0, 3).map(googleAddress);
@@ -102,7 +109,7 @@ export default async function handler(req, res) {
           console.warn("[route-preview] Google geocoder failed", error?.message);
         }
       }
-      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=3&countrycodes=${COUNTRIES}&q=${encodeURIComponent(query)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=3&countrycodes=${selectedRegion.countryCode}&q=${encodeURIComponent(query)}`;
       try {
         if (!results.length) results = await getJson(url, "Address search");
       } catch (error) {
@@ -110,6 +117,8 @@ export default async function handler(req, res) {
       }
       if (Array.isArray(results) && results.length)
         return res.status(200).json({ results });
+      if (selectedRegion.countryCode !== "fr")
+        return res.status(200).json({ results: [] });
       const france = await getJson(
         `https://api-adresse.data.gouv.fr/search/?limit=3&q=${encodeURIComponent(query)}`,
         "France address search",

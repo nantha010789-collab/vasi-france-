@@ -294,6 +294,8 @@ Deno.serve(async (req: Request) => {
 
   const body = await req.json().catch(() => null);
   const action = String(body?.action || "").trim();
+  const country = String(body?.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+  const currency = country === "GB" ? "gbp" : "eur";
   if (!action) return json({ error: "Missing action" }, 400);
   const now = new Date().toISOString();
 
@@ -443,8 +445,8 @@ Deno.serve(async (req: Request) => {
 
       if (!accountId) {
         account = await stripe.accounts.create({
-          country: "FR",
-          default_currency: "eur",
+          country,
+          default_currency: currency,
           email: user.email || undefined,
           capabilities: { transfers: { requested: true } },
           controller: {
@@ -519,6 +521,7 @@ Deno.serve(async (req: Request) => {
         )
         .eq("status", "pending")
         .eq("payment_status", "paid")
+        .eq("currency", currency.toUpperCase())
         .eq("delivery_mode", "vasi")
         .is("delivery_driver_id", null)
         .order("created_at", { ascending: false })
@@ -527,6 +530,7 @@ Deno.serve(async (req: Request) => {
         .from("delivery_orders")
         .select("id,pickup_address,dropoff_address,item_type,quote,currency,created_at,status")
         .eq("status", "pending")
+        .eq("currency", currency.toUpperCase())
         .is("delivery_driver_id", null)
         .order("created_at", { ascending: false })
         .limit(20),

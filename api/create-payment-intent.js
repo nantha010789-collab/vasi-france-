@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     const userResp = await sb('/auth/v1/user', auth, { headers: { apikey: anonKey } });
     const user = await userResp.json();
     if (!user?.id || user.id !== ride.customer_id) return res.status(403).json({ error: 'Ride does not belong to customer' });
-    if (!['card','apple_pay'].includes(String(ride.payment_method || '').toLowerCase())) return res.status(409).json({ error: 'This ride is not configured for card payment' });
+    if (!['card','apple_pay','google_pay'].includes(String(ride.payment_method || '').toLowerCase())) return res.status(409).json({ error: 'This ride is not configured for card or wallet payment' });
     if (!['accepted','driver_arriving'].includes(String(ride.status || '').toLowerCase())) return res.status(409).json({ error: 'Card authorization is available only after driver acceptance and before the trip starts' });
     if (!ride.driver_id) return res.status(409).json({ error: 'Driver is not assigned yet' });
 

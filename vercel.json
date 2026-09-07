@@ -60,6 +60,10 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
     {
+      "source": "/delete-account.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
       "source": "/auth",
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
@@ -83,6 +87,7 @@
     "api/share-trip.js": { "includeFiles": "api/share-trip.js" },
     "api/shared-ride.js": { "includeFiles": "api/shared-ride.js" },
     "api/call-config.js": { "includeFiles": "api/call-config.js" },
+    "api/push-config.js": { "includeFiles": "api/push-config.js" },
     "api/ai-map-assist.js": { "includeFiles": "api/ai-map-assist.js" },
     "api/places.js": { "includeFiles": "api/places.js" },
     "api/create-payment-intent.js": {
@@ -99,6 +104,7 @@
     "api/admin-documents.js": { "includeFiles": "api/admin-documents.js" },
     "api/admin-drivers.js": { "includeFiles": "api/admin-drivers.js" },
     "api/admin-live-gps.js": { "includeFiles": "api/admin-live-gps.js" },
+    "api/admin-deletions.js": { "includeFiles": "api/admin-deletions.js" },
     "api/admin-stats.js": { "includeFiles": "api/admin-stats.js" },
     "api/admin-partners.js": { "includeFiles": "api/admin-partners.js" },
     "api/restaurant-admin.js": { "includeFiles": "api/restaurant-admin.js" },

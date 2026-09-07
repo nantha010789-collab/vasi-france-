@@ -103,7 +103,7 @@ function accountState(account) {
   };
 }
 
-async function edgePayout(authorization, action) {
+async function edgePayout(authorization, action, country = "FR") {
   const response = await fetch(`${supabaseUrl}/functions/v1/provider-payout-service`, {
     method: "POST",
     headers: {
@@ -111,7 +111,10 @@ async function edgePayout(authorization, action) {
       Authorization: authorization,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({
+      action,
+      country: String(country).toUpperCase() === "GB" ? "GB" : "FR",
+    }),
   });
   const data = await response.json().catch(() => ({ error: "Payout service unavailable" }));
   return { response, data };
@@ -128,6 +131,7 @@ export default async function handler(req, res) {
     const { response, data } = await edgePayout(
       authorization,
       req.method === "GET" ? "restaurant_status" : "restaurant_onboarding",
+      req.body?.country,
     );
     return res.status(response.status).json(data);
   }
@@ -180,13 +184,14 @@ export default async function handler(req, res) {
     }
 
     if (!accountId) {
+      const country = String(req.body?.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
       const params = new URLSearchParams();
       params.set("controller[fees][payer]", "application");
       params.set("controller[losses][payments]", "application");
       params.set("controller[stripe_dashboard][type]", "express");
       params.set("capabilities[transfers][requested]", "true");
-      params.set("country", "FR");
-      params.set("default_currency", "eur");
+      params.set("country", country);
+      params.set("default_currency", country === "GB" ? "gbp" : "eur");
       params.set("business_type", "company");
       params.set("business_profile[name]", restaurant.name || restaurant.legal_name);
       if (restaurant.phone)

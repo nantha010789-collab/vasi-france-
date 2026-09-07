@@ -37,7 +37,15 @@ async function adminDb(path, options = {}) {
   return data;
 }
 
-async function catalog() {
+function countryCode(value) {
+  return String(value || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+}
+
+function restaurantCountry(restaurant) {
+  return /[A-Z]/i.test(String(restaurant?.postal_code || "")) ? "GB" : "FR";
+}
+
+async function catalog(country = "FR") {
   if (!publicKey) throw new Error("Restaurant service is not configured");
   const restaurants = await db(
     "restaurants?select=id,name,cuisine,preparation_minutes,minimum_order,delivery_fee,delivery_mode,delivery_radius_km,commission_rate,address,city,postal_code&status=eq.approved&active=eq.true&is_open=eq.true&order=name.asc",
@@ -47,6 +55,7 @@ async function catalog() {
     `restaurant_menu_items?select=id,restaurant_id,name,description,category,price,allergens,photo_url&active=eq.true&restaurant_id=in.(${restaurants.map((item) => item.id).join(",")})&order=sort_order.asc,name.asc`,
   );
   return restaurants
+    .filter((restaurant) => restaurantCountry(restaurant) === countryCode(country))
     .map((restaurant) => ({
       ...restaurant,
       icon: "🍽️",
@@ -64,11 +73,11 @@ function cleanAddress(value) {
   return address;
 }
 
-async function geocode(value) {
+async function geocode(value, country) {
   const query = new URLSearchParams({
     format: "jsonv2",
     limit: "1",
-    countrycodes: "fr,gb,be,de,nl,lu,ch,es,it,pt",
+    countrycodes: countryCode(country) === "GB" ? "gb" : "fr",
     q: cleanAddress(value),
   });
   const response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, {
@@ -83,13 +92,13 @@ async function geocode(value) {
   return { lat, lng, address: result.display_name || value };
 }
 
-async function deliveryRoute(restaurant, deliveryAddress) {
+async function deliveryRoute(restaurant, deliveryAddress, country) {
   const restaurantAddress = [restaurant.address, restaurant.postal_code, restaurant.city]
     .filter(Boolean)
     .join(", ");
   const [pickup, dropoff] = await Promise.all([
-    geocode(restaurantAddress),
-    geocode(deliveryAddress),
+    geocode(restaurantAddress, country),
+    geocode(deliveryAddress, country),
   ]);
   const coordinates = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
   const response = await fetch(
@@ -112,7 +121,10 @@ async function deliveryRoute(restaurant, deliveryAddress) {
 }
 
 async function price(body) {
-  const restaurant = (await catalog()).find(
+  const country = countryCode(body.country);
+  const currency = country === "GB" ? "GBP" : "EUR";
+  const currencySymbol = country === "GB" ? "£" : "€";
+  const restaurant = (await catalog(country)).find(
     (item) => item.id === String(body.restaurant_id || ""),
   );
   if (!restaurant) throw new Error("Restaurant is closed or unavailable");
@@ -134,10 +146,10 @@ async function price(body) {
   });
   const subtotal = Number(items.reduce((sum, item) => sum + item.line_total, 0).toFixed(2));
   if (subtotal < Number(restaurant.minimum_order || 0))
-    throw new Error(`Minimum order is €${Number(restaurant.minimum_order).toFixed(2)}`);
+    throw new Error(`Minimum order is ${currencySymbol}${Number(restaurant.minimum_order).toFixed(2)}`);
 
   const route = body.delivery_address
-    ? await deliveryRoute(restaurant, body.delivery_address)
+    ? await deliveryRoute(restaurant, body.delivery_address, country)
     : { deliveryAddress: null, distanceKm: 0, routeMinutes: 0 };
   const totals = calculateEatsPricing({
     subtotal,
@@ -162,7 +174,8 @@ async function price(body) {
     commission_rate: 0.1,
     restaurant_net: Number((subtotal - totals.restaurantCommission).toFixed(2)),
     delivery_address: route.deliveryAddress,
-    currency: "EUR",
+    currency,
+    country,
     estimated: !body.delivery_address,
     courier_guarantee_hourly: VASI_COURIER_RATES.guaranteedHourly,
     courier_minimum: VASI_COURIER_RATES.minimum,
@@ -182,8 +195,10 @@ async function authenticatedUser(authorization) {
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
-    if (req.method === "GET")
-      return res.status(200).json({ restaurants: await catalog(), mode: "partner_catalog" });
+    if (req.method === "GET") {
+      const country = countryCode(req.query?.country);
+      return res.status(200).json({ restaurants: await catalog(country), country, mode: "partner_catalog" });
+    }
     if (req.method !== "POST") return res.status(405).json({ error: "GET or POST required" });
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
     const priced = await price(body);

@@ -219,11 +219,14 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
       );
+      const region = VasiRegion.getRegion();
+      const money = (value) => VasiRegion.money(value, region.code);
       let online = false,
         payoutReady = false,
         watch = null,
@@ -291,7 +294,7 @@
         }
         const debt = Number(data?.cash_commission_debt || 0);
         status.textContent = debt > 0
-          ? `Cash-ride commission to deduct automatically from future card earnings: €${debt.toFixed(2)}`
+          ? `Cash-ride commission to deduct automatically from future card earnings: ${money(debt)}`
           : "No cash-ride commission is waiting to be deducted.";
       }
       async function connectBankAccount() {
@@ -308,7 +311,7 @@
               Authorization: "Bearer " + session.access_token,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ country: "FR" }),
+            body: JSON.stringify({ country: region.code }),
           });
           const data = await response.json();
           if (!response.ok)
@@ -606,7 +609,7 @@
         }
         const wait = Number(activeRide.waiting_fee || 0);
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · €" + Number(fare).toFixed(2) : ""}</b></div>${wait > 0 ? `<div class="fee">Pickup waiting fee: €${wait.toFixed(2)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
@@ -705,14 +708,14 @@
           const payment = await captureCardPayment(completedRide);
           await loadPayoutBalance();
           document.getElementById("ride").innerHTML =
-            '<div class="offer"><h2>✅ Ride Completed</h2><p class="muted">Final fare: €' +
-            Number(
+            '<div class="offer"><h2>✅ Ride Completed</h2><p class="muted">Final fare: ' +
+            money(
               Number(completedRide.driver_amount) > 0
                 ? completedRide.driver_amount
                 : (completedRide.final_fare ??
                     completedRide.estimated_fare ??
                     0),
-            ).toFixed(2) +
+            ) +
             '</p><p class="muted">' +
             (payment.cash
               ? "Cash payment due from passenger."

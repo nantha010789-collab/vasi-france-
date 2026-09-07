@@ -41,6 +41,7 @@
       <section class="card" aria-labelledby="identity-title">
         <h2 id="identity-title">Identité</h2>
         <label class="field"><span class="label">Nom complet</span><input id="name" class="input" autocomplete="name" placeholder="Votre nom complet" /></label>
+        <label class="field"><span class="label">Pays d’activité</span><select id="country" class="input" aria-label="Pays d’activité VASI"><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option></select></label>
         <label class="field"><span class="label">Téléphone</span><input id="phone" class="input" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" /></label>
         <label class="field"><span class="label">Adresse</span><input id="address" class="input" autocomplete="street-address" placeholder="Votre adresse complète" /></label>
         <label class="field"><span class="label">Pièce d’identité <span>Obligatoire</span></span><input id="identity" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
@@ -65,22 +66,24 @@
         </div>
 
         <div id="rideDocs" class="docs">
-          <label class="doc"><span class="label">Carte professionnelle VTC</span><input id="vtc" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span class="label">Permis de conduire</span><input id="ride_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span class="label">SIREN / KBIS / RNE</span><input id="ride_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span class="label">Assurance professionnelle</span><input id="ride_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span class="label">Carte grise</span><input id="ride_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span id="ridePermitLabel" class="label">Carte professionnelle VTC</span><input id="vtc" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span id="rideLicenceLabel" class="label">Permis de conduire</span><input id="ride_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label id="rideVehicleLicenceDoc" class="doc hidden"><span class="label">Private hire vehicle licence</span><input id="ride_vehicle_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span id="rideBusinessLabel" class="label">SIREN / KBIS / RNE</span><input id="ride_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span id="rideInsuranceLabel" class="label">Assurance professionnelle</span><input id="ride_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+          <label class="doc"><span id="rideRegistrationLabel" class="label">Carte grise</span><input id="ride_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
         </div>
+        <div id="ukLicenceNote" class="rule hidden" role="status"><span aria-hidden="true">!</span><span><strong>UK private hire licensing</strong>The driver, vehicle and operator must have the licences required by the same local licensing authority. London applications are handled by TfL.</span></div>
 
         <div id="courierDocs" class="docs hidden">
-          <label class="doc"><span class="label">SIREN / KBIS / RNE</span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Preuve de votre activité indépendante en France.</span></label>
+          <label class="doc"><span id="courierBusinessLabel" class="label">SIREN / KBIS / RNE</span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span id="courierBusinessHelp" class="doc-help">Preuve de votre activité indépendante en France.</span></label>
           <label class="doc"><span class="label">Photo du sac isotherme</span><input id="bag" class="file" type="file" accept="image/jpeg,image/png" /></label>
           <label class="doc"><span class="label" id="vehiclePhotoLabel">Photo du vélo</span><input id="vehicle_photo" class="file" type="file" accept="image/jpeg,image/png" /></label>
           <div id="motorDocs" class="docs hidden">
             <label class="doc"><span class="label">Permis de conduire</span><input id="courier_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
             <label class="doc"><span class="label">Assurance du véhicule</span><input id="courier_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-            <label class="doc"><span class="label">Carte grise</span><input id="courier_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-            <label class="doc"><span class="label">Capacité / licence de transport léger</span><input id="transport_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+            <label class="doc"><span id="courierRegistrationLabel" class="label">Carte grise</span><input id="courier_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+            <label id="transportLicenceDoc" class="doc"><span class="label">Capacité / licence de transport léger</span><input id="transport_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
           </div>
         </div>
       </section>
@@ -88,8 +91,8 @@
       <section class="card" aria-labelledby="payout-title">
         <h2 id="payout-title">Compte bancaire et versements</h2>
         <div class="rule" role="status">
-          <span aria-hidden="true">€</span>
-          <span><strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.</span>
+          <span id="payoutIcon" aria-hidden="true">€</span>
+          <span id="payoutCopy"><strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.</span>
         </div>
       </section>
 
@@ -107,6 +110,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const sb = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co', 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
       const motorVehicles = new Set(['scooter', 'moto', 'car']);
@@ -116,6 +120,27 @@
       function goBack(){ if(history.length > 1) history.back(); else location.href = 'index.html'; }
       function setRole(next){ role = next; render(); }
       function setVehicle(next){ vehicle = next; renderVehicle(); }
+      function renderCountry(){
+        const region = VasiRegion.getRegion($('country').value);
+        VasiRegion.setCountry(region.code);
+        $('phone').placeholder = region.phonePlaceholder;
+        const uk = region.code === 'GB';
+        $('ridePermitLabel').textContent = uk ? 'Private hire driver licence' : 'Carte professionnelle VTC';
+        $('rideLicenceLabel').textContent = uk ? 'UK driving licence' : 'Permis de conduire';
+        $('rideVehicleLicenceDoc').classList.toggle('hidden', !uk);
+        $('rideBusinessLabel').textContent = uk ? 'Sole trader or company registration' : 'SIREN / KBIS / RNE';
+        $('rideInsuranceLabel').textContent = uk ? 'Private hire insurance' : 'Assurance professionnelle';
+        $('rideRegistrationLabel').textContent = uk ? 'V5C vehicle logbook' : 'Carte grise';
+        $('ukLicenceNote').classList.toggle('hidden', !uk);
+        $('courierBusinessLabel').textContent = uk ? 'Self-employment or company proof' : 'SIREN / KBIS / RNE';
+        $('courierBusinessHelp').textContent = uk ? 'Proof that you may work as a self-employed courier in the UK.' : 'Preuve de votre activité indépendante en France.';
+        $('courierRegistrationLabel').textContent = uk ? 'V5C vehicle logbook' : 'Carte grise';
+        $('transportLicenceDoc').classList.toggle('hidden', uk);
+        $('payoutIcon').textContent = region.currencySymbol;
+        $('payoutCopy').innerHTML = uk
+          ? '<strong>Connect your own bank account</strong>After approval, open the Driver or Courier app and use “Connect bank account”. Stripe securely collects your payout details; VASI does not store the full account number.'
+          : '<strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.';
+      }
       function render(){
         $('ride').classList.toggle('active', role === 'ride');
         $('courier').classList.toggle('active', role === 'courier');
@@ -152,16 +177,23 @@
       function showError(message){ $('msg').innerHTML = '<span class="err">' + message + '</span>'; }
       function selected(id){ return $(id).files && $(id).files[0]; }
       function requiredFiles(){
-        if (role === 'ride') return {
+        if (role === 'ride') {
+          const files = {
           identity:selected('identity'), vtc:selected('vtc'), licence:selected('ride_licence'), business:selected('ride_business'),
           insurance:selected('ride_insurance'), carte_grise:selected('ride_carte_grise')
-        };
+          };
+          if ($('country').value === 'GB') files.vehicle_licence = selected('ride_vehicle_licence');
+          return files;
+        }
         const files = {
           identity:selected('identity'), business:selected('courier_business'), bag:selected('bag'), vehicle_photo:selected('vehicle_photo')
         };
-        if (motorVehicles.has(vehicle)) Object.assign(files, {
-          licence:selected('courier_licence'), insurance:selected('courier_insurance'), carte_grise:selected('courier_carte_grise'), transport_licence:selected('transport_licence')
-        });
+        if (motorVehicles.has(vehicle)) {
+          Object.assign(files, {
+            licence:selected('courier_licence'), insurance:selected('courier_insurance'), carte_grise:selected('courier_carte_grise')
+          });
+          if ($('country').value === 'FR') files.transport_licence = selected('transport_licence');
+        }
         return files;
       }
       function validate(files){
@@ -207,7 +239,7 @@
             }, {onConflict:'user_id'});
             if (error) throw error;
           }
-          const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending'};
+          const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending',vasi_country:$('country').value};
           if (role === 'ride') metadata.vasi_partner_documents = docs;
           await sb.auth.updateUser({data:metadata});
           $('msg').innerHTML = '<span class="ok">✓ Dossier envoyé. Après validation, connectez vous-même votre compte bancaire (RIB) dans l’application VASI.</span>';
@@ -217,6 +249,9 @@
           submitting = false; $('submitButton').disabled = false; $('submitButton').textContent = 'Envoyer pour validation';
         }
       }
+      $('country').value = VasiRegion.getCountry();
+      $('country').addEventListener('change', renderCountry);
+      renderCountry();
       render();
     </script>
     <script src="./vasi-languages.js"></script>

@@ -592,7 +592,8 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(vercel, /Content-Security-Policy/);
   assert.match(vercel, /Permissions-Policy/);
   const serviceWorker = await readFile("sw.js", "utf8");
-  assert.match(serviceWorker, /vasi-app-v29/);
+  assert.match(serviceWorker, /vasi-app-v\d+/);
+  assert.match(serviceWorker, /vasi-region\.js/);
   assert.match(serviceWorker, /url\.origin !== self\.location\.origin/);
   assert.match(serviceWorker, /new Request\(url, \{ cache: "reload" \}\)/);
 });
@@ -713,6 +714,7 @@ test("Google Places returns lean autocomplete suggestions and resolves the selec
       headers: { origin: "https://nantha010789-collab.github.io" },
       body: {
         action: "autocomplete",
+        country: "FR",
         input: "gare du nor",
         location: { lat: 48.8566, lng: 2.3522 },
       },
@@ -727,7 +729,7 @@ test("Google Places returns lean autocomplete suggestions and resolves the selec
   );
   const placesCall = calls.find((item) => item.url.includes("places.googleapis.com"));
   assert.match(placesCall.options.headers["X-Goog-FieldMask"], /placeId/);
-  assert.deepEqual(JSON.parse(placesCall.options.body).includedRegionCodes.slice(0, 2), ["fr", "gb"]);
+  assert.deepEqual(JSON.parse(placesCall.options.body).includedRegionCodes, ["fr"]);
 
   const resolveRes = mockRes();
   await places(
@@ -1032,6 +1034,28 @@ test("shared language runtime translates English and French source pages both wa
   );
 });
 
+test("one VASI region runtime switches France and UK rules safely", async () => {
+  const source = await readFile("vasi-region.js", "utf8");
+  let selected = "FR";
+  const window = { dispatchEvent() {} };
+  runInNewContext(source, {
+    window,
+    Intl,
+    CustomEvent: class {},
+    localStorage: {
+      getItem: () => selected,
+      setItem: (_key, value) => { selected = value; },
+    },
+  });
+
+  assert.equal(window.VasiRegion.getRegion().currency, "EUR");
+  assert.equal(window.VasiRegion.normalizePhone("06 12 34 56 78"), "+33612345678");
+  window.VasiRegion.setCountry("GB");
+  assert.equal(window.VasiRegion.getRegion().currency, "GBP");
+  assert.equal(window.VasiRegion.normalizePhone("07123 456789"), "+447123456789");
+  assert.match(window.VasiRegion.money(7.5), /£/);
+});
+
 test("legacy public pages redirect to the current product", async () => {
   const redirects = {
     "vasi-clean-start.html": "index.html",
@@ -1061,7 +1085,8 @@ test("bicycle couriers are not asked for motor-vehicle licence documents", async
   assert.doesNotMatch(registration, /id="rib"/);
   assert.match(registration, /Vous ajoutez vous-même votre RIB/);
   assert.match(registration, /VASI ne stocke pas votre IBAN complet/);
-  assert.match(registration, /if \(motorVehicles\.has\(vehicle\)\) Object\.assign\(files/);
+  assert.match(registration, /if \(motorVehicles\.has\(vehicle\)\) \{/);
+  assert.match(registration, /if \(\$\('country'\)\.value === 'FR'\) files\.transport_licence/);
   assert.match(registration, /Photo de profil <span class="optional">Facultatif<\/span>/);
 });
 
@@ -1104,7 +1129,7 @@ test("PWA install metadata and baseline security headers stay production-ready",
   const headers = JSON.parse(vercel).headers[0].headers;
   const header = (name) => headers.find((item) => item.key === name)?.value;
 
-  assert.match(index, /rel="apple-touch-icon" href="\.\/vasi-icon-192\.png"/);
+  assert.match(index, /rel="apple-touch-icon" href="\.\/vasi-word-icon-192\.png"/);
   assert.match(index, /name="apple-mobile-web-app-capable" content="yes"/);
   assert.equal(manifest.theme_color, "#050505");
   assert.equal(manifest.background_color, "#050505");
@@ -1112,8 +1137,8 @@ test("PWA install metadata and baseline security headers stay production-ready",
   assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.type === "image/png"));
   assert.ok(icon192.length > 1_000);
   assert.ok(icon512.length > 1_000);
-  assert.match(worker, /vasi-icon-192\.png/);
-  assert.match(worker, /vasi-icon-512\.png/);
+  assert.match(worker, /vasi-word-icon-192\.png/);
+  assert.match(worker, /vasi-word-icon-512\.png/);
   assert.equal(header("X-Content-Type-Options"), "nosniff");
   assert.equal(header("X-Frame-Options"), "DENY");
   assert.equal(header("Referrer-Policy"), "strict-origin-when-cross-origin");
@@ -1135,4 +1160,53 @@ test("public account surfaces expose bilingual legal and privacy information", a
   for (const surface of [index, account, settings]) assert.match(surface, /legal\.html/);
   assert.match(migration, /alter table public\.spatial_ref_sys enable row level security/i);
   assert.match(migration, /revoke execute on function public\.st_estimatedextent/i);
+});
+
+test("users can securely initiate account deletion in the app", async () => {
+  const [page, settings, legal, migration] = await Promise.all([
+    readFile("delete-account.html", "utf8"),
+    readFile("settings.html", "utf8"),
+    readFile("legal.html", "utf8"),
+    readFile("supabase/migrations/20260907021104_add_account_deletion_push_and_google_pay.sql", "utf8"),
+  ]);
+  assert.match(settings, /location\.href = "delete-account\.html"/);
+  assert.match(legal, /href="delete-account\.html"/);
+  assert.match(page, /from\("account_deletion_requests"\)\.insert/);
+  assert.match(page, /Type DELETE/);
+  assert.match(page, /signOut\(\{ scope: "global" \}\)/);
+  assert.match(migration, /account_deletion_requests_insert_own/);
+  assert.match(migration, /\(select auth\.uid\(\)\) = user_id/);
+  assert.match(migration, /grant insert \(user_id, reason\)/i);
+  assert.match(migration, /scheduled_for timestamptz not null default \(now\(\) \+ interval '30 days'\)/i);
+});
+
+test("background Web Push subscription is VAPID-backed and user-scoped", async () => {
+  const [notifications, worker, configApi, migration] = await Promise.all([
+    readFile("vasi-notifications.js", "utf8"),
+    readFile("sw.js", "utf8"),
+    readFile("api/push-config.js", "utf8"),
+    readFile("supabase/migrations/20260907021104_add_account_deletion_push_and_google_pay.sql", "utf8"),
+  ]);
+  assert.match(notifications, /pushManager\.subscribe/);
+  assert.match(notifications, /applicationServerKey/);
+  assert.match(notifications, /from\("push_subscriptions"\)\.upsert/);
+  assert.match(worker, /addEventListener\("push"/);
+  assert.match(configApi, /VAPID_PUBLIC_KEY/);
+  assert.match(configApi, /public_key: publicKey \|\| null/);
+  assert.match(migration, /alter table public\.push_subscriptions enable row level security/i);
+  assert.match(migration, /push_subscriptions_update_own/);
+});
+
+test("ride checkout accepts Google Pay through Stripe wallets", async () => {
+  const [rideFlow, createRide, paymentIntent, migration] = await Promise.all([
+    readFile("ride-flow.html", "utf8"),
+    readFile("api/create-ride.js", "utf8"),
+    readFile("api/create-payment-intent.js", "utf8"),
+    readFile("supabase/migrations/20260907021104_add_account_deletion_push_and_google_pay.sql", "utf8"),
+  ]);
+  assert.match(rideFlow, /onclick="payment\(this, 'google_pay'\)"/);
+  assert.match(createRide, /"google_pay"/);
+  assert.match(paymentIntent, /'google_pay'/);
+  assert.match(paymentIntent, /automatic_payment_methods\[enabled\]/);
+  assert.match(migration, /'card', 'apple_pay', 'google_pay'/);
 });

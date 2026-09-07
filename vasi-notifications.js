@@ -249,6 +249,50 @@
     return registrationPromise;
   }
 
+  function urlBase64ToBytes(value) {
+    const padding = "=".repeat((4 - (value.length % 4)) % 4);
+    const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(base64);
+    return Uint8Array.from(raw, (character) => character.charCodeAt(0));
+  }
+
+  async function syncPushSubscription() {
+    if (!activeClient || Notification.permission !== "granted") return false;
+    const [{ data }, registration, configResponse] = await Promise.all([
+      activeClient.auth.getSession(),
+      registerWorker(),
+      fetch(appUrl("api/push-config"), { cache: "no-store" }),
+    ]);
+    const session = data?.session;
+    if (!session || !registration?.pushManager || !configResponse.ok) return false;
+    const config = await configResponse.json();
+    if (!config.enabled || !config.public_key) return false;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToBytes(config.public_key),
+      });
+    }
+    const serialized = subscription.toJSON();
+    if (!serialized.endpoint || !serialized.keys?.p256dh || !serialized.keys?.auth)
+      return false;
+    const { error } = await activeClient.from("push_subscriptions").upsert(
+      {
+        user_id: session.user.id,
+        endpoint: serialized.endpoint,
+        p256dh: serialized.keys.p256dh,
+        auth_key: serialized.keys.auth,
+        role: activeRole,
+        user_agent: navigator.userAgent.slice(0, 500),
+        active: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "endpoint" },
+    );
+    return !error;
+  }
+
   async function show(title, body, url, tag) {
     const category = categoryFromTag(tag);
     if (category === "promotions" && !getPreferences().promotions) return;
@@ -298,7 +342,10 @@
     if (Notification.permission === "denied") { alert("Notifications are blocked. Open your phone or browser Settings, allow notifications for VASI, then return here."); return false; }
     if (Notification.permission !== "granted") { try { await Notification.requestPermission(); } catch (_) {} }
     renderCentre();
-    if (Notification.permission === "granted") await show("VASI alerts are on", "Ride, Eats and Delivery updates will appear here.", location.pathname, "vasi-alerts-enabled");
+    if (Notification.permission === "granted") {
+      await syncPushSubscription().catch(() => false);
+      await show("VASI alerts are on", "Ride, Eats and Delivery updates will appear here.", location.pathname, "vasi-alerts-enabled");
+    }
     else if (ios && !standalone) alert("On iPhone, add VASI to your Home Screen first, open it there, then enable alerts.");
     return Notification.permission === "granted";
   }
@@ -363,6 +410,8 @@
     else if (activeRole === "restaurant") listenRestaurant(channel);
     else listenCustomer(session.user.id, channel);
     activeChannel = channel.subscribe();
+    if (Notification.permission === "granted")
+      await syncPushSubscription().catch(() => false);
   }
 
   async function start(client, options = {}) {
@@ -376,5 +425,5 @@
   }
 
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") { closeUrgent(); closeCentre(); } });
-  window.VasiNotifications = { start, requestPermission, show, openCentre, openSettings: () => openCentre("settings") };
+  window.VasiNotifications = { start, requestPermission, show, syncPushSubscription, openCentre, openSettings: () => openCentre("settings") };
 })();
