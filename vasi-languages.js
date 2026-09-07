@@ -3,6 +3,8 @@
 
   const STORAGE_KEY = "vasi_language";
   const DEFAULT_LANGUAGE = "fr";
+  const DEFAULT_POLICY_KEY = "vasi_language_default_policy";
+  const DEFAULT_POLICY_VERSION = "fr-first-v1";
   const SUPPORTED = ["fr", "en", "ta", "de", "ar", "hi"];
   const LABELS = {
     fr: "Français",
@@ -940,6 +942,11 @@
 
   function readLanguage() {
     try {
+      if (localStorage.getItem(DEFAULT_POLICY_KEY) !== DEFAULT_POLICY_VERSION) {
+        localStorage.setItem(STORAGE_KEY, DEFAULT_LANGUAGE);
+        localStorage.setItem(DEFAULT_POLICY_KEY, DEFAULT_POLICY_VERSION);
+        return DEFAULT_LANGUAGE;
+      }
       const stored = localStorage.getItem(STORAGE_KEY);
       return SUPPORTED.includes(stored) ? stored : DEFAULT_LANGUAGE;
     } catch (_) {

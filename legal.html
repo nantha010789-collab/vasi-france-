@@ -46,7 +46,11 @@
       }
       englishButton.onclick = () => showLanguage("en");
       frenchButton.onclick = () => showLanguage("fr");
-      showLanguage(localStorage.getItem("vasi_language") === "fr" ? "fr" : "en");
+      if (localStorage.getItem("vasi_language_default_policy") !== "fr-first-v1") {
+        localStorage.setItem("vasi_language", "fr");
+        localStorage.setItem("vasi_language_default_policy", "fr-first-v1");
+      }
+      showLanguage(localStorage.getItem("vasi_language") === "en" ? "en" : "fr");
     </script>
   </body>
 </html>
