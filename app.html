@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#050505" />
     <meta
       name="description"
-      content="Book VASI rides, food delivery and local courier services across France and Europe."
+      content="Book VASI rides, food delivery and local courier services in France and the United Kingdom."
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -77,6 +77,17 @@
       .actions {
         display: flex;
         gap: 8px;
+      }
+      .country-select {
+        appearance: none;
+        cursor: pointer;
+        width: 52px;
+        min-height: 42px;
+        padding: 8px 22px 8px 8px;
+        background-image: linear-gradient(45deg, transparent 50%, #aaa 50%), linear-gradient(135deg, #aaa 50%, transparent 50%);
+        background-position: calc(100% - 15px) 17px, calc(100% - 10px) 17px;
+        background-repeat: no-repeat;
+        background-size: 5px 5px;
       }
       .pill {
         border: 1px solid #303030;
@@ -575,6 +586,10 @@
       <header class="top">
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
         <div class="actions">
+          <select id="countrySelect" class="pill country-select" aria-label="Service country">
+            <option value="FR">🇫🇷</option>
+            <option value="GB">🇬🇧</option>
+          </select>
           <button class="pill" onclick="location.href='activity.html'">
             Activity
           </button>
@@ -588,7 +603,7 @@
         </div>
       </header>
       <section class="hero">
-        <div class="eyebrow">Europe mobility platform</div>
+        <div class="eyebrow">France + UK mobility platform</div>
         <h1>Move.<br />Eat.<br />Deliver.</h1>
         <p>One VASI app for rides, food and delivery.</p>
       </section>
@@ -609,7 +624,7 @@
       <section class="section">
         <div class="panel">
           <div class="row">
-            <span class="muted">France & Europe</span
+            <span id="serviceCountry" class="muted">France</span
             ><span class="muted">VASI</span>
           </div>
           <button class="cta" onclick="location.href='ride-flow.html'">
@@ -629,12 +644,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-languages.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
       );
       let signedIn = false;
+      const countrySelect = document.getElementById("countrySelect");
+      function renderCountry() {
+        const region = VasiRegion.getRegion();
+        countrySelect.value = region.code;
+        document.getElementById("serviceCountry").textContent =
+          region.flag + " " + region.name + " · " + region.currency;
+      }
+      countrySelect.addEventListener("change", (event) => {
+        VasiRegion.setCountry(event.target.value);
+        renderCountry();
+      });
       function openAccount() {
         location.href = signedIn ? "account.html" : "auth.html?role=customer";
       }
@@ -667,6 +694,7 @@
       if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       window.scrollTo(0, 0);
       showAccountState();
+      renderCountry();
       VasiNotifications.start(client, { role: "customer" });
     </script>
   </body>

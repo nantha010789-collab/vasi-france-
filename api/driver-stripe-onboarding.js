@@ -97,10 +97,10 @@ async function configureWeeklyMondayPayout(accountId) {
 
 function driverCountry(value) {
   const country = String(value || "FR").trim().toUpperCase();
-  return /^[A-Z]{2}$/.test(country) ? country : "FR";
+  return country === "GB" ? "GB" : "FR";
 }
 
-async function edgePayout(auth, action) {
+async function edgePayout(auth, action, country = "FR") {
   const response = await fetch(`${supabaseUrl}/functions/v1/provider-payout-service`, {
     method: "POST",
     headers: {
@@ -108,7 +108,7 @@ async function edgePayout(auth, action) {
       Authorization: auth,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action, country: driverCountry(country) }),
   });
   const data = await response.json().catch(() => ({ error: "Payout service unavailable" }));
   return { response, data };
@@ -126,6 +126,7 @@ export default async function handler(req, res) {
     const { response, data } = await edgePayout(
       auth,
       req.method === "GET" ? "driver_status" : "driver_onboarding",
+      req.body?.country,
     );
     return res.status(response.status).json(data);
   }
@@ -183,13 +184,14 @@ export default async function handler(req, res) {
     }
 
     if (!accountId) {
+      const country = driverCountry(req.body?.country);
       const params = new URLSearchParams();
       params.set("controller[fees][payer]", "application");
       params.set("controller[losses][payments]", "application");
       params.set("controller[stripe_dashboard][type]", "express");
       params.set("capabilities[transfers][requested]", "true");
-      params.set("country", driverCountry(req.body?.country));
-      params.set("default_currency", "eur");
+      params.set("country", country);
+      params.set("default_currency", country === "GB" ? "gbp" : "eur");
       if (driver.full_name)
         params.set("business_profile[name]", driver.full_name);
       if (driver.phone)

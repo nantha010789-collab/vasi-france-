@@ -34,3 +34,25 @@ Never commit database passwords, service-role keys, Stripe secrets, TURN credent
 ## Voice-call networking
 
 WebRTC uses authenticated Supabase signalling and STUN by default. For reliable calls across restrictive mobile networks, configure `VASI_TURN_URLS`, `VASI_TURN_USERNAME`, and `VASI_TURN_CREDENTIAL` in Vercel production settings. Use time-limited TURN credentials from the chosen provider.
+
+## Account deletion operations
+
+Customers initiate deletion from `delete-account.html`. Requests are stored in `account_deletion_requests` with a 30-day processing target. Only service-role administration may change request status.
+
+Before completing a request:
+
+1. Verify there is no active ride, order, payment dispute, safety case or unpaid balance.
+2. Retain only transaction, tax, fraud-prevention and safety records required by French or UK law.
+3. Remove or anonymise optional profile, address, marketing and device data.
+4. Soft-delete the Supabase Auth user from a trusted server process; never expose the service-role key to a browser.
+5. Mark the request completed with the processing timestamp and an internal audit note.
+
+## Background Web Push
+
+The app stores each signed-in device subscription in `push_subscriptions` under owner-only RLS. Configure the same VAPID key pair in the trusted notification sender and Vercel:
+
+- `VAPID_PUBLIC_KEY` may be returned to browsers by `/api/push-config`.
+- `VAPID_PRIVATE_KEY` must stay server-side and must never be committed.
+- `VAPID_SUBJECT` should be a monitored `mailto:` address or the production HTTPS origin.
+
+Until these variables and a trusted lifecycle notification sender are configured, the existing in-app Realtime alerts continue to work but closed-app Web Push delivery is not active.

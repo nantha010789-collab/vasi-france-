@@ -187,6 +187,7 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
+    <script src="./vasi-region.js"></script>
     <script>
       const client = supabase.createClient(
           "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -194,6 +195,8 @@
         ),
         ENDPOINT =
           "https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/delivery-driver-service";
+      const region = VasiRegion.getRegion();
+      const money = (value) => VasiRegion.money(value, region.code);
       let online = false,
         tab = "eats",
         activeJob = null,
@@ -228,7 +231,7 @@
                 Authorization: "Bearer " + session.access_token,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify(body),
+              body: JSON.stringify({ ...body, country: region.code }),
             }),
             data = await response.json();
           if (!response.ok)
@@ -254,7 +257,7 @@
           .filter((item) => item.status === "paid")
           .reduce((sum, item) => sum + Number(item.amount || 0), 0);
         $("earnings").textContent = paid
-          ? `Recent Eats earnings paid: €${paid.toFixed(2)}`
+          ? `Recent Eats earnings paid: ${money(paid)}`
           : "Your completed Eats earnings will appear here.";
         await loadPayoutStatus();
         await loadJobs();

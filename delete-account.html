@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>Delete VASI account</title>
+    <style>
+      :root{font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0;background:#050505}.wrap{width:min(100%,640px);margin:auto;padding:max(18px,env(safe-area-inset-top)) 16px calc(42px + env(safe-area-inset-bottom))}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{display:block;width:108px;max-height:44px;object-fit:contain}.back{min-height:44px;display:grid;place-items:center;border:1px solid #343434;border-radius:13px;background:#171717;color:#fff;padding:8px 14px;text-decoration:none;font-weight:850}.hero{padding:42px 0 16px}.eyebrow{color:#ff8f8f;font-weight:900}.hero h1{margin:8px 0;font-size:clamp(38px,10vw,54px);letter-spacing:-.05em}.hero p,.card p,.card li,.field small{color:#aaa;line-height:1.55}.card{border:1px solid #303030;border-radius:22px;background:#111;padding:20px;margin-top:12px}.card h2{margin:0 0 9px;font-size:22px}.card ul{padding-left:20px}.field{display:block;margin-top:18px}.field strong,.field small{display:block}.field textarea,.field input[type="text"]{width:100%;margin-top:8px;border:1px solid #393939;border-radius:14px;background:#090909;color:#fff;padding:13px;font:inherit}.confirm{display:flex;align-items:flex-start;gap:11px;margin-top:18px;color:#ddd;line-height:1.45}.confirm input{width:20px;height:20px;flex:0 0 auto}.danger{width:100%;min-height:54px;margin-top:18px;border:0;border-radius:16px;background:#e43f43;color:#fff;font:inherit;font-weight:950;cursor:pointer}.danger:disabled{opacity:.45;cursor:not-allowed}.status{min-height:24px;margin:12px 0 0;color:#aaa;line-height:1.45}.status.error{color:#ff8f8f}.status.success{color:#9ee4ad}.signin{display:block;text-align:center;margin-top:12px;color:#fff}.hidden{display:none}
+    </style>
+    <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="top">
+        <img class="logo" src="./assets/vasi-logo.png" alt="VASI" />
+        <a class="back" href="settings.html#privacy">Back</a>
+      </header>
+      <section class="hero">
+        <span class="eyebrow">Account & privacy</span>
+        <h1>Delete your account</h1>
+        <p>You can start account deletion here. We will verify and process the request within 30 days.</p>
+      </section>
+
+      <section class="card">
+        <h2>Before you continue</h2>
+        <ul>
+          <li>You will be signed out after the request is submitted.</li>
+          <li>Active rides, orders, payments or safety cases may need to finish first.</li>
+          <li>VASI may retain limited transaction, fraud-prevention, tax or legal records for the required period.</li>
+          <li>You can contact support before processing finishes if you submitted the request by mistake.</li>
+        </ul>
+      </section>
+
+      <section id="requestCard" class="card hidden">
+        <h2>Confirm deletion request</h2>
+        <label class="field">
+          <strong>Reason (optional)</strong>
+          <textarea id="reason" rows="3" maxlength="500" placeholder="Tell us what happened"></textarea>
+        </label>
+        <label class="field">
+          <strong>Type DELETE</strong>
+          <input id="confirmation" type="text" autocomplete="off" autocapitalize="characters" />
+          <small>This prevents an accidental request.</small>
+        </label>
+        <label class="confirm"><input id="understand" type="checkbox" /><span>I understand that deletion is irreversible after VASI finishes processing it.</span></label>
+        <button id="submitRequest" class="danger" type="button" disabled>Request account deletion</button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="signinCard" class="card hidden">
+        <h2>Sign in to verify your account</h2>
+        <p>VASI uses your verified phone login before accepting a deletion request.</p>
+        <a class="back signin" href="auth.html?role=customer&next=delete-account.html">Sign in with phone number</a>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
+    <script>
+      const client = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      const confirmation = document.getElementById("confirmation");
+      const understand = document.getElementById("understand");
+      const submit = document.getElementById("submitRequest");
+      const status = document.getElementById("status");
+      let session = null;
+
+      function refreshButton() {
+        submit.disabled = confirmation.value.trim().toUpperCase() !== "DELETE" || !understand.checked;
+      }
+      confirmation.addEventListener("input", refreshButton);
+      understand.addEventListener("change", refreshButton);
+
+      submit.addEventListener("click", async () => {
+        if (!session || submit.disabled) return;
+        if (!confirm("Submit your VASI account deletion request?")) return;
+        submit.disabled = true;
+        status.className = "status";
+        status.textContent = "Submitting your secure request…";
+        const reason = document.getElementById("reason").value.trim();
+        const { error } = await client.from("account_deletion_requests").insert({
+          user_id: session.user.id,
+          reason: reason || null,
+        });
+        if (error) {
+          status.className = "status error";
+          status.textContent = error.code === "23505"
+            ? "A deletion request is already active for this account."
+            : "We could not submit the request. Please try again or contact VASI Support.";
+          refreshButton();
+          return;
+        }
+        status.className = "status success";
+        status.textContent = "Request received. Signing you out…";
+        await client.auth.signOut({ scope: "global" });
+        setTimeout(() => location.replace("auth.html?role=customer&deleted=requested"), 900);
+      });
+
+      (async () => {
+        session = (await client.auth.getSession()).data.session;
+        document.getElementById(session ? "requestCard" : "signinCard").classList.remove("hidden");
+      })();
+    </script>
+  </body>
+</html>

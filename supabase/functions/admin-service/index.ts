@@ -492,6 +492,32 @@ Deno.serve(async (req) => {
       return json({ ok: true, ticket: data });
     }
 
+    if (action === 'list_deletions') {
+      const { data, error } = await db.from('account_deletion_requests')
+        .select('id,user_id,status,reason,requested_at,scheduled_for,processed_at,admin_note')
+        .order('requested_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      return json({ ok: true, requests: data || [] });
+    }
+    if (action === 'update_deletion') {
+      const id = text(body.id, 80);
+      const status = ['processing', 'cancelled', 'rejected'].includes(body.status) ? body.status : '';
+      const adminNote = text(body.admin_note, 2000);
+      if (!id || !status) return json({ error: 'Request and supported status required' }, 400);
+      const patch = {
+        status,
+        admin_note: adminNote || null,
+        processed_at: ['cancelled', 'rejected'].includes(status) ? new Date().toISOString() : null,
+        processed_by: user.id,
+      };
+      const { data, error } = await db.from('account_deletion_requests')
+        .update(patch).eq('id', id).in('status', ['requested', 'processing']).select().maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: 'Active deletion request not found' }, 404);
+      await audit('account_deletion_update', 'account_deletion_request', id, { status });
+      return json({ ok: true, request: data });
+    }
+
     return json({ error: 'Unknown action' }, 400);
   } catch (error) {
     console.error('[admin-service] action failed', { action, admin: user.email, error: String(error) });

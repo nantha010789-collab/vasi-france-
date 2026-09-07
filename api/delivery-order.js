@@ -4,6 +4,10 @@ const PRICING = {
   document: { base: 4, km: 0.65, min: 0.10, minimum: 6 },
   parcel: { base: 5, km: 0.80, min: 0.12, minimum: 7.5 },
 };
+const UK_PRICING = {
+  document: { base: 3.5, km: 0.75, min: 0.10, minimum: 5.5 },
+  parcel: { base: 4.5, km: 0.95, min: 0.12, minimum: 7 },
+};
 
 function cleanAddress(value) {
   const address = String(value || "").trim();
@@ -11,8 +15,8 @@ function cleanAddress(value) {
   return address;
 }
 
-async function geocode(address) {
-  const query = new URLSearchParams({ format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: "fr,gb,be,de,nl,lu,ch,es,it,pt", q: address });
+async function geocode(address, country) {
+  const query = new URLSearchParams({ format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: country === "GB" ? "gb" : "fr", q: address });
   const response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
   if (!response.ok) throw new Error("Address search is temporarily unavailable");
   const result = (await response.json())?.[0];
@@ -32,8 +36,8 @@ async function route(pickup, dropoff) {
   return { distanceKm, durationMin: Math.max(1, Math.ceil(best.duration / 60)) };
 }
 
-function calculatePrice(type, metrics) {
-  const p = PRICING[type];
+function calculatePrice(type, metrics, pricing = PRICING) {
+  const p = pricing[type];
   return Number(Math.max(p.minimum, p.base + metrics.distanceKm * p.km + metrics.durationMin * p.min).toFixed(2));
 }
 
@@ -50,12 +54,15 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
     const body = req.body || {};
+    const country = String(body.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+    const currency = country === "GB" ? "GBP" : "EUR";
+    const pricing = country === "GB" ? UK_PRICING : PRICING;
     const type = String(body.item_type || "parcel").toLowerCase();
-    if (!PRICING[type]) return res.status(400).json({ error: "Choose parcel or document" });
-    const [pickup, dropoff] = await Promise.all([geocode(cleanAddress(body.pickup_address)), geocode(cleanAddress(body.dropoff_address))]);
+    if (!pricing[type]) return res.status(400).json({ error: "Choose parcel or document" });
+    const [pickup, dropoff] = await Promise.all([geocode(cleanAddress(body.pickup_address), country), geocode(cleanAddress(body.dropoff_address), country)]);
     const metrics = await route(pickup, dropoff);
-    const quote = calculatePrice(type, metrics);
-    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency: "EUR" };
+    const quote = calculatePrice(type, metrics, pricing);
+    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency, country };
     if (body.action !== "book") return res.status(200).json(result);
 
     const authorization = req.headers.authorization || "";
@@ -64,7 +71,7 @@ export default async function handler(req, res) {
     const response = await fetch(`${supabaseUrl}/rest/v1/delivery_orders`, {
       method: "POST",
       headers: { apikey: publishableKey, Authorization: authorization, "Content-Type": "application/json", Prefer: "return=representation" },
-      body: JSON.stringify({ customer_id: user.id, pickup_address: pickup.address, dropoff_address: dropoff.address, item_type: type, quote, currency: "EUR", status: "pending" }),
+      body: JSON.stringify({ customer_id: user.id, pickup_address: pickup.address, dropoff_address: dropoff.address, item_type: type, quote, currency, status: "pending" }),
     });
     const created = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: created?.message || created?.error || "Could not book delivery" });

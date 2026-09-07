@@ -65,13 +65,15 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
   <script src="./vasi-notifications.js"></script>
+  <script src="./vasi-region.js"></script>
   <script>
     const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
     const app=document.getElementById('app'),msg=document.getElementById('message');
     let token='',data={};
     const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     const photoLabel=status=>({none:'No photo',checking:'Checking',approved:'Approved',needs_changes:'Needs changes',admin_review:'Admin review'}[status]||'No photo');
-    const money=value=>'€'+Number(value||0).toFixed(2);
+    const region=VasiRegion.getRegion();
+    const money=value=>VasiRegion.money(value,region.code);
     const activeStatuses=new Set(['pending','accepted','preparing','ready_for_pickup','picked_up']);
     function nextOrderAction(order){
       if(order.status==='pending')return ['accepted','Accept order'];
@@ -253,7 +255,7 @@
     async function connectBankAccount(){
       msg.textContent='Opening secure Stripe RIB setup…';
       try{
-        const response=await fetch('/api/restaurant-stripe-onboarding',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
+        const response=await fetch('/api/restaurant-stripe-onboarding',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({country:region.code})});
         const result=await response.json().catch(()=>({}));
         if(!response.ok)throw Error(result.error||'Stripe onboarding failed');
         location.href=result.url;

@@ -142,6 +142,8 @@ Deno.serve(async (req: Request) => {
   if (userError || !user) return json({ error: "Unauthorized" }, 401);
   const body = await req.json().catch(() => null);
   const action = String(body?.action || "");
+  const country = String(body?.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+  const currency = country === "GB" ? "gbp" : "eur";
   const stripe = stripeClient();
   const now = new Date().toISOString();
   const publicUrl = Deno.env.get("VASI_PUBLIC_URL") || "https://vasi-new.vercel.app";
@@ -174,8 +176,8 @@ Deno.serve(async (req: Request) => {
 
       if (!accountId) {
         account = await stripe.accounts.create({
-          country: "FR",
-          default_currency: "eur",
+          country,
+          default_currency: currency,
           email: user.email || undefined,
           capabilities: { transfers: { requested: true } },
           controller: {
@@ -235,8 +237,8 @@ Deno.serve(async (req: Request) => {
 
         if (!accountId) {
           account = await stripe.accounts.create({
-            country: "FR",
-            default_currency: "eur",
+            country,
+            default_currency: currency,
             email: restaurant.email || user.email || undefined,
             business_type: "company",
             capabilities: { transfers: { requested: true } },

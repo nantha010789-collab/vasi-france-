@@ -8,7 +8,13 @@ const ALLOWED_ORIGINS = new Set([
   "https://vasigo.eu",
   "https://www.vasigo.eu",
 ]);
-const COUNTRIES = ["fr", "gb", "be", "de", "nl", "lu", "ch", "es", "it", "pt"];
+const REGIONS = {
+  FR: { country: "fr", language: "fr", region: "fr" },
+  GB: { country: "gb", language: "en", region: "uk" },
+};
+function selectedRegion(value) {
+  return REGIONS[String(value || "FR").toUpperCase()] || REGIONS.FR;
+}
 const buckets = new Map();
 
 function clean(value, max = 180) {
@@ -87,12 +93,12 @@ async function googleJson(url, options, label) {
   }
 }
 
-async function autocomplete(input, key, location) {
+async function autocomplete(input, key, location, region) {
   const body = {
     input,
-    includedRegionCodes: COUNTRIES,
-    languageCode: "fr",
-    regionCode: "fr",
+    includedRegionCodes: [region.country],
+    languageCode: region.language,
+    regionCode: region.region,
   };
   const latitude = Number(location?.lat);
   const longitude = Number(location?.lng);
@@ -134,11 +140,11 @@ async function autocomplete(input, key, location) {
     }));
 }
 
-async function resolvePlace(placeId, key) {
+async function resolvePlace(placeId, key, region) {
   const url = new URL(GOOGLE_GEOCODE_URL);
   url.searchParams.set("place_id", placeId);
-  url.searchParams.set("language", "fr");
-  url.searchParams.set("region", "fr");
+  url.searchParams.set("language", region.language);
+  url.searchParams.set("region", region.region);
   url.searchParams.set("key", key);
   const data = await googleJson(url, {}, "Google Geocoding");
   const result = data?.results?.[0];
@@ -171,18 +177,19 @@ export default async function handler(req, res) {
 
   try {
     const action = clean(req.body?.action, 24);
+    const region = selectedRegion(req.body?.country);
     if (action === "autocomplete") {
       const input = clean(req.body?.input);
       if (input.length < 4)
         return res.status(200).json({ enabled: true, suggestions: [] });
-      const suggestions = await autocomplete(input, key, req.body?.location);
+      const suggestions = await autocomplete(input, key, req.body?.location, region);
       return res.status(200).json({ enabled: true, suggestions });
     }
     if (action === "resolve") {
       const placeId = clean(req.body?.place_id, 180);
       if (placeId.length < 8)
         return res.status(400).json({ error: "Invalid place" });
-      const place = await resolvePlace(placeId, key);
+      const place = await resolvePlace(placeId, key, region);
       if (!place) return res.status(404).json({ error: "Place not found" });
       return res.status(200).json({ enabled: true, place });
     }
