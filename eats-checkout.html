@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>VASI Eats Checkout</title>
     <style>
-      :root{font-family:Inter,system-ui,sans-serif;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0;background:#050505}.app{max-width:720px;margin:auto;padding:20px 18px 40px}.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:30px;font-weight:900}.back{border:1px solid #303030;background:#151515;color:#ddd;border-radius:12px;padding:9px 13px}.hero{padding:30px 0 18px}.hero h1{font-size:40px;margin:8px 0}.muted{color:#999}.panel{border:1px solid #292929;border-radius:22px;background:#111;padding:18px;margin-top:14px}.row{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #222}.field{width:100%;padding:14px;border-radius:14px;border:1px solid #292929;background:#181818;color:#fff;margin-top:14px}.cta{width:100%;border:0;border-radius:16px;padding:16px;background:#fff;color:#050505;font-weight:800;margin-top:16px}.cta:disabled{opacity:.5}.status{text-align:center;color:#aaa;min-height:22px;line-height:1.5}.success{font-weight:800;color:#fff}.login{display:inline-block;margin-top:8px;color:#fff}.payment{display:none}.payment.visible{display:block}.payment-box{margin-top:14px;padding:14px;border:1px solid #303030;border-radius:14px;background:#fff}.secure{color:#9fdbac;font-size:12px;margin:12px 0 0}.pin{font:900 38px ui-monospace;letter-spacing:8px;color:#fff}
+      :root{font-family:Inter,system-ui,sans-serif;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0;background:#050505}.app{max-width:720px;margin:auto;padding:20px 18px 40px}.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:30px;font-weight:900}.back{border:1px solid #303030;background:#151515;color:#ddd;border-radius:12px;padding:9px 13px}.hero{padding:30px 0 18px}.hero h1{font-size:40px;margin:8px 0}.muted{color:#999}.panel{border:1px solid #292929;border-radius:22px;background:#111;padding:18px;margin-top:14px}.row{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #222}.field{width:100%;padding:14px;border-radius:14px;border:1px solid #292929;background:#181818;color:#fff;margin-top:14px}.choice-label{display:block;margin:16px 2px 5px;color:#bbb;font-size:12px;font-weight:800}.schedule-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.schedule-grid .field{margin-top:0}.cta{width:100%;border:0;border-radius:16px;padding:16px;background:#fff;color:#050505;font-weight:800;margin-top:16px}.cta:disabled{opacity:.5}.status{text-align:center;color:#aaa;min-height:22px;line-height:1.5}.success{font-weight:800;color:#fff}.login{display:inline-block;margin-top:8px;color:#fff}.payment{display:none}.payment.visible{display:block}.payment-box{margin-top:14px;padding:14px;border:1px solid #303030;border-radius:14px;background:#fff}.secure{color:#9fdbac;font-size:12px;margin:12px 0 0}.pin{font:900 38px ui-monospace;letter-spacing:8px;color:#fff}@media(max-width:420px){.schedule-grid{grid-template-columns:1fr}}
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
@@ -21,6 +21,21 @@
         <div class="row"><span>Service fee</span><b id="serviceFee">—</b></div>
         <div class="row"><span>Total</span><b id="total">—</b></div>
         <input class="field" id="address" placeholder="Full delivery address" autocomplete="street-address" />
+        <label class="choice-label" for="unavailablePreference">If an item is unavailable</label>
+        <select class="field" id="unavailablePreference" style="margin-top:0">
+          <option value="refund">Refund that item</option>
+          <option value="replace_similar">Replace with a similar item</option>
+          <option value="contact_me">Contact me before changing</option>
+        </select>
+        <label class="choice-label">Delivery time</label>
+        <select class="field" id="deliveryTiming" style="margin-top:0" onchange="toggleSchedule()">
+          <option value="now">As soon as possible</option>
+          <option value="scheduled">Schedule this order</option>
+        </select>
+        <div id="scheduleFields" class="schedule-grid" hidden>
+          <input class="field" id="scheduleDate" type="date" />
+          <input class="field" id="scheduleTime" type="time" />
+        </div>
         <button class="cta" id="orderBtn" onclick="preparePayment()" disabled>Continue to secure payment</button>
         <div id="paymentPanel" class="payment">
           <div id="paymentElement" class="payment-box"></div>
@@ -46,12 +61,35 @@
       const basketPayload = () => ({
         restaurant_id: basket.restaurant_id,
         items: Object.entries(basket.items || {}).map(([id, quantity]) => ({ id, quantity })),
+        group_order_id: basket.group_order_id || null,
       });
       const region = VasiRegion.getRegion();
       const money = (amount) => VasiRegion.money(amount, region.code);
       let stripeInstance = null;
       let stripeElements = null;
       let orderId = null;
+
+      function toggleSchedule() {
+        const scheduled = el("deliveryTiming").value === "scheduled";
+        el("scheduleFields").hidden = !scheduled;
+        if (scheduled && !el("scheduleDate").value) {
+          const next = new Date(Date.now() + 60 * 60 * 1000);
+          el("scheduleDate").min = new Date().toISOString().slice(0, 10);
+          el("scheduleDate").max = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+          el("scheduleDate").value = next.toISOString().slice(0, 10);
+          el("scheduleTime").value = `${String(next.getHours()).padStart(2,"0")}:${String(next.getMinutes()).padStart(2,"0")}`;
+        }
+      }
+
+      function scheduledFor() {
+        if (el("deliveryTiming").value !== "scheduled") return null;
+        const date = el("scheduleDate").value, time = el("scheduleTime").value;
+        if (!date || !time) throw new Error("Choose the scheduled delivery date and time");
+        const when = new Date(`${date}T${time}`);
+        if (when.getTime() < Date.now() + 30 * 60 * 1000) throw new Error("Scheduled order must be at least 30 minutes from now");
+        if (when.getTime() > Date.now() + 7 * 86400000) throw new Error("Scheduled order must be within 7 days");
+        return when.toISOString();
+      }
 
       function showTotals(data) {
         el("restaurant").textContent = data.restaurant.name;
@@ -108,7 +146,14 @@
           const orderResponse = await fetch("/api/eats-order", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
-            body: JSON.stringify({ ...basketPayload(), action: "book", country: region.code, delivery_address: address }),
+            body: JSON.stringify({
+              ...basketPayload(),
+              action: "book",
+              country: region.code,
+              delivery_address: address,
+              scheduled_for: scheduledFor(),
+              unavailable_item_preference: el("unavailablePreference").value,
+            }),
           });
           const order = await orderResponse.json();
           if (!orderResponse.ok) throw new Error(order.error || "Could not prepare order");
@@ -154,7 +199,10 @@
           localStorage.removeItem("vasi_eats_basket");
           const pin = /^\d{4}$/.test(String(confirmed.delivery_pin || "")) ? String(confirmed.delivery_pin) : "••••";
           el("paymentPanel").classList.remove("visible");
-          el("status").innerHTML = `<span class="success">Payment successful. Your order is now visible to VASI couriers.</span><br><span class="muted">Order ID: ${esc(orderId.slice(0, 8).toUpperCase())}</span><br><br><span class="muted">DELIVERY PIN</span><br><span class="pin">${esc(pin)}</span><br><span class="muted">Give this PIN only when your food arrives. It releases the courier earning.</span><br><a class="login" href="activity.html?filter=eats">View Eats activity</a>`;
+          const timing = confirmed.scheduled_for
+            ? `<br><span class="muted">Scheduled for ${esc(new Date(confirmed.scheduled_for).toLocaleString())}. The restaurant and courier flow opens shortly before this time.</span>`
+            : "";
+          el("status").innerHTML = `<span class="success">Payment successful. Your order is confirmed.</span>${timing}<br><span class="muted">Order ID: ${esc(orderId.slice(0, 8).toUpperCase())}</span><br><br><span class="muted">DELIVERY PIN</span><br><span class="pin">${esc(pin)}</span><br><span class="muted">Give this PIN only when your food arrives. It releases the courier earning.</span><br><a class="login" href="activity.html?filter=eats">View Eats activity</a>`;
         } catch (error) {
           el("status").textContent = error.message;
           button.disabled = false;

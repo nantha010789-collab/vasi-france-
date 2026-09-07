@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
   const { data: order, error: orderError } = await userClient
     .from("eats_orders")
     .select(
-      "id,customer_id,total,currency,status,payment_status,stripe_payment_intent_id",
+      "id,customer_id,total,currency,status,payment_status,stripe_payment_intent_id,scheduled_for,group_order_id",
     )
     .eq("id", orderId)
     .eq("customer_id", user.id)
@@ -122,13 +122,17 @@ Deno.serve(async (req: Request) => {
       if (paymentIntent.status !== "succeeded")
         return json({ paid: false, payment_status: paymentIntent.status }, 409);
 
+      const scheduled = order.scheduled_for && new Date(order.scheduled_for).getTime() > Date.now() + 20 * 60 * 1000;
       const { error: paidError } = await serviceClient
         .from("eats_orders")
-        .update({ status: "pending", payment_status: "paid" })
+        .update({ status: scheduled ? "scheduled" : "pending", payment_status: "paid" })
         .eq("id", order.id)
         .eq("customer_id", user.id)
         .in("payment_status", ["unpaid", "requires_payment"]);
       if (paidError) return json({ error: "Payment succeeded; order confirmation is pending" }, 500);
+      if (order.group_order_id) {
+        await serviceClient.from("eats_group_orders").update({ status: "ordered", updated_at: new Date().toISOString() }).eq("id", order.group_order_id).eq("host_user_id", user.id);
+      }
       const { data: safety } = await serviceClient
         .from("eats_order_safety")
         .select("delivery_pin")
@@ -138,6 +142,8 @@ Deno.serve(async (req: Request) => {
         paid: true,
         order_id: order.id,
         payment_status: paymentIntent.status,
+        order_status: scheduled ? "scheduled" : "pending",
+        scheduled_for: order.scheduled_for || null,
         delivery_pin: safety?.delivery_pin || null,
       });
     }

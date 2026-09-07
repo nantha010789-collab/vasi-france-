@@ -191,6 +191,8 @@
           <div>${orders.map(order=>{const action=nextOrderAction(order);return `<div class="order">
             <div class="row"><b>#${order.id.slice(0,8).toUpperCase()}</b><span class="badge">${esc(order.status)}</span></div>
             <p class="muted">Order ${money(order.total)} · Restaurant payout ${money(Number(order.restaurant_net ?? order.subtotal * .9)+(order.delivery_mode==='own'?Number(order.delivery_fee||0):0))} · ${new Date(order.created_at).toLocaleString()}</p>
+            ${order.scheduled_for?`<p class="muted">🗓️ Scheduled for ${esc(new Date(order.scheduled_for).toLocaleString())}</p>`:''}
+            <p class="muted">Unavailable item: ${esc(({refund:'refund item',replace_similar:'replace with similar item',contact_me:'contact customer'}[order.unavailable_item_preference]||'refund item'))}${order.group_order_id?' · 👥 Group order':''}</p>
             ${order.status==='delivered'?`<p class="muted">Payout: ${esc(order.restaurant_payout_status||'pending')}</p>`:''}
             <p class="muted">📍 ${esc(order.delivery_address||'Delivery address unavailable')}</p>
             ${action?`<button class="btn primary" type="button" onclick="orderStatus('${order.id}','${action[0]}')">${action[1]}</button>`:order.status==='delivered'&&['failed','requires_onboarding'].includes(order.restaurant_payout_status)&&payoutReady?`<button class="btn" type="button" onclick="retryPayout('${order.id}')">Retry payout</button>`:'<span class="badge">No action needed</span>'}

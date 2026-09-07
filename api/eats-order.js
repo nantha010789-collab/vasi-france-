@@ -73,6 +73,24 @@ function cleanAddress(value) {
   return address;
 }
 
+function normalizeSchedule(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const when = new Date(value);
+  if (!Number.isFinite(when.getTime())) throw new Error("Invalid scheduled order time");
+  if (when.getTime() < Date.now() + 30 * 60 * 1000)
+    throw new Error("Scheduled order must be at least 30 minutes from now");
+  if (when.getTime() > Date.now() + 7 * 24 * 60 * 60 * 1000)
+    throw new Error("Scheduled order must be within 7 days");
+  return when.toISOString();
+}
+
+function unavailablePreference(value) {
+  const preference = String(value || "refund");
+  return ["refund", "replace_similar", "contact_me"].includes(preference)
+    ? preference
+    : "refund";
+}
+
 async function geocode(value, country) {
   const query = new URLSearchParams({
     format: "jsonv2",
@@ -210,6 +228,17 @@ export default async function handler(req, res) {
     if (!priced.delivery_address)
       return res.status(400).json({ error: "Enter a valid full delivery address" });
 
+    const scheduledFor = normalizeSchedule(body.scheduled_for);
+    const groupOrderId = /^[0-9a-f-]{36}$/i.test(String(body.group_order_id || ""))
+      ? String(body.group_order_id)
+      : null;
+    if (groupOrderId) {
+      const group = await adminDb(
+        `eats_group_orders?id=eq.${encodeURIComponent(groupOrderId)}&host_user_id=eq.${encodeURIComponent(user.id)}&status=in.(open,closed)&select=id`,
+      );
+      if (!group[0]) throw new Error("Group order is not available for checkout");
+    }
+
     const rows = await adminDb("eats_orders", {
       method: "POST",
       headers: {
@@ -237,11 +266,21 @@ export default async function handler(req, res) {
         payment_status: "unpaid",
         courier_payout_status: "not_ready",
         status: "awaiting_payment",
+        scheduled_for: scheduledFor,
+        unavailable_item_preference: unavailablePreference(body.unavailable_item_preference),
+        group_order_id: groupOrderId,
       }),
     });
     const orderId = rows[0]?.id || null;
     if (!orderId) throw new Error("Order was created without an ID");
-    return res.status(201).json({ ...priced, order_id: orderId, payment_required: true });
+    return res.status(201).json({
+      ...priced,
+      order_id: orderId,
+      payment_required: true,
+      scheduled_for: scheduledFor,
+      unavailable_item_preference: unavailablePreference(body.unavailable_item_preference),
+      group_order_id: groupOrderId,
+    });
   } catch (error) {
     const message = error?.message || "Eats service error";
     const clientError = /invalid|choose|address|minimum|closed|unavailable|outside|route/i.test(

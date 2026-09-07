@@ -172,6 +172,15 @@
         background: #fff;
         color: #000;
       }
+      .toolgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+      .toolstat { border-radius:14px; background:#181818; padding:12px; text-align:center; }
+      .toolstat b { display:block; font-size:18px; margin-top:4px; }
+      .capabilities { display:grid; gap:8px; margin-top:12px; }
+      .capability { display:flex; align-items:center; gap:9px; padding:11px; border-radius:13px; background:#181818; color:#ddd; }
+      .capability input { accent-color:#fff; }
+      .notice { margin-top:9px; border-radius:13px; padding:11px; background:#211b0d; color:#f2d17a; font-size:12px; }
+      .zones { display:grid; gap:7px; margin-top:10px; }
+      .zone { display:flex; justify-content:space-between; gap:10px; border-radius:12px; background:#181818; padding:10px; font-size:12px; }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
@@ -198,6 +207,26 @@
           requests.
         </p>
         <div id="ride" class="ride"></div>
+      </section>
+      <section class="card">
+        <h2>Driver tools</h2>
+        <div class="toolgrid">
+          <div class="toolstat"><span class="muted">This month</span><b id="monthEarnings">€0.00</b></div>
+          <div class="toolstat"><span class="muted">Trips</span><b id="monthTrips">0</b></div>
+          <div class="toolstat"><span class="muted">Documents</span><b id="documentHealth">—</b></div>
+        </div>
+        <div id="documentNotices"></div>
+        <button class="btn navbtn" onclick="downloadEarnings()">Download monthly earnings CSV</button>
+        <h3>Vehicles & passenger needs</h3>
+        <div class="capabilities">
+          <label class="capability"><input id="capWheelchair" type="checkbox"> ♿ Wheelchair-accessible</label>
+          <label class="capability"><input id="capChild" type="checkbox"> 🧒 Child seat available</label>
+          <label class="capability"><input id="capPet" type="checkbox"> 🐾 Pet-friendly</label>
+        </div>
+        <button class="btn navbtn" onclick="saveCapabilities()">Save service options</button>
+        <h3>Busy areas</h3>
+        <p class="muted">Demand is rounded to neighbourhood zones to protect customer privacy.</p>
+        <div id="busyZones" class="zones"><div class="muted">Checking nearby demand…</div></div>
       </section>
       <section class="card">
         <h2>Bank payouts</h2>
@@ -235,7 +264,8 @@
         lastPos = null,
         activeRide = null,
         gpsMode = "offline",
-        activeStops = [];
+        activeStops = [],
+        monthlyEarnings = [];
       client.auth.getSession().then(async ({ data }) => {
         if (!data.session) {
           localStorage.setItem("vasi_role", "ride");
@@ -249,8 +279,44 @@
           document.getElementById("payoutStatus").textContent =
             "Stripe onboarding needs to be completed. Tap the button to continue.";
         }
-        await Promise.all([loadActiveRide(), loadPayoutBalance(), loadPayoutAccount()]);
+        await Promise.all([loadActiveRide(), loadPayoutBalance(), loadPayoutAccount(), loadDriverTools()]);
       });
+      async function loadDriverTools() {
+        const monthStart = new Date();
+        monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+        const [{ data: drivers }, { data: earnings }, { data: documents }, heat] = await Promise.all([
+          client.from("drivers").select("id,service_capabilities").limit(1),
+          client.from("driver_earnings").select("ride_id,gross_fare,vasi_commission,driver_earnings,currency,status,created_at").gte("created_at", monthStart.toISOString()).order("created_at", { ascending:false }),
+          client.from("driver_documents").select("document_type,status,expires_at").order("expires_at", { ascending:true }),
+          client.rpc("vasi_driver_demand_heatmap"),
+        ]);
+        const capabilities = drivers?.[0]?.service_capabilities || [];
+        document.getElementById("capWheelchair").checked = capabilities.includes("wheelchair_accessible");
+        document.getElementById("capChild").checked = capabilities.includes("child_seat");
+        document.getElementById("capPet").checked = capabilities.includes("pet_friendly");
+        monthlyEarnings = earnings || [];
+        document.getElementById("monthEarnings").textContent = money(monthlyEarnings.reduce((sum,row)=>sum+Number(row.driver_earnings||0),0));
+        document.getElementById("monthTrips").textContent = String(monthlyEarnings.length);
+        const expiring = (documents || []).filter((doc)=>doc.expires_at && new Date(doc.expires_at).getTime() <= Date.now()+30*86400000);
+        document.getElementById("documentHealth").textContent = expiring.length ? String(expiring.length) : "✓";
+        document.getElementById("documentNotices").innerHTML = expiring.map((doc)=>`<div class="notice"><b>${esc(doc.document_type)}</b> expires ${esc(new Date(doc.expires_at).toLocaleDateString())}. Upload a renewed document before it expires.</div>`).join("");
+        document.getElementById("busyZones").innerHTML = heat.error || !(heat.data || []).length
+          ? '<div class="muted">No active demand zones right now.</div>'
+          : heat.data.map((zone)=>`<div class="zone"><span>📍 ${Number(zone.area_lat).toFixed(2)}, ${Number(zone.area_lng).toFixed(2)}</span><b>${zone.requests} request${Number(zone.requests)===1?'':'s'}</b></div>`).join("");
+      }
+      async function saveCapabilities() {
+        const capabilities=[];
+        if(document.getElementById("capWheelchair").checked)capabilities.push("wheelchair_accessible");
+        if(document.getElementById("capChild").checked)capabilities.push("child_seat");
+        if(document.getElementById("capPet").checked)capabilities.push("pet_friendly");
+        const { error }=await client.rpc("vasi_driver_set_capabilities",{p_capabilities:capabilities});
+        alert(error ? error.message : "Service options saved.");
+      }
+      function downloadEarnings() {
+        const rows=[["Date","Ride","Gross fare","VASI commission","Driver earnings","Currency","Status"],...monthlyEarnings.map(row=>[new Date(row.created_at).toISOString(),row.ride_id||"",row.gross_fare,row.vasi_commission,row.driver_earnings,row.currency,row.status])];
+        const csv=rows.map(row=>row.map(value=>'"'+String(value??'').replaceAll('"','""')+'"').join(',')).join('\n');
+        const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='vasi-driver-earnings-'+new Date().toISOString().slice(0,7)+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+      }
       async function loadPayoutAccount() {
         const status = document.getElementById("payoutStatus");
         const button = document.getElementById("payoutButton");
@@ -506,7 +572,7 @@
         const { data, error } = await client
           .from("rides")
           .select(
-            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,waiting_fee,payment_method,accepted_at,arrived_at,started_at",
+            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,waiting_fee,payment_method,accepted_at,arrived_at,started_at,airport_pickup,flight_number,flight_status,service_options,business_account_id,company_reference",
           )
           .in("status", ["accepted", "driver_arriving", "in_progress"])
           .order("accepted_at", { ascending: false })
@@ -608,12 +674,21 @@
             : "🏁 Go to final destination";
         }
         const wait = Number(activeRide.waiting_fee || 0);
+        const preferences = [activeRide.airport_pickup ? `✈️ Airport${activeRide.flight_number ? ` · ${esc(activeRide.flight_number)}` : ""}` : "", ...(activeRide.service_options || []).map((item)=>({wheelchair_accessible:"♿ Wheelchair",child_seat:"🧒 Child seat",pet_friendly:"🐾 Pet friendly"}[item]||item)), activeRide.company_reference ? `🏢 ${esc(activeRide.company_reference)}` : ""].filter(Boolean).join(" · ");
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first 3 minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
         );
+        if (["accepted","driver_arriving"].includes(st)) document.getElementById("ride").insertAdjacentHTML("beforeend",'<button class="btn decline" onclick="cancelAndReassign()">Cannot take this ride · find another driver</button>');
+      }
+      async function cancelAndReassign(){
+        if(!activeRide||!confirm("Cancel your assignment and immediately search for another driver for the passenger?"))return;
+        const reason=prompt("Short reason (optional)","")||"";
+        const {data,error}=await client.rpc("vasi_driver_cancel_and_reassign",{p_ride_id:activeRide.id,p_reason:reason});
+        if(error)return alert(error.message);
+        activeRide=null;activeStops=[];online=false;stopGps();render();document.getElementById("ride").innerHTML=`<div class="offer"><h2>Reassignment started</h2><p class="muted">${Number(data?.offers_sent||0)} nearby driver offer(s) sent. The passenger's ride remains active.</p></div>`;
       }
       async function confirmStop(stopId) {
         if (!activeRide) return;
