@@ -32,5 +32,6 @@
   async function closeAndCheckout(){if(!confirm('Close the group so no more items can be added?'))return;try{group=await api('close');const items={};for(const item of group.items||[])items[item.id]=item.quantity;localStorage.setItem('vasi_eats_basket',JSON.stringify({restaurant_id:group.restaurant_id,items,group_order_id:group.group_id}));location.href='eats-checkout.html'}catch(e){el('status').textContent=e.message}}
   async function init(){const auth=await client.auth.getSession();session=auth.data.session;if(!session){localStorage.setItem('vasi_role','customer');localStorage.setItem('vasi_return','group-order.html?token='+token);return location.replace('auth.html?role=customer')}try{group=await api('view');const response=await fetch('/api/eats-order?country='+encodeURIComponent(region.code));const data=await response.json();restaurant=(data.restaurants||[]).find(r=>r.id===group.restaurant_id);if(!restaurant)throw Error('Restaurant is currently unavailable');el('displayName').value=session.user.user_metadata?.full_name||'';render();el('status').textContent=group.status==='open'?'Invitation active for 24 hours.':'The group basket is closed.'}catch(e){el('status').textContent=e.message;el('saveBtn').disabled=true}}
   init();
-</script>  <script src="./vasi-navigation.js?v=2"></script>
+</script>  <script src="./vasi-languages.js?v=3"></script>
+    <script src="./vasi-navigation.js?v=2"></script>
 </body></html>
