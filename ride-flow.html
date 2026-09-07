@@ -572,7 +572,28 @@
         background: #181818;
         color: #fff;
         padding: 11px 12px;
+        font-size: 16px;
       }
+      .airportFields {
+        margin-top: 8px;
+        padding: 10px;
+        border: 1px solid #303030;
+        border-radius: 15px;
+        background: #111;
+      }
+      .airportCounts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .airportFieldLabel {
+        display: grid;
+        gap: 5px;
+        color: #aaa;
+        font-size: 14px;
+        font-weight: 750;
+      }
+      .airportFieldLabel .bookingInput { margin-top: 0; }
       .waiting {
         text-align: center;
         color: #aaa;
@@ -841,8 +862,24 @@
             <label class="preference"><input id="childSeatOption" type="checkbox" /> 🧒 Child seat</label>
             <label class="preference"><input id="petOption" type="checkbox" /> 🐾 Pet friendly</label>
           </div>
-          <input id="flightNumber" class="bookingInput hidden" maxlength="8" autocomplete="off" placeholder="Flight number · AF1234" />
-          <div id="airportHint" class="waiting hidden">Choose the expected arrival date and time. VASI tracks the flight and moves pickup automatically to 30 minutes after landing.</div>
+          <div id="airportFields" class="airportFields hidden">
+            <input id="flightNumber" class="bookingInput" maxlength="8" autocomplete="off" placeholder="Flight number · AF1234" />
+            <div class="airportCounts">
+              <label class="airportFieldLabel">Passengers
+                <select id="passengerCount" class="bookingInput" onchange="recommendAirportVehicle()">
+                  <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option>
+                </select>
+              </label>
+              <label class="airportFieldLabel">Luggage
+                <select id="luggageCount" class="bookingInput" onchange="recommendAirportVehicle()">
+                  <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                </select>
+              </label>
+            </div>
+            <input id="arrivalTerminal" class="bookingInput" maxlength="40" autocomplete="off" placeholder="Arrival terminal (optional)" />
+            <input id="airportPickupZone" class="bookingInput" maxlength="120" autocomplete="off" placeholder="Pickup zone or meeting point (optional)" />
+            <div id="airportHint" class="waiting">Choose the expected arrival time. VASI tracks your flight, adjusts pickup automatically and shows the official terminal details when available.</div>
+          </div>
           <div id="businessRide" class="hidden">
             <select id="businessAccount" class="bookingInput"><option value="">Personal ride</option></select>
             <input id="companyReference" class="bookingInput" maxlength="80" placeholder="Company cost centre / reference (optional)" />
@@ -928,6 +965,9 @@
           </div>
           <div id="waiting" class="waiting hidden"></div>
           <div id="flightTracking" class="waiting hidden"></div>
+          <button id="airportReadyBtn" class="cta hidden" onclick="sendAirportReady()">
+            ✈️ I’m ready for pickup
+          </button>
           <button id="chatBtn" class="cta hidden" onclick="openRideChat()">
             💬 Chat · 📞 Voice call
           </button>
@@ -1255,15 +1295,35 @@
       }
       function toggleAirport() {
         const enabled = $("airportPickup").checked;
-        $("flightNumber").classList.toggle("hidden", !enabled);
-        $("airportHint").classList.toggle("hidden", !enabled);
+        $("airportFields").classList.toggle("hidden", !enabled);
         $("waitingPolicy").textContent = enabled
           ? (classes[selected]?.name === "Go" ? "45 min free after airport arrival · €0.30/min" : "60 min free after airport arrival · €0.30/min")
           : "3 min free · €0.30/min";
-        if (!enabled) $("flightNumber").value = "";
+        if (!enabled) {
+          $("flightNumber").value = "";
+          $("arrivalTerminal").value = "";
+          $("airportPickupZone").value = "";
+          $("passengerCount").value = "1";
+          $("luggageCount").value = "0";
+        }
         else if (pickupChoice === "Now") {
           chooseCustomTime();
           toast("Choose the flight arrival date and time");
+        }
+      }
+      function recommendAirportVehicle() {
+        if (!$("airportPickup").checked || !route.km) return;
+        const passengers = Number($("passengerCount").value || 1);
+        const luggage = Number($("luggageCount").value || 0);
+        const order = ["go", "comfort", "xl", "van"];
+        const recommended = passengers > 6 || luggage > 5
+          ? "van"
+          : passengers > 4 || luggage > 3
+            ? "xl"
+            : selected;
+        if (order.indexOf(recommended) > order.indexOf(selected)) {
+          selectType(recommended);
+          toast(`VASI ${classes[recommended].name} selected for your passengers and luggage`);
         }
       }
       async function useSavedPlace(id, kind, button) {
@@ -1829,6 +1889,11 @@
         const f = priceFor(route.km, route.mins, k);
         $("fare").textContent = money(f);
         $("routeBtn").textContent = `Request ${classes[k].name} · ${money(f)}`;
+        if ($("airportPickup").checked) {
+          $("waitingPolicy").textContent = k === "go"
+            ? "45 min free after airport arrival · €0.30/min"
+            : "60 min free after airport arrival · €0.30/min";
+        }
       }
       function payment(el, v) {
         pay = v;
@@ -1980,6 +2045,10 @@
               stops: stops.map((s) => s.address),
               airport_pickup: airportPickup,
               flight_number: flightNumber || null,
+              passenger_count: Number($("passengerCount").value || 1),
+              luggage_count: Number($("luggageCount").value || 0),
+              customer_arrival_terminal: $("arrivalTerminal").value.trim() || null,
+              airport_pickup_zone: $("airportPickupZone").value.trim() || null,
               service_options: serviceOptions,
               business_account_id: $("businessAccount").value || null,
               company_reference: $("companyReference").value.trim() || null,
@@ -2207,6 +2276,13 @@
         if (st === "driver_arriving") $("eta").textContent = "Arrived";
         if (st === "in_progress") $("eta").textContent = "On trip";
         renderFlightTracking(r);
+        const airportReadyButton = $("airportReadyBtn");
+        const canSignalAirportReady = r.airport_pickup && r.driver_id && ["accepted", "driver_arriving"].includes(st);
+        airportReadyButton.classList.toggle("hidden", !canSignalAirportReady);
+        airportReadyButton.disabled = Boolean(r.customer_ready_at);
+        airportReadyButton.textContent = r.customer_ready_at
+          ? "✓ Driver notified — you’re ready"
+          : "✈️ I’m ready for pickup";
         $("chatBtn").classList.toggle(
           "hidden",
           !r.driver_id ||
@@ -2282,10 +2358,38 @@
         const pickupAt = r.scheduled_for ? new Date(r.scheduled_for).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "being confirmed";
         const arrivalAt = r.flight_actual_arrival_at || r.flight_estimated_arrival_at;
         const arrival = arrivalAt ? new Date(arrivalAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
-        const place = [r.flight_arrival_terminal ? `Terminal ${esc(r.flight_arrival_terminal)}` : "", r.flight_arrival_gate ? `Gate ${esc(r.flight_arrival_gate)}` : "", r.flight_arrival_baggage ? `Baggage ${esc(r.flight_arrival_baggage)}` : ""].filter(Boolean).join(" · ");
+        const place = [r.flight_arrival_terminal ? `Terminal ${esc(r.flight_arrival_terminal)}` : r.customer_arrival_terminal ? `Terminal ${esc(r.customer_arrival_terminal)}` : "", r.flight_arrival_gate ? `Gate ${esc(r.flight_arrival_gate)}` : "", r.flight_arrival_baggage ? `Baggage ${esc(r.flight_arrival_baggage)}` : ""].filter(Boolean).join(" · ");
+        const tripDetails = `${Number(r.passenger_count || 1)} passenger${Number(r.passenger_count || 1) === 1 ? "" : "s"} · ${Number(r.luggage_count || 0)} luggage${r.airport_pickup_zone ? ` · Pickup: ${esc(r.airport_pickup_zone)}` : ""}`;
         const timingText = timing === "delayed" ? ` · ${Math.max(0, delay)} min delayed` : timing === "early" ? ` · ${Math.abs(delay)} min early` : timing === "on_time" ? " · on time" : "";
-        box.innerHTML = `<b>✈️ ${esc(r.flight_number)} · ${esc(state)}${timingText}</b><br>Arrival ${arrival}${place ? ` · ${place}` : ""}<br><b>Automatic pickup: ${esc(pickupAt)}</b>`;
+        box.innerHTML = `<b>✈️ ${esc(r.flight_number)} · ${esc(state)}${timingText}</b><br>Arrival ${arrival}${place ? ` · ${place}` : ""}<br>${tripDetails}<br><b>Automatic pickup: ${esc(pickupAt)}</b>`;
         box.classList.remove("hidden");
+      }
+      async function sendAirportReady() {
+        if (!ride?.id || ride.customer_ready_at) return;
+        const session = await getSession();
+        if (!session) return;
+        const button = $("airportReadyBtn");
+        button.disabled = true;
+        button.textContent = "Notifying your driver…";
+        try {
+          const response = await fetch(apiUrl("/api/airport-ready"), {
+            method: "POST",
+            headers: {
+              Authorization: "Bearer " + session.access_token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ride_id: ride.id }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw Error(data.error || "Could not notify the driver");
+          ride = data.ride || ride;
+          button.textContent = "✓ Driver notified — you’re ready";
+          toast("Your driver knows you are ready at the pickup point");
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "✈️ I’m ready for pickup";
+          toast(error.message || "Could not notify the driver");
+        }
       }
       async function startStatusPolling() {
         clearInterval(statusTimer);

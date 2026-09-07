@@ -1332,26 +1332,103 @@ test("airport ride input rejects malformed flight numbers before database work",
 });
 
 test("airport flights adjust pickup automatically and notify customer and driver", async () => {
-  const [sync, push, migration, rideFlow, driver, activity, createRide] = await Promise.all([
+  const [sync, push, migration, coordination, rideFlow, driver, activity, createRide, readyApi] = await Promise.all([
     readFile("supabase/functions/flight-sync/index.ts", "utf8"),
     readFile("supabase/functions/push-dispatch/index.ts", "utf8"),
     readFile("supabase/migrations/20260907170000_automate_airport_flight_tracking.sql", "utf8"),
+    readFile("supabase/migrations/20260907233000_add_airport_pickup_coordination.sql", "utf8"),
     readFile("ride-flow.html", "utf8"),
     readFile("driver.html", "utf8"),
     readFile("activity.html", "utf8"),
     readFile("api/create-ride.js", "utf8"),
+    readFile("api/airport-ready.js", "utf8"),
   ]);
   assert.match(sync, /get_vasi_flight_sync_credentials/);
   assert.match(sync, /flight_iata/);
   assert.match(sync, /update\.scheduled_for = pickupAt/);
   assert.match(sync, /slice\(0, 5\)/);
   assert.match(push, /eventType === "flight"/);
+  assert.match(push, /eventType === "airport_ready"/);
   assert.match(push, /recipients\.push\(\{ id: driver\.user_id/);
   assert.match(migration, /sync-vasi-flight-status/);
   assert.match(migration, /flight_pickup_buffer_minutes/);
   assert.match(migration, /rides_waiting_fee_policy/);
+  assert.match(coordination, /vasi_set_airport_booking_details/);
+  assert.match(coordination, /vasi_customer_airport_ready/);
+  assert.match(coordination, /rides_airport_ready_push/);
   assert.match(rideFlow, /Automatic pickup:/);
+  assert.match(rideFlow, /id="passengerCount"/);
+  assert.match(rideFlow, /id="luggageCount"/);
+  assert.match(rideFlow, /id="airportReadyBtn"/);
   assert.match(driver, /Driver pickup time:/);
+  assert.match(driver, /Passenger is ready at the pickup point/);
   assert.match(activity, /Automatic pickup:/);
   assert.match(createRide, /Airport pickup requires the expected arrival date and time/);
+  assert.match(createRide, /vasi_set_airport_booking_details/);
+  assert.match(readyApi, /vasi_customer_airport_ready/);
+});
+
+test("airport booking saves passenger, luggage, terminal and pickup-zone details", async () => {
+  const rideId = "11111111-1111-4111-8111-111111111111";
+  let detailPayload = null;
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.includes("vasi_pricing_settings")) return response([], 503);
+    if (value.includes("router.project-osrm.org"))
+      return response({ routes: [{ distance: 25_000, duration: 2_100 }] });
+    if (value.includes("/api/customer-offer")) return response({}, 404);
+    if (value.includes("/rpc/create_customer_ride"))
+      return response({ id: rideId, status: "requested", airport_pickup: true }, 201);
+    if (value.includes("/rpc/vasi_set_airport_booking_details")) {
+      detailPayload = JSON.parse(options.body);
+      return response({ id: rideId, status: "requested", airport_pickup: true, ...detailPayload });
+    }
+    if (value.includes("/rpc/vasi_dispatch_ride")) return response(2);
+    throw new Error(`Unexpected request: ${value}`);
+  };
+  const { default: createRide } = await import(`../api/create-ride.js?airport=${Date.now()}`);
+  const res = mockRes();
+  await createRide({
+    method: "POST",
+    headers: { authorization: "Bearer customer-token" },
+    body: {
+      pickup_address: "Paris Charles de Gaulle Airport",
+      pickup_lat: 49.0097,
+      pickup_lng: 2.5479,
+      destination_address: "1 Rue de Paris, Creil",
+      destination_lat: 49.2583,
+      destination_lng: 2.4829,
+      service: "VASI XL",
+      payment_method: "cash",
+      scheduled_for: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      airport_pickup: true,
+      flight_number: "AF1234",
+      passenger_count: 5,
+      luggage_count: 4,
+      customer_arrival_terminal: "2E",
+      airport_pickup_zone: "VTC pickup door 6",
+    },
+  }, res);
+  assert.equal(res.statusCode, 201);
+  assert.equal(detailPayload.p_passenger_count, 5);
+  assert.equal(detailPayload.p_luggage_count, 4);
+  assert.equal(detailPayload.p_customer_arrival_terminal, "2E");
+  assert.equal(detailPayload.p_airport_pickup_zone, "VTC pickup door 6");
+  assert.equal(res.body.offers_sent, 2);
+});
+
+test("airport passenger ready signal is authenticated and sent to the ride RPC", async () => {
+  const rideId = "11111111-1111-4111-8111-111111111111";
+  let payload = null;
+  global.fetch = async (url, options = {}) => {
+    assert.match(String(url), /vasi_customer_airport_ready/);
+    payload = JSON.parse(options.body);
+    return response({ ok: true, ride: { id: rideId, customer_ready_at: new Date().toISOString() } });
+  };
+  const { default: airportReady } = await import(`../api/airport-ready.js?test=${Date.now()}`);
+  const res = mockRes();
+  await airportReady({ method: "POST", headers: { authorization: "Bearer customer-token" }, body: { ride_id: rideId } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(payload, { p_ride_id: rideId, p_ready: true });
+  assert.equal(res.body.ok, true);
 });

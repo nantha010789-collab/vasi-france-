@@ -79,7 +79,74 @@ Deno.serve(async (req) => {
 
   const { data: current, error: rowError } = eventType === "flight"
     ? await supabase.from("rides").select("id,customer_id,driver_id,status,flight_number,flight_status,flight_timing,flight_delay_minutes,scheduled_for,flight_arrival_terminal,flight_arrival_gate").eq("id", id).maybeSingle()
-    : await supabase.from(table).select("id,customer_id,status").eq("id", id).maybeSingle();
+    : eventType === "airport_ready"
+      ? await supabase.from("rides").select("id,customer_id,driver_id,status,flight_number,airport_pickup_zone,customer_ready_at").eq("id", id).maybeSingle()
+      : await supabase.from(table).select("id,customer_id,status").eq("id", id).maybeSingle();
+
+  if (eventType === "airport_ready") {
+    if (rowError || !current?.driver_id || !current?.customer_ready_at)
+      return Response.json({ ok: true, ignored: true }, { status: 202 });
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("user_id")
+      .eq("id", current.driver_id)
+      .maybeSingle();
+    if (!driver?.user_id)
+      return Response.json({ ok: true, ignored: true }, { status: 202 });
+
+    const eventKey = `airport-ready:${id}:${current.customer_ready_at}`;
+    const { data: event, error: eventError } = await supabase
+      .from("push_notification_events")
+      .insert({
+        event_key: eventKey,
+        customer_id: driver.user_id,
+        service: "ride",
+        entity_id: id,
+        status: "airport_customer_ready",
+      })
+      .select("id")
+      .single();
+    if (eventError?.code === "23505")
+      return Response.json({ ok: true, duplicate: true });
+    if (eventError || !event)
+      return Response.json({ ok: false }, { status: 500 });
+
+    const { data: subscriptions } = await supabase
+      .from("push_subscriptions")
+      .select("id,endpoint,p256dh,auth_key")
+      .eq("user_id", driver.user_id)
+      .eq("active", true);
+    webpush.setVapidDetails(credentials.subject, credentials.public_key, credentials.private_key);
+    let sent = 0;
+    for (const subscription of subscriptions || []) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth_key } },
+          JSON.stringify({
+            title: "Airport passenger is ready",
+            body: `${current.flight_number ? `Flight ${current.flight_number}. ` : ""}${current.airport_pickup_zone ? `Meet at ${current.airport_pickup_zone}.` : "Open VASI for the pickup point."}`,
+            icon: "vasi-word-icon-192.png",
+            badge: "vasi-word-icon-192.png",
+            tag: `vasi-airport-ready-${id}`,
+            url: "driver.html",
+          }),
+          { TTL: 900, urgency: "high" },
+        );
+        sent += 1;
+      } catch (error) {
+        const statusCode = Number((error as { statusCode?: number })?.statusCode || 0);
+        if (statusCode === 404 || statusCode === 410)
+          await supabase.from("push_subscriptions").update({ active: false }).eq("id", subscription.id);
+      }
+    }
+    await supabase.from("push_notification_events").update({
+      delivery_status: !subscriptions?.length ? "no_subscriptions" : sent === subscriptions.length ? "sent" : sent > 0 ? "partial" : "failed",
+      attempted_count: subscriptions?.length || 0,
+      sent_count: sent,
+      completed_at: new Date().toISOString(),
+    }).eq("id", event.id);
+    return Response.json({ ok: true, recipients: 1, attempted: subscriptions?.length || 0, sent });
+  }
 
   if (eventType === "flight") {
     if (rowError || !current?.customer_id || !current?.flight_number)
