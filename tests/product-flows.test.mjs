@@ -1228,3 +1228,58 @@ test("ride checkout accepts Google Pay through Stripe wallets", async () => {
   assert.match(paymentIntent, /automatic_payment_methods\[enabled\]/);
   assert.match(migration, /'card', 'apple_pay', 'google_pay'/);
 });
+
+test("European mobility growth features are connected end to end", async () => {
+  const [rideFlow, createRide, driver, eatsCheckout, eatsOrder, groupPage, groupApi, businessPage, account, restaurant, payment, migration, flightApi, worker] = await Promise.all([
+    readFile("ride-flow.html", "utf8"),
+    readFile("api/create-ride.js", "utf8"),
+    readFile("driver.html", "utf8"),
+    readFile("eats-checkout.html", "utf8"),
+    readFile("api/eats-order.js", "utf8"),
+    readFile("group-order.html", "utf8"),
+    readFile("api/group-order.js", "utf8"),
+    readFile("business-account.html", "utf8"),
+    readFile("account.html", "utf8"),
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile("supabase/functions/eats-payment/index.ts", "utf8"),
+    readFile("supabase/migrations/20260907143000_add_mobility_growth_features.sql", "utf8"),
+    readFile("api/flight-status.js", "utf8"),
+    readFile("sw.js", "utf8"),
+  ]);
+
+  assert.match(rideFlow, /id="airportPickup"/);
+  assert.match(rideFlow, /wheelchair_accessible/);
+  assert.match(createRide, /p_flight_number: flightNumber/);
+  assert.match(createRide, /p_business_account_id: businessAccountId/);
+  assert.match(driver, /vasi_driver_demand_heatmap/);
+  assert.match(driver, /vasi_driver_cancel_and_reassign/);
+  assert.match(driver, /Download monthly earnings CSV/);
+  assert.match(driver, /expires_at/);
+  assert.match(eatsCheckout, /id="deliveryTiming"/);
+  assert.match(eatsCheckout, /id="unavailablePreference"/);
+  assert.match(eatsOrder, /scheduled_for: scheduledFor/);
+  assert.match(groupPage, /Close group & checkout/);
+  assert.match(groupApi, /eats_group_order_members/);
+  assert.match(businessPage, /vasi_generate_business_invoice/);
+  assert.match(account, /business-account\.html/);
+  assert.match(restaurant, /Unavailable item:/);
+  assert.match(payment, /scheduled \? "scheduled" : "pending"/);
+  assert.match(migration, /r\.service_options <@ d\.service_capabilities/);
+  assert.match(migration, /release-vasi-scheduled-eats/);
+  assert.match(migration, /private\.is_business_member/);
+  assert.match(flightApi, /AVIATIONSTACK_API_KEY/);
+  assert.match(worker, /vasi-app-v42/);
+});
+
+test("airport ride input rejects malformed flight numbers before database work", async () => {
+  global.fetch = async (url) => {
+    if (String(url).includes("vasi_pricing_settings")) return response([], 503);
+    throw new Error(`Unexpected request: ${url}`);
+  };
+  const { default: createRide } = await import(`../api/create-ride.js?flight=${Date.now()}`);
+  const req = { method: "POST", headers: { authorization: "Bearer customer-token" }, body: { airport_pickup: true, flight_number: "NOT A FLIGHT!!!", service: "VASI Go" } };
+  const res = mockRes();
+  await createRide(req, res);
+  assert.equal(res.statusCode, 400);
+  assert.match(res.body.error, /valid flight number/i);
+});

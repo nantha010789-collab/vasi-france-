@@ -97,6 +97,8 @@
     "api/driver-stripe-onboarding.js": {
       "includeFiles": "api/driver-stripe-onboarding.js"
     },
+    "api/group-order.js": { "includeFiles": "api/group-order.js" },
+    "api/flight-status.js": { "includeFiles": "api/flight-status.js" },
     "api/restaurant-stripe-onboarding.js": {
       "includeFiles": "api/restaurant-stripe-onboarding.js"
     },

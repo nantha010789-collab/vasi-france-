@@ -26,6 +26,11 @@ const UK_PRICING = {
   "VASI Van": { base: 5, km: 1.8, min: 0.28, minFare: 15 },
 };
 const PAYMENT_METHODS = new Set(["cash", "card", "apple_pay", "google_pay"]);
+const RIDE_OPTIONS = new Set([
+  "wheelchair_accessible",
+  "child_seat",
+  "pet_friendly",
+]);
 const DEFAULT_RIDE_COMMISSION_PERCENT = 15;
 
 function rideCommissionPercent(value) {
@@ -157,6 +162,19 @@ function normalizeSchedule(value) {
     throw new Error("Scheduled pickup must be within 90 days");
   return when.toISOString();
 }
+function normalizeFlight(value, airportPickup) {
+  const flight = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+  if (!airportPickup || !flight) return null;
+  if (!/^[A-Z0-9]{2,3}[0-9]{1,4}[A-Z]?$/.test(flight))
+    throw new Error("Enter a valid flight number, for example AF1234");
+  return flight;
+}
+function normalizeRideOptions(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((item) => String(item || "").trim()))].filter(
+    (item) => RIDE_OPTIONS.has(item),
+  );
+}
 async function geocodeStop(address, country) {
   const countryCode = country === "GB" ? "gb" : "fr";
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${countryCode}&addressdetails=0&q=${encodeURIComponent(address)}`;
@@ -206,6 +224,15 @@ export default async function handler(req, res) {
     if (!PAYMENT_METHODS.has(paymentMethod))
       return res.status(400).json({ error: "Unsupported payment method" });
     const scheduledFor = normalizeSchedule(b.scheduled_for);
+    const airportPickup = Boolean(b.airport_pickup);
+    const flightNumber = normalizeFlight(b.flight_number, airportPickup);
+    const serviceOptions = normalizeRideOptions(b.service_options);
+    const businessAccountId = /^[0-9a-f-]{36}$/i.test(
+      String(b.business_account_id || ""),
+    )
+      ? String(b.business_account_id)
+      : null;
+    const companyReference = String(b.company_reference || "").trim().slice(0, 80) || null;
 
     const pickupLat = finiteCoord(b.pickup_lat, -90, 90);
     const pickupLng = finiteCoord(b.pickup_lng, -180, 180);
@@ -295,6 +322,11 @@ export default async function handler(req, res) {
           p_passenger_name: b.passenger_name || null,
           p_passenger_phone: b.passenger_phone || null,
           p_notes: b.notes || null,
+          p_airport_pickup: airportPickup,
+          p_flight_number: flightNumber,
+          p_service_options: serviceOptions,
+          p_business_account_id: businessAccountId,
+          p_company_reference: companyReference,
         }),
       },
     );
@@ -366,6 +398,13 @@ export default async function handler(req, res) {
       reservation: scheduledFor
         ? { scheduled_for: scheduledFor, mode: "reserve" }
         : null,
+      ride_preferences: {
+        airport_pickup: airportPickup,
+        flight_number: flightNumber,
+        service_options: serviceOptions,
+        business_account_id: businessAccountId,
+        company_reference: companyReference,
+      },
       offers_sent: dispatch.ok ? Number(dispatched || 0) : 0,
       dispatch_error: dispatch.ok
         ? null
@@ -373,7 +412,7 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     const message = e?.message || "Server error";
-    const badRequest = /scheduled pickup|invalid scheduled/i.test(message);
+    const badRequest = /scheduled pickup|invalid scheduled|flight number|ride option|business account/i.test(message);
     return res.status(badRequest ? 400 : 500).json({ error: message });
   }
 }

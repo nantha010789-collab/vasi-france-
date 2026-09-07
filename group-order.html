@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#050505">
+  <title>VASI Eats Group Order</title>
+  <style>
+    :root{font-family:Inter,system-ui;color:#fff;background:#050505}*{box-sizing:border-box}body{margin:0}.app{width:min(100%,720px);margin:auto;padding:max(20px,env(safe-area-inset-top)) 16px calc(38px + env(safe-area-inset-bottom))}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.back,.btn{min-height:46px;border:1px solid #383838;border-radius:14px;background:#171717;color:#fff;padding:11px 14px;font-weight:850}.hero{padding:30px 0 12px}.hero h1{font-size:clamp(36px,10vw,52px);line-height:1;margin:7px 0}.muted{color:#999;font-size:13px;line-height:1.5}.panel{margin-top:14px;border:1px solid #292929;border-radius:22px;background:#111;padding:18px}.field{width:100%;min-height:48px;margin-top:10px;border:1px solid #333;border-radius:13px;background:#191919;color:#fff;padding:12px}.menu{display:grid;gap:8px;margin-top:14px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;border-radius:14px;background:#191919;padding:12px}.qty{display:flex;align-items:center;gap:8px}.qty button{width:38px;height:38px;border:0;border-radius:10px;background:#fff;color:#000;font-size:20px;font-weight:900}.primary{width:100%;min-height:52px;margin-top:14px;border:0;border-radius:15px;background:#fff;color:#000;font-weight:900}.people{display:flex;flex-wrap:wrap;gap:7px}.person{border-radius:999px;background:#202020;padding:7px 10px;font-size:12px}.host{border-color:#285d38;background:#102619}.status{text-align:center;min-height:20px;margin-top:12px;color:#aaa}.hidden{display:none!important}
+  </style><link rel="stylesheet" href="./vasi-mobile-fit.css">
+</head>
+<body><main class="app">
+  <header class="top"><img src="./assets/vasi-logo.png" alt="VASI" style="width:112px;height:auto"><button class="back" onclick="location.href='eats.html'">Eats</button></header>
+  <section class="hero"><div class="muted">VASI Eats</div><h1>Order together.</h1><p class="muted">Everyone adds their own items. The host reviews one combined basket and pays once.</p></section>
+  <section class="panel">
+    <h2 id="restaurant">Opening invitation…</h2><div id="people" class="people"></div>
+    <input id="displayName" class="field" maxlength="80" placeholder="Your name"><div id="menu" class="menu"></div>
+    <button id="saveBtn" class="primary" onclick="saveContribution()">Add my items to the group</button>
+    <button id="shareBtn" class="btn hidden" style="width:100%;margin-top:10px" onclick="shareInvite()">Share invitation link</button>
+    <button id="checkoutBtn" class="primary hidden host" onclick="closeAndCheckout()">Close group & checkout</button>
+    <p id="status" class="status" aria-live="polite"></p>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script><script src="./vasi-region.js"></script>
+<script>
+  const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT'),el=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const token=new URLSearchParams(location.search).get('token')||'',region=VasiRegion.getRegion();let session=null,group=null,restaurant=null,quantities={};
+  const payload=()=>Object.entries(quantities).filter(([,q])=>q>0).map(([id,quantity])=>({id,quantity}));
+  async function api(action,extra={}){const response=await fetch('/api/group-order'+(action==='view'?'?token='+encodeURIComponent(token):''),{method:action==='view'?'GET':'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:action==='view'?undefined:JSON.stringify({action,token,...extra})});const data=await response.json();if(!response.ok)throw Error(data.error||'Group order unavailable');return data}
+  function render(){el('restaurant').textContent=restaurant?.name||'Group order';el('people').innerHTML=(group.participants||[]).map(p=>`<span class="person">${esc(p.display_name)} · ${Number(p.item_count)||0}</span>`).join('');el('menu').innerHTML=(restaurant?.items||[]).map(item=>`<div class="item"><div><b>${esc(item.name)}</b><div class="muted">${VasiRegion.money(item.price,region.code)}</div></div><div class="qty"><button onclick="change('${item.id}',-1)">−</button><b>${quantities[item.id]||0}</b><button onclick="change('${item.id}',1)">+</button></div></div>`).join('');el('shareBtn').classList.toggle('hidden',!group.is_host);el('checkoutBtn').classList.toggle('hidden',!group.is_host||group.status!=='open');el('saveBtn').disabled=group.status!=='open'}
+  function change(id,amount){quantities[id]=Math.max(0,Math.min(10,(quantities[id]||0)+amount));render()}
+  async function saveContribution(){if(!payload().length)return el('status').textContent='Choose at least one item.';el('saveBtn').disabled=true;try{group=await api('join',{display_name:el('displayName').value.trim()||'Guest',items:payload()});el('status').textContent='Your items are in the group basket.';render()}catch(e){el('status').textContent=e.message;el('saveBtn').disabled=false}}
+  async function shareInvite(){const url=location.href;try{if(navigator.share)await navigator.share({title:'Join my VASI Eats order',url});else{await navigator.clipboard.writeText(url);el('status').textContent='Invitation link copied.'}}catch(e){}}
+  async function closeAndCheckout(){if(!confirm('Close the group so no more items can be added?'))return;try{group=await api('close');const items={};for(const item of group.items||[])items[item.id]=item.quantity;localStorage.setItem('vasi_eats_basket',JSON.stringify({restaurant_id:group.restaurant_id,items,group_order_id:group.group_id}));location.href='eats-checkout.html'}catch(e){el('status').textContent=e.message}}
+  async function init(){const auth=await client.auth.getSession();session=auth.data.session;if(!session){localStorage.setItem('vasi_role','customer');localStorage.setItem('vasi_return','group-order.html?token='+token);return location.replace('auth.html?role=customer')}try{group=await api('view');const response=await fetch('/api/eats-order?country='+encodeURIComponent(region.code));const data=await response.json();restaurant=(data.restaurants||[]).find(r=>r.id===group.restaurant_id);if(!restaurant)throw Error('Restaurant is currently unavailable');el('displayName').value=session.user.user_metadata?.full_name||'';render();el('status').textContent=group.status==='open'?'Invitation active for 24 hours.':'The group basket is closed.'}catch(e){el('status').textContent=e.message;el('saveBtn').disabled=true}}
+  init();
+</script></body></html>
