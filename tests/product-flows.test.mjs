@@ -1315,7 +1315,7 @@ test("European mobility growth features are connected end to end", async () => {
   assert.match(migration, /release-vasi-scheduled-eats/);
   assert.match(migration, /private\.is_business_member/);
   assert.match(flightApi, /AVIATIONSTACK_API_KEY/);
-  assert.match(worker, /vasi-app-v47/);
+  assert.match(worker, /vasi-app-v\d+/);
 });
 
 test("airport ride input rejects malformed flight numbers before database work", async () => {

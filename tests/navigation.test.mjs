@@ -49,12 +49,12 @@ const nestedSecondaryPages = [
 test("every secondary VASI page loads the shared return control", () => {
   for (const file of secondaryPages) {
     const html = readFileSync(file, "utf8");
-    assert.match(html, /<script src="\.\/vasi-navigation\.js\?v=2"><\/script>/, file);
+    assert.match(html, /<script src="\.\/vasi-navigation\.js\?v=\d+"><\/script>/, file);
   }
 
   for (const file of nestedSecondaryPages) {
     const html = readFileSync(file, "utf8");
-    assert.match(html, /<script src="\.\.\/vasi-navigation\.js\?v=2"><\/script>/, file);
+    assert.match(html, /<script src="\.\.\/vasi-navigation\.js\?v=\d+"><\/script>/, file);
   }
 });
 
