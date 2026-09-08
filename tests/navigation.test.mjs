@@ -97,3 +97,11 @@ test("the shared return control is valid JavaScript and has safe navigation rule
 test("the return control is available in the offline app cache", () => {
   assert.match(readFileSync("sw.js", "utf8"), /appUrl\("vasi-navigation\.js"\)/);
 });
+
+test("authenticated secondary headers do not duplicate Return and Home", () => {
+  for (const file of ["activity.html", "support.html", "delivery-driver.html"]) {
+    const html = readFileSync(file, "utf8");
+    assert.match(html, /data-vasi-return/, file);
+    assert.doesNotMatch(html, />Home<\/|>Accueil<\//, file);
+  }
+});

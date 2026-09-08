@@ -21,12 +21,17 @@
         margin: auto;
         padding: 20px 18px 50px;
       }
-      .top,
       .ticket-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 10px;
+      }
+      .top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
       }
       .brand {
         font-size: 30px;
@@ -123,8 +128,8 @@
   <body>
     <main class="wrap">
       <header class="top">
+        <button class="btn" type="button" data-vasi-return>Back</button>
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
-        <button class="btn" onclick="location.href = 'index.html'">Home</button>
       </header>
       <section class="hero">
         <p class="muted">24/7 help</p>
