@@ -80,7 +80,15 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
     {
+      "source": "/admin-login",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
       "source": "/admin-reset-password.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/admin-reset-password",
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     }
   ],
