@@ -12,6 +12,7 @@ const json = (body: unknown, status = 200) =>
 const text = (value: unknown, max = 500) => String(value ?? '').trim().slice(0, max);
 
 const motorCourierVehicles = new Set(['scooter', 'moto', 'car']);
+const requiredDriverDocuments = ['identity', 'vtc', 'licence', 'business', 'insurance', 'carte_grise', 'selfie'];
 function courierRequiredDocuments(vehicleType: string) {
   const required = ['identity', 'business', 'bag', 'vehicle_photo', 'selfie'];
   if (motorCourierVehicles.has(vehicleType)) {
@@ -181,20 +182,22 @@ Deno.serve(async (req) => {
       if (!id) return json({ error: 'Driver id required' }, 400);
       const patch: Record<string, unknown> = {};
       if (typeof body.verified === 'boolean') {
+        if (body.verified) {
+          const { data: documents, error: documentError } = await db.from('driver_documents')
+            .select('document_type,status').eq('driver_id', id).in('document_type', requiredDriverDocuments);
+          if (documentError) throw documentError;
+          const approved = new Set((documents || []).filter(document => document.status === 'approved').map(document => document.document_type));
+          const missing = requiredDriverDocuments.filter(documentType => !approved.has(documentType));
+          if (missing.length) return json({ error: `Required driver documents are not approved: ${missing.join(', ')}` }, 409);
+        }
         patch.verified = body.verified;
-        patch.status = body.verified ? 'approved' : 'pending';
-        patch.rejection_reason = null;
+        patch.status = body.verified ? 'approved' : 'rejected';
+        patch.rejection_reason = body.verified ? null : text(body.reason || 'Suspension administrateur', 500);
         if (!body.verified) patch.online = false;
       }
       if (typeof body.online === 'boolean') {
-        if (body.online) {
-          const { data: driver, error: driverError } = await db.from('drivers')
-            .select('verified,status,stripe_details_submitted,stripe_payouts_enabled').eq('id', id).maybeSingle();
-          if (driverError) throw driverError;
-          if (!driver?.verified || driver.status !== 'approved') return json({ error: 'Driver approval is required before going online' }, 409);
-          if (!driver.stripe_details_submitted || !driver.stripe_payouts_enabled) return json({ error: 'Verified Stripe bank payout is required before going online' }, 409);
-        }
-        patch.online = body.online;
+        if (body.online) return json({ error: 'Only the driver can go online' }, 403);
+        patch.online = false;
       }
       if (!Object.keys(patch).length) return json({ error: 'No supported driver change' }, 400);
       const { data, error } = await db.from('drivers').update(patch).eq('id', id).select().maybeSingle();
@@ -279,7 +282,24 @@ Deno.serve(async (req) => {
         .select('id,driver_id,document_type,file_path,status,rejection_reason,expires_at,reviewed_at,created_at')
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
-      return json({ ok: true, documents: data || [] });
+      const driverIds = [...new Set((data || []).map((document: any) => document.driver_id).filter(Boolean))];
+      let drivers: any[] = [];
+      if (driverIds.length) {
+        const { data: driverRows, error: driverError } = await db.from('drivers').select('id,full_name').in('id', driverIds);
+        if (driverError) throw driverError;
+        drivers = driverRows || [];
+      }
+      const driverNames = new Map(drivers.map((driver: any) => [driver.id, driver.full_name]));
+      const documents = await Promise.all((data || []).map(async (document: any) => {
+        const path = text(document.file_path, 500);
+        let fileUrl: string | null = null;
+        if (path && path.startsWith(`${document.driver_id}/`)) {
+          const { data: signed } = await db.storage.from('partner-documents').createSignedUrl(path, 600);
+          fileUrl = signed?.signedUrl || null;
+        }
+        return { ...document, file_path: undefined, file_url: fileUrl, driver_name: driverNames.get(document.driver_id) || null };
+      }));
+      return json({ ok: true, documents });
     }
     if (action === 'review_document') {
       const id = text(body.id, 80);
@@ -289,8 +309,9 @@ Deno.serve(async (req) => {
         status, reviewed_by: user.id, reviewed_at: new Date().toISOString(),
         rejection_reason: status === 'rejected' ? text(body.reason || body.rejection_reason || 'Refus administrateur') : null,
       };
-      const { data, error } = await db.from('driver_documents').update(patch).eq('id', id).select().maybeSingle();
+      const { data, error } = await db.from('driver_documents').update(patch).eq('id', id).eq('status', 'pending').select().maybeSingle();
       if (error) throw error;
+      if (!data) return json({ error: 'Pending document not found' }, 404);
       await audit('document_review', 'driver_document', id, { status, reason: patch.rejection_reason });
       return json({ ok: true, document: data });
     }
@@ -521,6 +542,6 @@ Deno.serve(async (req) => {
     return json({ error: 'Unknown action' }, 400);
   } catch (error) {
     console.error('[admin-service] action failed', { action, admin: user.email, error: String(error) });
-    return json({ error: error instanceof Error ? error.message : 'Admin service error' }, 500);
+    return json({ error: 'Admin service error' }, 500);
   }
 });

@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 const read = file => readFile(new URL(`../${file}`, import.meta.url), 'utf8');
 
 test('professional admin console is accessible and session protected', async () => {
-  const [html, app, css, enhancements] = await Promise.all([read('admin/index.html'), read('admin/app.js'), read('admin/styles.css'), read('admin/enhancements.css')]);
+  const [html, app, css, enhancements, login] = await Promise.all([read('admin/index.html'), read('admin/app.js'), read('admin/styles.css'), read('admin/enhancements.css'), read('admin-login.html')]);
   assert.doesNotMatch(html, /http-equiv="refresh"/i);
   assert.match(html, /aria-live="polite"/);
   assert.match(app, /auth\.getSession\(\)/);
@@ -20,6 +20,10 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
   assert.match(html, /vasi-languages\.js/);
+  assert.match(html, /vasi-account-role\.js/);
+  assert.match(login, /VasiAccountRole\.remember\('admin'\)/);
+  assert.match(login, /signOut\(\{scope:'local'\}\)/);
+  assert.match(app, /activeRole&&activeRole!=='admin'/);
   assert.match(enhancements, /payout-ready/);
   assert.match(app, /RIB vérifié/);
   assert.match(app, /VASI ne stocke jamais l’IBAN complet/);
@@ -56,6 +60,17 @@ test('edge admin service authorizes every operation and keeps privileged keys se
   for (const action of ['stats','list_bookings','update_booking','list_drivers','update_driver','live_gps','list_partners','review_partner','list_documents','review_document','list_restaurants','review_restaurant','list_orders','list_finance','list_audit','list_discounts','create_discount','disable_discount','update_pricing','list_support','update_support','list_deletions','update_deletion']) {
     assert.match(source, new RegExp(`action === '${action}'`));
   }
-  assert.match(source, /Verified Stripe bank payout is required before going online/);
+  assert.match(source, /Only the driver can go online/);
+  assert.match(source, /requiredDriverDocuments/);
+  assert.match(source, /createSignedUrl\(path, 600\)/);
+  assert.match(source, /Pending document not found/);
+  assert.match(source, /return json\(\{ error: 'Admin service error' \}, 500\)/);
   assert.match(source, /discount_create/);
+});
+
+test('ride registration sends uploaded documents into the protected admin review queue', async () => {
+  const register = await read('partner-register-v2.html');
+  assert.match(register, /from\('driver_documents'\)\.insert\(documentRows\)/);
+  assert.match(register, /driver_id:user\.id,document_type:documentType,file_path:filePath/);
+  assert.match(register, /documentType !== 'profile_photo'/);
 });
