@@ -594,6 +594,47 @@
         font-weight: 750;
       }
       .airportFieldLabel .bookingInput { margin-top: 0; }
+      .flightLookupStatus {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 46px;
+        margin-top: 8px;
+        border-radius: 13px;
+        background: #191919;
+        padding: 10px 12px;
+        color: #d9d9d9;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+      .flightLookupStatus.success { border: 1px solid #28794d; background: #10251a; color: #d9ffe9; }
+      .flightLookupStatus button {
+        flex: 0 0 auto;
+        border: 0;
+        background: transparent;
+        color: #69aaff;
+        padding: 7px;
+        font-weight: 850;
+      }
+      .terminalChooser { margin-top: 10px; }
+      .terminalChooserTitle { color: #fff; font-size: 14px; font-weight: 850; }
+      .terminalButtons {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .terminalButton {
+        min-height: 48px;
+        border: 1px solid #3a3a3a;
+        border-radius: 13px;
+        background: #1b1b1b;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 900;
+      }
+      .terminalButton.active { border-color: #2c83e8; background: #0c4e98; }
       .airportGuidance {
         margin-top: 10px;
         border: 1px solid #284b75;
@@ -619,8 +660,33 @@
         font-weight: 900;
       }
       .airportZone { margin: 8px 0; color: #fff; font-size: 13px; font-weight: 850; }
-      .airportSteps { margin: 0; padding-left: 20px; color: #c7d5e5; font-size: 12px; line-height: 1.45; }
-      .airportSteps li + li { margin-top: 5px; }
+      .airportSteps { counter-reset: airport-step; margin: 0; padding: 0; color: #c7d5e5; font-size: 13px; line-height: 1.45; list-style: none; }
+      .airportSteps li { counter-increment: airport-step; position: relative; min-height: 34px; padding-left: 38px; }
+      .airportSteps li + li { margin-top: 7px; }
+      .airportSteps li::before {
+        content: counter(airport-step);
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #1267c4;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .airportSteps li:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 27px;
+        bottom: -8px;
+        left: 12px;
+        width: 2px;
+        background: #284b75;
+      }
       .airportGuidanceActions { display: flex; gap: 8px; margin-top: 10px; }
       .airportGuidanceActions a {
         display: inline-flex;
@@ -749,6 +815,9 @@
           max-height: 56vh;
           border-radius: 25px;
         }
+      }
+      @media (max-width: 360px) {
+        .terminalButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
@@ -905,7 +974,8 @@
             <label class="preference"><input id="petOption" type="checkbox" /> 🐾 Pet friendly</label>
           </div>
           <div id="airportFields" class="airportFields hidden">
-            <input id="flightNumber" class="bookingInput" maxlength="8" autocomplete="off" placeholder="Flight number · AF1234" />
+            <input id="flightNumber" class="bookingInput" maxlength="8" autocomplete="off" placeholder="Flight number · AF1234" oninput="scheduleFlightLookup()" onblur="lookupFlightTerminal()" />
+            <div id="flightLookupStatus" class="flightLookupStatus hidden" aria-live="polite"></div>
             <div class="airportCounts">
               <label class="airportFieldLabel">Passengers
                 <select id="passengerCount" class="bookingInput" onchange="recommendAirportVehicle()">
@@ -918,9 +988,12 @@
                 </select>
               </label>
             </div>
-            <input id="arrivalTerminal" class="bookingInput" list="arrivalTerminalOptions" maxlength="40" autocomplete="off" placeholder="Arrival terminal (optional)" oninput="refreshAirportGuidance()" />
-            <datalist id="arrivalTerminalOptions"></datalist>
-            <input id="airportPickupZone" class="bookingInput" maxlength="120" autocomplete="off" placeholder="Pickup zone or meeting point (optional)" oninput="this.dataset.manual='true'" />
+            <input id="arrivalTerminal" type="hidden" />
+            <input id="airportPickupZone" type="hidden" />
+            <div id="terminalChooser" class="terminalChooser hidden">
+              <div class="terminalChooserTitle">Choose your arrival terminal</div>
+              <div id="terminalButtons" class="terminalButtons"></div>
+            </div>
             <div id="airportGuidance" class="airportGuidance hidden" aria-live="polite"></div>
             <div id="airportHint" class="waiting">Choose the expected arrival time. VASI tracks your flight, adjusts pickup automatically and shows the official terminal details when available.</div>
           </div>
@@ -1090,7 +1163,10 @@
         paymentAuthorized = false,
         savedAddresses = [],
         businessAccounts = [],
-        detectedAirportCode = null;
+        detectedAirportCode = null,
+        flightLookupTimer = null,
+        flightLookupRequest = 0,
+        flightLookupCache = new Map();
       const region = VasiRegion.getRegion(),
         country = region.code,
         fallback = region.defaultMap,
@@ -1353,7 +1429,96 @@
           lng: pickup?.[1],
         });
       }
-      function refreshAirportGuidance(providerAirport = "", preferredTerminal = "") {
+      function renderTerminalButtons(code) {
+        const wrap = $("terminalButtons");
+        const terminals = code && VasiAirports.AIRPORTS[code]
+          ? VasiAirports.AIRPORTS[code].terminals
+          : [];
+        wrap.innerHTML = terminals.map((terminal) =>
+          `<button type="button" class="terminalButton${VasiAirports.terminalKey($("arrivalTerminal").value) === terminal ? " active" : ""}" onclick="selectAirportTerminal('${esc(terminal)}')">Terminal ${esc(terminal)}</button>`,
+        ).join("");
+        return terminals.length;
+      }
+      function showTerminalChooser() {
+        const count = renderTerminalButtons(detectedAirportCode);
+        $("terminalChooser").classList.toggle("hidden", count === 0);
+        if (!count) {
+          toast(airportLanguage() === "fr"
+            ? "Le terminal sera confirmé par le suivi du vol."
+            : "The terminal will be confirmed by flight tracking.");
+        }
+      }
+      function selectAirportTerminal(terminal) {
+        $("arrivalTerminal").value = VasiAirports.terminalKey(terminal);
+        $("terminalChooser").classList.add("hidden");
+        refreshAirportGuidance(detectedAirportCode, terminal, false);
+        const status = $("flightLookupStatus");
+        status.className = "flightLookupStatus success";
+        status.innerHTML = `<span>✓ ${airportLanguage() === "fr" ? "Terminal sélectionné" : "Terminal selected"} · <b>${esc($("arrivalTerminal").value)}</b></span><button type="button" onclick="showTerminalChooser()">${airportLanguage() === "fr" ? "Modifier" : "Change"}</button>`;
+      }
+      function scheduleFlightLookup() {
+        clearTimeout(flightLookupTimer);
+        $("flightNumber").value = $("flightNumber").value.toUpperCase().replace(/[^A-Z0-9 ]/g, "");
+        const flightNumber = $("flightNumber").value.trim();
+        if (!/^[A-Z0-9]{2,3}\s?[0-9]{1,4}[A-Z]?$/.test(flightNumber)) {
+          $("flightLookupStatus").classList.add("hidden");
+          return;
+        }
+        flightLookupTimer = setTimeout(() => lookupFlightTerminal(), 700);
+      }
+      async function lookupFlightTerminal() {
+        clearTimeout(flightLookupTimer);
+        const flightNumber = $("flightNumber").value.trim().toUpperCase();
+        if (!/^[A-Z0-9]{2,3}\s?[0-9]{1,4}[A-Z]?$/.test(flightNumber)) return;
+        const status = $("flightLookupStatus");
+        const language = airportLanguage();
+        const expectedArrival = customPickup || "";
+        const cacheKey = `${flightNumber}|${expectedArrival}`;
+        const currentRequest = ++flightLookupRequest;
+        status.className = "flightLookupStatus";
+        status.innerHTML = `<span>✈️ ${language === "fr" ? "Recherche du vol et du terminal…" : "Finding your flight and terminal…"}</span>`;
+        try {
+          const session = await getSession();
+          if (!session) throw Error(language === "fr" ? "Connectez-vous pour rechercher le vol" : "Sign in to look up the flight");
+          let data = flightLookupCache.get(cacheKey);
+          if (!data) {
+            const query = new URLSearchParams({ flight_number: flightNumber });
+            if (expectedArrival) query.set("expected_arrival", expectedArrival);
+            const response = await fetch(apiUrl(`/api/flight-lookup?${query}`), {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+              cache: "no-store",
+            });
+            data = await response.json();
+            if (!response.ok) throw Error(language === "fr" ? "Recherche du vol indisponible" : "Flight lookup unavailable");
+            flightLookupCache.set(cacheKey, data);
+          }
+          if (currentRequest !== flightLookupRequest) return;
+          const providerAirport = data.arrival?.iata || data.arrival?.airport || "";
+          const code = findAirportCode(providerAirport);
+          if (code) detectedAirportCode = code;
+          const terminal = VasiAirports.terminalKey(data.arrival?.terminal);
+          if (data.found && terminal) {
+            $("arrivalTerminal").value = terminal;
+            $("terminalChooser").classList.add("hidden");
+            refreshAirportGuidance(providerAirport, terminal, false);
+            const gate = data.arrival?.gate ? ` · ${language === "fr" ? "Porte" : "Gate"} ${esc(data.arrival.gate)}` : "";
+            status.className = "flightLookupStatus success";
+            status.innerHTML = `<span>✓ ${language === "fr" ? "Terminal détecté automatiquement" : "Terminal detected automatically"} · <b>${esc(terminal)}</b>${gate}</span><button type="button" onclick="showTerminalChooser()">${language === "fr" ? "Modifier" : "Change"}</button>`;
+            return;
+          }
+          refreshAirportGuidance(providerAirport, "", false);
+          status.className = "flightLookupStatus";
+          status.innerHTML = `<span>${language === "fr" ? "Terminal non disponible — choisissez-le" : "Terminal unavailable — choose it"}</span>`;
+          showTerminalChooser();
+        } catch (error) {
+          if (currentRequest !== flightLookupRequest) return;
+          status.className = "flightLookupStatus";
+          status.innerHTML = `<span>${esc(error.message || (language === "fr" ? "Vol introuvable" : "Flight not found"))}</span>`;
+          refreshAirportGuidance("", "", false);
+          showTerminalChooser();
+        }
+      }
+      function refreshAirportGuidance(providerAirport = "", preferredTerminal = "", showDirections = false) {
         const box = $("airportGuidance");
         const activeBox = $("activeAirportGuidance");
         if (!box || !window.VasiAirports || !$("airportPickup").checked) {
@@ -1363,39 +1528,32 @@
         }
         const code = findAirportCode(providerAirport);
         detectedAirportCode = code;
-        const options = $("arrivalTerminalOptions");
-        const terminals = code ? VasiAirports.AIRPORTS[code].terminals : [];
-        options.innerHTML = terminals.map((terminal) => `<option value="${esc(terminal)}"></option>`).join("");
         if (preferredTerminal) $("arrivalTerminal").value = VasiAirports.terminalKey(preferredTerminal);
+        renderTerminalButtons(code);
         if (!code) {
           box.classList.add("hidden");
           activeBox?.classList.add("hidden");
           $("airportHint").textContent = airportLanguage() === "fr"
-            ? "Aéroport non détecté. Saisissez votre terminal et confirmez le point de rencontre avec le chauffeur."
-            : "Airport not detected. Enter your terminal and confirm the meeting point with the driver.";
+            ? "L’aéroport et le terminal seront confirmés par le suivi du vol."
+            : "The airport and terminal will be confirmed by flight tracking.";
           return;
         }
         const guide = VasiAirports.guidance(code, $("arrivalTerminal").value, airportLanguage());
         if (!guide) return;
-        const terminalText = guide.terminal
-          ? `${airportLanguage() === "fr" ? "Terminal" : "Terminal"} ${guide.terminal}`
-          : (airportLanguage() === "fr" ? "Sélectionnez votre terminal" : "Select your terminal");
-        box.innerHTML = `
-          <div class="airportGuidanceHead"><strong>✈️ ${esc(guide.name)} · ${esc(terminalText)}</strong><span class="airportCode">${esc(guide.code)}</span></div>
-          <div class="airportZone">📍 ${esc(guide.zone)}</div>
-          <ol class="airportSteps">${guide.steps.map((step) => `<li>${esc(step)}</li>`).join("")}</ol>
-          <div class="airportGuidanceActions"><a href="${esc(guide.mapUrl)}" target="_blank" rel="noopener">${airportLanguage() === "fr" ? "Ouvrir le plan du terminal" : "Open terminal map"}</a></div>
-          <p class="airportNotice">${esc(guide.notice)}</p>`;
-        box.classList.remove("hidden");
-        if (activeBox) {
-          activeBox.innerHTML = box.innerHTML;
+        box.classList.add("hidden");
+        if (activeBox && showDirections) {
+          activeBox.innerHTML = `
+            <div class="airportGuidanceHead"><strong>🧭 ${airportLanguage() === "fr" ? "Itinéraire vers la prise en charge" : "Directions to pickup"}</strong><span class="airportCode">${esc(guide.code)}${guide.terminal ? ` · T${esc(guide.terminal)}` : ""}</span></div>
+            <div class="airportZone">📍 ${esc(guide.zone)}</div>
+            <ol class="airportSteps">${guide.steps.map((step) => `<li>${esc(step)}</li>`).join("")}</ol>
+            <div class="airportGuidanceActions"><a href="${esc(guide.mapUrl)}" target="_blank" rel="noopener">${airportLanguage() === "fr" ? "Ouvrir le plan du terminal" : "Open terminal map"}</a></div>
+            <p class="airportNotice">${esc(guide.notice)}</p>`;
           activeBox.classList.remove("hidden");
-        }
+        } else activeBox?.classList.add("hidden");
         $("airportHint").textContent = airportLanguage() === "fr"
           ? "Le terminal suivi du vol remplacera automatiquement votre sélection lorsqu’il sera disponible."
           : "The live flight terminal will automatically replace your selection when available.";
-        const zoneInput = $("airportPickupZone");
-        if (guide.specific && zoneInput.dataset.manual !== "true") zoneInput.value = guide.zone;
+        if (guide.specific) $("airportPickupZone").value = guide.zone;
       }
       function toggleAirport() {
         const enabled = $("airportPickup").checked;
@@ -1410,6 +1568,8 @@
           delete $("airportPickupZone").dataset.manual;
           $("passengerCount").value = "1";
           $("luggageCount").value = "0";
+          $("flightLookupStatus").classList.add("hidden");
+          $("terminalChooser").classList.add("hidden");
           $("airportGuidance").classList.add("hidden");
           $("activeAirportGuidance").classList.add("hidden");
         }
@@ -2088,6 +2248,9 @@
         pickupChoice = "Custom";
         $("customTime").classList.add("hidden");
         $("status").textContent = "Custom pickup: " + d + " " + t;
+        if ($("airportPickup").checked && /^[A-Z0-9]{2,3}\s?[0-9]{1,4}[A-Z]?$/.test($("flightNumber").value.trim().toUpperCase())) {
+          lookupFlightTerminal();
+        }
       }
       function toast(msg) {
         $("status").textContent = msg;
@@ -2459,6 +2622,7 @@
         const box = $("flightTracking");
         if (!box || !r.airport_pickup || !r.flight_number) {
           box?.classList.add("hidden");
+          $("activeAirportGuidance")?.classList.add("hidden");
           return;
         }
         const state = String(r.flight_status || "tracking_requested").replaceAll("_", " ");
@@ -2475,6 +2639,7 @@
         refreshAirportGuidance(
           r.flight_arrival_airport || r.pickup_address || "",
           r.flight_arrival_terminal || r.customer_arrival_terminal || "",
+          Boolean(r.driver_id) && ["accepted", "driver_arriving"].includes(String(r.status || "").toLowerCase()),
         );
       }
       async function sendAirportReady() {
@@ -2601,6 +2766,7 @@
           refreshAirportGuidance(
             ride?.flight_arrival_airport || ride?.pickup_address || "",
             ride?.flight_arrival_terminal || ride?.customer_arrival_terminal || $("arrivalTerminal").value,
+            Boolean(ride?.driver_id) && ["accepted", "driver_arriving"].includes(String(ride?.status || "").toLowerCase()),
           );
         }
       });

@@ -1331,8 +1331,41 @@ test("airport ride input rejects malformed flight numbers before database work",
   assert.match(res.body.error, /valid flight number/i);
 });
 
+test("airport flight lookup authenticates the customer and detects the closest terminal", async () => {
+  process.env.AVIATIONSTACK_API_KEY = "aviation-test-key";
+  const providerCalls = [];
+  global.fetch = async (url) => {
+    const value = String(url);
+    if (value.endsWith("/auth/v1/user")) return response({ id: "customer-1" });
+    if (value.startsWith("https://api.aviationstack.com/")) {
+      providerCalls.push(value);
+      return response({
+        data: [
+          { flight_status: "scheduled", arrival: { iata: "CDG", terminal: "1", scheduled: "2026-09-09T08:00:00Z" } },
+          { flight_status: "scheduled", arrival: { iata: "CDG", terminal: "2E", gate: "K45", scheduled: "2026-09-10T08:00:00Z" } },
+        ],
+      });
+    }
+    throw new Error(`Unexpected request: ${value}`);
+  };
+  const { default: lookupFlight } = await import(`../api/flight-lookup.js?test=${Date.now()}`);
+  const res = mockRes();
+  await lookupFlight({
+    method: "GET",
+    headers: { authorization: "Bearer customer-token" },
+    query: { flight_number: "AF1234", expected_arrival: "2026-09-10T08:15:00Z" },
+  }, res);
+  delete process.env.AVIATIONSTACK_API_KEY;
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.arrival.iata, "CDG");
+  assert.equal(res.body.arrival.terminal, "2E");
+  assert.equal(res.body.arrival.gate, "K45");
+  assert.equal(providerCalls.length, 1);
+  assert.doesNotMatch(JSON.stringify(res.body), /aviation-test-key/);
+});
+
 test("airport flights adjust pickup automatically and notify customer and driver", async () => {
-  const [sync, push, migration, coordination, rideFlow, driver, activity, createRide, readyApi, airportGuide] = await Promise.all([
+  const [sync, push, migration, coordination, rideFlow, driver, activity, createRide, readyApi, airportGuide, flightLookupApi] = await Promise.all([
     readFile("supabase/functions/flight-sync/index.ts", "utf8"),
     readFile("supabase/functions/push-dispatch/index.ts", "utf8"),
     readFile("supabase/migrations/20260907170000_automate_airport_flight_tracking.sql", "utf8"),
@@ -1343,6 +1376,7 @@ test("airport flights adjust pickup automatically and notify customer and driver
     readFile("api/create-ride.js", "utf8"),
     readFile("api/airport-ready.js", "utf8"),
     readFile("vasi-airports.js", "utf8"),
+    readFile("api/flight-lookup.js", "utf8"),
   ]);
   assert.match(sync, /get_vasi_flight_sync_credentials/);
   assert.match(sync, /flight_iata/);
@@ -1361,12 +1395,17 @@ test("airport flights adjust pickup automatically and notify customer and driver
   assert.match(rideFlow, /id="passengerCount"/);
   assert.match(rideFlow, /id="luggageCount"/);
   assert.match(rideFlow, /id="airportReadyBtn"/);
-  assert.match(rideFlow, /id="arrivalTerminalOptions"/);
+  assert.match(rideFlow, /id="terminalButtons"/);
   assert.match(rideFlow, /id="airportGuidance"/);
+  assert.match(rideFlow, /lookupFlightTerminal/);
+  assert.match(rideFlow, /Terminal détecté automatiquement/);
+  assert.match(rideFlow, /\["accepted", "driver_arriving"\]/);
   assert.match(rideFlow, /flight_arrival_terminal \|\| r\.customer_arrival_terminal/);
   assert.match(airportGuide, /Paris–Charles de Gaulle/);
   assert.match(airportGuide, /Paris–Orly/);
   assert.match(airportGuide, /Paris Beauvais–Tillé/);
+  assert.match(flightLookupApi, /AVIATIONSTACK_API_KEY/);
+  assert.match(flightLookupApi, /closestFlight/);
   assert.match(driver, /Driver pickup time:/);
   assert.match(driver, /Passenger is ready at the pickup point/);
   assert.match(activity, /Automatic pickup:/);

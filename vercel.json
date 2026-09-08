@@ -99,6 +99,7 @@
     },
     "api/group-order.js": { "includeFiles": "api/group-order.js" },
     "api/flight-status.js": { "includeFiles": "api/flight-status.js" },
+    "api/flight-lookup.js": { "includeFiles": "api/flight-lookup.js" },
     "api/restaurant-stripe-onboarding.js": {
       "includeFiles": "api/restaurant-stripe-onboarding.js"
     },

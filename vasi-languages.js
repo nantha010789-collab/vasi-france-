@@ -1442,7 +1442,8 @@
     "Open terminal map": "Ouvrir le plan du terminal",
     "Select your terminal": "Sélectionnez votre terminal",
     "Airport not detected. Enter your terminal and confirm the meeting point with the driver.": "Aéroport non détecté. Saisissez votre terminal et confirmez le point de rencontre avec le chauffeur.",
-    "The live flight terminal will automatically replace your selection when available.": "Le terminal suivi du vol remplacera automatiquement votre sélection lorsqu’il sera disponible."
+    "The live flight terminal will automatically replace your selection when available.": "Le terminal suivi du vol remplacera automatiquement votre sélection lorsqu’il sera disponible.",
+    "Choose your arrival terminal": "Choisissez votre terminal d’arrivée"
   });
   Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 

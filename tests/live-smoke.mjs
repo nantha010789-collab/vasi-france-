@@ -67,6 +67,11 @@ const checks = [
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
   expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn", "airportGuidance", "vasi-airports.js"]),
   expectPage(production, "/vasi-airports.js", ["Paris–Charles de Gaulle", "Paris–Orly", "Paris Beauvais–Tillé"]),
+  (async () => {
+    const flightLookup = await fetchWithRetry(`${production}/api/flight-lookup?flight_number=AF1234`, { redirect: "manual" });
+    assert.equal(flightLookup.status, 401, "flight lookup must require customer authentication");
+    assert.match(flightLookup.headers.get("cache-control") || "", /no-store/);
+  })(),
   expectPage(production, "/driver.html", ["Passenger is ready at the pickup point", "customer_ready_at"]),
   expectPage(production, "/auth.html", ["vasi_pending_phone", "otp_expired"]),
   expectPage(production, "/settings.html", ["testNotification", "VASI test successful"]),
