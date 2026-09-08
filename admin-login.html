@@ -59,7 +59,7 @@
       const email=$('email').value.trim().toLowerCase(),button=$('forgot');
       if(!email){$('msg').textContent='Saisissez d’abord votre adresse e-mail administrateur.';$('email').focus();return}
       button.disabled=true;$('msg').textContent='Envoi du lien sécurisé…';
-      const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/admin-reset-password.html'});
+      const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/admin-reset-password'});
       $('msg').textContent=error?'Impossible d’envoyer le lien pour le moment. Réessayez.':'Si cette adresse est autorisée, un lien sécurisé vient d’être envoyé. Vérifiez aussi les courriers indésirables.';
       button.disabled=false;
     }
