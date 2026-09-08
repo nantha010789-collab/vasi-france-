@@ -247,6 +247,11 @@
               id:user.id,user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),online:false,verified:false,rating:5,role:'ride',status:'pending'
             }, {onConflict:'id'});
             if (error) throw error;
+            const documentRows = Object.entries(docs)
+              .filter(([documentType]) => documentType !== 'profile_photo')
+              .map(([documentType,filePath]) => ({driver_id:user.id,document_type:documentType,file_path:filePath}));
+            const {error:documentError} = await sb.from('driver_documents').insert(documentRows);
+            if (documentError) throw documentError;
           } else {
             const {error} = await sb.from('delivery_drivers').upsert({
               user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),vehicle_type:vehicle,
@@ -255,7 +260,6 @@
             if (error) throw error;
           }
           const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending',vasi_country:$('country').value};
-          if (role === 'ride') metadata.vasi_partner_documents = docs;
           await sb.auth.updateUser({data:metadata});
           $('msg').innerHTML = '<span class="ok">✓ Dossier envoyé. Après validation, connectez vous-même votre compte bancaire (RIB) dans l’application VASI.</span>';
           $('submitButton').textContent = 'Dossier envoyé';
