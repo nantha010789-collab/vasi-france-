@@ -584,6 +584,10 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(eats, /catalog\.length/);
   assert.match(eats, /No restaurants are available yet\./);
   assert.match(eats, /Approved partners will appear here/);
+  assert.match(eats, /class="top-actions"><button[^>]+>Orders<\/button><\/div>/);
+  assert.doesNotMatch(eats, /location\.href='index\.html'">Home<\/button>/);
+  assert.match(eats, /join-actions/);
+  assert.match(eats, /empty-icon/);
   assert.match(delivery, /Get a new quote for the parcel\./);
   assert.match(auth, /t\(customer \? "Customer login"/);
   assert.doesNotMatch(auth, /\$\("title"\)\.textContent = customer \? "Connexion client"/);
