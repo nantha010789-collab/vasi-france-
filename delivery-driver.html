@@ -23,13 +23,19 @@
         margin: auto;
         padding: 18px;
       }
-      .top,
       .online {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
       }
+      .top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+      }
+      .top > :last-child { justify-self: end; }
       .brand {
         font-size: 30px;
         font-weight: 950;
@@ -146,8 +152,9 @@
   <body>
     <main class="wrap">
       <header class="top">
+        <button class="btn home" type="button" data-vasi-return>Back</button>
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
-        <div><a class="btn home" href="support.html">Support</a> <a class="btn home" href="index.html">Home</a></div>
+        <a class="btn home" href="support.html">Support</a>
       </header>
       <section class="card">
         <span class="badge">🛵 COURIER · EATS + DELIVERY</span>

@@ -1443,7 +1443,11 @@
     "Select your terminal": "Sélectionnez votre terminal",
     "Airport not detected. Enter your terminal and confirm the meeting point with the driver.": "Aéroport non détecté. Saisissez votre terminal et confirmez le point de rencontre avec le chauffeur.",
     "The live flight terminal will automatically replace your selection when available.": "Le terminal suivi du vol remplacera automatiquement votre sélection lorsqu’il sera disponible.",
-    "Choose your arrival terminal": "Choisissez votre terminal d’arrivée"
+    "Choose your arrival terminal": "Choisissez votre terminal d’arrivée",
+    "No activity yet.": "Aucune activité pour le moment.",
+    "No ride activity yet.": "Aucun trajet pour le moment.",
+    "No Eats activity yet.": "Aucune commande Eats pour le moment.",
+    "No delivery activity yet.": "Aucune livraison pour le moment."
   });
   Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 
