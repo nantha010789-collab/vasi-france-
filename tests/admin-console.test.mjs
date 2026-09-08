@@ -40,6 +40,18 @@ test('admin routing stays on Vercel and old dashboard is retired', async () => {
   assert.ok(config.headers.some(item => item.source === '/admin/(.*)'));
 });
 
+test('admin password recovery uses a dedicated protected flow', async () => {
+  const [login, reset, vercel] = await Promise.all([read('admin-login.html'), read('admin-reset-password.html'), read('vercel.json')]);
+  assert.match(login, /resetPasswordForEmail\(email,\{redirectTo:location\.origin\+'\/admin-reset-password\.html'\}\)/);
+  assert.match(reset, /event==='PASSWORD_RECOVERY'/);
+  assert.match(reset, /isRecoveryLink&&session/);
+  assert.match(reset, /auth\.updateUser\(\{password\}\)/);
+  assert.match(reset, /password\.length<12/);
+  assert.match(reset, /signOut\(\{scope:'local'\}\)/);
+  const config = JSON.parse(vercel);
+  assert.ok(config.headers.some(item => item.source === '/admin-reset-password.html' && item.headers.some(header => header.key === 'Cache-Control' && header.value.includes('no-store'))));
+});
+
 test('sensitive admin APIs use the authenticated edge service without a Vercel service-role secret', async () => {
   const helper = await read('api/_admin-service.js');
   assert.match(helper, /Authorization: authorization/);
