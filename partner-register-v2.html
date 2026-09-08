@@ -28,7 +28,7 @@
       </nav>
 
       <h1>Devenir partenaire VASI</h1>
-      <p class="intro">Créez un seul compte pour conduire des passagers ou effectuer des livraisons.</p>
+      <p class="intro">Créez un compte séparé pour votre activité de chauffeur ou de livreur.</p>
 
       <section class="card" aria-labelledby="activity-title">
         <h2 id="activity-title">Choisissez votre activité</h2>
@@ -111,14 +111,24 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-account-role.js"></script>
     <script>
       const sb = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co', 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
       const motorVehicles = new Set(['scooter', 'moto', 'car']);
-      let role = 'ride', vehicle = 'bike', selfie = null, submitting = false;
+      const requestedRole = new URLSearchParams(location.search).get('role');
+      let role = ['ride','courier'].includes(requestedRole) ? requestedRole : 'ride', vehicle = 'bike', selfie = null, submitting = false;
       const $ = id => document.getElementById(id);
 
       function goBack(){ if(history.length > 1) history.back(); else location.href = 'index.html'; }
-      function setRole(next){ role = next; render(); }
+      function setRole(next){
+        const activeRole = VasiAccountRole.active();
+        if (activeRole && activeRole !== next) {
+          return showError('Déconnectez-vous avant de créer un autre type de compte VASI.');
+        }
+        role = next;
+        history.replaceState(null, '', location.pathname + '?role=' + encodeURIComponent(role));
+        render();
+      }
       function setVehicle(next){ vehicle = next; renderVehicle(); }
       function renderCountry(){
         const region = VasiRegion.getRegion($('country').value);
@@ -220,6 +230,11 @@
         if (problem) return showError(problem);
         const {data:{user}} = await sb.auth.getUser();
         if (!user) { location.href = 'auth.html?role=' + role; return; }
+        const activeRole = VasiAccountRole.active();
+        if (activeRole && activeRole !== role) return showError('Déconnectez-vous avant d’utiliser un autre compte VASI.');
+        const {error: roleError} = await sb.rpc('vasi_claim_account_role', {p_role:role});
+        if (roleError) return showError('Ces identifiants appartiennent à un autre type de compte VASI. Utilisez des identifiants séparés.');
+        VasiAccountRole.remember(role);
         submitting = true; $('submitButton').disabled = true; $('submitButton').textContent = 'Envoi en cours…';
         try {
           const docs = {};

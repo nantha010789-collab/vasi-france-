@@ -234,6 +234,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-account-role.js"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
@@ -253,9 +254,13 @@
       let resendSeconds = 0;
       let sendingPhoneCode = false;
       let routingSession = false;
+      let currentSession = null;
+      let roleConflict = false;
       const searchParams = new URLSearchParams(location.search);
       const requestedRole = searchParams.get("role");
       const requestedMethod = searchParams.get("method");
+      let roleAtPageOpen =
+        VasiAccountRole.active() || localStorage.getItem("vasi_role") || "";
       const allowedReturnPages = new Set([
         "index.html",
         "account.html",
@@ -280,7 +285,6 @@
         : role === "customer"
           ? "phone"
           : "email";
-      localStorage.setItem("vasi_role", role);
       const usesPhone = () => authMethod === "phone";
       function savePendingPhone(phone, readyAt) {
         try {
@@ -311,6 +315,7 @@
       function setRole(next) {
         role = next;
         authMethod = next === "customer" ? "phone" : "email";
+        if (!currentSession) localStorage.setItem("vasi_role", role);
         resetAuthForm();
         const params = new URLSearchParams(location.search);
         params.set("role", role);
@@ -342,6 +347,10 @@
       function render() {
         const customer = role === "customer";
         const phone = usesPhone();
+        const signedInRole = VasiAccountRole.active() || roleAtPageOpen;
+        roleConflict = Boolean(
+          currentSession && signedInRole && signedInRole !== role,
+        );
         $("title").textContent = t(customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login");
         $("desc").textContent = t(customer
           ? phone
@@ -378,12 +387,45 @@
           customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
         ).classList.add("active");
         $("register").classList.toggle("hidden", customer);
-        $("register").href = role === "restaurant" ? "restaurant-register.html" : "partner-register-v2.html";
+        $("register").href = role === "restaurant"
+          ? "restaurant-register.html"
+          : "partner-register-v2.html?role=" + encodeURIComponent(role);
         $("register").textContent = t(role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →");
+        $("identity").disabled = roleConflict || Boolean(phoneAwaitingCode);
+        if (roleConflict) {
+          $("methodSwitch").classList.add("hidden");
+          $("codeStep").classList.add("hidden");
+          $("register").classList.add("hidden");
+          $("continueBtn").disabled = false;
+          $("continueBtn").textContent = t("Sign out & continue");
+          show(
+            t(
+              "You are already signed in to another VASI account. Sign out before opening this account.",
+            ),
+          );
+        }
       }
       async function submitAuth() {
+        if (roleConflict) return logoutForDifferentAccount();
         if (usesPhone()) return phoneAwaitingCode ? verifyPhoneCode() : sendPhoneCode();
         return sendEmailLink();
+      }
+      async function logoutForDifferentAccount() {
+        $("continueBtn").disabled = true;
+        show(t("Signing out…"));
+        const { error } = await client.auth.signOut({ scope: "local" });
+        if (error) {
+          $("continueBtn").disabled = false;
+          return show(error.message || t("Sign out failed. Please try again."));
+        }
+        VasiAccountRole.clear();
+        roleAtPageOpen = "";
+        currentSession = null;
+        roleConflict = false;
+        localStorage.setItem("vasi_role", role);
+        resetAuthForm();
+        render();
+        $("identity").focus();
       }
       function normalizePhone(value) {
         return VasiRegion.normalizePhone(value);
@@ -578,8 +620,32 @@
       async function routeSession(session) {
         if (!session || routingSession) return;
         clearPendingPhone();
+        currentSession = session;
+        const signedInRole = VasiAccountRole.active() || roleAtPageOpen;
+        if (signedInRole && signedInRole !== role) {
+          render();
+          return;
+        }
         routingSession = true;
-        const savedRole = localStorage.getItem("vasi_role") || "customer";
+        const { error: accountRoleError } = await client.rpc(
+          "vasi_claim_account_role",
+          { p_role: role },
+        );
+        if (accountRoleError) {
+          await client.auth.signOut({ scope: "local" });
+          VasiAccountRole.clear();
+          roleAtPageOpen = "";
+          currentSession = null;
+          routingSession = false;
+          render();
+          show(
+            t(
+              "These login details belong to another VASI account. Use the separate login details for this account.",
+            ),
+          );
+          return;
+        }
+        const savedRole = VasiAccountRole.remember(role);
         if (savedRole !== "customer") {
           location.href = destination(savedRole);
           return;
@@ -611,7 +677,17 @@
           return;
         }
         if (!data.session) {
+          currentSession = null;
+          roleAtPageOpen = "";
+          VasiAccountRole.clear();
+          localStorage.setItem("vasi_role", role);
           show("");
+          return;
+        }
+        currentSession = data.session;
+        const signedInRole = VasiAccountRole.active() || roleAtPageOpen;
+        if (signedInRole && signedInRole !== role) {
+          render();
           return;
         }
         show("Welcome back. Opening VASI…");
