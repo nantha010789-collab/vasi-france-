@@ -683,6 +683,7 @@
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-languages.js?v=6"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-account-role.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -703,6 +704,11 @@
         if (!session) {
           signedIn = false;
           document.getElementById("accountBtn").textContent = "Login";
+          return;
+        }
+        const signedInRole = VasiAccountRole.active();
+        if (signedInRole && signedInRole !== "customer") {
+          location.replace(VasiAccountRole.destination(signedInRole));
           return;
         }
         signedIn = true;

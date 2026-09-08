@@ -1105,6 +1105,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
+    <script src="./vasi-account-role.js"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY =
@@ -1684,6 +1685,9 @@
             return;
           }
 
+          const session = (await client.auth.getSession()).data.session;
+          if (!VasiAccountRole.require("customer", session)) return;
+
           currentUser = user;
           const { data: profile, error: profileError } = await client
             .from("profiles")
@@ -1819,7 +1823,7 @@
         el("signoutButton").disabled = true;
         el("signoutButton").textContent = "Signing out…";
         setStatus("Signing out…");
-        const { error } = await client.auth.signOut();
+        const { error } = await client.auth.signOut({ scope: "local" });
         if (error) {
           el("signoutButton").disabled = false;
           el("signoutButton").textContent = "Sign out";
@@ -1828,6 +1832,7 @@
         }
         localStorage.removeItem("vasi_return");
         localStorage.removeItem("vasi_role");
+        VasiAccountRole.clear();
         localStorage.removeItem("vasi_active_ride_id");
         localStorage.removeItem("vasi_eats_basket");
         location.replace("index.html");

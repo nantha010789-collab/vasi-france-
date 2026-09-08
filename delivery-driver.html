@@ -154,7 +154,7 @@
       <header class="top">
         <button class="btn home" type="button" data-vasi-return>Back</button>
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
-        <a class="btn home" href="support.html">Support</a>
+        <button class="btn home" type="button" onclick="logout()">Sign out</button>
       </header>
       <section class="card">
         <span class="badge">🛵 COURIER · EATS + DELIVERY</span>
@@ -195,6 +195,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-account-role.js"></script>
     <script>
       const client = supabase.createClient(
           "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -435,13 +436,19 @@
           );
         else acceptJob(button.dataset.id, button.dataset.type);
       });
+      async function logout() {
+        if (online) await service({ action: "set_online", online: false });
+        await client.auth.signOut({ scope: "local" });
+        VasiAccountRole.clear();
+        location.href = "auth.html?role=courier";
+      }
       client.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
           localStorage.setItem("vasi_role", "courier");
           location.href = "auth.html?role=courier";
           return;
         }
-        loadProfile();
+        if (VasiAccountRole.require("courier", session)) loadProfile();
       });
       setInterval(loadJobs, 10000);
       VasiNotifications.start(client, { role: "courier" });
