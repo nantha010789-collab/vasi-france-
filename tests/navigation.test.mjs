@@ -80,6 +80,19 @@ test("home and redirect-only pages do not show a misleading return control", () 
   }
 });
 
+test("public home never redirects an admin or provider session away from VASI", () => {
+  for (const page of ["index.html", "app.html"]) {
+    const html = readFileSync(page, "utf8");
+    assert.doesNotMatch(
+      html,
+      /location\.replace\(VasiAccountRole\.destination\(signedInRole\)\)/,
+      `${page} must remain the public customer entry`,
+    );
+    assert.match(html, /signedInRole !== "customer"/);
+    assert.match(html, /accountBtn"\)\.textContent = "Login"/);
+  }
+});
+
 test("the shared return control is valid JavaScript and has safe navigation rules", () => {
   const source = readFileSync("vasi-navigation.js", "utf8");
   assert.doesNotThrow(() => new vm.Script(source));
