@@ -708,7 +708,10 @@
         }
         const signedInRole = VasiAccountRole.active();
         if (signedInRole && signedInRole !== "customer") {
-          location.replace(VasiAccountRole.destination(signedInRole));
+          // The public VASI entry must always remain the customer home.
+          // Provider and admin sessions are only resumed from their own URLs.
+          signedIn = false;
+          document.getElementById("accountBtn").textContent = "Login";
           return;
         }
         signedIn = true;
