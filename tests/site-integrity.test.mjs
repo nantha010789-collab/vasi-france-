@@ -136,7 +136,7 @@ test("public French branding consistently uses Eats", () => {
 
 test("public support links use the current VASI email", () => {
   const failures = supportFiles
-    .filter((file) => /contact@vasigo\.eu/i.test(readFileSync(file, "utf8")))
+    .filter((file) => /contact@vasi\.eu/i.test(readFileSync(file, "utf8")))
     .map((file) => file.slice(root.length + 1));
   assert.deepEqual(failures, []);
 });

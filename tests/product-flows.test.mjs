@@ -530,7 +530,7 @@ test("Eats checkout and courier app enforce payment then PIN-gated RIB payout", 
 
 test("restaurant commission is a permanent 10% for every delivery mode", async () => {
   const [register, dashboard, classicAdmin, adminApp, migration, enforcement] = await Promise.all([
-    readFile("restaurant-register.html", "utf8"),
+    readFile("restaurant-register-form.html", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("restaurant-admin.html", "utf8"),
     readFile("admin/app.js", "utf8"),
@@ -856,14 +856,14 @@ test("account surfaces reflow safely on narrow phones", async () => {
 
 test("restaurant join and dashboard use restaurant authentication", async () => {
   const [register, dashboard, auth] = await Promise.all([
-    readFile("restaurant-register.html", "utf8"),
+    readFile("restaurant-register-form.html", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("auth.html", "utf8"),
   ]);
   assert.match(register, /Créer mon compte restaurant/);
-  assert.match(register, /localStorage\.setItem\("vasi_role", "restaurant"\)/);
-  assert.match(register, /emailRedirectTo: new URL\("restaurant-register\.html"/);
-  assert.match(register, /shouldCreateUser: true/);
+  assert.match(register, /localStorage\.setItem\(["']vasi_role["'],\s*["']restaurant["']\)/);
+  assert.match(register, /emailRedirectTo:\s*new URL\(["']restaurant-register\.html["']/);
+  assert.match(register, /shouldCreateUser:\s*true/);
   assert.match(register, /Continuer avec mon numéro de téléphone/);
   assert.match(register, /auth\.html\?role=restaurant&method=phone/);
   assert.match(register, /service e-mail est momentanément indisponible/);
@@ -1191,7 +1191,7 @@ test("public account surfaces expose bilingual legal and privacy information", a
 
   assert.match(legal, /Legal & Privacy/);
   assert.match(legal, /Politique de confidentialité/);
-  assert.match(legal, /contact@vasi\.eu/);
+  assert.match(legal, /contact@vasigo\.eu/);
   assert.match(legal, /defaults to 15%/);
   for (const surface of [index, account, settings]) assert.match(surface, /legal\.html/);
   assert.match(migration, /alter table public\.spatial_ref_sys enable row level security/i);
