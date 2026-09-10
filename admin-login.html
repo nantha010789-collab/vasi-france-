@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VASI Admin">
+  <link rel="manifest" href="/admin-manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/vasi-word-icon-192.png">
   <title>Connexion Admin — VASI</title>
   <style>
-    :root{font-family:Inter,system-ui,sans-serif;background:#f4f6f8;color:#101828}*{box-sizing:border-box}body{margin:0}.wrap{max-width:500px;margin:auto;min-height:100vh;padding:24px 18px;display:flex;align-items:center}.card{width:100%;background:#fff;border:1px solid #e4e7ec;border-radius:22px;padding:28px;box-shadow:0 20px 60px #10182812}.brand{font-size:30px;font-weight:950}.eyebrow{color:#667085;text-transform:uppercase;letter-spacing:1.5px;font-size:11px;margin-top:7px}h1{margin:28px 0 6px;font-size:28px}.intro{color:#667085;line-height:1.5}.field{width:100%;min-height:50px;margin-top:11px;background:#fff;border:1px solid #d0d5dd;color:#101828;border-radius:12px;padding:13px;font-size:16px;outline:none}.field:focus{border-color:#175cd3;box-shadow:0 0 0 3px #84adff55}.btn{width:100%;min-height:50px;margin-top:13px;border:0;border-radius:12px;padding:13px;background:#111827;color:#fff;font-weight:800;font-size:16px;cursor:pointer}.btn.secondary{background:#fff;color:#101828;border:1px solid #d0d5dd}.btn:disabled{opacity:.55;cursor:not-allowed}.msg{min-height:20px;color:#b42318;font-size:13px;margin-top:10px}.secure{margin-top:18px;padding:12px;border-radius:12px;background:#f9fafb;color:#667085;font-size:12px;line-height:1.5}.hidden{display:none}label{display:block;margin-top:12px;font-size:14px;font-weight:700}
+    :root{font-family:Inter,system-ui,sans-serif;background:#f4f6f8;color:#101828}*{box-sizing:border-box}body{margin:0}.wrap{max-width:500px;margin:auto;min-height:100vh;min-height:100dvh;padding:max(24px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));display:flex;align-items:center}.card{width:100%;background:#fff;border:1px solid #e4e7ec;border-radius:22px;padding:28px;box-shadow:0 20px 60px #10182812}.brand{font-size:30px;font-weight:950}.eyebrow{color:#667085;text-transform:uppercase;letter-spacing:1.5px;font-size:11px;margin-top:7px}h1{margin:28px 0 6px;font-size:28px}.intro{color:#667085;line-height:1.5}.field{width:100%;min-height:50px;margin-top:11px;background:#fff;border:1px solid #d0d5dd;color:#101828;border-radius:12px;padding:13px;font-size:16px;outline:none}.field:focus{border-color:#175cd3;box-shadow:0 0 0 3px #84adff55}.btn{width:100%;min-height:50px;margin-top:13px;border:0;border-radius:12px;padding:13px;background:#111827;color:#fff;font-weight:800;font-size:16px;cursor:pointer}.btn.secondary{background:#fff;color:#101828;border:1px solid #d0d5dd}.btn.install{background:#eef4ff;color:#1849a9;border:1px solid #b2ccff}.btn:disabled{opacity:.55;cursor:not-allowed}.msg{min-height:20px;color:#b42318;font-size:13px;margin-top:10px}.install-help{margin:10px 0 0;padding:12px;border-radius:12px;background:#eef4ff;color:#1849a9;font-size:13px;line-height:1.45}.secure{margin-top:18px;padding:12px;border-radius:12px;background:#f9fafb;color:#667085;font-size:12px;line-height:1.5}.hidden,[hidden]{display:none!important}label{display:block;margin-top:12px;font-size:14px;font-weight:700}@media(max-width:420px){.wrap{align-items:flex-start}.card{padding:24px 20px;border-radius:20px}h1{font-size:26px}}
   </style>
 </head>
 <body>
@@ -21,6 +27,8 @@
     </div>
     <button id="submit" class="btn" type="button">Se connecter</button>
     <button id="forgot" class="btn secondary" type="button">Mot de passe oublié ?</button>
+    <button id="installAdmin" class="btn install" type="button" hidden>Installer VASI Admin</button>
+    <p id="installHelp" class="install-help" role="status" hidden></p>
     <div id="msg" class="msg" role="alert"></div>
     <div class="secure">🔐 Compte administrateur séparé, session contrôlée côté serveur et actions sensibles enregistrées dans le journal VASI.</div>
   </section></main>
@@ -65,6 +73,7 @@
     }
     $('submit').addEventListener('click',login);$('forgot').addEventListener('click',requestReset);$('password').addEventListener('keydown',event=>{if(event.key==='Enter')login()});checkExistingSession();
   </script>
+  <script src="./admin-install.js?v=1"></script>
   <script src="./vasi-navigation.js?v=4"></script>
 </body>
 </html>

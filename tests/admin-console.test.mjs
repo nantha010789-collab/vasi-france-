@@ -40,6 +40,36 @@ test('admin routing stays on Vercel and old dashboard is retired', async () => {
   assert.ok(config.headers.some(item => item.source === '/admin/(.*)'));
 });
 
+test('VASI Admin installs as a separate secure PWA', async () => {
+  const [login, dashboard, installer, manifestSource, worker, vercel] = await Promise.all([
+    read('admin-login.html'),
+    read('admin/index.html'),
+    read('admin-install.js'),
+    read('admin-manifest.webmanifest'),
+    read('sw.js'),
+    read('vercel.json'),
+  ]);
+  const manifest = JSON.parse(manifestSource);
+  assert.equal(manifest.id, '/admin/');
+  assert.equal(manifest.name, 'VASI Admin — Centre d’opérations');
+  assert.equal(manifest.short_name, 'VASI Admin');
+  assert.equal(manifest.start_url, '/admin/');
+  assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.orientation, 'any');
+  assert.match(login, /rel="manifest" href="\/admin-manifest\.webmanifest"/);
+  assert.match(dashboard, /rel="manifest" href="\/admin-manifest\.webmanifest"/);
+  assert.match(login, /id="installAdmin"/);
+  assert.match(login, /admin-install\.js/);
+  assert.match(installer, /beforeinstallprompt/);
+  assert.match(installer, /appinstalled/);
+  assert.match(installer, /navigator\.serviceWorker\.register\("\/sw\.js", \{ scope: "\/" \}\)/);
+  assert.match(installer, /ouvrez cette page dans Safari/);
+  assert.match(worker, /admin-manifest\.webmanifest/);
+  assert.match(worker, /url\.pathname\.startsWith\("\/admin"\)/);
+  const config = JSON.parse(vercel);
+  assert.ok(config.headers.some(item => item.source === '/admin-manifest.webmanifest'));
+});
+
 test('admin password recovery uses a dedicated protected flow', async () => {
   const [login, reset, vercel] = await Promise.all([read('admin-login.html'), read('admin-reset-password.html'), read('vercel.json')]);
   assert.match(login, /resetPasswordForEmail\(email,\{redirectTo:location\.origin\+'\/admin-reset-password'\}\)/);

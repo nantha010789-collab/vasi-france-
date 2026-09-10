@@ -84,6 +84,14 @@
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
     {
+      "source": "/admin-manifest.webmanifest",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
+    },
+    {
+      "source": "/admin-install.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
+    },
+    {
       "source": "/admin-reset-password.html",
       "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
