@@ -823,6 +823,15 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.doesNotMatch(source, /pinAddressCard/);
 });
 
+test("ride choices use distinct professional vehicle images", async () => {
+  const source = await readFile("ride-flow.html", "utf8");
+  for (const type of ["go", "comfort", "xl", "van"]) {
+    assert.match(source, new RegExp(`${type}: "\\./assets/vehicles/${type}\\.webp\\?v=1"`));
+  }
+  assert.match(source, /vehiclePhotoHtml\(k\)/);
+  assert.match(source, /class="vehiclePhoto"/);
+});
+
 test("ride flow loads the current language bundle for pin confirmation labels", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /vasi-languages\.js\?v=5/);
