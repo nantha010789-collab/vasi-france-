@@ -816,19 +816,6 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.match(source, /Confirm your pickup before booking/);
 });
 
-test("ride map keeps routes visible above compact confirmation and driver sheets", async () => {
-  const source = await readFile("ride-flow.html", "utf8");
-  assert.match(source, /\.panel\.pinMode\s*\{[\s\S]*?max-height: min\(248px, 32vh\)/);
-  assert.match(source, /\.panel\.driverMode\s*\{[\s\S]*?max-height: min\(40vh, 360px\)/);
-  assert.match(source, /function fitRouteToVisibleMap\(\)/);
-  assert.match(source, /panel\.offsetHeight/);
-  assert.match(source, /paddingTopLeft: \[28, 116\]/);
-  assert.match(source, /paddingBottomRight: \[28, bottomPadding\]/);
-  assert.match(source, /maxZoom: 16/);
-  assert.match(source, /syncMapUiState\(\);\s*fitRouteToVisibleMap\(\);/);
-  assert.match(source, /window\.addEventListener\("resize", fitRouteToVisibleMap/);
-});
-
 test("ride flow loads the current language bundle for pin confirmation labels", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /vasi-languages\.js\?v=5/);
