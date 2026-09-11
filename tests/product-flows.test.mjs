@@ -807,7 +807,7 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.match(source, /pickupMarker\.on\("drag"/);
   assert.match(source, /pickupMarker\.on\("dragend"/);
   assert.match(source, /reverseGeocodePoint\("pickup", pickup\)/);
-  assert.match(source, /const PIN_CONFIRM_ZOOM = 18/);
+  assert.match(source, /const PIN_CONFIRM_ZOOM = 19/);
   assert.doesNotMatch(source, /id="destinationPinAddress"/);
   assert.doesNotMatch(source, /Confirm destination spot/);
   assert.match(source, /map\.on\("drag"/);
