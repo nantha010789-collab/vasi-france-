@@ -786,17 +786,17 @@ test("ride map reverse geocodes the fixed centre pin after the map moves", async
   assert.equal(res.body.result.display_name, "6 Rue Pierre Leroux, 77176 Savigny-le-Temple, France");
 });
 
-test("ride map uses debounced Google suggestions and requires pin confirmation", async () => {
+test("ride map uses debounced Google suggestions without destination pin confirmation", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /schedulePlaceSuggestions/);
   assert.match(source, /apiUrl\("\/api\/places"\)/);
   assert.match(source, /setTimeout\(loadPlaceSuggestions, 420\)/);
   assert.match(source, /destMarker = L\.marker\(p, \{ draggable: false/);
-  assert.match(source, /function confirmDestination\(\)/);
-  assert.match(source, /destination && destinationConfirmed/);
+  assert.doesNotMatch(source, /function confirmDestination\(\)/);
+  assert.match(source, /if \(pickup && pickupConfirmed\) buildRoute\(\)/);
 });
 
-test("ride map supports typed pickup and confirms both fixed pins after map drag", async () => {
+test("ride map confirms only the pickup pin at street-level zoom", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /id="pickupSearch"/);
   assert.match(source, /function searchPickup\(\)/);
@@ -804,13 +804,16 @@ test("ride map supports typed pickup and confirms both fixed pins after map drag
   assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: false/);
   assert.match(source, /id="pinReticle"/);
   assert.match(source, /selectionMarker/);
+  assert.match(source, /const PIN_CONFIRM_ZOOM = 17/);
+  assert.doesNotMatch(source, /id="destinationPinAddress"/);
+  assert.doesNotMatch(source, /Confirm destination spot/);
   assert.match(source, /map\.on\("drag"/);
   assert.match(source, /reverseGeocodePin\(kind\)/);
   assert.match(
     source,
-    /!pickup \|\| !pickupConfirmed \|\| !destination \|\| !destinationConfirmed/,
+    /!pickup \|\| !pickupConfirmed \|\| !destination/,
   );
-  assert.match(source, /Confirm both map pins before booking/);
+  assert.match(source, /Confirm your pickup before booking/);
 });
 
 test("ride flow loads the current language bundle for pin confirmation labels", async () => {
