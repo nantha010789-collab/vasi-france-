@@ -194,22 +194,10 @@
       .panel.driverMode {
         max-height: min(68vh, 680px);
       }
-      .panel.driverMode {
-        max-height: min(40vh, 360px);
-        padding: 14px;
-      }
-      .panel.driverMode .grab,
-      .panel.driverMode .sheetHeading,
-      .panel.driverMode .routeCard,
-      .panel.driverMode #pickupSearchWrap,
-      .panel.driverMode #searchWrap,
-      .panel.driverMode .savedPlaces {
-        display: none !important;
-      }
       .panel.pinMode {
-        max-height: min(248px, 32vh);
+        max-height: min(300px, 38vh);
         overflow: hidden !important;
-        padding: 16px;
+        padding: 22px 18px 18px;
       }
       .panel.pinMode .grab,
       .panel.pinMode .sheetHeading,
@@ -402,30 +390,30 @@
         background: transparent;
       }
       .pinConfirmHead {
-        margin-bottom: 12px;
+        margin-bottom: 17px;
         text-align: center;
       }
       .pinConfirmHead h2 {
         margin: 0;
         color: #fff;
-        font-size: 21px;
+        font-size: 23px;
         line-height: 1.2;
         letter-spacing: -0.45px;
       }
       .pinConfirmHead p {
-        margin: 4px 0 0;
+        margin: 6px 0 0;
         color: #aaa;
-        font-size: 14px;
+        font-size: 15px;
       }
       .pinAddressCard {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 44px;
-        gap: 8px;
+        grid-template-columns: minmax(0, 1fr) 48px;
+        gap: 10px;
         align-items: center;
-        min-height: 62px;
-        padding: 8px 9px 8px 13px;
+        min-height: 70px;
+        padding: 11px 11px 11px 15px;
         border: 2px solid #303030;
-        border-radius: 15px;
+        border-radius: 17px;
         background: #111;
       }
       .pinAddressCard small {
@@ -438,8 +426,8 @@
       .pinEditButton {
         display: grid;
         place-items: center;
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         border: 0;
         border-radius: 50%;
         background: #242424;
@@ -492,10 +480,10 @@
         font-weight: 900;
       }
       .panel.pinMode .pinPrimary {
-        min-height: 52px;
-        margin-top: 12px;
-        border-radius: 15px;
-        font-size: 16px;
+        min-height: 56px;
+        margin-top: 14px;
+        border-radius: 16px;
+        font-size: 17px;
       }
       .savedPlaces {
         margin: 10px 0 4px;
@@ -734,19 +722,6 @@
         border-radius: 17px;
         padding: 13px;
         margin-top: 10px;
-      }
-      .panel.driverMode .driverCard {
-        margin-top: 0;
-        border-color: #3a3a3a;
-        background: #151515;
-      }
-      .panel.driverMode .status {
-        margin: 10px 0 2px;
-        min-height: 17px;
-        color: #d6d6d6;
-      }
-      .panel.driverMode .cancel {
-        padding: 10px 12px 4px;
       }
       .avatar {
         width: 48px;
@@ -1086,9 +1061,6 @@
         .panel.driverMode {
           max-height: 68dvh;
         }
-        .panel.driverMode {
-          max-height: min(40dvh, 360px);
-        }
       }
       @media (max-width: 360px) {
         .terminalButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1174,12 +1146,8 @@
         max-height: min(68dvh, 680px) !important;
       }
 
-      .panel.driverMode {
-        max-height: min(40dvh, 360px) !important;
-      }
-
       .panel.pinMode {
-        max-height: min(248px, 32dvh) !important;
+        max-height: min(300px, 38dvh) !important;
         overflow-y: hidden !important;
       }
 
@@ -1195,11 +1163,8 @@
         .panel.driverMode {
           max-height: min(68vh, 680px) !important;
         }
-        .panel.driverMode {
-          max-height: min(40vh, 360px) !important;
-        }
         .panel.pinMode {
-          max-height: min(248px, 32vh) !important;
+          max-height: min(300px, 38vh) !important;
         }
       }
     </style>
@@ -1690,33 +1655,7 @@
         if ($("panel").classList.contains("pinMode")) return;
         const collapsed = $("panel").classList.toggle("collapsed");
         document.querySelector(".grab")?.setAttribute("aria-expanded", String(!collapsed));
-        setTimeout(() => {
-          map?.invalidateSize();
-          fitRouteToVisibleMap();
-        }, 240);
-      }
-      function fitRouteToVisibleMap() {
-        if (!map || !routeLine) return;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            const panel = $("panel"),
-              mapElement = $("map"),
-              mapHeight = mapElement.offsetHeight || window.innerHeight,
-              panelHeight = panel.classList.contains("collapsed")
-                ? 76
-                : panel.offsetHeight,
-              bottomPadding = Math.min(
-                panelHeight + 26,
-                Math.max(180, mapHeight - 220),
-              );
-            map.invalidateSize({ pan: false });
-            map.fitBounds(routeLine.getBounds(), {
-              paddingTopLeft: [28, 116],
-              paddingBottomRight: [28, bottomPadding],
-              maxZoom: 16,
-            });
-          });
-        });
+        setTimeout(() => map?.invalidateSize(), 240);
       }
       function activePinKind() {
         if (!$("pickupPinConfirm").classList.contains("hidden")) return "pickup";
@@ -2224,7 +2163,6 @@
         panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("driverArea"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("pickupPinConfirm"), { attributes: true, attributeFilter: ["class"] });
-        window.addEventListener("resize", fitRouteToVisibleMap, { passive: true });
         syncMapUiState();
         checkPaymentAvailability();
         if (homePickup) useHomePickup();
@@ -2747,11 +2685,17 @@
               lineJoin: "round",
             },
           }).addTo(map);
+          const bottomPadding = Math.min(
+            Math.max($("panel").offsetHeight + 20, 220),
+            Math.round($("map").offsetHeight * 0.48),
+          );
+          map.fitBounds(routeLine.getBounds(), {
+            paddingTopLeft: [28, 118],
+            paddingBottomRight: [28, bottomPadding],
+          });
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
-          syncMapUiState();
-          fitRouteToVisibleMap();
           const routeSummary = `${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
           $("tripInfo").textContent = routeSummary;
           $("mapTripSummary").textContent = routeSummary;
@@ -2997,8 +2941,6 @@
           c.seats +
           " seats · " +
           payLabel(pay);
-        syncMapUiState();
-        fitRouteToVisibleMap();
         setRideStatus(r);
       }
       function openRideChat() {
