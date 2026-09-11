@@ -1456,6 +1456,90 @@
   });
   Object.assign(translations.fr, dynamicFrenchTranslations, supplementalFrenchTranslations, finalFrenchTranslations);
 
+  const rideMapTranslations = {
+    fr: {
+      "Type an address or use current location": "Saisissez une adresse ou utilisez votre position actuelle",
+      "Enter pickup address or place": "Saisir l’adresse ou le lieu de départ",
+      "Pickup suggestions": "Suggestions de lieux de départ",
+      "Confirm the pickup pin": "Confirmer le repère de départ",
+      "Drag the pickup pin if needed, then confirm it.": "Déplacez le repère de départ si nécessaire, puis confirmez-le.",
+      "Confirm pickup": "Confirmer le départ",
+      "Select pickup location": "Sélectionner le lieu de départ",
+      "Pickup selected on map": "Départ sélectionné sur la carte",
+      "Current location": "Position actuelle",
+      "Pickup selected": "Départ sélectionné",
+      "Check the pickup pin, then confirm it": "Vérifiez le repère de départ, puis confirmez-le",
+      "Pickup confirmed — now choose your destination": "Départ confirmé — choisissez maintenant votre destination",
+      "Pin moved — confirm this pickup before pricing": "Repère déplacé — confirmez ce départ avant le calcul du prix",
+      "Confirm both map pins before booking": "Confirmez les deux repères sur la carte avant de commander"
+    },
+    ta: {
+      "Type an address or use current location": "முகவரியை உள்ளிடவும் அல்லது தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்",
+      "Enter pickup address or place": "புறப்படும் முகவரி அல்லது இடத்தை உள்ளிடவும்",
+      "Pickup suggestions": "புறப்படும் இடப் பரிந்துரைகள்",
+      "Confirm the pickup pin": "புறப்படும் இடக் குறியை உறுதிப்படுத்துங்கள்",
+      "Drag the pickup pin if needed, then confirm it.": "தேவையெனில் புறப்படும் இடக் குறியை நகர்த்தி உறுதிப்படுத்துங்கள்.",
+      "Confirm pickup": "புறப்படும் இடத்தை உறுதிப்படுத்துங்கள்",
+      "Select pickup location": "புறப்படும் இடத்தைத் தேர்ந்தெடுக்கவும்",
+      "Pickup selected on map": "வரைபடத்தில் புறப்படும் இடம் தேர்ந்தெடுக்கப்பட்டது",
+      "Current location": "தற்போதைய இருப்பிடம்",
+      "Pickup selected": "புறப்படும் இடம் தேர்ந்தெடுக்கப்பட்டது",
+      "Check the pickup pin, then confirm it": "புறப்படும் இடக் குறியைச் சரிபார்த்து உறுதிப்படுத்துங்கள்",
+      "Pickup confirmed — now choose your destination": "புறப்படும் இடம் உறுதி செய்யப்பட்டது — இப்போது செல்லும் இடத்தைத் தேர்ந்தெடுக்கவும்",
+      "Pin moved — confirm this pickup before pricing": "இடக் குறி நகர்த்தப்பட்டது — கட்டணம் கணக்கிடும் முன் புறப்படும் இடத்தை உறுதிப்படுத்துங்கள்",
+      "Confirm both map pins before booking": "பயணத்தைப் பதிவு செய்வதற்கு முன் இரண்டு வரைபடக் குறிகளையும் உறுதிப்படுத்துங்கள்"
+    },
+    de: {
+      "Type an address or use current location": "Adresse eingeben oder aktuellen Standort verwenden",
+      "Enter pickup address or place": "Abholadresse oder Ort eingeben",
+      "Pickup suggestions": "Vorschläge für die Abholung",
+      "Confirm the pickup pin": "Abholpunkt bestätigen",
+      "Drag the pickup pin if needed, then confirm it.": "Verschieben Sie den Abholpunkt bei Bedarf und bestätigen Sie ihn.",
+      "Confirm pickup": "Abholung bestätigen",
+      "Select pickup location": "Abholort auswählen",
+      "Pickup selected on map": "Abholung auf der Karte ausgewählt",
+      "Current location": "Aktueller Standort",
+      "Pickup selected": "Abholung ausgewählt",
+      "Check the pickup pin, then confirm it": "Abholpunkt prüfen und bestätigen",
+      "Pickup confirmed — now choose your destination": "Abholung bestätigt — wählen Sie jetzt Ihr Ziel",
+      "Pin moved — confirm this pickup before pricing": "Punkt verschoben — bestätigen Sie die Abholung vor der Preisberechnung",
+      "Confirm both map pins before booking": "Bestätigen Sie vor der Buchung beide Kartenpunkte"
+    },
+    ar: {
+      "Type an address or use current location": "أدخل عنوانًا أو استخدم موقعك الحالي",
+      "Enter pickup address or place": "أدخل عنوان أو مكان الانطلاق",
+      "Pickup suggestions": "اقتراحات موقع الانطلاق",
+      "Confirm the pickup pin": "تأكيد علامة موقع الانطلاق",
+      "Drag the pickup pin if needed, then confirm it.": "حرّك علامة موقع الانطلاق عند الحاجة، ثم أكدها.",
+      "Confirm pickup": "تأكيد موقع الانطلاق",
+      "Select pickup location": "اختر موقع الانطلاق",
+      "Pickup selected on map": "تم اختيار موقع الانطلاق على الخريطة",
+      "Current location": "الموقع الحالي",
+      "Pickup selected": "تم اختيار موقع الانطلاق",
+      "Check the pickup pin, then confirm it": "تحقق من علامة موقع الانطلاق ثم أكدها",
+      "Pickup confirmed — now choose your destination": "تم تأكيد موقع الانطلاق — اختر وجهتك الآن",
+      "Pin moved — confirm this pickup before pricing": "تم تحريك العلامة — أكد موقع الانطلاق قبل حساب السعر",
+      "Confirm both map pins before booking": "أكد علامتي الخريطة قبل الحجز"
+    },
+    hi: {
+      "Type an address or use current location": "पता दर्ज करें या वर्तमान स्थान का उपयोग करें",
+      "Enter pickup address or place": "पिकअप पता या स्थान दर्ज करें",
+      "Pickup suggestions": "पिकअप स्थान के सुझाव",
+      "Confirm the pickup pin": "पिकअप पिन की पुष्टि करें",
+      "Drag the pickup pin if needed, then confirm it.": "ज़रूरत हो तो पिकअप पिन खींचें, फिर पुष्टि करें।",
+      "Confirm pickup": "पिकअप की पुष्टि करें",
+      "Select pickup location": "पिकअप स्थान चुनें",
+      "Pickup selected on map": "मानचित्र पर पिकअप चुना गया",
+      "Current location": "वर्तमान स्थान",
+      "Pickup selected": "पिकअप चुना गया",
+      "Check the pickup pin, then confirm it": "पिकअप पिन जाँचें और पुष्टि करें",
+      "Pickup confirmed — now choose your destination": "पिकअप की पुष्टि हो गई — अब अपना गंतव्य चुनें",
+      "Pin moved — confirm this pickup before pricing": "पिन बदला गया — कीमत देखने से पहले पिकअप की पुष्टि करें",
+      "Confirm both map pins before booking": "बुकिंग से पहले मानचित्र के दोनों पिन की पुष्टि करें"
+    }
+  };
+  Object.entries(rideMapTranslations).forEach(([code, values]) => Object.assign(translations[code], values));
+
   // Every page does not currently use the same source language: most customer
   // pages start in English, while a few partner/admin pages start in French.
   // Build a reverse index so either source can always be normalized back to

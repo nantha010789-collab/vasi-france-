@@ -48,7 +48,7 @@
         left: 0;
         right: 0;
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         padding: 15px 16px;
         pointer-events: none;
@@ -56,11 +56,11 @@
       .brand {
         display: grid;
         place-items: center;
-        width: 52px;
-        height: 52px;
-        border: 1px solid #ffffff33;
-        border-radius: 18px;
-        background: #050505e8;
+        width: 58px;
+        height: 42px;
+        border: 1px solid #ffffff3d;
+        border-radius: 15px;
+        background: #050505ee;
         box-shadow: 0 12px 32px #0006;
         font-size: 22px;
         font-weight: 950;
@@ -78,6 +78,28 @@
         font-size: 14px;
         font-weight: 800;
         pointer-events: auto;
+      }
+      .back {
+        position: absolute;
+        left: 16px;
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        padding: 0;
+        border-color: #ffffff3d;
+        border-radius: 50%;
+      }
+      .back svg,
+      .locateBtn svg {
+        display: block;
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       .map {
         position: absolute;
@@ -124,12 +146,12 @@
         width: 48px;
         height: 48px;
         border: 1px solid #ffffff33;
-        border-radius: 16px;
-        background: #050505e8;
-        color: #fff;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #fff;
+        color: #0a0a0a;
         box-shadow: 0 12px 32px #0007;
-        font-size: 26px;
-        line-height: 1;
         cursor: pointer;
       }
       .mapTripSummary {
@@ -155,35 +177,103 @@
         right: 12px;
         bottom: 12px;
         left: 12px;
-        max-height: min(58vh, 610px);
+        max-height: min(46vh, 500px);
         overflow-x: hidden;
         overflow-y: auto;
         border: 1px solid #ffffff24;
         background: #0b0b0bf2;
-        border-radius: 28px;
-        padding: 11px 14px 14px;
+        border-radius: 28px 28px 22px 22px;
+        padding: 8px 14px 14px;
         box-shadow: 0 24px 70px #000b;
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         overscroll-behavior: contain;
+        transition: max-height 220ms ease, transform 220ms ease;
+      }
+      .panel.bookingMode,
+      .panel.driverMode {
+        max-height: min(68vh, 680px);
+      }
+      .panel.collapsed {
+        transform: translateY(calc(100% - 76px));
+        overflow: hidden !important;
       }
       .grab {
-        width: 52px;
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 22px;
+        margin: 0 auto 2px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+      .grab::before {
+        width: 42px;
         height: 4px;
         border-radius: 9px;
-        background: #3b3b3b;
-        margin: 0 auto 13px;
+        background: #555;
+        content: "";
+      }
+      .sheetHeading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 2px 11px;
+      }
+      .sheetHeading strong {
+        color: #fff;
+        font-size: 20px;
+        letter-spacing: -0.35px;
+      }
+      .sheetHeading span {
+        color: #9b9b9b;
+        font-size: 13px;
+        font-weight: 750;
+      }
+      .routeCard {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #343434;
+        border-radius: 18px;
+        background: #171717;
+      }
+      .routeCard::before {
+        position: absolute;
+        z-index: 1;
+        top: 38px;
+        bottom: 38px;
+        left: 20px;
+        width: 2px;
+        background: #555;
+        content: "";
       }
       .field {
         position: relative;
+        min-height: 62px;
         padding: 10px 12px 10px 36px;
-        border-radius: 14px;
-        background: #181818d9;
-        margin-bottom: 7px;
+        border-radius: 0;
+        background: transparent;
+        margin-bottom: 0;
         color: #a4a4a4;
         cursor: pointer;
-        border: 1px solid #303030;
+        border: 0;
+        border-bottom: 1px solid #303030;
         font-size: 13px;
+      }
+      .routeCard .field:last-child {
+        border-bottom: 0;
+      }
+      .routeCard .field.active {
+        background: #222;
+      }
+      .fieldLabel {
+        display: block;
+        color: #a4a4a4;
+        font-size: 12px;
+        font-weight: 750;
       }
       .field b {
         color: #fff;
@@ -225,6 +315,18 @@
         gap: 8px;
         align-items: center;
       }
+      #pickupSearchWrap,
+      #searchWrap {
+        margin-top: 9px;
+      }
+      #pickupSearchWrap .field,
+      #searchWrap .field {
+        min-height: 0;
+        padding: 7px 7px 7px 13px;
+        border: 1px solid #343434;
+        border-radius: 15px;
+        background: #171717;
+      }
       .addressSuggestions {
         margin: -1px 0 10px;
         border: 1px solid #303030;
@@ -263,9 +365,9 @@
       .pinConfirm {
         margin: 9px 0 11px;
         padding: 13px;
-        border: 1px solid #315b42;
+        border: 1px solid #353535;
         border-radius: 16px;
-        background: #102419;
+        background: #171717;
       }
       .pinConfirm strong,
       .pinConfirm span {
@@ -273,15 +375,16 @@
       }
       .pinConfirm span {
         margin: 4px 0 10px;
-        color: #b7c8bd;
+        color: #aaa;
         font-size: 12px;
         line-height: 1.4;
       }
       .pinConfirm button {
         width: 100%;
+        min-height: 50px;
         border: 0;
         border-radius: 12px;
-        padding: 12px;
+        padding: 13px;
         background: #fff;
         color: #090909;
         font-size: 14px;
@@ -400,8 +503,28 @@
         padding: 11px;
       }
       .type strong {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-size: 16px;
+      }
+      .vehicleGlyph {
+        display: inline-grid;
+        flex: 0 0 auto;
+        place-items: center;
+        width: 30px;
+        height: 24px;
+        border-radius: 8px;
+        background: #2a2a2a;
+      }
+      .vehicleGlyph svg {
+        width: 22px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       .type span {
         display: block;
@@ -512,7 +635,11 @@
         display: grid;
         place-items: center;
         background: #292929;
-        font-size: 24px;
+        color: #fff;
+      }
+      .avatar .vehicleGlyph {
+        width: 34px;
+        height: 28px;
       }
       .driverCard b {
         display: block;
@@ -795,7 +922,16 @@
         border-radius: 15px;
         background: #166cff;
         box-shadow: 0 8px 22px #0007;
-        font-size: 22px;
+        color: #fff;
+      }
+      .vasi-driver-pin svg {
+        width: 25px;
+        height: 19px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
       @media (max-width: 480px) {
         .paygrid,
@@ -812,12 +948,19 @@
           right: 8px;
           bottom: 8px;
           left: 8px;
-          max-height: 56vh;
+          max-height: 46dvh;
           border-radius: 25px;
+        }
+        .panel.bookingMode,
+        .panel.driverMode {
+          max-height: 68dvh;
         }
       }
       @media (max-width: 360px) {
         .terminalButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .panel { transition: none; }
       }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
@@ -859,6 +1002,10 @@
         padding-left: max(16px, env(safe-area-inset-left)) !important;
       }
 
+      .back {
+        left: max(16px, env(safe-area-inset-left)) !important;
+      }
+
       .locateBtn,
       .mapTripSummary {
         top: max(86px, calc(env(safe-area-inset-top) + 68px)) !important;
@@ -872,16 +1019,29 @@
         right: max(8px, env(safe-area-inset-right)) !important;
         bottom: max(8px, env(safe-area-inset-bottom)) !important;
         left: max(8px, env(safe-area-inset-left)) !important;
-        max-height: min(56dvh, 610px) !important;
+        max-height: min(46dvh, 500px) !important;
         overflow-y: auto !important;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
         touch-action: pan-y;
       }
 
+      .panel.bookingMode,
+      .panel.driverMode {
+        max-height: min(68dvh, 680px) !important;
+      }
+
+      .panel.collapsed {
+        overflow-y: hidden !important;
+      }
+
       @supports not (height: 100dvh) {
         .panel {
-          max-height: min(56vh, 610px) !important;
+          max-height: min(46vh, 500px) !important;
+        }
+        .panel.bookingMode,
+        .panel.driverMode {
+          max-height: min(68vh, 680px) !important;
         }
       }
     </style>
@@ -890,7 +1050,9 @@
     <main class="app">
       <header class="top">
         <div class="brand"><img class="vasi-mark" src="./vasi-icon-192.png" alt="VASI" style="display:block;width:38px;height:38px;object-fit:contain;border-radius:10px" /></div>
-        <button class="back" onclick="location.href = 'app.html'">Home</button>
+        <button class="back" type="button" onclick="location.href = 'app.html'" aria-label="Home" title="Home">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
       </header>
       <div id="map" class="map"></div>
       <button
@@ -900,16 +1062,22 @@
         title="Use my current location"
         onclick="useLocation()"
       >
-        ◎
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="8" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2" /></svg>
       </button>
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section id="panel" class="panel" data-scroll-region>
-        <div class="grab"></div>
-        <div class="field" onclick="focusPickup()">
-          <span class="fieldDot" aria-hidden="true"></span>Pickup<b id="pickup">Type an address or use current location</b>
+        <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
+        <div class="sheetHeading">
+          <strong>Plan your ride</strong>
+          <span id="stageHint">Pickup</span>
         </div>
-        <div class="field" onclick="focusDestination()">
-          <span class="fieldDot destination" aria-hidden="true"></span>Destination<b id="destination">Tap map to choose destination</b>
+        <div class="routeCard">
+          <div id="pickupField" class="field active" onclick="focusPickup()">
+            <span class="fieldDot" aria-hidden="true"></span><span class="fieldLabel">Pickup</span><b id="pickup">Type an address or use current location</b>
+          </div>
+          <div id="destinationField" class="field" onclick="focusDestination()">
+            <span class="fieldDot destination" aria-hidden="true"></span><span class="fieldLabel">Destination</span><b id="destination">Tap map to choose destination</b>
+          </div>
         </div>
         <div id="pickupSearchWrap" class="hidden">
           <div class="field">
@@ -1106,7 +1274,7 @@
         </div>
         <div id="driverArea" class="hidden">
           <div class="driverCard">
-            <div class="avatar" id="driverEmoji">🚗</div>
+            <div class="avatar" id="driverEmoji"><span class="vehicleGlyph"><svg viewBox="0 0 32 22" aria-hidden="true"><path d="M5 14l2-6h18l3 6v4H4v-4h1Z"/><path d="M9 8l3-4h9l4 4M8 18v2M25 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="24" cy="15" r="1"/></svg></span></div>
             <div>
               <b id="driverTitle">VASI driver</b
               ><small id="driverSub">Finding your driver…</small>
@@ -1315,7 +1483,7 @@
         }),
         driverIcon = L.divIcon({
           className: "vasi-marker-host",
-          html: '<div class="vasi-driver-pin">🚗</div>',
+          html: '<div class="vasi-driver-pin"><svg viewBox="0 0 32 22" aria-hidden="true"><path d="M5 14l2-6h18l3 6v4H4v-4h1Z"/><path d="M9 8l3-4h9l4 4M8 18v2M25 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="24" cy="15" r="1"/></svg></div>',
           iconSize: [42, 42],
           iconAnchor: [21, 21],
         });
@@ -1323,6 +1491,32 @@
         ? "https://vasi-new.vercel.app"
         : "";
       const apiUrl = (path) => VASI_API_ORIGIN + path;
+      const vehicleIconSvg = '<span class="vehicleGlyph"><svg viewBox="0 0 32 22" aria-hidden="true"><path d="M5 14l2-6h18l3 6v4H4v-4h1Z"/><path d="M9 8l3-4h9l4 4M8 18v2M25 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="24" cy="15" r="1"/></svg></span>';
+      function syncMapUiState() {
+        const panel = $("panel"),
+          bookingVisible = !$("booking").classList.contains("hidden"),
+          driverVisible = !$("driverArea").classList.contains("hidden");
+        panel.classList.toggle("bookingMode", bookingVisible);
+        panel.classList.toggle("driverMode", driverVisible);
+        $("pickupField").classList.toggle("active", !bookingVisible && !driverVisible && mapSelectionKind === "pickup");
+        $("destinationField").classList.toggle("active", !bookingVisible && !driverVisible && mapSelectionKind === "destination");
+        $("stageHint").textContent = driverVisible
+          ? "VASI driver"
+          : bookingVisible
+            ? "Choose your ride"
+            : mapSelectionKind === "pickup"
+              ? "Pickup"
+              : "Destination";
+      }
+      function expandPanel() {
+        $("panel").classList.remove("collapsed");
+        document.querySelector(".grab")?.setAttribute("aria-expanded", "true");
+      }
+      function togglePanel() {
+        const collapsed = $("panel").classList.toggle("collapsed");
+        document.querySelector(".grab")?.setAttribute("aria-expanded", String(!collapsed));
+        setTimeout(() => map?.invalidateSize(), 240);
+      }
       function priceFor(km, mins, key) {
         let fare;
         if (pricingOffer.active && pricingOffer.mode === "percentage") {
@@ -1755,6 +1949,10 @@
               "Destination pin selected",
             );
         });
+        const panelStateObserver = new MutationObserver(syncMapUiState);
+        panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
+        panelStateObserver.observe($("driverArea"), { attributes: true, attributeFilter: ["class"] });
+        syncMapUiState();
         checkPaymentAvailability();
         if (homePickup) useHomePickup();
         else useLocation();
@@ -1788,6 +1986,8 @@
       }
       function useLocation() {
         mapSelectionKind = "pickup";
+        expandPanel();
+        syncMapUiState();
         if (!navigator.geolocation) {
           pickup = null;
           $("pickup").textContent = "Select pickup location";
@@ -1820,11 +2020,14 @@
       function setPickup(p, label = "Pickup selected") {
         pickup = p;
         pickupConfirmed = false;
-        mapSelectionKind = "destination";
+        mapSelectionKind = "pickup";
+        expandPanel();
+        syncMapUiState();
         $("pickup").textContent = label;
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
+        $("pinConfirm").classList.add("hidden");
         $("pickupPinConfirm").classList.remove("hidden");
         $("pickupSearchWrap").classList.add("hidden");
         clearPickupSuggestions();
@@ -1871,19 +2074,28 @@
       function confirmPickup() {
         if (!pickup) return;
         pickupConfirmed = true;
+        mapSelectionKind = "destination";
+        expandPanel();
+        syncMapUiState();
         $("pickupPinConfirm").classList.add("hidden");
         if (pickupMarker?.dragging) pickupMarker.dragging.disable();
         if (destination && destinationConfirmed) buildRoute();
-        else $("status").textContent = "Pickup confirmed — now choose your destination";
+        else {
+          if (destination) $("pinConfirm").classList.remove("hidden");
+          $("status").textContent = "Pickup confirmed — now choose your destination";
+        }
       }
       function setDestination(p, label = "Destination selected") {
         destination = p;
         destinationConfirmed = false;
         mapSelectionKind = "destination";
+        expandPanel();
+        syncMapUiState();
         $("destination").textContent = label;
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
+        $("pickupPinConfirm").classList.add("hidden");
         $("pinConfirm").classList.remove("hidden");
         $("searchWrap").classList.add("hidden");
         $("pickupSearchWrap").classList.add("hidden");
@@ -1919,15 +2131,23 @@
       function confirmDestination() {
         if (!destination) return;
         destinationConfirmed = true;
+        expandPanel();
+        syncMapUiState();
         $("pinConfirm").classList.add("hidden");
         if (destMarker?.dragging) destMarker.dragging.disable();
         if (pickup && pickupConfirmed) buildRoute();
-        else
+        else {
+          mapSelectionKind = "pickup";
+          $("pickupPinConfirm").classList.remove("hidden");
+          syncMapUiState();
           $("status").textContent =
             "Destination confirmed — now choose and confirm your pickup";
+        }
       }
       function focusPickup() {
         mapSelectionKind = "pickup";
+        expandPanel();
+        syncMapUiState();
         $("searchWrap").classList.add("hidden");
         $("pickupSearchWrap").classList.remove("hidden");
         $("pickupSearch").focus();
@@ -1936,6 +2156,8 @@
       }
       function focusDestination() {
         mapSelectionKind = "destination";
+        expandPanel();
+        syncMapUiState();
         $("pickupSearchWrap").classList.add("hidden");
         $("searchWrap").classList.remove("hidden");
         $("destSearch").focus();
@@ -2335,7 +2557,7 @@
         $("types").innerHTML = Object.entries(classes)
           .map(
             ([k, c]) =>
-              `<button class="type" id="type-${k}" onclick="selectType('${k}')"><strong>${c.emoji} ${c.name}</strong><span>${c.seats} seats</span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
+              `<button class="type" id="type-${k}" onclick="selectType('${k}')"><strong>${vehicleIconSvg}${c.name}</strong><span>${c.seats} seats</span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
           )
           .join("");
       }
@@ -2540,7 +2762,7 @@
         $("booking").classList.add("hidden");
         $("driverArea").classList.remove("hidden");
         const c = classes[selected];
-        $("driverEmoji").textContent = c.emoji;
+        $("driverEmoji").innerHTML = vehicleIconSvg;
         $("driverTitle").textContent =
           r.driver_name || "VASI " + c.name + " driver";
         $("driverSub").textContent =
