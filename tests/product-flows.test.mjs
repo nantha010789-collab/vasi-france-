@@ -830,6 +830,8 @@ test("ride choices use distinct professional vehicle images", async () => {
   }
   assert.match(source, /vehiclePhotoHtml\(k\)/);
   assert.match(source, /class="vehiclePhoto"/);
+  assert.match(source, /\.type \.vehiclePhoto\s*\{[\s\S]*?height: 72px;[\s\S]*?overflow: visible/);
+  assert.match(source, /\.type \.vehiclePhoto img\s*\{[\s\S]*?width: auto;[\s\S]*?height: 64px/);
 });
 
 test("ride flow loads the current language bundle for pin confirmation labels", async () => {
