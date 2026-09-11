@@ -194,6 +194,20 @@
       .panel.driverMode {
         max-height: min(68vh, 680px);
       }
+      .panel.pinMode {
+        max-height: min(190px, 30vh);
+        overflow: hidden !important;
+        padding: 14px;
+      }
+      .panel.pinMode .grab,
+      .panel.pinMode .sheetHeading,
+      .panel.pinMode .routeCard,
+      .panel.pinMode #pickupSearchWrap,
+      .panel.pinMode #searchWrap,
+      .panel.pinMode .savedPlaces,
+      .panel.pinMode .status {
+        display: none !important;
+      }
       .panel.collapsed {
         transform: translateY(calc(100% - 76px));
         overflow: hidden !important;
@@ -369,15 +383,37 @@
         border-radius: 16px;
         background: #171717;
       }
+      .panel.pinMode .pinConfirm {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+      }
       .pinConfirm strong,
       .pinConfirm span {
         display: block;
+      }
+      .panel.pinMode .pinConfirm strong {
+        color: #aaa;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.65px;
       }
       .pinConfirm span {
         margin: 4px 0 10px;
         color: #aaa;
         font-size: 12px;
         line-height: 1.4;
+      }
+      .panel.pinMode .pinConfirm .pinAddress {
+        margin: 5px 0 12px;
+        overflow: hidden;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 850;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .pinConfirm button {
         width: 100%;
@@ -1031,6 +1067,11 @@
         max-height: min(68dvh, 680px) !important;
       }
 
+      .panel.pinMode {
+        max-height: min(190px, 30dvh) !important;
+        overflow-y: hidden !important;
+      }
+
       .panel.collapsed {
         overflow-y: hidden !important;
       }
@@ -1042,6 +1083,9 @@
         .panel.bookingMode,
         .panel.driverMode {
           max-height: min(68vh, 680px) !important;
+        }
+        .panel.pinMode {
+          max-height: min(190px, 30vh) !important;
         }
       }
     </style>
@@ -1129,15 +1173,15 @@
           ></div>
         </div>
         <div id="pinConfirm" class="pinConfirm hidden" aria-live="polite">
-          <strong>Confirm the map pin</strong>
-          <span>Drag the destination pin if needed, then confirm it.</span>
+          <strong>Destination</strong>
+          <span id="destinationPinAddress" class="pinAddress">Destination selected</span>
           <button type="button" onclick="confirmDestination()">
             Confirm destination
           </button>
         </div>
         <div id="pickupPinConfirm" class="pinConfirm hidden" aria-live="polite">
-          <strong>Confirm the pickup pin</strong>
-          <span>Drag the pickup pin if needed, then confirm it.</span>
+          <strong>Pickup</strong>
+          <span id="pickupPinAddress" class="pinAddress">Pickup selected</span>
           <button type="button" onclick="confirmPickup()">
             Confirm pickup
           </button>
@@ -1495,9 +1539,11 @@
       function syncMapUiState() {
         const panel = $("panel"),
           bookingVisible = !$("booking").classList.contains("hidden"),
-          driverVisible = !$("driverArea").classList.contains("hidden");
+          driverVisible = !$("driverArea").classList.contains("hidden"),
+          pinVisible = !$("pickupPinConfirm").classList.contains("hidden") || !$("pinConfirm").classList.contains("hidden");
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
+        panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         $("pickupField").classList.toggle("active", !bookingVisible && !driverVisible && mapSelectionKind === "pickup");
         $("destinationField").classList.toggle("active", !bookingVisible && !driverVisible && mapSelectionKind === "destination");
         $("stageHint").textContent = driverVisible
@@ -1513,6 +1559,7 @@
         document.querySelector(".grab")?.setAttribute("aria-expanded", "true");
       }
       function togglePanel() {
+        if ($("panel").classList.contains("pinMode")) return;
         const collapsed = $("panel").classList.toggle("collapsed");
         document.querySelector(".grab")?.setAttribute("aria-expanded", String(!collapsed));
         setTimeout(() => map?.invalidateSize(), 240);
@@ -1952,6 +1999,8 @@
         const panelStateObserver = new MutationObserver(syncMapUiState);
         panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("driverArea"), { attributes: true, attributeFilter: ["class"] });
+        panelStateObserver.observe($("pickupPinConfirm"), { attributes: true, attributeFilter: ["class"] });
+        panelStateObserver.observe($("pinConfirm"), { attributes: true, attributeFilter: ["class"] });
         syncMapUiState();
         checkPaymentAvailability();
         if (homePickup) useHomePickup();
@@ -2024,6 +2073,7 @@
         expandPanel();
         syncMapUiState();
         $("pickup").textContent = label;
+        $("pickupPinAddress").textContent = label;
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
@@ -2044,6 +2094,7 @@
             pickup = [pin.lat, pin.lng];
             pickupConfirmed = false;
             $("pickup").textContent = label + " · pin adjusted";
+            $("pickupPinAddress").textContent = label + " · pin adjusted";
             $("booking").classList.add("hidden");
             $("mapTripSummary").classList.add("hidden");
             $("fare").textContent = "—";
@@ -2092,6 +2143,7 @@
         expandPanel();
         syncMapUiState();
         $("destination").textContent = label;
+        $("destinationPinAddress").textContent = label;
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
@@ -2110,6 +2162,7 @@
             destination = [pin.lat, pin.lng];
             destinationConfirmed = false;
             $("destination").textContent = label + " · pin adjusted";
+            $("destinationPinAddress").textContent = label + " · pin adjusted";
             $("pinConfirm").classList.remove("hidden");
             $("status").textContent =
               "Pin moved — confirm this destination before pricing";
