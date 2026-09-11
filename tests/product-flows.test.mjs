@@ -772,6 +772,20 @@ test("ride map uses debounced Google suggestions and requires pin confirmation",
   assert.match(source, /destination && destinationConfirmed/);
 });
 
+test("ride map supports typed pickup and confirms both draggable pins before pricing", async () => {
+  const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /id="pickupSearch"/);
+  assert.match(source, /function searchPickup\(\)/);
+  assert.match(source, /function confirmPickup\(\)/);
+  assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: true/);
+  assert.match(source, /pickupMarker\.on\("dragend"/);
+  assert.match(
+    source,
+    /!pickup \|\| !pickupConfirmed \|\| !destination \|\| !destinationConfirmed/,
+  );
+  assert.match(source, /Confirm both map pins before booking/);
+});
+
 test("customer-to-driver lifecycle exposes call, payment and receipt contracts", async () => {
   const [chat, call, driver, history, worker, notifications, settings, auth, languages] = await Promise.all([
     readFile("ride-chat.html", "utf8"),

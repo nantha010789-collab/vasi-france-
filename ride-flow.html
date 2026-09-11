@@ -905,11 +905,37 @@
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section id="panel" class="panel" data-scroll-region>
         <div class="grab"></div>
-        <div class="field" onclick="useLocation()">
-          <span class="fieldDot" aria-hidden="true"></span>Pickup<b id="pickup">Use my current location</b>
+        <div class="field" onclick="focusPickup()">
+          <span class="fieldDot" aria-hidden="true"></span>Pickup<b id="pickup">Type an address or use current location</b>
         </div>
         <div class="field" onclick="focusDestination()">
           <span class="fieldDot destination" aria-hidden="true"></span>Destination<b id="destination">Tap map to choose destination</b>
+        </div>
+        <div id="pickupSearchWrap" class="hidden">
+          <div class="field">
+            <div class="addressSearchRow">
+              <input
+                id="pickupSearch"
+                placeholder="Enter pickup address or place"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="pickupSuggestions"
+                oninput="schedulePickupSuggestions()"
+                onkeydown="if (event.key === 'Enter') searchPickup();"
+              /><button class="iconbtn" onclick="searchPickup()">
+                Search
+              </button>
+            </div>
+          </div>
+          <button class="option" style="width: 100%; margin-bottom: 8px" type="button" onclick="useLocation()">
+            ◎ Use my current location
+          </button>
+          <div
+            id="pickupSuggestions"
+            class="addressSuggestions hidden"
+            role="listbox"
+            aria-label="Pickup suggestions"
+          ></div>
         </div>
         <div id="searchWrap" class="hidden">
           <div class="field">
@@ -939,6 +965,13 @@
           <span>Drag the destination pin if needed, then confirm it.</span>
           <button type="button" onclick="confirmDestination()">
             Confirm destination
+          </button>
+        </div>
+        <div id="pickupPinConfirm" class="pinConfirm hidden" aria-live="polite">
+          <strong>Confirm the pickup pin</strong>
+          <span>Drag the pickup pin if needed, then confirm it.</span>
+          <button type="button" onclick="confirmPickup()">
+            Confirm pickup
           </button>
         </div>
         <div id="savedPlaces" class="savedPlaces hidden" aria-live="polite">
@@ -1138,8 +1171,13 @@
         routeLine,
         driverMarker,
         pickup = null,
+        pickupConfirmed = false,
         destination = null,
         destinationConfirmed = false,
+        mapSelectionKind = "pickup",
+        pickupSuggestionTimer = null,
+        pickupSuggestionRequest = 0,
+        pickupSuggestions = [],
         placeSuggestionTimer = null,
         placeSuggestionRequest = 0,
         placeSuggestions = [],
@@ -1709,7 +1747,7 @@
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
         map.on("click", (e) => {
-          if (!pickup)
+          if (!pickup || mapSelectionKind === "pickup")
             setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map");
           else
             setDestination(
@@ -1749,6 +1787,7 @@
         }
       }
       function useLocation() {
+        mapSelectionKind = "pickup";
         if (!navigator.geolocation) {
           pickup = null;
           $("pickup").textContent = "Select pickup location";
@@ -1780,20 +1819,40 @@
       }
       function setPickup(p, label = "Pickup selected") {
         pickup = p;
+        pickupConfirmed = false;
+        mapSelectionKind = "destination";
         $("pickup").textContent = label;
+        $("booking").classList.add("hidden");
+        $("mapTripSummary").classList.add("hidden");
+        $("fare").textContent = "—";
+        $("pickupPinConfirm").classList.remove("hidden");
+        $("pickupSearchWrap").classList.add("hidden");
+        clearPickupSuggestions();
         try {
           if (pickupMarker) pickupMarker.remove();
           pickupMarker = L.marker(p, {
             icon: pickupIcon,
+            draggable: true,
             keyboard: true,
             title: "VASI pickup",
           }).addTo(map);
+          pickupMarker.on("dragend", () => {
+            const pin = pickupMarker.getLatLng();
+            pickup = [pin.lat, pin.lng];
+            pickupConfirmed = false;
+            $("pickup").textContent = label + " · pin adjusted";
+            $("booking").classList.add("hidden");
+            $("mapTripSummary").classList.add("hidden");
+            $("fare").textContent = "—";
+            $("pickupPinConfirm").classList.remove("hidden");
+            $("status").textContent =
+              "Pin moved — confirm this pickup before pricing";
+          });
           map.setView(p, 14);
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
         }
         if ($("airportPickup")?.checked) refreshAirportGuidance();
-        if (destination && destinationConfirmed) buildRoute();
         if (homeDestination) {
           $("destSearch").value = homeDestination;
           localStorage.removeItem("vasi_destination_hint");
@@ -1807,17 +1866,27 @@
             "Choose your destination, then select your reserve time";
           return;
         }
-        $("status").textContent = "Now choose your destination";
+        $("status").textContent = "Check the pickup pin, then confirm it";
+      }
+      function confirmPickup() {
+        if (!pickup) return;
+        pickupConfirmed = true;
+        $("pickupPinConfirm").classList.add("hidden");
+        if (pickupMarker?.dragging) pickupMarker.dragging.disable();
+        if (destination && destinationConfirmed) buildRoute();
+        else $("status").textContent = "Pickup confirmed — now choose your destination";
       }
       function setDestination(p, label = "Destination selected") {
         destination = p;
         destinationConfirmed = false;
+        mapSelectionKind = "destination";
         $("destination").textContent = label;
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
         $("pinConfirm").classList.remove("hidden");
         $("searchWrap").classList.add("hidden");
+        $("pickupSearchWrap").classList.add("hidden");
         clearPlaceSuggestions();
         try {
           if (destMarker) destMarker.remove();
@@ -1833,7 +1902,7 @@
             $("status").textContent =
               "Pin moved — confirm this destination before pricing";
           });
-          if (pickup) {
+          if (pickup && pickupConfirmed) {
             map.fitBounds(L.latLngBounds([pickup, destination]), {
               padding: [35, 35],
             });
@@ -1843,25 +1912,123 @@
         } catch (mapError) {
           console.warn("Destination map preview unavailable", mapError);
         }
-        $("status").textContent = pickup
+        $("status").textContent = pickup && pickupConfirmed
           ? "Check the destination pin, then confirm it"
-          : "Confirm the destination pin, then choose your pickup";
+          : "Confirm the destination pin, then confirm your pickup";
       }
       function confirmDestination() {
         if (!destination) return;
         destinationConfirmed = true;
         $("pinConfirm").classList.add("hidden");
         if (destMarker?.dragging) destMarker.dragging.disable();
-        if (pickup) buildRoute();
+        if (pickup && pickupConfirmed) buildRoute();
         else
           $("status").textContent =
-            "Destination confirmed — now choose your pickup location";
+            "Destination confirmed — now choose and confirm your pickup";
+      }
+      function focusPickup() {
+        mapSelectionKind = "pickup";
+        $("searchWrap").classList.add("hidden");
+        $("pickupSearchWrap").classList.remove("hidden");
+        $("pickupSearch").focus();
+        $("status").textContent =
+          "Type a pickup address, use current location or tap the map";
       }
       function focusDestination() {
+        mapSelectionKind = "destination";
+        $("pickupSearchWrap").classList.add("hidden");
         $("searchWrap").classList.remove("hidden");
         $("destSearch").focus();
         $("status").textContent =
           "Start typing an address or place — VASI will suggest matches";
+      }
+      function clearPickupSuggestions() {
+        pickupSuggestions = [];
+        const list = $("pickupSuggestions");
+        list.replaceChildren();
+        list.classList.add("hidden");
+      }
+      function renderPickupSuggestions(rows) {
+        clearPickupSuggestions();
+        pickupSuggestions = rows;
+        const list = $("pickupSuggestions");
+        rows.forEach((suggestion, index) => {
+          const button = document.createElement("button"),
+            title = document.createElement("strong"),
+            detail = document.createElement("small");
+          button.type = "button";
+          button.className = "addressSuggestion";
+          button.setAttribute("role", "option");
+          title.textContent = suggestion.main || suggestion.label;
+          detail.textContent = suggestion.secondary || suggestion.label;
+          button.append(title, detail);
+          button.onclick = () => selectPickupSuggestion(index);
+          list.append(button);
+        });
+        list.classList.toggle("hidden", !rows.length);
+      }
+      function schedulePickupSuggestions() {
+        clearTimeout(pickupSuggestionTimer);
+        const input = $("pickupSearch").value.trim();
+        if (input.length < 4) {
+          clearPickupSuggestions();
+          return;
+        }
+        pickupSuggestionTimer = setTimeout(loadPickupSuggestions, 420);
+      }
+      async function loadPickupSuggestions() {
+        const input = $("pickupSearch").value.trim();
+        if (input.length < 4) return clearPickupSuggestions();
+        const requestId = ++pickupSuggestionRequest;
+        try {
+          const response = await fetch(apiUrl("/api/places"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "autocomplete",
+              input,
+              country,
+              location: pickup ? { lat: pickup[0], lng: pickup[1] } : null,
+            }),
+          });
+          const data = await response.json();
+          if (requestId !== pickupSuggestionRequest) return;
+          if (!response.ok || !Array.isArray(data?.suggestions))
+            return clearPickupSuggestions();
+          renderPickupSuggestions(data.suggestions);
+        } catch (error) {
+          if (requestId === pickupSuggestionRequest) clearPickupSuggestions();
+        }
+      }
+      async function selectPickupSuggestion(index) {
+        const suggestion = pickupSuggestions[index];
+        if (!suggestion?.place_id) return;
+        $("status").textContent = "Confirming the selected pickup address…";
+        clearPickupSuggestions();
+        try {
+          const response = await fetch(apiUrl("/api/places"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "resolve",
+              place_id: suggestion.place_id,
+              country,
+            }),
+          });
+          const data = await response.json();
+          const place = data?.place;
+          if (
+            !response.ok ||
+            !Number.isFinite(Number(place?.lat)) ||
+            !Number.isFinite(Number(place?.lng))
+          ) throw Error("Place unavailable");
+          const label = place.label || suggestion.label;
+          $("pickupSearch").value = label;
+          setPickup([Number(place.lat), Number(place.lng)], label);
+        } catch (error) {
+          $("pickupSearch").value = suggestion.label;
+          await searchPickup();
+        }
       }
       function clearPlaceSuggestions() {
         placeSuggestions = [];
@@ -2072,8 +2239,32 @@
             '<span class="error">Destination not found — try the postcode and city</span>';
         }
       }
+      async function searchPickup() {
+        const raw = $("pickupSearch").value.trim();
+        if (!raw) return;
+        $("status").textContent = "Finding pickup…";
+        try {
+          const resolved = await resolveMapPlace(raw, "pickup"),
+            found = resolved?.found;
+          if (!found) throw Error("not found");
+          const lat = Number(found.lat),
+            lng = Number(found.lon);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng))
+            throw Error("invalid coordinates");
+          const label = formatGeocodedAddress(found, raw);
+          setPickup([lat, lng], label);
+          $("pickupSearch").value = label;
+          if (resolved.corrected)
+            $("status").textContent =
+              "AI corrected the pickup search — check the map pin";
+        } catch (error) {
+          $("status").innerHTML =
+            '<span class="error">Pickup not found — try the postcode and city</span>';
+        }
+      }
       async function buildRoute() {
-        if (!pickup || !destination) return;
+        if (!pickup || !pickupConfirmed || !destination || !destinationConfirmed)
+          return;
         $("status").textContent = "Calculating route…";
         try {
           const points = [
@@ -2259,7 +2450,8 @@
         return (await sb.auth.getSession()).data.session;
       }
       async function requestRide() {
-        if (!pickup || !destination) return;
+        if (!pickup || !pickupConfirmed || !destination || !destinationConfirmed)
+          return toast("Confirm both map pins before booking");
         const s = await getSession();
         if (!s) {
           localStorage.setItem("vasi_role", "customer");
