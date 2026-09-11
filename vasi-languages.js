@@ -1471,7 +1471,14 @@
       "Check the pickup pin, then confirm it": "Vérifiez le repère de départ, puis confirmez-le",
       "Pickup confirmed — now choose your destination": "Départ confirmé — choisissez maintenant votre destination",
       "Pin moved — confirm this pickup before pricing": "Repère déplacé — confirmez ce départ avant le calcul du prix",
-      "Confirm both map pins before booking": "Confirmez les deux repères sur la carte avant de commander"
+      "Confirm both map pins before booking": "Confirmez les deux repères sur la carte avant de commander",
+      "Confirm pickup spot": "Confirmez le lieu de départ",
+      "Confirm destination spot": "Confirmez le lieu de destination",
+      "Drag map to move pin": "Déplacez la carte pour ajuster le repère",
+      "Edit pickup address": "Modifier l’adresse de départ",
+      "Edit destination address": "Modifier l’adresse de destination",
+      "Finding address…": "Recherche de l’adresse…",
+      "Selected map location": "Emplacement sélectionné sur la carte"
     },
     ta: {
       "Type an address or use current location": "முகவரியை உள்ளிடவும் அல்லது தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்",
@@ -1487,7 +1494,14 @@
       "Check the pickup pin, then confirm it": "புறப்படும் இடக் குறியைச் சரிபார்த்து உறுதிப்படுத்துங்கள்",
       "Pickup confirmed — now choose your destination": "புறப்படும் இடம் உறுதி செய்யப்பட்டது — இப்போது செல்லும் இடத்தைத் தேர்ந்தெடுக்கவும்",
       "Pin moved — confirm this pickup before pricing": "இடக் குறி நகர்த்தப்பட்டது — கட்டணம் கணக்கிடும் முன் புறப்படும் இடத்தை உறுதிப்படுத்துங்கள்",
-      "Confirm both map pins before booking": "பயணத்தைப் பதிவு செய்வதற்கு முன் இரண்டு வரைபடக் குறிகளையும் உறுதிப்படுத்துங்கள்"
+      "Confirm both map pins before booking": "பயணத்தைப் பதிவு செய்வதற்கு முன் இரண்டு வரைபடக் குறிகளையும் உறுதிப்படுத்துங்கள்",
+      "Confirm pickup spot": "புறப்படும் இடத்தை உறுதிப்படுத்துங்கள்",
+      "Confirm destination spot": "செல்லும் இடத்தை உறுதிப்படுத்துங்கள்",
+      "Drag map to move pin": "இடக் குறியை நகர்த்த வரைபடத்தை இழுக்கவும்",
+      "Edit pickup address": "புறப்படும் முகவரியை மாற்றவும்",
+      "Edit destination address": "செல்லும் முகவரியை மாற்றவும்",
+      "Finding address…": "முகவரி தேடப்படுகிறது…",
+      "Selected map location": "வரைபடத்தில் தேர்ந்தெடுத்த இடம்"
     },
     de: {
       "Type an address or use current location": "Adresse eingeben oder aktuellen Standort verwenden",
@@ -1503,7 +1517,14 @@
       "Check the pickup pin, then confirm it": "Abholpunkt prüfen und bestätigen",
       "Pickup confirmed — now choose your destination": "Abholung bestätigt — wählen Sie jetzt Ihr Ziel",
       "Pin moved — confirm this pickup before pricing": "Punkt verschoben — bestätigen Sie die Abholung vor der Preisberechnung",
-      "Confirm both map pins before booking": "Bestätigen Sie vor der Buchung beide Kartenpunkte"
+      "Confirm both map pins before booking": "Bestätigen Sie vor der Buchung beide Kartenpunkte",
+      "Confirm pickup spot": "Abholort bestätigen",
+      "Confirm destination spot": "Zielort bestätigen",
+      "Drag map to move pin": "Karte verschieben, um den Punkt anzupassen",
+      "Edit pickup address": "Abholadresse bearbeiten",
+      "Edit destination address": "Zieladresse bearbeiten",
+      "Finding address…": "Adresse wird gesucht…",
+      "Selected map location": "Ausgewählter Kartenort"
     },
     ar: {
       "Type an address or use current location": "أدخل عنوانًا أو استخدم موقعك الحالي",
@@ -1519,7 +1540,14 @@
       "Check the pickup pin, then confirm it": "تحقق من علامة موقع الانطلاق ثم أكدها",
       "Pickup confirmed — now choose your destination": "تم تأكيد موقع الانطلاق — اختر وجهتك الآن",
       "Pin moved — confirm this pickup before pricing": "تم تحريك العلامة — أكد موقع الانطلاق قبل حساب السعر",
-      "Confirm both map pins before booking": "أكد علامتي الخريطة قبل الحجز"
+      "Confirm both map pins before booking": "أكد علامتي الخريطة قبل الحجز",
+      "Confirm pickup spot": "تأكيد موقع الانطلاق",
+      "Confirm destination spot": "تأكيد موقع الوجهة",
+      "Drag map to move pin": "اسحب الخريطة لتحريك العلامة",
+      "Edit pickup address": "تعديل عنوان الانطلاق",
+      "Edit destination address": "تعديل عنوان الوجهة",
+      "Finding address…": "جارٍ البحث عن العنوان…",
+      "Selected map location": "الموقع المحدد على الخريطة"
     },
     hi: {
       "Type an address or use current location": "पता दर्ज करें या वर्तमान स्थान का उपयोग करें",
@@ -1535,7 +1563,14 @@
       "Check the pickup pin, then confirm it": "पिकअप पिन जाँचें और पुष्टि करें",
       "Pickup confirmed — now choose your destination": "पिकअप की पुष्टि हो गई — अब अपना गंतव्य चुनें",
       "Pin moved — confirm this pickup before pricing": "पिन बदला गया — कीमत देखने से पहले पिकअप की पुष्टि करें",
-      "Confirm both map pins before booking": "बुकिंग से पहले मानचित्र के दोनों पिन की पुष्टि करें"
+      "Confirm both map pins before booking": "बुकिंग से पहले मानचित्र के दोनों पिन की पुष्टि करें",
+      "Confirm pickup spot": "पिकअप स्थान की पुष्टि करें",
+      "Confirm destination spot": "गंतव्य स्थान की पुष्टि करें",
+      "Drag map to move pin": "पिन को बदलने के लिए मानचित्र खींचें",
+      "Edit pickup address": "पिकअप पता बदलें",
+      "Edit destination address": "गंतव्य पता बदलें",
+      "Finding address…": "पता खोजा जा रहा है…",
+      "Selected map location": "मानचित्र पर चुना गया स्थान"
     }
   };
   Object.entries(rideMapTranslations).forEach(([code, values]) => Object.assign(translations[code], values));

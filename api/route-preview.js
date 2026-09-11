@@ -84,20 +84,54 @@ export default async function handler(req, res) {
   try {
     if (req.method === "OPTIONS") return res.status(204).end();
     if (req.method === "GET") {
+      const requestedLat = req.query?.lat,
+        requestedLng = req.query?.lng,
+        hasReverseCoordinates = requestedLat !== undefined || requestedLng !== undefined,
+        reverseLat = coordinate(requestedLat, -90, 90),
+        reverseLng = coordinate(requestedLng, -180, 180),
+        selectedRegion = region(req.query?.country),
+        googleKey = String(
+          process.env.GOOGLE_MAPS_SERVER_KEY ||
+            process.env.GOOGLEMAPSERVERKEY ||
+            process.env.GOOGLEMAPSSERVERKEY ||
+            process.env.GOOGLE_MAPS_API_KEY ||
+            "",
+        ).trim();
+      if (hasReverseCoordinates) {
+        if (reverseLat === null || reverseLng === null)
+          return res.status(400).json({ error: "Invalid map coordinates" });
+        let result = null;
+        if (googleKey) {
+          try {
+            const google = await getJson(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${reverseLat},${reverseLng}&language=${selectedRegion.language}&region=${selectedRegion.googleRegion}&key=${encodeURIComponent(googleKey)}`,
+              "Google reverse geocoding",
+            );
+            const first = google?.results?.[0];
+            if (first) result = googleAddress(first);
+          } catch (error) {
+            console.warn("[route-preview] Google reverse geocoder failed", error?.message);
+          }
+        }
+        if (!result) {
+          try {
+            const reverse = await getJson(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${reverseLat}&lon=${reverseLng}`,
+              "Map address lookup",
+            );
+            if (reverse?.display_name) result = reverse;
+          } catch (error) {
+            console.warn("[route-preview] reverse geocoder failed", error?.message);
+          }
+        }
+        return res.status(200).json({ result });
+      }
       const query = String(req.query?.q || "")
         .trim()
         .slice(0, 240);
       if (query.length < 3)
         return res.status(400).json({ error: "Enter a destination" });
-      const selectedRegion = region(req.query?.country);
       let results = [];
-      const googleKey = String(
-        process.env.GOOGLE_MAPS_SERVER_KEY ||
-          process.env.GOOGLEMAPSERVERKEY ||
-          process.env.GOOGLEMAPSSERVERKEY ||
-          process.env.GOOGLE_MAPS_API_KEY ||
-          "",
-      ).trim();
       if (googleKey) {
         try {
           const google = await getJson(

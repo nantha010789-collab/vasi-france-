@@ -195,9 +195,9 @@
         max-height: min(68vh, 680px);
       }
       .panel.pinMode {
-        max-height: min(190px, 30vh);
+        max-height: min(300px, 38vh);
         overflow: hidden !important;
-        padding: 14px;
+        padding: 22px 18px 18px;
       }
       .panel.pinMode .grab,
       .panel.pinMode .sheetHeading,
@@ -389,6 +389,58 @@
         border: 0;
         background: transparent;
       }
+      .pinConfirmHead {
+        margin-bottom: 17px;
+        text-align: center;
+      }
+      .pinConfirmHead h2 {
+        margin: 0;
+        color: #fff;
+        font-size: 23px;
+        line-height: 1.2;
+        letter-spacing: -0.45px;
+      }
+      .pinConfirmHead p {
+        margin: 6px 0 0;
+        color: #aaa;
+        font-size: 15px;
+      }
+      .pinAddressCard {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 48px;
+        gap: 10px;
+        align-items: center;
+        min-height: 70px;
+        padding: 11px 11px 11px 15px;
+        border: 2px solid #303030;
+        border-radius: 17px;
+        background: #111;
+      }
+      .pinAddressCard small {
+        display: block;
+        margin-bottom: 3px;
+        color: #909090;
+        font-size: 12px;
+        font-weight: 750;
+      }
+      .pinEditButton {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 0;
+        border-radius: 50%;
+        background: #242424;
+        color: #fff;
+      }
+      .pinEditButton svg {
+        width: 23px;
+        height: 23px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+      }
       .pinConfirm strong,
       .pinConfirm span {
         display: block;
@@ -406,14 +458,15 @@
         line-height: 1.4;
       }
       .panel.pinMode .pinConfirm .pinAddress {
-        margin: 5px 0 12px;
+        margin: 0;
         overflow: hidden;
         color: #fff;
+        display: -webkit-box;
         font-size: 16px;
         font-weight: 850;
         line-height: 1.35;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
       }
       .pinConfirm button {
         width: 100%;
@@ -425,6 +478,12 @@
         color: #090909;
         font-size: 14px;
         font-weight: 900;
+      }
+      .panel.pinMode .pinPrimary {
+        min-height: 56px;
+        margin-top: 14px;
+        border-radius: 16px;
+        font-size: 17px;
       }
       .savedPlaces {
         margin: 10px 0 4px;
@@ -998,6 +1057,10 @@
       @media (prefers-reduced-motion: reduce) {
         .panel { transition: none; }
       }
+      body.pinConfirmMode .brand {
+        opacity: 0;
+        pointer-events: none;
+      }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <style id="vasi-ride-fixed-viewport">
@@ -1047,6 +1110,11 @@
         top: max(86px, calc(env(safe-area-inset-top) + 68px)) !important;
       }
 
+      body.pinConfirmMode .locateBtn {
+        top: auto !important;
+        bottom: calc(var(--pin-panel-height, 270px) + max(20px, env(safe-area-inset-bottom))) !important;
+      }
+
       .leaflet-control-attribution {
         margin-top: max(74px, calc(env(safe-area-inset-top) + 62px)) !important;
       }
@@ -1068,7 +1136,7 @@
       }
 
       .panel.pinMode {
-        max-height: min(190px, 30dvh) !important;
+        max-height: min(300px, 38dvh) !important;
         overflow-y: hidden !important;
       }
 
@@ -1085,7 +1153,7 @@
           max-height: min(68vh, 680px) !important;
         }
         .panel.pinMode {
-          max-height: min(190px, 30vh) !important;
+          max-height: min(300px, 38vh) !important;
         }
       }
     </style>
@@ -1173,16 +1241,32 @@
           ></div>
         </div>
         <div id="pinConfirm" class="pinConfirm hidden" aria-live="polite">
-          <strong>Destination</strong>
-          <span id="destinationPinAddress" class="pinAddress">Destination selected</span>
-          <button type="button" onclick="confirmDestination()">
+          <div class="pinConfirmHead">
+            <h2>Confirm destination spot</h2>
+            <p>Drag map to move pin</p>
+          </div>
+          <div class="pinAddressCard">
+            <div><small>Destination</small><span id="destinationPinAddress" class="pinAddress">Destination selected</span></div>
+            <button class="pinEditButton" type="button" onclick="editDestinationAddress()" aria-label="Edit destination address">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+            </button>
+          </div>
+          <button class="pinPrimary" type="button" onclick="confirmDestination()">
             Confirm destination
           </button>
         </div>
         <div id="pickupPinConfirm" class="pinConfirm hidden" aria-live="polite">
-          <strong>Pickup</strong>
-          <span id="pickupPinAddress" class="pinAddress">Pickup selected</span>
-          <button type="button" onclick="confirmPickup()">
+          <div class="pinConfirmHead">
+            <h2>Confirm pickup spot</h2>
+            <p>Drag map to move pin</p>
+          </div>
+          <div class="pinAddressCard">
+            <div><small>Pickup</small><span id="pickupPinAddress" class="pinAddress">Pickup selected</span></div>
+            <button class="pinEditButton" type="button" onclick="editPickupAddress()" aria-label="Edit pickup address">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+            </button>
+          </div>
+          <button class="pinPrimary" type="button" onclick="confirmPickup()">
             Confirm pickup
           </button>
         </div>
@@ -1387,6 +1471,8 @@
         destination = null,
         destinationConfirmed = false,
         mapSelectionKind = "pickup",
+        mapPinDragKind = null,
+        pinAddressRequest = 0,
         pickupSuggestionTimer = null,
         pickupSuggestionRequest = 0,
         pickupSuggestions = [],
@@ -1544,6 +1630,12 @@
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
+        document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
+        if (pinVisible && !bookingVisible && !driverVisible) {
+          requestAnimationFrame(() => {
+            document.body.style.setProperty("--pin-panel-height", `${panel.offsetHeight}px`);
+          });
+        }
         $("pickupField").classList.toggle("active", !bookingVisible && !driverVisible && mapSelectionKind === "pickup");
         $("destinationField").classList.toggle("active", !bookingVisible && !driverVisible && mapSelectionKind === "destination");
         $("stageHint").textContent = driverVisible
@@ -1563,6 +1655,75 @@
         const collapsed = $("panel").classList.toggle("collapsed");
         document.querySelector(".grab")?.setAttribute("aria-expanded", String(!collapsed));
         setTimeout(() => map?.invalidateSize(), 240);
+      }
+      function activePinKind() {
+        if (!$("pickupPinConfirm").classList.contains("hidden")) return "pickup";
+        if (!$("pinConfirm").classList.contains("hidden")) return "destination";
+        return null;
+      }
+      function pinTargetLatLng() {
+        if (!map) return null;
+        const size = map.getSize(),
+          panelHeight = $("panel").classList.contains("pinMode") ? $("panel").offsetHeight : 0,
+          point = L.point(size.x / 2, Math.max(120, (size.y - panelHeight) / 2));
+        return map.containerPointToLatLng(point);
+      }
+      function moveActivePinToMapCenter(kind = activePinKind()) {
+        if (!kind || !map) return null;
+        const center = pinTargetLatLng();
+        if (!center) return null;
+        const point = [center.lat, center.lng];
+        if (kind === "pickup") {
+          pickup = point;
+          pickupConfirmed = false;
+          pickupMarker?.setLatLng(center);
+        } else {
+          destination = point;
+          destinationConfirmed = false;
+          destMarker?.setLatLng(center);
+        }
+        return point;
+      }
+      function alignPinWithVisibleMap(kind) {
+        requestAnimationFrame(() => {
+          if (activePinKind() !== kind) return;
+          const panelHeight = $("panel").offsetHeight;
+          map.panBy([0, panelHeight / 2], { animate: false });
+          moveActivePinToMapCenter(kind);
+        });
+      }
+      async function reverseGeocodePin(kind) {
+        const point = moveActivePinToMapCenter(kind);
+        if (!point) return;
+        const request = ++pinAddressRequest,
+          addressElement = kind === "pickup" ? $("pickupPinAddress") : $("destinationPinAddress"),
+          fieldElement = kind === "pickup" ? $("pickup") : $("destination");
+        addressElement.textContent = "Finding address…";
+        try {
+          const response = await fetch(apiUrl(
+            `/api/route-preview?lat=${encodeURIComponent(point[0])}&lng=${encodeURIComponent(point[1])}&country=${encodeURIComponent(country)}`,
+          ));
+          const data = await response.json();
+          if (request !== pinAddressRequest || activePinKind() !== kind) return;
+          const fallbackLabel = "Selected map location",
+            label = response.ok && data?.result
+              ? formatGeocodedAddress(data.result, fallbackLabel)
+              : fallbackLabel;
+          addressElement.textContent = label;
+          fieldElement.textContent = label;
+        } catch (_) {
+          if (request !== pinAddressRequest || activePinKind() !== kind) return;
+          addressElement.textContent = "Selected map location";
+          fieldElement.textContent = "Selected map location";
+        }
+      }
+      function editPickupAddress() {
+        $("pickupPinConfirm").classList.add("hidden");
+        focusPickup();
+      }
+      function editDestinationAddress() {
+        $("pinConfirm").classList.add("hidden");
+        focusDestination();
       }
       function priceFor(km, mins, key) {
         let fare;
@@ -1988,6 +2149,7 @@
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
         map.on("click", (e) => {
+          if (activePinKind()) return;
           if (!pickup || mapSelectionKind === "pickup")
             setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map");
           else
@@ -1995,6 +2157,17 @@
               [e.latlng.lat, e.latlng.lng],
               "Destination pin selected",
             );
+        });
+        map.on("dragstart", () => {
+          mapPinDragKind = activePinKind();
+        });
+        map.on("drag", () => {
+          if (mapPinDragKind) moveActivePinToMapCenter(mapPinDragKind);
+        });
+        map.on("dragend", () => {
+          const kind = mapPinDragKind;
+          mapPinDragKind = null;
+          if (kind) reverseGeocodePin(kind);
         });
         const panelStateObserver = new MutationObserver(syncMapUiState);
         panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
@@ -2085,24 +2258,12 @@
           if (pickupMarker) pickupMarker.remove();
           pickupMarker = L.marker(p, {
             icon: pickupIcon,
-            draggable: true,
-            keyboard: true,
+            draggable: false,
+            keyboard: false,
             title: "VASI pickup",
           }).addTo(map);
-          pickupMarker.on("dragend", () => {
-            const pin = pickupMarker.getLatLng();
-            pickup = [pin.lat, pin.lng];
-            pickupConfirmed = false;
-            $("pickup").textContent = label + " · pin adjusted";
-            $("pickupPinAddress").textContent = label + " · pin adjusted";
-            $("booking").classList.add("hidden");
-            $("mapTripSummary").classList.add("hidden");
-            $("fare").textContent = "—";
-            $("pickupPinConfirm").classList.remove("hidden");
-            $("status").textContent =
-              "Pin moved — confirm this pickup before pricing";
-          });
           map.setView(p, 14);
+          alignPinWithVisibleMap("pickup");
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
         }
@@ -2154,26 +2315,11 @@
         clearPlaceSuggestions();
         try {
           if (destMarker) destMarker.remove();
-          destMarker = L.marker(p, { draggable: true })
+          destMarker = L.marker(p, { draggable: false, keyboard: false })
             .setIcon(destinationIcon)
             .addTo(map);
-          destMarker.on("dragend", () => {
-            const pin = destMarker.getLatLng();
-            destination = [pin.lat, pin.lng];
-            destinationConfirmed = false;
-            $("destination").textContent = label + " · pin adjusted";
-            $("destinationPinAddress").textContent = label + " · pin adjusted";
-            $("pinConfirm").classList.remove("hidden");
-            $("status").textContent =
-              "Pin moved — confirm this destination before pricing";
-          });
-          if (pickup && pickupConfirmed) {
-            map.fitBounds(L.latLngBounds([pickup, destination]), {
-              padding: [35, 35],
-            });
-          } else {
-            map.setView(destination, 14);
-          }
+          map.setView(destination, 14);
+          alignPinWithVisibleMap("destination");
         } catch (mapError) {
           console.warn("Destination map preview unavailable", mapError);
         }
