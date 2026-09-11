@@ -811,6 +811,11 @@ test("ride map supports typed pickup and confirms both fixed pins after map drag
   assert.match(source, /Confirm both map pins before booking/);
 });
 
+test("ride flow loads the current language bundle for pin confirmation labels", async () => {
+  const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /vasi-languages\.js\?v=5/);
+});
+
 test("customer-to-driver lifecycle exposes call, payment and receipt contracts", async () => {
   const [chat, call, driver, history, worker, notifications, settings, auth, languages] = await Promise.all([
     readFile("ride-chat.html", "utf8"),
