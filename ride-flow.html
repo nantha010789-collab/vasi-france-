@@ -1254,21 +1254,6 @@
             aria-label="Destination suggestions"
           ></div>
         </div>
-        <div id="pinConfirm" class="pinConfirm hidden" aria-live="polite">
-          <div class="pinConfirmHead">
-            <h2>Confirm destination spot</h2>
-            <p>Drag map to move pin</p>
-          </div>
-          <div class="pinAddressCard">
-            <div><small>Destination</small><span id="destinationPinAddress" class="pinAddress">Destination selected</span></div>
-            <button class="pinEditButton" type="button" onclick="editDestinationAddress()" aria-label="Edit destination address">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-            </button>
-          </div>
-          <button class="pinPrimary" type="button" onclick="confirmDestination()">
-            Confirm destination
-          </button>
-        </div>
         <div id="pickupPinConfirm" class="pinConfirm hidden" aria-live="polite">
           <div class="pinConfirmHead">
             <h2>Confirm pickup spot</h2>
@@ -1483,7 +1468,6 @@
         pickup = null,
         pickupConfirmed = false,
         destination = null,
-        destinationConfirmed = false,
         mapSelectionKind = "pickup",
         mapPinDragKind = null,
         pinAddressRequest = 0,
@@ -1634,21 +1618,20 @@
       const VASI_API_ORIGIN = location.hostname.endsWith(".github.io")
         ? "https://vasi-new.vercel.app"
         : "";
+      const PIN_CONFIRM_ZOOM = 17;
       const apiUrl = (path) => VASI_API_ORIGIN + path;
       const vehicleIconSvg = '<span class="vehicleGlyph"><svg viewBox="0 0 32 22" aria-hidden="true"><path d="M5 14l2-6h18l3 6v4H4v-4h1Z"/><path d="M9 8l3-4h9l4 4M8 18v2M25 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="24" cy="15" r="1"/></svg></span>';
       function syncMapUiState() {
         const panel = $("panel"),
           bookingVisible = !$("booking").classList.contains("hidden"),
           driverVisible = !$("driverArea").classList.contains("hidden"),
-          pinVisible = !$("pickupPinConfirm").classList.contains("hidden") || !$("pinConfirm").classList.contains("hidden"),
-          pinKind = activePinKind(),
+          pinVisible = !$("pickupPinConfirm").classList.contains("hidden"),
           pinReticle = $("pinReticle");
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
         pinReticle.classList.toggle("hidden", !pinVisible || bookingVisible || driverVisible);
-        pinReticle.querySelector(".vasi-pin").classList.toggle("destination", pinKind === "destination");
         if (pinVisible && !bookingVisible && !driverVisible) {
           requestAnimationFrame(() => {
             document.body.style.setProperty("--pin-panel-height", `${panel.offsetHeight}px`);
@@ -1676,7 +1659,6 @@
       }
       function activePinKind() {
         if (!$("pickupPinConfirm").classList.contains("hidden")) return "pickup";
-        if (!$("pinConfirm").classList.contains("hidden")) return "destination";
         return null;
       }
       function pinTargetLatLng() {
@@ -1691,15 +1673,9 @@
         const center = pinTargetLatLng();
         if (!center) return null;
         const point = [center.lat, center.lng];
-        if (kind === "pickup") {
-          pickup = point;
-          pickupConfirmed = false;
-          pickupMarker?.setLatLng(center);
-        } else {
-          destination = point;
-          destinationConfirmed = false;
-          destMarker?.setLatLng(center);
-        }
+        pickup = point;
+        pickupConfirmed = false;
+        pickupMarker?.setLatLng(center);
         return point;
       }
       function alignPinWithVisibleMap(kind) {
@@ -1714,8 +1690,8 @@
         const point = moveActivePinToMapCenter(kind);
         if (!point) return;
         const request = ++pinAddressRequest,
-          addressElement = kind === "pickup" ? $("pickupPinAddress") : $("destinationPinAddress"),
-          fieldElement = kind === "pickup" ? $("pickup") : $("destination");
+          addressElement = $("pickupPinAddress"),
+          fieldElement = $("pickup");
         addressElement.textContent = "Finding address…";
         try {
           const response = await fetch(apiUrl(
@@ -1738,10 +1714,6 @@
       function editPickupAddress() {
         $("pickupPinConfirm").classList.add("hidden");
         focusPickup();
-      }
-      function editDestinationAddress() {
-        $("pinConfirm").classList.add("hidden");
-        focusDestination();
       }
       function priceFor(km, mins, key) {
         let fare;
@@ -2191,7 +2163,6 @@
         panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("driverArea"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("pickupPinConfirm"), { attributes: true, attributeFilter: ["class"] });
-        panelStateObserver.observe($("pinConfirm"), { attributes: true, attributeFilter: ["class"] });
         syncMapUiState();
         checkPaymentAvailability();
         if (homePickup) useHomePickup();
@@ -2268,7 +2239,6 @@
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
-        $("pinConfirm").classList.add("hidden");
         $("pickupPinConfirm").classList.remove("hidden");
         $("pickupSearchWrap").classList.add("hidden");
         clearPickupSuggestions();
@@ -2281,7 +2251,7 @@
             title: "VASI pickup",
           }).addTo(map);
           pickupMarker.getElement()?.classList.add("selectionMarker");
-          map.setView(p, 14);
+          map.setView(p, PIN_CONFIRM_ZOOM);
           alignPinWithVisibleMap("pickup");
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
@@ -2311,25 +2281,17 @@
         $("pickupPinConfirm").classList.add("hidden");
         if (pickupMarker?.dragging) pickupMarker.dragging.disable();
         pickupMarker?.getElement()?.classList.remove("selectionMarker");
-        if (destination && destinationConfirmed) buildRoute();
-        else {
-          if (destination) $("pinConfirm").classList.remove("hidden");
-          $("status").textContent = "Pickup confirmed — now choose your destination";
-        }
+        if (destination) buildRoute();
+        else $("status").textContent = "Pickup confirmed — now choose your destination";
       }
       function setDestination(p, label = "Destination selected") {
         destination = p;
-        destinationConfirmed = false;
         mapSelectionKind = "destination";
         expandPanel();
-        syncMapUiState();
         $("destination").textContent = label;
-        $("destinationPinAddress").textContent = label;
         $("booking").classList.add("hidden");
         $("mapTripSummary").classList.add("hidden");
         $("fare").textContent = "—";
-        $("pickupPinConfirm").classList.add("hidden");
-        $("pinConfirm").classList.remove("hidden");
         $("searchWrap").classList.add("hidden");
         $("pickupSearchWrap").classList.add("hidden");
         clearPlaceSuggestions();
@@ -2338,32 +2300,18 @@
           destMarker = L.marker(p, { draggable: false, keyboard: false })
             .setIcon(destinationIcon)
             .addTo(map);
-          destMarker.getElement()?.classList.add("selectionMarker");
-          map.setView(destination, 14);
-          alignPinWithVisibleMap("destination");
         } catch (mapError) {
           console.warn("Destination map preview unavailable", mapError);
         }
-        $("status").textContent = pickup && pickupConfirmed
-          ? "Check the destination pin, then confirm it"
-          : "Confirm the destination pin, then confirm your pickup";
-      }
-      function confirmDestination() {
-        if (!destination) return;
-        destinationConfirmed = true;
-        expandPanel();
-        syncMapUiState();
-        $("pinConfirm").classList.add("hidden");
-        if (destMarker?.dragging) destMarker.dragging.disable();
-        destMarker?.getElement()?.classList.remove("selectionMarker");
         if (pickup && pickupConfirmed) buildRoute();
-        else {
+        else if (pickup) {
           mapSelectionKind = "pickup";
           $("pickupPinConfirm").classList.remove("hidden");
+          map.setView(pickup, PIN_CONFIRM_ZOOM);
+          alignPinWithVisibleMap("pickup");
           syncMapUiState();
-          $("status").textContent =
-            "Destination confirmed — now choose and confirm your pickup";
-        }
+          $("status").textContent = "Destination selected — confirm your pickup";
+        } else $("status").textContent = "Destination selected — now choose your pickup";
       }
       function focusPickup() {
         mapSelectionKind = "pickup";
@@ -2706,7 +2654,7 @@
         }
       }
       async function buildRoute() {
-        if (!pickup || !pickupConfirmed || !destination || !destinationConfirmed)
+        if (!pickup || !pickupConfirmed || !destination)
           return;
         $("status").textContent = "Calculating route…";
         try {
@@ -2893,8 +2841,8 @@
         return (await sb.auth.getSession()).data.session;
       }
       async function requestRide() {
-        if (!pickup || !pickupConfirmed || !destination || !destinationConfirmed)
-          return toast("Confirm both map pins before booking");
+        if (!pickup || !pickupConfirmed || !destination)
+          return toast("Confirm your pickup before booking");
         const s = await getSession();
         if (!s) {
           localStorage.setItem("vasi_role", "customer");
