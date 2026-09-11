@@ -987,6 +987,17 @@
         border: 0;
         background: transparent;
       }
+      .pinReticle {
+        position: absolute;
+        z-index: 700;
+        left: 50%;
+        top: calc((100% - var(--pin-panel-height, 0px)) / 2);
+        transform: translate(-50%, -100%);
+        pointer-events: none;
+      }
+      body.pinConfirmMode .selectionMarker {
+        display: none !important;
+      }
       .vasi-pin {
         position: relative;
         display: grid;
@@ -1167,6 +1178,9 @@
         </button>
       </header>
       <div id="map" class="map"></div>
+      <div id="pinReticle" class="pinReticle hidden" aria-hidden="true">
+        <div class="vasi-pin"><span>V</span></div>
+      </div>
       <button
         class="locateBtn"
         type="button"
@@ -1626,11 +1640,15 @@
         const panel = $("panel"),
           bookingVisible = !$("booking").classList.contains("hidden"),
           driverVisible = !$("driverArea").classList.contains("hidden"),
-          pinVisible = !$("pickupPinConfirm").classList.contains("hidden") || !$("pinConfirm").classList.contains("hidden");
+          pinVisible = !$("pickupPinConfirm").classList.contains("hidden") || !$("pinConfirm").classList.contains("hidden"),
+          pinKind = activePinKind(),
+          pinReticle = $("pinReticle");
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
+        pinReticle.classList.toggle("hidden", !pinVisible || bookingVisible || driverVisible);
+        pinReticle.querySelector(".vasi-pin").classList.toggle("destination", pinKind === "destination");
         if (pinVisible && !bookingVisible && !driverVisible) {
           requestAnimationFrame(() => {
             document.body.style.setProperty("--pin-panel-height", `${panel.offsetHeight}px`);
@@ -2262,6 +2280,7 @@
             keyboard: false,
             title: "VASI pickup",
           }).addTo(map);
+          pickupMarker.getElement()?.classList.add("selectionMarker");
           map.setView(p, 14);
           alignPinWithVisibleMap("pickup");
         } catch (mapError) {
@@ -2291,6 +2310,7 @@
         syncMapUiState();
         $("pickupPinConfirm").classList.add("hidden");
         if (pickupMarker?.dragging) pickupMarker.dragging.disable();
+        pickupMarker?.getElement()?.classList.remove("selectionMarker");
         if (destination && destinationConfirmed) buildRoute();
         else {
           if (destination) $("pinConfirm").classList.remove("hidden");
@@ -2318,6 +2338,7 @@
           destMarker = L.marker(p, { draggable: false, keyboard: false })
             .setIcon(destinationIcon)
             .addTo(map);
+          destMarker.getElement()?.classList.add("selectionMarker");
           map.setView(destination, 14);
           alignPinWithVisibleMap("destination");
         } catch (mapError) {
@@ -2334,6 +2355,7 @@
         syncMapUiState();
         $("pinConfirm").classList.add("hidden");
         if (destMarker?.dragging) destMarker.dragging.disable();
+        destMarker?.getElement()?.classList.remove("selectionMarker");
         if (pickup && pickupConfirmed) buildRoute();
         else {
           mapSelectionKind = "pickup";
