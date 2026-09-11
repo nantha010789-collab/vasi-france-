@@ -937,7 +937,11 @@
         pointer-events: none;
       }
       body.pinConfirmMode .selectionMarker {
-        display: none !important;
+        cursor: grab;
+        touch-action: none;
+      }
+      body.pinConfirmMode .selectionMarker.leaflet-drag-target {
+        cursor: grabbing;
       }
       .vasi-pin {
         position: relative;
@@ -1555,7 +1559,7 @@
         panel.classList.toggle("driverMode", driverVisible);
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
-        pinReticle.classList.toggle("hidden", !pinVisible || bookingVisible || driverVisible);
+        pinReticle.classList.add("hidden");
         if (pinVisible && !bookingVisible && !driverVisible) {
           requestAnimationFrame(() => {
             document.body.style.setProperty("--pin-panel-height", `${panel.offsetHeight}px`);
@@ -1610,8 +1614,7 @@
           moveActivePinToMapCenter(kind);
         });
       }
-      async function reverseGeocodePin(kind) {
-        const point = moveActivePinToMapCenter(kind);
+      async function reverseGeocodePoint(kind, point) {
         if (!point) return;
         const request = ++pinAddressRequest,
           addressElement = $("pickupPinAddress"),
@@ -1634,6 +1637,9 @@
           addressElement.textContent = "Selected map location";
           fieldElement.textContent = "Selected map location";
         }
+      }
+      async function reverseGeocodePin(kind) {
+        return reverseGeocodePoint(kind, moveActivePinToMapCenter(kind));
       }
       function editPickupAddress() {
         $("pickupPinConfirm").classList.add("hidden");
@@ -2170,10 +2176,23 @@
           if (pickupMarker) pickupMarker.remove();
           pickupMarker = L.marker(p, {
             icon: pickupIcon,
-            draggable: false,
+            draggable: true,
             keyboard: false,
-            title: "VASI pickup",
+            title: "Move VASI pickup pin",
           }).addTo(map);
+          pickupMarker.on("drag", (event) => {
+            if (activePinKind() !== "pickup") return;
+            const point = event.target.getLatLng();
+            pickup = [point.lat, point.lng];
+            pickupConfirmed = false;
+          });
+          pickupMarker.on("dragend", (event) => {
+            if (activePinKind() !== "pickup") return;
+            const point = event.target.getLatLng();
+            pickup = [point.lat, point.lng];
+            pickupConfirmed = false;
+            reverseGeocodePoint("pickup", pickup);
+          });
           pickupMarker.getElement()?.classList.add("selectionMarker");
           map.setView(p, PIN_CONFIRM_ZOOM);
           alignPinWithVisibleMap("pickup");
