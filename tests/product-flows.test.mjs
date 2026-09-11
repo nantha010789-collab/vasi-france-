@@ -802,6 +802,8 @@ test("ride map supports typed pickup and confirms both fixed pins after map drag
   assert.match(source, /function searchPickup\(\)/);
   assert.match(source, /function confirmPickup\(\)/);
   assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: false/);
+  assert.match(source, /id="pinReticle"/);
+  assert.match(source, /selectionMarker/);
   assert.match(source, /map\.on\("drag"/);
   assert.match(source, /reverseGeocodePin\(kind\)/);
   assert.match(
