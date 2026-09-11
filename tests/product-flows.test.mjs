@@ -762,23 +762,48 @@ test("ride map verifies AI address text with the trusted geocoder", async () => 
   assert.match(source, /AI corrected your \$\{kind\} address/);
 });
 
+test("ride map reverse geocodes the fixed centre pin after the map moves", async () => {
+  delete process.env.GOOGLE_MAPS_SERVER_KEY;
+  delete process.env.GOOGLEMAPSERVERKEY;
+  delete process.env.GOOGLEMAPSSERVERKEY;
+  delete process.env.GOOGLE_MAPS_API_KEY;
+  global.fetch = async (url) => {
+    const value = String(url);
+    assert.match(value, /nominatim\.openstreetmap\.org\/reverse/);
+    assert.match(value, /lat=48\.594/);
+    assert.match(value, /lon=2\.583/);
+    return response({
+      display_name: "6 Rue Pierre Leroux, 77176 Savigny-le-Temple, France",
+      lat: "48.594",
+      lon: "2.583",
+      address: { house_number: "6", road: "Rue Pierre Leroux", postcode: "77176", city: "Savigny-le-Temple" },
+    });
+  };
+  const { default: routePreview } = await import(`../api/route-preview.js?reverse=${Date.now()}`);
+  const res = mockRes();
+  await routePreview({ method: "GET", headers: {}, query: { lat: "48.594", lng: "2.583", country: "FR" } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.result.display_name, "6 Rue Pierre Leroux, 77176 Savigny-le-Temple, France");
+});
+
 test("ride map uses debounced Google suggestions and requires pin confirmation", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /schedulePlaceSuggestions/);
   assert.match(source, /apiUrl\("\/api\/places"\)/);
   assert.match(source, /setTimeout\(loadPlaceSuggestions, 420\)/);
-  assert.match(source, /L\.marker\(p, \{ draggable: true \}\)/);
+  assert.match(source, /destMarker = L\.marker\(p, \{ draggable: false/);
   assert.match(source, /function confirmDestination\(\)/);
   assert.match(source, /destination && destinationConfirmed/);
 });
 
-test("ride map supports typed pickup and confirms both draggable pins before pricing", async () => {
+test("ride map supports typed pickup and confirms both fixed pins after map drag", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /id="pickupSearch"/);
   assert.match(source, /function searchPickup\(\)/);
   assert.match(source, /function confirmPickup\(\)/);
-  assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: true/);
-  assert.match(source, /pickupMarker\.on\("dragend"/);
+  assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: false/);
+  assert.match(source, /map\.on\("drag"/);
+  assert.match(source, /reverseGeocodePin\(kind\)/);
   assert.match(
     source,
     /!pickup \|\| !pickupConfirmed \|\| !destination \|\| !destinationConfirmed/,
