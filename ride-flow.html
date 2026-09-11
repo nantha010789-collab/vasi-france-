@@ -195,9 +195,9 @@
         max-height: min(68vh, 680px);
       }
       .panel.pinMode {
-        max-height: min(300px, 38vh);
+        max-height: min(190px, 30vh);
         overflow: hidden !important;
-        padding: 22px 18px 18px;
+        padding: 14px;
       }
       .panel.pinMode .grab,
       .panel.pinMode .sheetHeading,
@@ -389,58 +389,6 @@
         border: 0;
         background: transparent;
       }
-      .pinConfirmHead {
-        margin-bottom: 17px;
-        text-align: center;
-      }
-      .pinConfirmHead h2 {
-        margin: 0;
-        color: #fff;
-        font-size: 23px;
-        line-height: 1.2;
-        letter-spacing: -0.45px;
-      }
-      .pinConfirmHead p {
-        margin: 6px 0 0;
-        color: #aaa;
-        font-size: 15px;
-      }
-      .pinAddressCard {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 48px;
-        gap: 10px;
-        align-items: center;
-        min-height: 70px;
-        padding: 11px 11px 11px 15px;
-        border: 2px solid #303030;
-        border-radius: 17px;
-        background: #111;
-      }
-      .pinAddressCard small {
-        display: block;
-        margin-bottom: 3px;
-        color: #909090;
-        font-size: 12px;
-        font-weight: 750;
-      }
-      .pinEditButton {
-        display: grid;
-        place-items: center;
-        width: 48px;
-        height: 48px;
-        border: 0;
-        border-radius: 50%;
-        background: #242424;
-        color: #fff;
-      }
-      .pinEditButton svg {
-        width: 23px;
-        height: 23px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2.2;
-        stroke-linecap: round;
-      }
       .pinConfirm strong,
       .pinConfirm span {
         display: block;
@@ -458,15 +406,14 @@
         line-height: 1.4;
       }
       .panel.pinMode .pinConfirm .pinAddress {
-        margin: 0;
+        margin: 5px 0 12px;
         overflow: hidden;
         color: #fff;
-        display: -webkit-box;
         font-size: 16px;
         font-weight: 850;
         line-height: 1.35;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .pinConfirm button {
         width: 100%;
@@ -478,12 +425,6 @@
         color: #090909;
         font-size: 14px;
         font-weight: 900;
-      }
-      .panel.pinMode .pinPrimary {
-        min-height: 56px;
-        margin-top: 14px;
-        border-radius: 16px;
-        font-size: 17px;
       }
       .savedPlaces {
         margin: 10px 0 4px;
@@ -1068,10 +1009,6 @@
       @media (prefers-reduced-motion: reduce) {
         .panel { transition: none; }
       }
-      body.pinConfirmMode .brand {
-        opacity: 0;
-        pointer-events: none;
-      }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <style id="vasi-ride-fixed-viewport">
@@ -1121,11 +1058,6 @@
         top: max(86px, calc(env(safe-area-inset-top) + 68px)) !important;
       }
 
-      body.pinConfirmMode .locateBtn {
-        top: auto !important;
-        bottom: calc(var(--pin-panel-height, 270px) + max(20px, env(safe-area-inset-bottom))) !important;
-      }
-
       .leaflet-control-attribution {
         margin-top: max(74px, calc(env(safe-area-inset-top) + 62px)) !important;
       }
@@ -1147,7 +1079,7 @@
       }
 
       .panel.pinMode {
-        max-height: min(300px, 38dvh) !important;
+        max-height: min(190px, 30dvh) !important;
         overflow-y: hidden !important;
       }
 
@@ -1164,7 +1096,7 @@
           max-height: min(68vh, 680px) !important;
         }
         .panel.pinMode {
-          max-height: min(300px, 38vh) !important;
+          max-height: min(190px, 30vh) !important;
         }
       }
     </style>
@@ -1255,17 +1187,9 @@
           ></div>
         </div>
         <div id="pickupPinConfirm" class="pinConfirm hidden" aria-live="polite">
-          <div class="pinConfirmHead">
-            <h2>Confirm pickup spot</h2>
-            <p>Drag map to move pin</p>
-          </div>
-          <div class="pinAddressCard">
-            <div><small>Pickup</small><span id="pickupPinAddress" class="pinAddress">Pickup selected</span></div>
-            <button class="pinEditButton" type="button" onclick="editPickupAddress()" aria-label="Edit pickup address">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-            </button>
-          </div>
-          <button class="pinPrimary" type="button" onclick="confirmPickup()">
+          <strong>Pickup</strong>
+          <span id="pickupPinAddress" class="pinAddress">Pickup selected</span>
+          <button type="button" onclick="confirmPickup()">
             Confirm pickup
           </button>
         </div>
