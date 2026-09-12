@@ -115,7 +115,7 @@
         background: #d8dde0;
       }
       .map .leaflet-tile-pane {
-        filter: grayscale(0.78) saturate(0.48) contrast(1.04) brightness(1.02);
+        filter: saturate(0.88) contrast(1.08) brightness(1.01);
       }
       .map::after {
         position: absolute;
@@ -2090,8 +2090,10 @@
         L.control
           .attribution({ position: "topright", prefix: false })
           .addTo(map);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
+          updateWhenIdle: true,
+          keepBuffer: 3,
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
         map.on("click", (e) => {
