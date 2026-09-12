@@ -9,7 +9,7 @@
     ['drivers','🚗','Chauffeurs'],['documents','📄','Documents'],['couriers','🛵','Coursiers'],['restaurants','🍽','Restaurants'],
     ['orders','🧾','Commandes'],['finance','€','Paiements'],['pricing','⚙','Tarifs'],['support','💬','Support'],['deletions','⌫','Suppressions'],['audit','🛡','Journal']
   ];
-  let accessToken = '', active = 'overview', gpsTimer = null, map = null, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
+  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapTileFailures = 0, mapRecoveryUsed = false, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const money = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
   const fmt = value => value ? new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)) : '—';
@@ -20,7 +20,30 @@
   function metric(label,value,note='Données en direct'){return `<article class="metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value??'—')}</div><div class="metric-note">${esc(note)}</div></article>`}
   async function endAdminSession(){await db.auth.signOut({scope:'local'});window.VasiAccountRole?.clear();location.replace('../admin-login.html')}
   async function api(path,options={}){const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(data.error||`Erreur ${response.status}`);return data}
-  function stopGps(){if(gpsTimer)clearTimeout(gpsTimer);gpsTimer=null;if(map){map.remove();map=null}markers={};gpsFitted=false}
+  function syncMapSize(){
+    if(!map)return;
+    requestAnimationFrame(()=>map?.invalidateSize({pan:false,debounceMoveend:true}));
+  }
+  function watchMapSize(container){
+    mapResizeObserver?.disconnect();
+    mapResizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(syncMapSize):null;
+    mapResizeObserver?.observe(container);
+    window.addEventListener('resize',syncMapSize,{passive:true});
+    window.addEventListener('orientationchange',syncMapSize,{passive:true});
+    window.visualViewport?.addEventListener('resize',syncMapSize,{passive:true});
+    [0,180,600].forEach(delay=>setTimeout(syncMapSize,delay));
+  }
+  function stopGps(){
+    if(gpsTimer)clearTimeout(gpsTimer);
+    gpsTimer=null;
+    mapResizeObserver?.disconnect();
+    mapResizeObserver=null;
+    window.removeEventListener('resize',syncMapSize);
+    window.removeEventListener('orientationchange',syncMapSize);
+    window.visualViewport?.removeEventListener('resize',syncMapSize);
+    if(map){map.remove();map=null}
+    mapTiles=null;mapTileFailures=0;mapRecoveryUsed=false;markers={};gpsFitted=false;
+  }
   function shell(name,content,actions=''){title.textContent=name;app.setAttribute('aria-busy','false');app.innerHTML=`${actions}<div id="content">${content}</div>`}
   function errorView(error){setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}</div>`}
   async function overview(){try{const s=await api('/api/admin-stats');setConnected(true);shell('Vue d’ensemble',`<div class="summary-grid">${metric('Courses',s.bookings)}${metric('Courses actives',s.activeRides)}${metric('Chauffeurs en ligne',s.onlineDrivers)}${metric('Documents à vérifier',s.pendingDocuments)}${metric('Coursiers en attente',s.pendingCouriers)}${metric('Restaurants en attente',s.pendingRestaurants)}${metric('Clients',s.customers)}${metric('Chiffre brut aujourd’hui',money(s.todayGross))}</div><section class="panel"><div class="panel-head"><h2>Résumé financier</h2><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Commission VASI',money(s.todayCommission),'Aujourd’hui')}${metric('Revenus chauffeurs',money(s.todayDriverAmount),'Aujourd’hui')}${metric('RIB chauffeurs prêts',s.payoutReadyDrivers,'Stripe vérifié')}${metric('RIB partenaires prêts',(s.payoutReadyCouriers||0)+(s.payoutReadyRestaurants||0),'Coursiers + restaurants')}</div></section>`)}catch(e){shell('Vue d’ensemble',errorView(e))}}
@@ -91,11 +114,24 @@
   async function deletions(){try{const data=await api('/api/admin-deletions'),rows=data.requests||[];const html=table(['Demande','Compte','Motif','Échéance','Statut','Actions'],rows.map(r=>`<tr data-status="${esc(r.status)}"><td><div class="cell-main mono">#${esc(r.id.slice(0,8).toUpperCase())}</div><div class="cell-sub">${fmt(r.requested_at)}</div></td><td class="mono">${esc(String(r.user_id).slice(0,8))}</td><td><div class="cell-sub">${esc(r.reason||'Aucun motif')}</div></td><td>${fmt(r.scheduled_for)}</td><td>${badge(r.status)}</td><td>${['requested','processing'].includes(r.status)?`<div class="actions"><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="processing">Traiter</button><button class="button danger" data-deletion="${esc(r.id)}" data-deletion-status="rejected">Refuser</button><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="cancelled">Annuler</button></div>`:'—'}</td></tr>`));shell('Suppressions',`<section class="panel"><div class="panel-head"><div><h2>Demandes de suppression</h2><p class="muted">Vérifiez les courses, paiements et obligations légales avant toute suppression. La clôture définitive exige la procédure serveur sécurisée.</p></div><button class="button" data-refresh>Actualiser</button></div>${filters(['requested','processing','cancelled','rejected','completed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-deletion]').forEach(btn=>btn.addEventListener('click',async()=>{const note=prompt('Note interne :','Vérification administrateur')||'';if(!confirm('Confirmer la mise à jour de cette demande ?'))return;await api('/api/admin-deletions',{method:'PATCH',body:JSON.stringify({id:btn.dataset.deletion,status:btn.dataset.deletionStatus,admin_note:note})});notify('Demande mise à jour');deletions()}))}catch(e){shell('Suppressions',errorView(e))}}
   async function gps(){
     if(!map){
-      shell('GPS en direct',`<section class="panel"><div class="panel-head"><div><h2>Chauffeurs en direct</h2><p id="gpsStatus" class="muted" role="status">Chargement des positions…</p></div><button class="button" data-refresh>Actualiser</button></div><div id="gpsMap" class="gps-map" aria-label="Carte des chauffeurs en direct"></div></section>`);
+      shell('GPS en direct',`<section class="panel gps-panel"><div class="panel-head"><div><h2>Chauffeurs en direct</h2><p id="gpsStatus" class="muted" role="status">Chargement des positions…</p></div><button class="button" data-refresh>Actualiser</button></div><div class="gps-map-shell"><div id="gpsMap" class="gps-map" aria-label="Carte interactive des chauffeurs en direct"></div><div id="gpsMapLoading" class="gps-map-loading" role="status"><span class="gps-spinner" aria-hidden="true"></span>Chargement de la carte…</div><div id="gpsMapNotice" class="gps-map-notice" role="status" hidden></div><div class="gps-map-legend" aria-label="Légende de la carte"><span><i class="gps-dot live"></i>Position récente</span><span><i class="gps-dot stale"></i>À actualiser</span></div></div></section>`);
       if(!window.L){shell('GPS en direct',errorView(new Error('La carte ne peut pas être chargée. Vérifiez la connexion internet.')));return}
-      map=window.L.map('gpsMap',{zoomControl:true}).setView([48.8566,2.3522],8);
-      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,updateWhenIdle:true,keepBuffer:3,attribution:'© OpenStreetMap'}).addTo(map);
-      requestAnimationFrame(()=>map?.invalidateSize({pan:false}));
+      const mapElement=document.getElementById('gpsMap');
+      map=window.L.map(mapElement,{zoomControl:true,zoomAnimation:true,fadeAnimation:true,trackResize:true}).setView([48.8566,2.3522],9);
+      mapTiles=window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,updateWhenIdle:false,updateWhenZooming:true,keepBuffer:3,attribution:'© OpenStreetMap contributors'}).addTo(map);
+      mapTiles.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapTileFailures=0});
+      mapTiles.on('tileerror',()=>{
+        mapTileFailures+=1;
+        if(mapTileFailures>=3&&!mapRecoveryUsed){
+          mapRecoveryUsed=true;
+          setTimeout(()=>{if(map&&mapTiles){mapTileFailures=0;mapTiles.redraw();syncMapSize()}},900);
+        }else if(mapTileFailures>=6){
+          const notice=document.getElementById('gpsMapNotice');
+          if(notice){notice.hidden=false;notice.textContent='Le fond de carte se recharge. Vérifiez votre connexion si des zones restent vides.'}
+        }
+      });
+      map.whenReady(()=>{syncMapSize();document.getElementById('gpsMapLoading')?.classList.add('hidden')});
+      watchMapSize(mapElement);
     }
     const status=document.getElementById('gpsStatus');
     try{
@@ -104,17 +140,18 @@
       const visible=new Set(),bounds=[];
       (data.drivers||[]).forEach(d=>{
         const latitude=Number(d.latitude),longitude=Number(d.longitude);
-        if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
+        if(!d.online||!d.verified||!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
         const point=[latitude,longitude],age=d.location_age_seconds==null?'Position ancienne':d.location_age_seconds<60?'À l’instant':`Il y a ${Math.round(d.location_age_seconds/60)} min`;
         const popup=`<strong>${esc(d.full_name||'Chauffeur')}</strong><br>${esc(d.vehicle_plate||'')}<br>${esc(d.online?'En ligne':'Hors ligne')} · ${esc(age)}`;
         visible.add(d.id);bounds.push(point);
-        if(markers[d.id])markers[d.id].setLatLng(point).setPopupContent(popup);
-        else markers[d.id]=window.L.marker(point).addTo(map).bindPopup(popup);
+        const stale=d.stale===true||Number(d.location_age_seconds)>60;
+        if(markers[d.id])markers[d.id].setLatLng(point).setStyle({fillColor:stale?'#f59e0b':'#2563eb'}).setPopupContent(popup);
+        else markers[d.id]=window.L.circleMarker(point,{radius:9,weight:3,color:'#fff',fillColor:stale?'#f59e0b':'#2563eb',fillOpacity:1,className:'gps-driver-marker'}).addTo(map).bindPopup(popup);
       });
       Object.keys(markers).forEach(id=>{if(!visible.has(id)){markers[id].remove();delete markers[id]}});
       if(bounds.length&&!gpsFitted){map.fitBounds(bounds,{padding:[34,34],maxZoom:15});gpsFitted=true}
-      map.invalidateSize({pan:false});
-      if(status)status.textContent=bounds.length?`${bounds.length} position${bounds.length>1?'s':''} · Mise à jour automatique toutes les 15 secondes`:'Aucune position GPS disponible. Les chauffeurs apparaîtront dès qu’ils seront en ligne.';
+      syncMapSize();
+      if(status)status.textContent=bounds.length?`${bounds.length} chauffeur${bounds.length>1?'s':''} en ligne · Actualisé à ${new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(data.updated_at||Date.now()))}`:'Aucun chauffeur vérifié en ligne. La carte est prête et les positions apparaîtront automatiquement.';
     }catch(e){
       setConnected(false);
       if(status)status.textContent='Positions temporairement indisponibles. Nouvelle tentative automatique…';

@@ -19,7 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
-  assert.match(html, /src="app\.js\?v=2"/);
+  assert.match(html, /src="app\.js\?v=3"/);
   assert.match(html, /vasi-languages\.js/);
   assert.match(html, /vasi-account-role\.js/);
   assert.match(login, /VasiAccountRole\.remember\('admin'\)/);
@@ -32,14 +32,22 @@ test('professional admin console is accessible and session protected', async () 
 
 test('admin live GPS keeps one responsive map and refreshes markers in place', async () => {
   const app = await read('admin/app.js');
-  const mapStart = app.indexOf("map=window.L.map('gpsMap'");
+  const mapStart = app.indexOf('map=window.L.map(mapElement');
   const dataRequest = app.indexOf("await api('/api/admin-live-gps')");
   assert.ok(mapStart > -1 && dataRequest > mapStart, 'the map should render before GPS data finishes loading');
   assert.match(app, /requestAnimationFrame\(\(\)=>map\?\.invalidateSize/);
-  assert.match(app, /markers\[d\.id\]\.setLatLng\(point\)\.setPopupContent\(popup\)/);
+  assert.match(app, /new ResizeObserver\(syncMapSize\)/);
+  assert.match(app, /visualViewport\?\.addEventListener\('resize',syncMapSize/);
+  assert.match(app, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
+  assert.doesNotMatch(app, /\{s\}\.tile\.openstreetmap\.org/);
+  assert.match(app, /mapTiles\.on\('tileerror'/);
+  assert.match(app, /mapTiles\.redraw\(\)/);
+  assert.match(app, /window\.L\.circleMarker/);
+  assert.match(app, /!d\.online\|\|!d\.verified/);
+  assert.match(app, /markers\[d\.id\]\.setLatLng\(point\)\.setStyle\([\s\S]*?\.setPopupContent\(popup\)/);
   assert.match(app, /if\(bounds\.length&&!gpsFitted\)/);
   assert.match(app, /maxZoom:15/);
-  assert.match(app, /Aucune position GPS disponible/);
+  assert.match(app, /Aucun chauffeur vérifié en ligne/);
   assert.match(app, /clearTimeout\(gpsTimer\)/);
 });
 
