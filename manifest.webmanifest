@@ -2,13 +2,14 @@
   "id": "./",
   "name": "VASI — France & Europe",
   "short_name": "VASI",
+  "lang": "fr",
   "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#050505",
   "theme_color": "#050505",
-  "description": "VASI ride, driver and courier app for France & Europe",
+  "description": "VASI pour vos trajets et livraisons en France et en Europe",
   "icons": [
     {
       "src": "./vasi-word-icon-192.png",
@@ -25,13 +26,13 @@
   ],
   "shortcuts": [
     {
-      "name": "Book a ride",
-      "short_name": "Ride",
+      "name": "Réserver une course",
+      "short_name": "Course",
       "url": "./ride-flow.html"
     },
     {
-      "name": "Activity",
-      "short_name": "Activity",
+      "name": "Activité",
+      "short_name": "Activité",
       "url": "./activity.html"
     }
   ]

@@ -1234,6 +1234,10 @@ test("PWA install metadata and baseline security headers stay production-ready",
 
   assert.match(index, /rel="apple-touch-icon" href="\.\/vasi-word-icon-192\.png"/);
   assert.match(index, /name="apple-mobile-web-app-capable" content="yes"/);
+  assert.equal(manifest.lang, "fr");
+  assert.equal(manifest.description, "VASI pour vos trajets et livraisons en France et en Europe");
+  assert.equal(manifest.shortcuts[0].name, "Réserver une course");
+  assert.equal(manifest.shortcuts[1].name, "Activité");
   assert.equal(manifest.theme_color, "#050505");
   assert.equal(manifest.background_color, "#050505");
   assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.type === "image/png"));
