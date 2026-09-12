@@ -94,7 +94,7 @@
       shell('GPS en direct',`<section class="panel"><div class="panel-head"><div><h2>Chauffeurs en direct</h2><p id="gpsStatus" class="muted" role="status">Chargement des positions…</p></div><button class="button" data-refresh>Actualiser</button></div><div id="gpsMap" class="gps-map" aria-label="Carte des chauffeurs en direct"></div></section>`);
       if(!window.L){shell('GPS en direct',errorView(new Error('La carte ne peut pas être chargée. Vérifiez la connexion internet.')));return}
       map=window.L.map('gpsMap',{zoomControl:true}).setView([48.8566,2.3522],8);
-      window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,updateWhenIdle:true,keepBuffer:3,attribution:'© OpenStreetMap'}).addTo(map);
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,updateWhenIdle:true,keepBuffer:3,attribution:'© OpenStreetMap'}).addTo(map);
       requestAnimationFrame(()=>map?.invalidateSize({pan:false}));
     }
     const status=document.getElementById('gpsStatus');
