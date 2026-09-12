@@ -622,6 +622,7 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(languages, /Aucun restaurant n’est encore disponible\./);
   assert.match(languages, /இன்னும் எந்த உணவகமும் கிடைக்கவில்லை\./);
   assert.match(vercel, /Content-Security-Policy/);
+  assert.match(vercel, /img-src[^;]+https:\/\/tile\.openstreetmap\.org/);
   assert.match(vercel, /Permissions-Policy/);
   const serviceWorker = await readFile("sw.js", "utf8");
   assert.match(serviceWorker, /vasi-app-v\d+/);
