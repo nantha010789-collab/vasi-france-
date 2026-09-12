@@ -19,6 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
+  assert.match(html, /src="app\.js\?v=2"/);
   assert.match(html, /vasi-languages\.js/);
   assert.match(html, /vasi-account-role\.js/);
   assert.match(login, /VasiAccountRole\.remember\('admin'\)/);
