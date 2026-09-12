@@ -66,6 +66,8 @@ const checks = [
   })(),
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
   expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn", "airportGuidance", "vasi-airports.js"]),
+  expectPage(production, "/eats.html", ["eats-orders.html", "Approved local restaurants"]),
+  expectPage(production, "/eats-orders.html", ["VASI Eats orders", "eats_order_safety", "vasi-account-role.js"]),
   expectPage(production, "/vasi-airports.js", ["Paris–Charles de Gaulle", "Paris–Orly", "Paris Beauvais–Tillé"]),
   (async () => {
     const flightLookup = await fetchWithRetry(`${production}/api/flight-lookup?flight_number=AF1234`, { redirect: "manual" });
