@@ -29,6 +29,19 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(app, /VASI ne stocke jamais l’IBAN complet/);
 });
 
+test('admin live GPS keeps one responsive map and refreshes markers in place', async () => {
+  const app = await read('admin/app.js');
+  const mapStart = app.indexOf("map=window.L.map('gpsMap'");
+  const dataRequest = app.indexOf("await api('/api/admin-live-gps')");
+  assert.ok(mapStart > -1 && dataRequest > mapStart, 'the map should render before GPS data finishes loading');
+  assert.match(app, /requestAnimationFrame\(\(\)=>map\?\.invalidateSize/);
+  assert.match(app, /markers\[d\.id\]\.setLatLng\(point\)\.setPopupContent\(popup\)/);
+  assert.match(app, /if\(bounds\.length&&!gpsFitted\)/);
+  assert.match(app, /maxZoom:15/);
+  assert.match(app, /Aucune position GPS disponible/);
+  assert.match(app, /clearTimeout\(gpsTimer\)/);
+});
+
 test('admin routing stays on Vercel and old dashboard is retired', async () => {
   const [login, legacy, vercel] = await Promise.all([read('admin-login.html'), read('vasi-admin.html'), read('vercel.json')]);
   assert.match(login, /endsWith\('\.github\.io'\)/);

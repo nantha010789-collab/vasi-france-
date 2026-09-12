@@ -9,7 +9,7 @@
     ['drivers','🚗','Chauffeurs'],['documents','📄','Documents'],['couriers','🛵','Coursiers'],['restaurants','🍽','Restaurants'],
     ['orders','🧾','Commandes'],['finance','€','Paiements'],['pricing','⚙','Tarifs'],['support','💬','Support'],['deletions','⌫','Suppressions'],['audit','🛡','Journal']
   ];
-  let accessToken = '', active = 'overview', gpsTimer = null, map = null, markers = {}, courierStatus = 'pending', restaurantStatus = 'pending';
+  let accessToken = '', active = 'overview', gpsTimer = null, map = null, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const money = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
   const fmt = value => value ? new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)) : '—';
@@ -20,7 +20,7 @@
   function metric(label,value,note='Données en direct'){return `<article class="metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value??'—')}</div><div class="metric-note">${esc(note)}</div></article>`}
   async function endAdminSession(){await db.auth.signOut({scope:'local'});window.VasiAccountRole?.clear();location.replace('../admin-login.html')}
   async function api(path,options={}){const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(data.error||`Erreur ${response.status}`);return data}
-  function stopGps(){if(gpsTimer)clearInterval(gpsTimer);gpsTimer=null;if(map){map.remove();map=null;markers={}}}
+  function stopGps(){if(gpsTimer)clearTimeout(gpsTimer);gpsTimer=null;if(map){map.remove();map=null}markers={};gpsFitted=false}
   function shell(name,content,actions=''){title.textContent=name;app.setAttribute('aria-busy','false');app.innerHTML=`${actions}<div id="content">${content}</div>`}
   function errorView(error){setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}</div>`}
   async function overview(){try{const s=await api('/api/admin-stats');setConnected(true);shell('Vue d’ensemble',`<div class="summary-grid">${metric('Courses',s.bookings)}${metric('Courses actives',s.activeRides)}${metric('Chauffeurs en ligne',s.onlineDrivers)}${metric('Documents à vérifier',s.pendingDocuments)}${metric('Coursiers en attente',s.pendingCouriers)}${metric('Restaurants en attente',s.pendingRestaurants)}${metric('Clients',s.customers)}${metric('Chiffre brut aujourd’hui',money(s.todayGross))}</div><section class="panel"><div class="panel-head"><h2>Résumé financier</h2><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Commission VASI',money(s.todayCommission),'Aujourd’hui')}${metric('Revenus chauffeurs',money(s.todayDriverAmount),'Aujourd’hui')}${metric('RIB chauffeurs prêts',s.payoutReadyDrivers,'Stripe vérifié')}${metric('RIB partenaires prêts',(s.payoutReadyCouriers||0)+(s.payoutReadyRestaurants||0),'Coursiers + restaurants')}</div></section>`)}catch(e){shell('Vue d’ensemble',errorView(e))}}
@@ -89,7 +89,40 @@
   async function pricing(){try{const p=await api('/api/pricing');const cards=Object.entries(p.classes||{}).map(([name,v])=>metric(name.toUpperCase(),`${money(v.base)} + ${money(v.km)}/km`,`Minimum ${money(v.minFare)} · ${money(v.min)}/min`)).join('');shell('Tarifs & offres',`<div class="summary-grid">${cards}</div><section class="panel"><div class="panel-head"><div><h2>${esc(p.offer_name||'Offre VASI')}</h2><p class="muted">${p.offer_active?'Offre active':'Offre inactive'} · remise ${esc(p.discount_percent||0)} %</p></div><div class="actions"><a class="button" href="../admin-discounts.html">Gérer les codes promo</a><a class="button primary" href="../pricing-admin.html">Modifier les tarifs</a></div></div></section>`)}catch(e){shell('Tarifs & offres',errorView(e))}}
   async function support(){try{const data=await api('/api/support?admin=1'),rows=data.tickets||[];const html=table(['Ticket','Compte','Message','Priorité','Statut','Action'],rows.map(t=>`<tr data-status="${esc(t.status)}"><td><div class="cell-main">${esc(t.subject||t.category||'Support')}</div><div class="cell-sub">${fmt(t.created_at)}</div></td><td>${esc(t.user_role||'client')}</td><td><div class="cell-sub">${esc(t.description||'')}</div></td><td>${badge(t.priority)}</td><td>${badge(t.status)}</td><td><button class="button" data-ticket="${esc(t.id)}">Répondre</button></td></tr>`));shell('Support',`<section class="panel"><div class="panel-head"><h2>Tickets clients et partenaires</h2></div>${filters(['open','waiting_human','in_progress','resolved','closed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-ticket]').forEach(btn=>btn.addEventListener('click',async()=>{const reply=prompt('Réponse VASI :');if(!reply?.trim())return;await api('/api/support',{method:'PATCH',body:JSON.stringify({id:btn.dataset.ticket,status:'resolved',human_reply:reply.trim()})});notify('Réponse enregistrée');support()}))}catch(e){shell('Support',errorView(e))}}
   async function deletions(){try{const data=await api('/api/admin-deletions'),rows=data.requests||[];const html=table(['Demande','Compte','Motif','Échéance','Statut','Actions'],rows.map(r=>`<tr data-status="${esc(r.status)}"><td><div class="cell-main mono">#${esc(r.id.slice(0,8).toUpperCase())}</div><div class="cell-sub">${fmt(r.requested_at)}</div></td><td class="mono">${esc(String(r.user_id).slice(0,8))}</td><td><div class="cell-sub">${esc(r.reason||'Aucun motif')}</div></td><td>${fmt(r.scheduled_for)}</td><td>${badge(r.status)}</td><td>${['requested','processing'].includes(r.status)?`<div class="actions"><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="processing">Traiter</button><button class="button danger" data-deletion="${esc(r.id)}" data-deletion-status="rejected">Refuser</button><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="cancelled">Annuler</button></div>`:'—'}</td></tr>`));shell('Suppressions',`<section class="panel"><div class="panel-head"><div><h2>Demandes de suppression</h2><p class="muted">Vérifiez les courses, paiements et obligations légales avant toute suppression. La clôture définitive exige la procédure serveur sécurisée.</p></div><button class="button" data-refresh>Actualiser</button></div>${filters(['requested','processing','cancelled','rejected','completed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-deletion]').forEach(btn=>btn.addEventListener('click',async()=>{const note=prompt('Note interne :','Vérification administrateur')||'';if(!confirm('Confirmer la mise à jour de cette demande ?'))return;await api('/api/admin-deletions',{method:'PATCH',body:JSON.stringify({id:btn.dataset.deletion,status:btn.dataset.deletionStatus,admin_note:note})});notify('Demande mise à jour');deletions()}))}catch(e){shell('Suppressions',errorView(e))}}
-  async function gps(){try{const data=await api('/api/admin-live-gps');shell('GPS en direct',`<section class="panel"><div class="panel-head"><div><h2>Chauffeurs en direct</h2><p class="muted">Actualisation automatique toutes les 15 secondes</p></div><button class="button" data-refresh>Actualiser</button></div><div id="gpsMap" class="gps-map"></div></section>`);map=window.L.map('gpsMap').setView([48.8566,2.3522],8);window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);const bounds=[];(data.drivers||[]).forEach(d=>{if(d.latitude==null||d.longitude==null)return;const point=[Number(d.latitude),Number(d.longitude)];bounds.push(point);markers[d.id]=window.L.marker(point).addTo(map).bindPopup(`<strong>${esc(d.full_name||'Chauffeur')}</strong><br>${esc(d.vehicle_plate||'')}<br>${esc(d.online?'En ligne':'Hors ligne')}`)});if(bounds.length)map.fitBounds(bounds,{padding:[30,30]});gpsTimer=setTimeout(()=>active==='gps'&&gps(),15000)}catch(e){shell('GPS en direct',errorView(e))}}
+  async function gps(){
+    if(!map){
+      shell('GPS en direct',`<section class="panel"><div class="panel-head"><div><h2>Chauffeurs en direct</h2><p id="gpsStatus" class="muted" role="status">Chargement des positions…</p></div><button class="button" data-refresh>Actualiser</button></div><div id="gpsMap" class="gps-map" aria-label="Carte des chauffeurs en direct"></div></section>`);
+      if(!window.L){shell('GPS en direct',errorView(new Error('La carte ne peut pas être chargée. Vérifiez la connexion internet.')));return}
+      map=window.L.map('gpsMap',{zoomControl:true}).setView([48.8566,2.3522],8);
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+      requestAnimationFrame(()=>map?.invalidateSize({pan:false}));
+    }
+    const status=document.getElementById('gpsStatus');
+    try{
+      const data=await api('/api/admin-live-gps');
+      setConnected(true);
+      const visible=new Set(),bounds=[];
+      (data.drivers||[]).forEach(d=>{
+        const latitude=Number(d.latitude),longitude=Number(d.longitude);
+        if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
+        const point=[latitude,longitude],age=d.location_age_seconds==null?'Position ancienne':d.location_age_seconds<60?'À l’instant':`Il y a ${Math.round(d.location_age_seconds/60)} min`;
+        const popup=`<strong>${esc(d.full_name||'Chauffeur')}</strong><br>${esc(d.vehicle_plate||'')}<br>${esc(d.online?'En ligne':'Hors ligne')} · ${esc(age)}`;
+        visible.add(d.id);bounds.push(point);
+        if(markers[d.id])markers[d.id].setLatLng(point).setPopupContent(popup);
+        else markers[d.id]=window.L.marker(point).addTo(map).bindPopup(popup);
+      });
+      Object.keys(markers).forEach(id=>{if(!visible.has(id)){markers[id].remove();delete markers[id]}});
+      if(bounds.length&&!gpsFitted){map.fitBounds(bounds,{padding:[34,34],maxZoom:15});gpsFitted=true}
+      map.invalidateSize({pan:false});
+      if(status)status.textContent=bounds.length?`${bounds.length} position${bounds.length>1?'s':''} · Mise à jour automatique toutes les 15 secondes`:'Aucune position GPS disponible. Les chauffeurs apparaîtront dès qu’ils seront en ligne.';
+    }catch(e){
+      setConnected(false);
+      if(status)status.textContent='Positions temporairement indisponibles. Nouvelle tentative automatique…';
+    }finally{
+      if(gpsTimer)clearTimeout(gpsTimer);
+      gpsTimer=setTimeout(()=>active==='gps'&&gps(),15000);
+    }
+  }
   const loaders={overview,bookings,gps,drivers,documents,couriers,restaurants,orders,finance,pricing,support,deletions,audit};
   async function render(id){stopGps();active=id;document.querySelectorAll('.nav-button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));app.setAttribute('aria-busy','true');app.innerHTML='<div class="loading">Chargement…</div>';await loaders[id]();document.querySelectorAll('[data-refresh]').forEach(btn=>btn.addEventListener('click',()=>render(active)))}
   sections.forEach(([id,icon,label])=>{const button=document.createElement('button');button.type='button';button.className='nav-button';button.dataset.section=id;button.innerHTML=`<span class="nav-icon">${icon}</span><span>${label}</span>`;button.addEventListener('click',()=>render(id));nav.appendChild(button)});
