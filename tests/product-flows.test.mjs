@@ -930,6 +930,21 @@ test("customer profile photo remains optional and owner-scoped", async () => {
   assert.match(migration, /for delete\s+to authenticated/);
 });
 
+test("saved customer profile stays compact until the customer chooses edit", async () => {
+  const account = await readFile("account.html", "utf8");
+
+  assert.match(account, /id="profileSummary"/);
+  assert.match(account, /id="editProfileButton"/);
+  assert.match(account, /id="cancelProfileButton"/);
+  assert.match(account, /function setProfileEditing\(next, focus = false\)/);
+  assert.match(
+    account,
+    /profileEditing === null\) profileEditing = isCompleting/,
+  );
+  assert.match(account, /profileEditing = false;\s*renderAccount\(\)/);
+  assert.match(account, /setProfileEditing\(true, true\)/);
+});
+
 test("account surfaces reflow safely on narrow phones", async () => {
   const [account, settings] = await Promise.all([
     readFile("account.html", "utf8"),

@@ -1424,6 +1424,9 @@
     "RIB verified · restaurant earnings are paid automatically every Monday.": "RIB vérifié · les revenus du restaurant sont versés automatiquement chaque lundi."
   };
   Object.assign(finalFrenchTranslations, {
+    "Edit": "Modifier",
+    "Not added": "Non renseigné",
+    "Country and currency": "Pays et devise",
     "Allow location access or tap the map to select your pickup. No price is calculated until pickup is confirmed.": "Autorisez la localisation ou touchez la carte pour choisir votre point de départ. Aucun prix n’est calculé tant que le départ n’est pas confirmé.",
     "Airport pickup": "Prise en charge à l’aéroport",
     "Passengers": "Passagers",
