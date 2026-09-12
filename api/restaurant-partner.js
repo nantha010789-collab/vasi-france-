@@ -16,7 +16,6 @@ const PHOTO_BUCKET = "restaurant-menu-photos";
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 const clean = (value, length = 160) =>
   String(value || "").replace(/\s+/g, " ").trim().slice(0, length);
-let auth = "";
 
 function httpError(status, message) {
   const error = new Error(message);
@@ -24,12 +23,12 @@ function httpError(status, message) {
   return error;
 }
 
-async function db(path, options = {}) {
+async function db(path, options = {}, authHeader) {
   const response = await fetch(`${url}/rest/v1/${path}`, {
     ...options,
     headers: {
       apikey: key,
-      Authorization: auth,
+      Authorization: authHeader,
       ...(options.headers || {}),
     },
   });
@@ -39,20 +38,20 @@ async function db(path, options = {}) {
   return data;
 }
 
-async function rpc(name, body) {
+async function rpc(name, body, authHeader) {
   return db(`rpc/${name}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  });
+  }, authHeader);
 }
 
-async function providerPayout(action, body = {}) {
+async function providerPayout(action, body = {}, authHeader) {
   const response = await fetch(`${url}/functions/v1/provider-payout-service`, {
     method: "POST",
     headers: {
       apikey: key,
-      Authorization: auth,
+      Authorization: authHeader,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ action, ...body }),
@@ -201,15 +200,50 @@ async function releaseRestaurantPayout(restaurant, order) {
   }
 }
 
+async function rejectRestaurantOrder(restaurant, orderId, authHeader) {
+  const order = (
+    await db(
+      `eats_orders?select=id,status,payment_status,stripe_payment_intent_id&restaurant_id=eq.${restaurant.id}&id=eq.${encodeURIComponent(orderId)}&limit=1`,
+      {},
+      authHeader,
+    )
+  )[0];
+  if (!order || order.status !== "pending")
+    throw httpError(409, "Only a new order can be rejected");
+  if (order.payment_status !== "paid" || !order.stripe_payment_intent_id)
+    throw httpError(409, "Customer payment is not available for refund");
+
+  const params = new URLSearchParams();
+  params.set("payment_intent", order.stripe_payment_intent_id);
+  params.set("reason", "requested_by_customer");
+  params.set("metadata[vasi_service]", "eats");
+  params.set("metadata[vasi_order_id]", order.id);
+  await stripeRequest("/v1/refunds", {
+    method: "POST",
+    params,
+    idempotencyKey: `vasi-eats-restaurant-reject-${order.id}`,
+  });
+  const cancelled = await rpc("vasi_restaurant_order_status", {
+    p_order_id: order.id,
+    p_status: "cancelled",
+  }, authHeader);
+  await serviceDb(`eats_orders?id=eq.${encodeURIComponent(order.id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ payment_status: "refunded" }),
+  });
+  return cancelled;
+}
+
 async function user(req) {
-  auth = req.headers.authorization || "";
-  if (!auth.startsWith("Bearer ")) return null;
+  const authHeader = req.headers.authorization || "";
+  if (!authHeader.startsWith("Bearer ")) return null;
   const response = await fetch(`${url}/auth/v1/user`, {
-    headers: { apikey: key, Authorization: auth },
+    headers: { apikey: key, Authorization: authHeader },
   });
   if (!response.ok) return null;
   const account = await response.json();
-  return account?.id ? account : null;
+  return account?.id ? { account, authHeader } : null;
 }
 
 function imagePayload(value) {
@@ -326,7 +360,7 @@ async function aiReviewPhoto(photo, item) {
   }
 }
 
-async function uploadPhoto(photo, path) {
+async function uploadPhoto(photo, path, authHeader) {
   const response = await fetch(
     `${url}/storage/v1/object/${PHOTO_BUCKET}/${path
       .split("/")
@@ -336,7 +370,7 @@ async function uploadPhoto(photo, path) {
       method: "POST",
       headers: {
         apikey: key,
-        Authorization: auth,
+        Authorization: authHeader,
         "Content-Type": photo.mime,
         "Cache-Control": "31536000",
       },
@@ -350,6 +384,22 @@ async function uploadPhoto(photo, path) {
       data?.message || "Photo upload failed. Please try again.",
     );
   }
+}
+
+async function deleteStoredPhoto(path, authHeader) {
+  if (!path) return;
+  const response = await fetch(
+    `${url}/storage/v1/object/${PHOTO_BUCKET}/${String(path)
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`,
+    {
+      method: "DELETE",
+      headers: { apikey: key, Authorization: authHeader },
+    },
+  );
+  if (!response.ok && response.status !== 404)
+    console.warn("[restaurant-photo-delete] cleanup failed", response.status);
 }
 
 async function savePrivilegedDecision(itemId, candidateUrl, review) {
@@ -382,11 +432,13 @@ async function savePrivilegedDecision(itemId, candidateUrl, review) {
   return data?.[0] || null;
 }
 
-async function submitPhoto(account, restaurant, body) {
+async function submitPhoto(account, restaurant, body, authHeader) {
   const itemId = clean(body.id, 60);
   const item = (
     await db(
       `restaurant_menu_items?select=id,name,description,category,restaurant_id&id=eq.${encodeURIComponent(itemId)}&restaurant_id=eq.${restaurant.id}&limit=1`,
+      {},
+      authHeader,
     )
   )[0];
   if (!item) throw httpError(404, "Menu item not found");
@@ -397,12 +449,12 @@ async function submitPhoto(account, restaurant, body) {
   const publicPath = path.split("/").map(encodeURIComponent).join("/");
   const candidateUrl = `${url}/storage/v1/object/public/${PHOTO_BUCKET}/${publicPath}`;
 
-  await uploadPhoto(photo, path);
+  await uploadPhoto(photo, path, authHeader);
   await rpc("vasi_restaurant_set_menu_photo_pending", {
     p_item_id: item.id,
     p_photo_path: path,
     p_candidate_url: candidateUrl,
-  });
+  }, authHeader);
 
   const review = await aiReviewPhoto(photo, item);
   let saved = null;
@@ -426,7 +478,7 @@ async function submitPhoto(account, restaurant, body) {
       p_status: safeReview.decision,
       p_reason: safeReview.reason,
       p_confidence: safeReview.confidence,
-    });
+    }, authHeader);
   }
   return saved;
 }
@@ -436,11 +488,14 @@ export default async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method))
     return res.status(405).json({ error: "Method not allowed" });
   try {
-    const account = await user(req);
-    if (!account) return res.status(401).json({ error: "Login required" });
+    const authResult = await user(req);
+    if (!authResult) return res.status(401).json({ error: "Login required" });
+    const { account, authHeader } = authResult;
     let restaurant = (
       await db(
         `restaurants?select=*&owner_id=eq.${account.id}&order=created_at.asc&limit=1`,
+        {},
+        authHeader,
       )
     )[0] || null;
 
@@ -450,9 +505,11 @@ export default async function handler(req, res) {
       const [menu, orders] = await Promise.all([
         db(
           `restaurant_menu_items?select=*&restaurant_id=eq.${restaurant.id}&order=sort_order.asc,created_at.asc`,
+          {}, authHeader,
         ),
         db(
-          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,currency,delivery_mode,commission_rate,restaurant_commission,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,delivery_address,scheduled_for,unavailable_item_preference,group_order_id&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
+          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,currency,delivery_mode,commission_rate,restaurant_commission,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,delivery_address,scheduled_for,unavailable_item_preference,group_order_id,restaurant_preparation_minutes&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
+          {}, authHeader,
         ),
       ]);
       return res.status(200).json({ restaurant, menu, orders });
@@ -488,7 +545,7 @@ export default async function handler(req, res) {
         p_postal_code: clean(body.postal_code),
         p_cuisine: clean(body.cuisine),
         p_delivery_mode: body.delivery_mode === "own" ? "own" : "vasi",
-      });
+      }, authHeader);
       return res.status(201).json({ restaurant });
     }
 
@@ -509,36 +566,102 @@ export default async function handler(req, res) {
           .split(",")
           .map((value) => value.trim())
           .filter(Boolean),
-      });
+      }, authHeader);
       return res.status(201).json({ item });
+    }
+    if (action === "update_item") {
+      const price = Number(body.price);
+      if (clean(body.name).length < 2 || !Number.isFinite(price))
+        return res.status(400).json({ error: "Enter a valid item name and price" });
+      return res.status(200).json({
+        item: await rpc("vasi_restaurant_update_item", {
+          p_item_id: clean(body.id, 60),
+          p_name: clean(body.name, 100),
+          p_description: clean(body.description, 300),
+          p_category: clean(body.category, 60) || "Menu",
+          p_price: price,
+          p_allergens: clean(body.allergens, 300)
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          p_active: body.active !== false,
+        }, authHeader),
+      });
+    }
+    if (action === "delete_item") {
+      const item = await rpc("vasi_restaurant_delete_item", {
+        p_item_id: clean(body.id, 60),
+      }, authHeader);
+      await deleteStoredPhoto(item?.photo_path, authHeader);
+      return res.status(200).json({ item });
+    }
+    if (action === "update_restaurant") {
+      const preparationMinutes = Number(body.preparation_minutes);
+      const minimumOrder = Number(body.minimum_order);
+      const deliveryFee = Number(body.delivery_fee);
+      const openingHours = body.opening_hours;
+      if (
+        !Number.isInteger(preparationMinutes) ||
+        !Number.isFinite(minimumOrder) ||
+        !Number.isFinite(deliveryFee) ||
+        !openingHours ||
+        Array.isArray(openingHours) ||
+        typeof openingHours !== "object"
+      )
+        return res.status(400).json({ error: "Enter valid restaurant settings" });
+      return res.status(200).json({
+        restaurant: await rpc("vasi_restaurant_update_profile", {
+          p_name: clean(body.name, 120),
+          p_phone: clean(body.phone, 40),
+          p_address: clean(body.address, 180),
+          p_city: clean(body.city, 100),
+          p_postal_code: clean(body.postal_code, 16),
+          p_cuisine: clean(body.cuisine, 80),
+          p_preparation_minutes: preparationMinutes,
+          p_minimum_order: minimumOrder,
+          p_delivery_fee: deliveryFee,
+          p_opening_hours: openingHours,
+        }, authHeader),
+      });
     }
     if (action === "submit_photo")
       return res
         .status(200)
-        .json({ item: await submitPhoto(account, restaurant, body) });
+        .json({ item: await submitPhoto(account, restaurant, body, authHeader) });
     if (action === "toggle_item")
       return res.status(200).json({
         item: await rpc("vasi_restaurant_toggle_item", {
           p_item_id: clean(body.id, 60),
           p_active: Boolean(body.active),
-        }),
+        }, authHeader),
       });
     if (action === "toggle_open")
       return res.status(200).json({
         restaurant: await rpc("vasi_restaurant_toggle_open", {
           p_is_open: Boolean(body.is_open),
-        }),
+        }, authHeader),
+      });
+    if (action === "accept_order")
+      return res.status(200).json({
+        order: await rpc("vasi_restaurant_accept_order", {
+          p_order_id: clean(body.id, 60),
+          p_preparation_minutes: Number(body.preparation_minutes),
+        }, authHeader),
+      });
+    if (action === "reject_order")
+      return res.status(200).json({
+        order: await rejectRestaurantOrder(restaurant, clean(body.id, 60), authHeader),
       });
     if (action === "complete_own_delivery") {
       return res.status(200).json(await providerPayout(
         "restaurant_complete_own_delivery",
-        { order_id: clean(body.id, 60), pin: clean(body.pin, 4) },
+        { order_id: clean(body.id, 60), pin: clean(body.pin, 4) }, authHeader,
       ));
     }
     if (action === "retry_restaurant_payout") {
       return res.status(200).json(await providerPayout(
         "restaurant_retry_payout",
-        { order_id: clean(body.id, 60) },
+        { order_id: clean(body.id, 60) }, authHeader,
       ));
     }
     if (action === "order_status")
@@ -546,7 +669,7 @@ export default async function handler(req, res) {
         order: await rpc("vasi_restaurant_order_status", {
           p_order_id: clean(body.id, 60),
           p_status: clean(body.status, 40),
-        }),
+        }, authHeader),
       });
     return res.status(400).json({ error: "Unsupported action" });
   } catch (error) {

@@ -573,6 +573,33 @@ test("Eats surfaces expose competitor-grade ordering, tracking and operations es
   assert.match(courier, /Navigate to pickup/);
 });
 
+test("restaurant owner workspace supports professional menu, profile and live order operations", async () => {
+  const [dashboard, orders, partner, migration] = await Promise.all([
+    readFile("restaurant-dashboard.html", "utf8"),
+    readFile("restaurant-orders.html", "utf8"),
+    readFile("api/restaurant-partner.js", "utf8"),
+    readFile("supabase/migrations/20260912184510_upgrade_restaurant_workspace.sql", "utf8"),
+  ]);
+  assert.match(dashboard, /Tableau de bord restaurant/);
+  assert.match(dashboard, /action:'update_item'/);
+  assert.match(dashboard, /action:'delete_item'/);
+  assert.match(dashboard, /action:'update_restaurant'/);
+  assert.match(dashboard, /Horaires d’ouverture/);
+  assert.match(dashboard, /Impossible de charger le tableau de bord/);
+  assert.match(orders, /action:'accept_order'/);
+  assert.match(orders, /Refuser la commande/);
+  assert.match(orders, /restaurant-orders-live/);
+  assert.match(orders, /restaurant_preparation_minutes/);
+  assert.match(partner, /vasi_restaurant_delete_item/);
+  assert.match(partner, /vasi_restaurant_update_profile/);
+  assert.match(partner, /vasi_restaurant_accept_order/);
+  assert.match(partner, /vasi-eats-restaurant-reject-/);
+  assert.match(partner, /payment_status: "refunded"/);
+  assert.match(migration, /security definer/);
+  assert.match(migration, /restaurant\.owner_id = auth\.uid\(\)/);
+  assert.match(migration, /revoke all on function public\.vasi_restaurant_delete_item/);
+});
+
 test("public surfaces distinguish an empty catalog and ship consistent localization and browser protections", async () => {
   const [eats, delivery, auth, languages, vercel] = await Promise.all([
     readFile("eats.html", "utf8"),
