@@ -19,7 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
-  assert.match(html, /src="app\.js\?v=3"/);
+  assert.match(html, /src="app\.js\?v=4"/);
   assert.match(html, /vasi-languages\.js/);
   assert.match(html, /vasi-account-role\.js/);
   assert.match(login, /VasiAccountRole\.remember\('admin'\)/);
@@ -35,8 +35,11 @@ test('admin live GPS keeps one responsive map and refreshes markers in place', a
   const mapStart = app.indexOf('map=window.L.map(mapElement');
   const dataRequest = app.indexOf("await api('/api/admin-live-gps')");
   assert.ok(mapStart > -1 && dataRequest > mapStart, 'the map should render before GPS data finishes loading');
-  assert.match(app, /requestAnimationFrame\(\(\)=>map\?\.invalidateSize/);
+  assert.match(app, /map\.invalidateSize\(\{animate:false,pan:false\}\)/);
+  assert.match(app, /if\(changed\)mapTiles\?\.redraw\(\)/);
   assert.match(app, /new ResizeObserver\(syncMapSize\)/);
+  assert.match(app, /mapLayoutTargets\.forEach/);
+  assert.match(app, /window\.addEventListener\('pageshow',syncMapSize/);
   assert.match(app, /visualViewport\?\.addEventListener\('resize',syncMapSize/);
   assert.match(app, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
   assert.doesNotMatch(app, /\{s\}\.tile\.openstreetmap\.org/);

@@ -9,7 +9,7 @@
     ['drivers','🚗','Chauffeurs'],['documents','📄','Documents'],['couriers','🛵','Coursiers'],['restaurants','🍽','Restaurants'],
     ['orders','🧾','Commandes'],['finance','€','Paiements'],['pricing','⚙','Tarifs'],['support','💬','Support'],['deletions','⌫','Suppressions'],['audit','🛡','Journal']
   ];
-  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapTileFailures = 0, mapRecoveryUsed = false, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
+  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapLayoutTargets = [], mapWidth = 0, mapHeight = 0, mapTileFailures = 0, mapRecoveryUsed = false, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const money = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
   const fmt = value => value ? new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)) : '—';
@@ -22,24 +22,37 @@
   async function api(path,options={}){const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(data.error||`Erreur ${response.status}`);return data}
   function syncMapSize(){
     if(!map)return;
-    requestAnimationFrame(()=>map?.invalidateSize({pan:false,debounceMoveend:true}));
+    requestAnimationFrame(()=>{
+      if(!map)return;
+      const container=map.getContainer(),rect=container.getBoundingClientRect();
+      if(rect.width<1||rect.height<1)return;
+      const changed=Math.abs(rect.width-mapWidth)>1||Math.abs(rect.height-mapHeight)>1;
+      mapWidth=rect.width;mapHeight=rect.height;
+      map.invalidateSize({animate:false,pan:false});
+      if(changed)mapTiles?.redraw();
+    });
   }
   function watchMapSize(container){
     mapResizeObserver?.disconnect();
     mapResizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(syncMapSize):null;
-    mapResizeObserver?.observe(container);
+    mapLayoutTargets=[container,container.closest('.gps-map-shell'),container.closest('.gps-panel'),document.querySelector('main')].filter(Boolean);
+    mapLayoutTargets.forEach(target=>{mapResizeObserver?.observe(target);target.addEventListener('transitionend',syncMapSize)});
     window.addEventListener('resize',syncMapSize,{passive:true});
     window.addEventListener('orientationchange',syncMapSize,{passive:true});
+    window.addEventListener('pageshow',syncMapSize,{passive:true});
     window.visualViewport?.addEventListener('resize',syncMapSize,{passive:true});
-    [0,180,600].forEach(delay=>setTimeout(syncMapSize,delay));
+    [0,80,240,700,1400].forEach(delay=>setTimeout(syncMapSize,delay));
   }
   function stopGps(){
     if(gpsTimer)clearTimeout(gpsTimer);
     gpsTimer=null;
     mapResizeObserver?.disconnect();
     mapResizeObserver=null;
+    mapLayoutTargets.forEach(target=>target.removeEventListener('transitionend',syncMapSize));
+    mapLayoutTargets=[];mapWidth=0;mapHeight=0;
     window.removeEventListener('resize',syncMapSize);
     window.removeEventListener('orientationchange',syncMapSize);
+    window.removeEventListener('pageshow',syncMapSize);
     window.visualViewport?.removeEventListener('resize',syncMapSize);
     if(map){map.remove();map=null}
     mapTiles=null;mapTileFailures=0;mapRecoveryUsed=false;markers={};gpsFitted=false;
@@ -119,7 +132,7 @@
       const mapElement=document.getElementById('gpsMap');
       map=window.L.map(mapElement,{zoomControl:true,zoomAnimation:true,fadeAnimation:true,trackResize:true}).setView([48.8566,2.3522],9);
       mapTiles=window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,updateWhenIdle:false,updateWhenZooming:true,keepBuffer:3,attribution:'© OpenStreetMap contributors'}).addTo(map);
-      mapTiles.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapTileFailures=0});
+      mapTiles.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapTileFailures=0;syncMapSize()});
       mapTiles.on('tileerror',()=>{
         mapTileFailures+=1;
         if(mapTileFailures>=3&&!mapRecoveryUsed){
