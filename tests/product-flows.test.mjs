@@ -1565,15 +1565,17 @@ test("airport passenger ready signal is authenticated and sent to the ride RPC",
 });
 
 test("customer, driver, courier and restaurant sessions stay separated", async () => {
-  const [auth, roleGuard, customer, driver, courier, restaurantGate, restaurantForm, partner, migration] =
+  const [auth, roleGuard, customer, customerEats, driver, courier, restaurantGate, restaurantForm, restaurantDashboard, partner, migration] =
     await Promise.all([
       readFile("auth.html", "utf8"),
       readFile("vasi-account-role.js", "utf8"),
       readFile("account.html", "utf8"),
+      readFile("eats-orders.html", "utf8"),
       readFile("driver.html", "utf8"),
       readFile("delivery-driver.html", "utf8"),
       readFile("restaurant-register.html", "utf8"),
       readFile("restaurant-register-form.html", "utf8"),
+      readFile("restaurant-dashboard.html", "utf8"),
       readFile("partner-register-v2.html", "utf8"),
       readFile("supabase/migrations/20260908072843_separate_account_roles.sql", "utf8"),
     ]);
@@ -1583,10 +1585,12 @@ test("customer, driver, courier and restaurant sessions stay separated", async (
   assert.match(roleGuard, /vasi_session_role/);
   assert.match(roleGuard, /signedInRole !== requiredRole/);
   assert.match(customer, /VasiAccountRole\.require\("customer"/);
+  assert.match(customerEats, /VasiAccountRole\.require\('customer'/);
   assert.match(driver, /VasiAccountRole\.require\("ride"/);
   assert.match(courier, /VasiAccountRole\.require\("courier"/);
   assert.match(restaurantGate, /vasi_claim_account_role/);
   assert.match(restaurantForm, /vasi_claim_account_role/);
+  assert.match(restaurantDashboard, /VasiAccountRole\.require\("restaurant"/);
   assert.match(partner, /Créez un compte séparé/);
   assert.doesNotMatch(partner, /Créez un seul compte/);
   assert.match(migration, /create table if not exists public\.account_roles/);
