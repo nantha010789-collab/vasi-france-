@@ -119,6 +119,14 @@ test("static page element IDs are unique", () => {
   assert.deepEqual(failures, []);
 });
 
+test("every HTML page declares its document language", () => {
+  const failures = htmlFiles
+    .filter((page) => !/<html\b[^>]*\blang=["'][a-z]{2}(?:-[A-Z]{2})?["']/i.test(readFileSync(page, "utf8")))
+    .map((page) => page.slice(root.length + 1));
+
+  assert.deepEqual(failures, []);
+});
+
 test("public French branding consistently uses Eats", () => {
   const outdatedBranding = [
     /["']Eats["']\s*:\s*["']Repas["']/i,
