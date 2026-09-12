@@ -823,6 +823,16 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.doesNotMatch(source, /pinAddressCard/);
 });
 
+test("ride map keeps road labels crisp and uses the canonical production tile host", async () => {
+  const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
+  assert.doesNotMatch(source, /https:\/\/\{s\}\.tile\.openstreetmap\.org/);
+  assert.match(source, /\.map \.leaflet-tile-pane\s*\{[\s\S]*?saturate\(0\.88\)[\s\S]*?contrast\(1\.08\)/);
+  assert.doesNotMatch(source, /grayscale\(/);
+  assert.match(source, /updateWhenIdle: true/);
+  assert.match(source, /keepBuffer: 3/);
+});
+
 test("ride choices use distinct professional vehicle images", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   for (const type of ["go", "comfort", "xl", "van"]) {
