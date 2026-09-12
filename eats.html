@@ -17,18 +17,11 @@
 </head>
 <body>
   <main class="app">
-    <header class="top"><div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;height:auto;max-height:46px;object-fit:contain" /></div><div class="top-actions"><button class="btn" onclick="location.href='activity.html?filter=eats'">Orders</button></div></header>
+    <header class="top"><div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;height:auto;max-height:46px;object-fit:contain" /></div><div class="top-actions"><button class="btn" onclick="location.href='eats-orders.html'">Orders</button></div></header>
     <section class="hero"><div class="muted">VASI Eats</div><h1>Food, your way.</h1><p class="muted">Approved local restaurants, live menus and protected delivery.</p></section>
     <label class="sr-only" for="search">Search restaurants, dishes or allergens</label>
     <input id="search" class="search" placeholder="Search restaurant, dish or cuisine…" autocomplete="off" oninput="render()">
     <nav id="chips" class="chips" aria-label="Cuisine filters"></nav>
-    <aside class="join" aria-label="Restaurant partners">
-      <p class="join-copy">Own a restaurant?</p>
-      <div class="join-actions">
-        <a class="join-action primary" href="restaurant-register.html">Join VASI</a>
-        <a class="join-action" href="restaurant-dashboard.html">Partner dashboard</a>
-      </div>
-    </aside>
     <section class="list" id="restaurants"><p class="muted">Loading partner restaurants…</p></section>
     <p id="status" class="status" aria-live="polite"></p>
   </main>

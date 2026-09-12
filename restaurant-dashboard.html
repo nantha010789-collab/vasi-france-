@@ -56,7 +56,7 @@
     <header class="top">
       <div class="brand" style="display:flex;align-items:center;gap:10px"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /><span style="font-size:.72em;white-space:nowrap">Partner</span></div>
       <div class="top-actions">
-        <button class="btn" type="button" onclick="location.href='eats.html'">Eats</button>
+        <button class="btn" type="button" onclick="location.href='restaurant-orders.html'">Orders</button>
         <button class="btn" type="button" onclick="logout()">Sign out</button>
       </div>
     </header>
@@ -66,6 +66,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
   <script src="./vasi-notifications.js"></script>
   <script src="./vasi-region.js"></script>
+  <script src="./vasi-account-role.js"></script>
   <script>
     const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
     const app=document.getElementById('app'),msg=document.getElementById('message');
@@ -270,7 +271,12 @@
         localStorage.setItem('vasi_role','restaurant');
         localStorage.setItem('vasi_return','restaurant-dashboard.html');
         location.href='auth.html?role=restaurant';
-      }else{token=session.access_token;load()}
+      }else{
+        const activeRole=VasiAccountRole.active();
+        if(activeRole&&activeRole!=="restaurant"){VasiAccountRole.require("restaurant",session);return}
+        VasiAccountRole.remember("restaurant");
+        token=session.access_token;load()
+      }
     });
     VasiNotifications.start(client,{role:'restaurant'});
   </script>

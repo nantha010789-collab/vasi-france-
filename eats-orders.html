@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <title>VASI Eats orders</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:#fff;background:#050505;--panel:#111;--soft:#181818;--line:#303030;--muted:#a7a7a7;--green:#79e897}
+    *{box-sizing:border-box}body{margin:0;background:#050505}.app{width:min(100%,760px);min-height:100dvh;margin:auto;padding:max(14px,env(safe-area-inset-top)) 14px calc(70px + env(safe-area-inset-bottom))}
+    button,a{font:inherit}.top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px}.brand{display:flex;justify-content:center}.brand img{display:block;width:106px;max-width:28vw;height:auto;max-height:46px;object-fit:contain}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 14px;border:1px solid #393939;border-radius:14px;background:#181818;color:#fff;font-weight:850;text-decoration:none;cursor:pointer}.hero{padding:30px 2px 17px}.hero .eyebrow{margin:0;color:var(--muted);font-size:13px;font-weight:800}.hero h1{margin:7px 0 0;font-size:clamp(34px,9vw,50px);letter-spacing:-.045em}.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;scrollbar-width:none}.tab{white-space:nowrap;border:1px solid #363636;border-radius:999px;background:#151515;color:#cfcfcf;padding:10px 14px;font-weight:850}.tab.active{background:#fff;color:#050505;border-color:#fff}.list{display:grid;gap:12px;margin-top:16px}.order{padding:17px;border:1px solid var(--line);border-radius:22px;background:var(--panel)}.order.active-order{border-color:#315f3d;background:linear-gradient(180deg,#102117,#111 42%)}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.restaurant{font-size:20px;font-weight:950;line-height:1.25}.date{margin-top:4px;color:var(--muted);font-size:12px}.price{font-size:19px;font-weight:950;white-space:nowrap}.status{display:inline-flex;margin-top:13px;padding:7px 10px;border-radius:999px;background:#242424;color:#ddd;font-size:12px;font-weight:850}.active-order .status{background:#173a21;color:#a9f6bc}.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:15px 0 7px}.step{height:5px;border-radius:99px;background:#333}.step.done{background:var(--green)}.progress-label{color:#b6f5c5;font-size:13px;font-weight:850}.details{display:grid;gap:7px;margin-top:13px;padding-top:13px;border-top:1px solid #292929;color:#ddd;font-size:14px;line-height:1.4}.pin{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:12px 13px;border:1px solid #3a3a3a;border-radius:15px;background:var(--soft)}.pin b{font-size:22px;letter-spacing:.12em}.muted{color:var(--muted);font-size:13px;line-height:1.45}.empty{padding:38px 20px;border:1px solid #272727;border-radius:22px;background:#101010;text-align:center}.empty-mark{display:grid;place-items:center;width:56px;height:56px;margin:0 auto 14px;border-radius:18px;background:#1c1c1c;font-size:25px}.empty b{display:block;font-size:18px}.empty .btn{margin-top:18px;background:#fff;color:#050505;border-color:#fff}.notice{min-height:22px;margin:13px 0 0;text-align:center;color:#ffb4b4;font-size:13px}
+    @media(max-width:460px){.app{padding-left:12px;padding-right:12px}.top{grid-template-columns:auto 1fr}.top>#refresh{grid-column:1/-1;width:100%}.order{padding:15px}.hero{padding-top:24px}.restaurant{font-size:18px}}
+  </style>
+  <link rel="stylesheet" href="./vasi-mobile-fit.css">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <button class="btn" type="button" data-vasi-return>Back</button>
+      <div class="brand"><img src="./assets/vasi-logo.png" alt="VASI"></div>
+      <button class="btn" id="refresh" type="button">Refresh</button>
+    </header>
+    <section class="hero"><p class="eyebrow">Your account</p><h1>VASI Eats orders</h1></section>
+    <nav class="tabs" aria-label="Order filters">
+      <button class="tab active" type="button" data-filter="active">Active orders</button>
+      <button class="tab" type="button" data-filter="history">Activity</button>
+    </nav>
+    <section id="orders" class="list"><div class="empty">Loading…</div></section>
+    <p id="notice" class="notice" role="status" aria-live="polite"></p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
+  <script src="./vasi-notifications.js"></script>
+  <script src="./vasi-account-role.js"></script>
+  <script src="./vasi-languages.js?v=4"></script>
+  <script>
+    const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+    const ordersEl=document.getElementById('orders'),notice=document.getElementById('notice'),t=value=>window.VasiLanguage?.translate?.(value)||value;
+    const activeStatuses=new Set(['awaiting_payment','scheduled','pending','accepted','preparing','ready_for_pickup','picked_up']);
+    let orders=[],filter='active';
+    const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const locale=()=>({fr:'fr-FR',en:'en-GB',ta:'ta-IN',de:'de-DE',ar:'ar-FR',hi:'hi-IN'}[window.VasiLanguage?.getLanguage?.()]||'fr-FR');
+    const money=(value,currency='EUR')=>new Intl.NumberFormat(locale(),{style:'currency',currency:currency||'EUR'}).format(Number(value||0));
+    const when=value=>value?new Date(value).toLocaleString(locale(),{dateStyle:'medium',timeStyle:'short'}):'—';
+    function progress(status){const levels={awaiting_payment:0,scheduled:0,pending:1,accepted:1,preparing:2,ready_for_pickup:2,picked_up:3,delivered:4},labels={awaiting_payment:'Waiting for payment',scheduled:'Scheduled order confirmed',pending:'Order received',accepted:'Restaurant accepted',preparing:'Preparing your food',ready_for_pickup:'Ready for courier',picked_up:'Courier is on the way',delivered:'Delivered',cancelled:'Cancelled'};const level=levels[status]??0;return `<div class="progress" aria-label="${esc(t('Order progress'))}">${[1,2,3,4].map(step=>`<span class="step ${step<=level?'done':''}"></span>`).join('')}</div><div class="progress-label">${esc(t(labels[status]||'Order received'))}</div>`}
+    function itemCount(items){return(Array.isArray(items)?items:[]).reduce((sum,item)=>sum+Number(item.quantity||1),0)}
+    function render(){const rows=orders.filter(order=>filter==='active'?activeStatuses.has(order.status):!activeStatuses.has(order.status));if(!rows.length){ordersEl.innerHTML=`<div class="empty"><div class="empty-mark" aria-hidden="true">🍽️</div><b>${esc(t(filter==='active'?'No Eats activity yet.':'No orders yet.'))}</b><a class="btn" href="eats.html">Eats</a></div>`;return}ordersEl.innerHTML=rows.map(order=>{const active=activeStatuses.has(order.status),qty=itemCount(order.items),pin=order.delivery_pin&&order.status!=='delivered'&&order.status!=='cancelled'?`<div class="pin"><span><b>${esc(order.delivery_pin)}</b><br><span class="muted">${esc(t('Delivery PIN'))}</span></span><span class="muted">${esc(t('Give this PIN only when your food arrives.'))}</span></div>`:'';return `<article class="order ${active?'active-order':''}"><div class="head"><div><div class="restaurant">${esc(order.restaurant_name||'VASI Eats')}</div><div class="date">${esc(when(order.created_at))}</div></div><div class="price">${money(order.total,order.currency)}</div></div><span class="status">${esc(t(String(order.status||'pending').replaceAll('_',' ')))}</span>${progress(order.status)}<div class="details"><div>${qty} ${esc(t(qty===1?'item':'items'))}</div>${order.scheduled_for?`<div>🗓️ ${esc(when(order.scheduled_for))}</div>`:''}<div>📍 ${esc(order.delivery_address||'—')}</div><div>ID: ${esc(String(order.id||'').slice(0,8).toUpperCase())}</div></div>${pin}</article>`}).join('')}
+    async function load(){notice.textContent='';try{const{data:{session}}=await client.auth.getSession();if(!session){localStorage.setItem('vasi_role','customer');localStorage.setItem('vasi_return','eats-orders.html');location.replace('auth.html?role=customer');return}const role=VasiAccountRole.active();if(role&&role!=='customer'){VasiAccountRole.require('customer',session);return}VasiAccountRole.remember('customer');const[result,safety]=await Promise.all([client.from('eats_orders').select('id,restaurant_name,items,delivery_address,total,currency,status,created_at,scheduled_for').eq('customer_id',session.user.id).order('created_at',{ascending:false}).limit(50),client.from('eats_order_safety').select('order_id,delivery_pin,pin_verified_at').eq('customer_id',session.user.id)]);if(result.error||safety.error)throw Error('orders unavailable');const pins=new Map((safety.data||[]).map(row=>[row.order_id,row]));orders=(result.data||[]).map(order=>({...order,...(pins.get(order.id)||{})}));render()}catch(_){ordersEl.innerHTML=`<div class="empty"><b>${esc(t('Data unavailable.'))}</b></div>`;notice.textContent=t('Please try again.') }}
+    document.querySelector('.tabs').addEventListener('click',event=>{const button=event.target.closest('[data-filter]');if(!button)return;filter=button.dataset.filter;document.querySelectorAll('.tab').forEach(item=>item.classList.toggle('active',item===button));render()});
+    document.getElementById('refresh').onclick=load;window.addEventListener('vasi:languagechange',render);load();VasiNotifications.start(client,{role:'customer'});
+  </script>
+  <script src="./vasi-navigation.js?v=4"></script>
+</body>
+</html>
