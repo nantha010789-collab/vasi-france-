@@ -551,9 +551,9 @@ test("restaurant commission is a permanent 10% for every delivery mode", async (
 });
 
 test("Eats surfaces expose competitor-grade ordering, tracking and operations essentials", async () => {
-  const [eats, activity, restaurant, courier] = await Promise.all([
+  const [eats, customerOrders, restaurant, courier] = await Promise.all([
     readFile("eats.html", "utf8"),
-    readFile("activity.html", "utf8"),
+    readFile("eats-orders.html", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("delivery-driver.html", "utf8"),
   ]);
@@ -561,9 +561,10 @@ test("Eats surfaces expose competitor-grade ordering, tracking and operations es
   assert.match(eats, /Cuisine filters/);
   assert.match(eats, /t\('Allergens'\)/);
   assert.match(eats, /View basket/);
-  assert.match(eats, /activity\.html\?filter=eats/);
-  assert.match(activity, /Order progress/);
-  assert.match(activity, /Courier is on the way/);
+  assert.match(eats, /eats-orders\.html/);
+  assert.match(customerOrders, /Order progress/);
+  assert.match(customerOrders, /Courier is on the way/);
+  assert.doesNotMatch(customerOrders, /restaurant-register|restaurant-dashboard|Join VASI|Partner dashboard/);
   assert.match(restaurant, /Restaurant performance/);
   assert.match(restaurant, /Active orders/);
   assert.match(restaurant, /nextOrderAction/);
@@ -586,7 +587,7 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(eats, /Approved partners will appear here/);
   assert.match(eats, /class="top-actions"><button[^>]+>Orders<\/button><\/div>/);
   assert.doesNotMatch(eats, /location\.href='index\.html'">Home<\/button>/);
-  assert.match(eats, /join-actions/);
+  assert.doesNotMatch(eats, /<aside class="join"|restaurant-register|restaurant-dashboard|Own a restaurant/);
   assert.match(eats, /empty-icon/);
   assert.match(delivery, /Get a new quote for the parcel\./);
   assert.match(auth, /t\(customer \? "Customer login"/);

@@ -372,7 +372,7 @@
   function listenRestaurant(channel) {
     channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "eats_orders" }, (payload) => {
       const id = payload.new?.id || Date.now();
-      if (shouldNotify(`restaurant-order:${id}`, "new")) show("New VASI Eats order", "A customer placed a new food order.", "/restaurant-dashboard.html", `vasi-restaurant-order-${id}`);
+      if (shouldNotify(`restaurant-order:${id}`, "new")) show("New VASI Eats order", "A customer placed a new food order.", "/restaurant-orders.html", `vasi-restaurant-order-${id}`);
     });
   }
 

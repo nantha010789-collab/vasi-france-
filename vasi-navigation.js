@@ -46,6 +46,7 @@
     "driver.html": "index.html",
     "eats-checkout.html": "eats.html",
     "eats.html": "index.html",
+    "eats-orders.html": "eats.html",
     "group-order.html": "eats.html",
     "help.html": "index.html",
     "legal.html": "index.html",

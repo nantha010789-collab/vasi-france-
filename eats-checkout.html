@@ -202,7 +202,7 @@
           const timing = confirmed.scheduled_for
             ? `<br><span class="muted">Scheduled for ${esc(new Date(confirmed.scheduled_for).toLocaleString())}. The restaurant and courier flow opens shortly before this time.</span>`
             : "";
-          el("status").innerHTML = `<span class="success">Payment successful. Your order is confirmed.</span>${timing}<br><span class="muted">Order ID: ${esc(orderId.slice(0, 8).toUpperCase())}</span><br><br><span class="muted">DELIVERY PIN</span><br><span class="pin">${esc(pin)}</span><br><span class="muted">Give this PIN only when your food arrives. It releases the courier earning.</span><br><a class="login" href="activity.html?filter=eats">View Eats activity</a>`;
+          el("status").innerHTML = `<span class="success">Payment successful. Your order is confirmed.</span>${timing}<br><span class="muted">Order ID: ${esc(orderId.slice(0, 8).toUpperCase())}</span><br><br><span class="muted">DELIVERY PIN</span><br><span class="pin">${esc(pin)}</span><br><span class="muted">Give this PIN only when your food arrives. It releases the courier earning.</span><br><a class="login" href="eats-orders.html">View Eats activity</a>`;
         } catch (error) {
           el("status").textContent = error.message;
           button.disabled = false;

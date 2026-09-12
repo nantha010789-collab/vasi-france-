@@ -17,6 +17,8 @@ const secondaryPages = [
   "driver.html",
   "eats-checkout.html",
   "eats.html",
+  "eats-orders.html",
+  "eats-orders.html",
   "group-order.html",
   "help.html",
   "legal.html",
