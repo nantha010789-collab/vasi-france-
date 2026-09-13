@@ -18,6 +18,27 @@
   function badge(value){const v=String(value||'—'),low=v.toLowerCase();const cls=/approved|verified|completed|resolved|online|active/.test(low)?'ok':/rejected|cancelled|closed|urgent/.test(low)?'bad':'warn';return `<span class="badge ${cls}">${esc(v)}</span>`}
   function payout(provider){const ready=provider.stripe_details_submitted&&provider.stripe_payouts_enabled;return `<div class="${ready?'payout-ready':'payout-blocked'}">${ready?'✓ RIB vérifié':'! RIB à connecter'}</div><div class="cell-sub">Stripe ${provider.stripe_details_submitted?'complété':'incomplet'}</div>`}
   function metric(label,value,note='Données en direct'){return `<article class="metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value??'—')}</div><div class="metric-note">${esc(note)}</div></article>`}
+  function resilientOsmLayer(){
+    const sources=['https://a.tile.openstreetmap.org','https://c.tile.openstreetmap.org','https://b.tile.openstreetmap.org','https://tile.openstreetmap.org'];
+    const layer=window.L.tileLayer('',{maxZoom:19,updateWhenIdle:false,updateWhenZooming:true,keepBuffer:3,attribution:'© OpenStreetMap contributors'});
+    layer.createTile=function(coords,done){
+      const tile=document.createElement('img');
+      tile.alt='';tile.setAttribute('role','presentation');tile.decoding='async';
+      let attempt=-1,finished=false,timer=0;
+      const finish=error=>{if(finished)return;finished=true;clearTimeout(timer);done(error,tile)};
+      const next=()=>{
+        clearTimeout(timer);attempt+=1;
+        if(attempt>=sources.length){finish(new Error('Map tile unavailable'));return}
+        const current=attempt;
+        tile.onload=()=>{if(current===attempt)finish(null)};
+        tile.onerror=()=>{if(current===attempt)next()};
+        tile.src=`${sources[current]}/${coords.z}/${coords.x}/${coords.y}.png`;
+        timer=setTimeout(()=>{if(current===attempt)next()},5500);
+      };
+      next();return tile;
+    };
+    return layer;
+  }
   async function endAdminSession(){await db.auth.signOut({scope:'local'});window.VasiAccountRole?.clear();location.replace('../admin-login.html')}
   async function api(path,options={}){const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(data.error||`Erreur ${response.status}`);return data}
   function syncMapSize(){
@@ -131,7 +152,7 @@
       if(!window.L){shell('GPS en direct',errorView(new Error('La carte ne peut pas être chargée. Vérifiez la connexion internet.')));return}
       const mapElement=document.getElementById('gpsMap');
       map=window.L.map(mapElement,{zoomControl:true,zoomAnimation:true,fadeAnimation:true,trackResize:true}).setView([48.8566,2.3522],9);
-      mapTiles=window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,updateWhenIdle:false,updateWhenZooming:true,keepBuffer:3,attribution:'© OpenStreetMap contributors'}).addTo(map);
+      mapTiles=resilientOsmLayer().addTo(map);
       mapTiles.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapTileFailures=0;syncMapSize()});
       mapTiles.on('tileerror',()=>{
         mapTileFailures+=1;
