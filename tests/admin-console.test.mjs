@@ -19,7 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
-  assert.match(html, /src="app\.js\?v=4"/);
+  assert.match(html, /src="app\.js\?v=5"/);
   assert.match(html, /vasi-languages\.js/);
   assert.match(html, /vasi-account-role\.js/);
   assert.match(login, /VasiAccountRole\.remember\('admin'\)/);
@@ -41,8 +41,11 @@ test('admin live GPS keeps one responsive map and refreshes markers in place', a
   assert.match(app, /mapLayoutTargets\.forEach/);
   assert.match(app, /window\.addEventListener\('pageshow',syncMapSize/);
   assert.match(app, /visualViewport\?\.addEventListener\('resize',syncMapSize/);
-  assert.match(app, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
-  assert.doesNotMatch(app, /\{s\}\.tile\.openstreetmap\.org/);
+  assert.match(app, /function resilientOsmLayer\(\)/);
+  for (const host of ['a','b','c']) assert.match(app, new RegExp(`https:\\/\\/${host}\\.tile\\.openstreetmap\\.org`));
+  assert.match(app, /https:\/\/tile\.openstreetmap\.org/);
+  assert.match(app, /timer=setTimeout\(\(\)=>\{if\(current===attempt\)next\(\)\},5500\)/);
+  assert.match(app, /mapTiles=resilientOsmLayer\(\)\.addTo\(map\)/);
   assert.match(app, /mapTiles\.on\('tileerror'/);
   assert.match(app, /mapTiles\.redraw\(\)/);
   assert.match(app, /window\.L\.circleMarker/);
