@@ -1,0 +1,34 @@
+.nav-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  font-size: 0;
+}
+
+@media (max-width: 760px) {
+  .sidebar nav {
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: #475467 transparent;
+  }
+
+  .nav-button {
+    scroll-snap-align: start;
+  }
+
+  .nav-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  .sidebar nav::-webkit-scrollbar {
+    display: block;
+    height: 3px;
+  }
+
+  .sidebar nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #475467;
+  }
+}

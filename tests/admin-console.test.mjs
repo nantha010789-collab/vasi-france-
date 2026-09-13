@@ -19,7 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
-  assert.match(html, /src="app\.js\?v=6"/);
+  assert.match(html, /src="app\.js\?v=7"/);
   assert.match(html, /maplibre-gl@5\.24\.0/);
   assert.match(html, /maplibre-gl-leaflet@0\.1\.4/);
   assert.match(html, /vasi-languages\.js/);
@@ -52,8 +52,14 @@ test('admin live GPS keeps one responsive map and refreshes markers in place', a
   assert.match(app, /markers\[d\.id\]\.setLatLng\(point\)\.setStyle\([\s\S]*?\.setPopupContent\(popup\)/);
   assert.match(app, /if\(bounds\.length&&!gpsFitted\)/);
   assert.match(app, /maxZoom:15/);
-  assert.match(app, /Aucun chauffeur vérifié en ligne/);
+  assert.match(app, /No verified driver is online/);
   assert.match(app, /clearTimeout\(gpsTimer\)/);
+  assert.match(app, /active==='gps'\?gps\(\):render\(active\)/);
+  assert.match(app, /Loading driver positions…/);
+  assert.match(app, /No verified driver is online/);
+  assert.match(app, /db\.auth\.getSession\(\);accessToken=data\.session\?\.access_token/);
+  assert.match(app, /<svg class="nav-icon"/);
+  assert.doesNotMatch(app, /🚕|📍|🚗|📄|🛵|🍽|🧾|💬|🛡/);
 });
 
 test('admin routing stays on Vercel and old dashboard is retired', async () => {
