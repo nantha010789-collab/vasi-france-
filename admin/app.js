@@ -9,7 +9,7 @@
     ['drivers','🚗','Chauffeurs'],['documents','📄','Documents'],['couriers','🛵','Coursiers'],['restaurants','🍽','Restaurants'],
     ['orders','🧾','Commandes'],['finance','€','Paiements'],['pricing','⚙','Tarifs'],['support','💬','Support'],['deletions','⌫','Suppressions'],['audit','🛡','Journal']
   ];
-  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapLayoutTargets = [], mapWidth = 0, mapHeight = 0, mapTileFailures = 0, mapRecoveryUsed = false, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
+  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapLayoutTargets = [], mapWidth = 0, mapHeight = 0, mapLoadFailures = 0, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const money = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
   const fmt = value => value ? new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)) : '—';
@@ -18,26 +18,13 @@
   function badge(value){const v=String(value||'—'),low=v.toLowerCase();const cls=/approved|verified|completed|resolved|online|active/.test(low)?'ok':/rejected|cancelled|closed|urgent/.test(low)?'bad':'warn';return `<span class="badge ${cls}">${esc(v)}</span>`}
   function payout(provider){const ready=provider.stripe_details_submitted&&provider.stripe_payouts_enabled;return `<div class="${ready?'payout-ready':'payout-blocked'}">${ready?'✓ RIB vérifié':'! RIB à connecter'}</div><div class="cell-sub">Stripe ${provider.stripe_details_submitted?'complété':'incomplet'}</div>`}
   function metric(label,value,note='Données en direct'){return `<article class="metric"><div class="metric-label">${esc(label)}</div><div class="metric-value">${esc(value??'—')}</div><div class="metric-note">${esc(note)}</div></article>`}
-  function resilientOsmLayer(){
-    const sources=['https://a.tile.openstreetmap.org','https://c.tile.openstreetmap.org','https://b.tile.openstreetmap.org','https://tile.openstreetmap.org'];
-    const layer=window.L.tileLayer('',{maxZoom:19,updateWhenIdle:false,updateWhenZooming:true,keepBuffer:3,attribution:'© OpenStreetMap contributors'});
-    layer.createTile=function(coords,done){
-      const tile=document.createElement('img');
-      tile.alt='';tile.setAttribute('role','presentation');tile.decoding='async';
-      let attempt=-1,finished=false,timer=0;
-      const finish=error=>{if(finished)return;finished=true;clearTimeout(timer);done(error,tile)};
-      const next=()=>{
-        clearTimeout(timer);attempt+=1;
-        if(attempt>=sources.length){finish(new Error('Map tile unavailable'));return}
-        const current=attempt;
-        tile.onload=()=>{if(current===attempt)finish(null)};
-        tile.onerror=()=>{if(current===attempt)next()};
-        tile.src=`${sources[current]}/${coords.z}/${coords.x}/${coords.y}.png`;
-        timer=setTimeout(()=>{if(current===attempt)next()},5500);
-      };
-      next();return tile;
-    };
-    return layer;
+  function professionalVectorLayer(){
+    return window.L.maplibreGL({
+      style:'https://tiles.openfreemap.org/styles/positron',
+      attributionControl:{customAttribution:'OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors'},
+      interactive:false,
+      padding:.12
+    });
   }
   async function endAdminSession(){await db.auth.signOut({scope:'local'});window.VasiAccountRole?.clear();location.replace('../admin-login.html')}
   async function api(path,options={}){const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(data.error||`Erreur ${response.status}`);return data}
@@ -50,7 +37,7 @@
       const changed=Math.abs(rect.width-mapWidth)>1||Math.abs(rect.height-mapHeight)>1;
       mapWidth=rect.width;mapHeight=rect.height;
       map.invalidateSize({animate:false,pan:false});
-      if(changed)mapTiles?.redraw();
+      if(changed)mapTiles?.getMaplibreMap?.()?.resize();
     });
   }
   function watchMapSize(container){
@@ -76,7 +63,7 @@
     window.removeEventListener('pageshow',syncMapSize);
     window.visualViewport?.removeEventListener('resize',syncMapSize);
     if(map){map.remove();map=null}
-    mapTiles=null;mapTileFailures=0;mapRecoveryUsed=false;markers={};gpsFitted=false;
+    mapTiles=null;mapLoadFailures=0;markers={};gpsFitted=false;
   }
   function shell(name,content,actions=''){title.textContent=name;app.setAttribute('aria-busy','false');app.innerHTML=`${actions}<div id="content">${content}</div>`}
   function errorView(error){setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}</div>`}
@@ -149,20 +136,17 @@
   async function gps(){
     if(!map){
       shell('GPS en direct',`<section class="panel gps-panel"><div class="panel-head"><div><h2>Chauffeurs en direct</h2><p id="gpsStatus" class="muted" role="status">Chargement des positions…</p></div><button class="button" data-refresh>Actualiser</button></div><div class="gps-map-shell"><div id="gpsMap" class="gps-map" aria-label="Carte interactive des chauffeurs en direct"></div><div id="gpsMapLoading" class="gps-map-loading" role="status"><span class="gps-spinner" aria-hidden="true"></span>Chargement de la carte…</div><div id="gpsMapNotice" class="gps-map-notice" role="status" hidden></div><div class="gps-map-legend" aria-label="Légende de la carte"><span><i class="gps-dot live"></i>Position récente</span><span><i class="gps-dot stale"></i>À actualiser</span></div></div></section>`);
-      if(!window.L){shell('GPS en direct',errorView(new Error('La carte ne peut pas être chargée. Vérifiez la connexion internet.')));return}
+      if(!window.L||!window.maplibregl||typeof window.L.maplibreGL!=='function'){shell('GPS en direct',errorView(new Error('La carte ne peut pas être chargée. Vérifiez la connexion internet.')));return}
       const mapElement=document.getElementById('gpsMap');
       map=window.L.map(mapElement,{zoomControl:true,zoomAnimation:true,fadeAnimation:true,trackResize:true}).setView([48.8566,2.3522],9);
-      mapTiles=resilientOsmLayer().addTo(map);
-      mapTiles.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapTileFailures=0;syncMapSize()});
-      mapTiles.on('tileerror',()=>{
-        mapTileFailures+=1;
-        if(mapTileFailures>=3&&!mapRecoveryUsed){
-          mapRecoveryUsed=true;
-          setTimeout(()=>{if(map&&mapTiles){mapTileFailures=0;mapTiles.redraw();syncMapSize()}},900);
-        }else if(mapTileFailures>=6){
-          const notice=document.getElementById('gpsMapNotice');
-          if(notice){notice.hidden=false;notice.textContent='Le fond de carte se recharge. Vérifiez votre connexion si des zones restent vides.'}
-        }
+      mapTiles=professionalVectorLayer().addTo(map);
+      const vectorMap=mapTiles.getMaplibreMap();
+      vectorMap.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapLoadFailures=0;syncMapSize()});
+      vectorMap.on('error',()=>{
+        mapLoadFailures+=1;
+        if(mapLoadFailures<4)return;
+        const notice=document.getElementById('gpsMapNotice');
+        if(notice){notice.hidden=false;notice.textContent='La carte se reconnecte automatiquement. Vérifiez votre connexion si elle reste indisponible.'}
       });
       map.whenReady(()=>{syncMapSize();document.getElementById('gpsMapLoading')?.classList.add('hidden')});
       watchMapSize(mapElement);
