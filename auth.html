@@ -152,6 +152,20 @@
         color: #fff;
         margin-top: 14px;
       }
+      .demo-link {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        padding: 13px;
+        box-sizing: border-box;
+        border: 1px solid #285ec9;
+        border-radius: 14px;
+        background: #0b1d45;
+        color: #fff;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 800;
+      }
       .hidden {
         display: none;
       }
@@ -237,6 +251,8 @@
         </div>
         <button id="continueBtn" class="btn primary" onclick="submitAuth()">
           Send SMS code</button
+        ><a id="driverPreview" class="demo-link hidden" href="driver-preview.html"
+          >Preview without signing in</a
         ><a id="register" class="link hidden" href="partner-register-v2.html"
           >New partner? Register with VASI →</a
         >
@@ -451,6 +467,7 @@
           customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
         ).classList.add("active");
         $("register").classList.toggle("hidden", customer);
+        $("driverPreview").classList.toggle("hidden", !(surface === "driver" && role === "ride"));
         $("register").href = role === "restaurant"
           ? "restaurant-register.html"
           : "partner-register-v2.html?role=" + encodeURIComponent(role);

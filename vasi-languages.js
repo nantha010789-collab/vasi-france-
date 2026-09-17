@@ -17,6 +17,7 @@
 
   const translations = {
     fr: {
+      "Preview without signing in": "Voir l’aperçu sans connexion",
       "Home": "Accueil",
       "Back": "Retour",
       "Account": "Compte",
@@ -248,6 +249,7 @@
       "Positions temporarily unavailable. Retrying automatically…": "Positions temporairement indisponibles. Nouvelle tentative automatique…",
     },
     ta: {
+      "Preview without signing in": "உள்நுழையாமல் முன்னோட்டத்தைப் பார்க்கவும்",
       "Home": "முகப்பு", "Back": "பின்செல்", "Account": "கணக்கு", "Activity": "செயல்பாடுகள்", "Login": "உள்நுழைவு", "Settings": "அமைப்புகள்", "Language": "மொழி", "App display language": "செயலி காட்சி மொழி",
       "Europe mobility platform": "ஐரோப்பிய போக்குவரத்து தளம்", "Move.": "பயணம்.", "Eat.": "உணவு.", "Deliver.": "டெலிவரி.", "One VASI app for rides, food and delivery.": "பயணம், உணவு மற்றும் டெலிவரிக்கு ஒரே VASI செயலி.",
       "Ride": "பயணம்", "Fast city trips": "விரைவான நகரப் பயணங்கள்", "Eats": "உணவு", "Food delivery": "உணவு டெலிவரி", "Delivery": "டெலிவரி", "Send anything": "பொருட்களை அனுப்புங்கள்", "Services": "சேவைகள்", "3 ready": "3 சேவைகள் தயார்", "France & Europe": "பிரான்ஸ் மற்றும் ஐரோப்பா", "Book a ride": "பயணம் பதிவு செய்யுங்கள்", "Driver app": "ஓட்டுநர் செயலி", "Customer Service": "வாடிக்கையாளர் சேவை",
@@ -257,6 +259,7 @@
       "Plan your ride": "பயணத்தை திட்டமிடுங்கள்", "Choose your ride": "பயணத்தை தேர்வு செய்யுங்கள்", "Confirm ride": "பயணத்தை உறுதிப்படுத்துங்கள்", "Add stop": "நிறுத்தம் சேர்க்கவும்", "Payment": "கட்டணம்", "Cash": "பணம்", "Card": "அட்டை", "Reserve": "முன்பதிவு", "Now": "இப்போது", "Destination": "செல்லும் இடம்", "Pickup": "புறப்படும் இடம்", "Food, your way.": "உங்கள் விருப்பப்படி உணவு.", "Search restaurant or food…": "உணவகம் அல்லது உணவைத் தேடுங்கள்…", "Cart": "கூடை", "Add": "சேர்க்கவும்", "Send anything.": "எதையும் அனுப்புங்கள்.", "Full pickup address": "முழு பிக்கப் முகவரி", "Full destination address": "முழு சேருமிட முகவரி", "Parcel": "பார்சல்", "Document": "ஆவணம்", "Estimated delivery": "மதிப்பிடப்பட்ட டெலிவரி", "Get delivery quote": "டெலிவரி விலையைப் பெறவும்", "Book VASI delivery": "VASI டெலிவரியை பதிவு செய்யவும்",
     },
     de: {
+      "Preview without signing in": "Vorschau ohne Anmeldung ansehen",
       "Home": "Startseite", "Back": "Zurück", "Account": "Konto", "Activity": "Aktivität", "Login": "Anmelden", "Settings": "Einstellungen", "Language": "Sprache", "App display language": "Anzeigesprache der App",
       "Europe mobility platform": "Europäische Mobilitätsplattform", "Move.": "Fahren.", "Eat.": "Essen.", "Deliver.": "Liefern.", "One VASI app for rides, food and delivery.": "Eine VASI-App für Fahrten, Essen und Lieferungen.",
       "Ride": "Fahrt", "Fast city trips": "Schnelle Stadtfahrten", "Eats": "Essen", "Food delivery": "Essenslieferung", "Delivery": "Lieferung", "Send anything": "Alles versenden", "Services": "Dienste", "3 ready": "3 Dienste bereit", "France & Europe": "Frankreich und Europa", "Book a ride": "Fahrt buchen", "Driver app": "Fahrer-App", "Customer Service": "Kundenservice",
@@ -265,6 +268,7 @@
       "Plan your ride": "Fahrt planen", "Choose your ride": "Fahrt auswählen", "Confirm ride": "Fahrt bestätigen", "Add stop": "Stopp hinzufügen", "Payment": "Zahlung", "Cash": "Bargeld", "Card": "Karte", "Reserve": "Reservieren", "Now": "Jetzt", "Destination": "Ziel", "Pickup": "Abholung", "Food, your way.": "Essen nach Ihrem Geschmack.", "Search restaurant or food…": "Restaurant oder Essen suchen…", "Cart": "Warenkorb", "Add": "Hinzufügen", "Send anything.": "Alles versenden.", "Full pickup address": "Vollständige Abholadresse", "Full destination address": "Vollständige Zieladresse", "Parcel": "Paket", "Document": "Dokument", "Estimated delivery": "Geschätzte Lieferung", "Get delivery quote": "Lieferpreis berechnen", "Book VASI delivery": "VASI-Lieferung buchen",
     },
     ar: {
+      "Preview without signing in": "عرض المعاينة من دون تسجيل الدخول",
       "Home": "الرئيسية", "Back": "رجوع", "Account": "الحساب", "Activity": "النشاط", "Login": "تسجيل الدخول", "Settings": "الإعدادات", "Language": "اللغة", "App display language": "لغة عرض التطبيق",
       "Europe mobility platform": "منصة التنقل الأوروبية", "Move.": "تنقّل.", "Eat.": "اطلب الطعام.", "Deliver.": "أرسل.", "One VASI app for rides, food and delivery.": "تطبيق VASI واحد للرحلات والطعام والتوصيل.",
       "Ride": "رحلة", "Fast city trips": "رحلات سريعة داخل المدينة", "Eats": "الطعام", "Food delivery": "توصيل الطعام", "Delivery": "التوصيل", "Send anything": "أرسل أي شيء", "Services": "الخدمات", "3 ready": "3 خدمات جاهزة", "France & Europe": "فرنسا وأوروبا", "Book a ride": "احجز رحلة", "Driver app": "تطبيق السائق", "Customer Service": "خدمة العملاء",
@@ -273,6 +277,7 @@
       "Plan your ride": "خطط لرحلتك", "Choose your ride": "اختر رحلتك", "Confirm ride": "تأكيد الرحلة", "Add stop": "إضافة محطة", "Payment": "الدفع", "Cash": "نقداً", "Card": "بطاقة", "Reserve": "حجز", "Now": "الآن", "Destination": "الوجهة", "Pickup": "موقع الانطلاق", "Food, your way.": "طعامك كما تحب.", "Search restaurant or food…": "ابحث عن مطعم أو طعام…", "Cart": "السلة", "Add": "إضافة", "Send anything.": "أرسل أي شيء.", "Full pickup address": "عنوان الاستلام الكامل", "Full destination address": "عنوان الوجهة الكامل", "Parcel": "طرد", "Document": "مستند", "Estimated delivery": "التوصيل المتوقع", "Get delivery quote": "احصل على سعر التوصيل", "Book VASI delivery": "احجز توصيل VASI",
     },
     hi: {
+      "Preview without signing in": "साइन इन किए बिना पूर्वावलोकन देखें",
       "Home": "होम", "Back": "वापस", "Account": "खाता", "Activity": "गतिविधि", "Login": "लॉग इन", "Settings": "सेटिंग्स", "Language": "भाषा", "App display language": "ऐप की भाषा",
       "Europe mobility platform": "यूरोप मोबिलिटी प्लेटफ़ॉर्म", "Move.": "यात्रा.", "Eat.": "खाना.", "Deliver.": "डिलीवरी.", "One VASI app for rides, food and delivery.": "राइड, खाना और डिलीवरी के लिए एक VASI ऐप.",
       "Ride": "राइड", "Fast city trips": "तेज़ शहर यात्राएँ", "Eats": "खाना", "Food delivery": "खाने की डिलीवरी", "Delivery": "डिलीवरी", "Send anything": "कुछ भी भेजें", "Services": "सेवाएँ", "3 ready": "3 सेवाएँ तैयार", "France & Europe": "फ़्रांस और यूरोप", "Book a ride": "राइड बुक करें", "Driver app": "ड्राइवर ऐप", "Customer Service": "ग्राहक सेवा",
