@@ -10,7 +10,8 @@ test("customer, driver and partner installs have distinct app identities", () =>
   const partner = JSON.parse(read("partner-manifest.webmanifest"));
 
   assert.equal(customer.start_url, "./app.html");
-  assert.equal(driver.start_url, "/driver");
+  assert.equal(driver.start_url, "/driver-home.html?source=pwa");
+  assert.equal(driver.launch_handler.client_mode, "navigate-existing");
   assert.equal(partner.start_url, "/partner");
   assert.equal(new Set([customer.id, driver.id, partner.id]).size, 3);
   assert.equal(driver.name, "VASI Driver");
