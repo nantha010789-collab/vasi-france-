@@ -7,7 +7,6 @@ const secondaryPages = [
   "account.html",
   "activity.html",
   "admin-discounts.html",
-  "admin-login.html",
   "auth.html",
   "business-account.html",
   "contact.html",
@@ -40,7 +39,6 @@ const secondaryPages = [
 ];
 
 const nestedSecondaryPages = [
-  "admin/index.html",
   "publicity/index.html",
   "website/contact.html",
   "website/help.html",
@@ -69,6 +67,8 @@ test("home and redirect-only pages do not show a misleading return control", () 
     "app-easy.html",
     "app-fixed.html",
     "driver-home.html",
+    "admin-login.html",
+    "admin/index.html",
     "partner.html",
     "partner-register.html",
     "vasi-admin.html",
@@ -107,7 +107,9 @@ test("the shared return control is valid JavaScript and has safe navigation rule
   assert.doesNotMatch(source, /nestedIndex[^;]+segments\.length === 1/);
   assert.match(source, /"eats-checkout\.html": "eats\.html"/);
   assert.match(source, /"settings\.html": "account\.html"/);
-  assert.match(source, /"admin-login\.html": "index\.html"/);
+  assert.match(source, /page === "admin-login\.html"/);
+  assert.match(source, /parent === "admin" && page === "index\.html"/);
+  assert.match(source, /parent === "admin"\) fallback = "\.\/"/);
   assert.match(source, /"driver\.html": "driver-home\.html"/);
   assert.match(source, /"delivery-driver\.html": "driver-home\.html"/);
   assert.match(source, /"restaurant-dashboard\.html": "partner\.html"/);

@@ -32,6 +32,7 @@
 
   // The customer home screens and invisible redirect shims must not show a back
   // control. A nested index (admin/publicity) is still a secondary screen.
+  if (page === "admin-login.html" || (parent === "admin" && page === "index.html")) return;
   if (rootPages.has(page) && !["admin", "publicity"].includes(parent)) return;
 
   const fallbacks = {
@@ -78,7 +79,8 @@
     if (surface === "partner") fallback = "partner.html";
   }
   if (parent === "website") fallback = "index.html";
-  if (parent === "admin" || parent === "publicity") fallback = "../index.html";
+  if (parent === "admin") fallback = "./";
+  if (parent === "publicity") fallback = "../index.html";
 
   const labels = {
     fr: "Retour",
