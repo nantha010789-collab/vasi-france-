@@ -1,0 +1,209 @@
+:root {
+  --driver-safe-top: env(safe-area-inset-top, 0px);
+  --driver-safe-right: env(safe-area-inset-right, 0px);
+  --driver-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --driver-safe-left: env(safe-area-inset-left, 0px);
+  --driver-shell-width: 1180px;
+}
+
+html:has(body[data-vasi-driver]),
+body[data-vasi-driver] {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #050505;
+}
+
+body[data-vasi-driver] {
+  padding: 0 !important;
+  touch-action: none;
+}
+
+body[data-vasi-driver] > .wrap {
+  width: min(100%, var(--driver-shell-width)) !important;
+  height: 100vh !important;
+  height: 100svh !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  max-width: var(--driver-shell-width) !important;
+  margin: 0 auto !important;
+  padding: max(12px, var(--driver-safe-top)) max(14px, var(--driver-safe-right)) max(10px, var(--driver-safe-bottom)) max(14px, var(--driver-safe-left)) !important;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden !important;
+}
+
+body[data-vasi-driver] .top {
+  min-width: 0;
+  min-height: 52px;
+  padding: 2px 0;
+  flex: none;
+}
+
+body[data-vasi-driver] .top button,
+body[data-vasi-driver] .top .btn {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+body[data-vasi-driver] .driver-scroll {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 12px;
+  padding: 0 2px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-gutter: stable;
+}
+
+body[data-vasi-driver] .driver-scroll > .card {
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 0;
+}
+
+body[data-vasi-driver] .card,
+body[data-vasi-driver] .offer,
+body[data-vasi-driver] .job,
+body[data-vasi-driver] .routeStep,
+body[data-vasi-driver] .zone,
+body[data-vasi-driver] .toolstat {
+  overflow-wrap: anywhere;
+}
+
+body[data-vasi-driver] button,
+body[data-vasi-driver] a,
+body[data-vasi-driver] input,
+body[data-vasi-driver] select {
+  font: inherit;
+}
+
+body[data-vasi-driver] button,
+body[data-vasi-driver] .btn,
+body[data-vasi-driver] .navigate {
+  min-height: 44px;
+}
+
+body[data-vasi-driver] .actions,
+body[data-vasi-driver] .toggle,
+body[data-vasi-driver] .online,
+body[data-vasi-driver] .status,
+body[data-vasi-driver] .zone {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+body[data-vasi-driver] .routeText,
+body[data-vasi-driver] .tripline,
+body[data-vasi-driver] .status > *,
+body[data-vasi-driver] .online > * {
+  min-width: 0;
+}
+
+@media (min-width: 760px) {
+  body[data-vasi-driver] > .wrap {
+    padding-inline: max(22px, var(--driver-safe-left)) max(22px, var(--driver-safe-right)) !important;
+  }
+
+  body[data-vasi-driver] .driver-scroll {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+
+  body[data-vasi-driver="ride"] .driver-scroll > .card:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1024px) {
+  body[data-vasi-driver="ride"] .driver-scroll {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  }
+
+  body[data-vasi-driver="ride"] .driver-scroll > .card:first-child {
+    grid-column: 1;
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 430px) {
+  body[data-vasi-driver] > .wrap {
+    padding-inline: max(10px, var(--driver-safe-left)) max(10px, var(--driver-safe-right)) !important;
+    gap: 8px;
+  }
+
+  body[data-vasi-driver] .top {
+    min-height: 48px;
+  }
+
+  body[data-vasi-driver] .top .vasi-wordmark {
+    width: 94px !important;
+  }
+
+  body[data-vasi-driver] .top > div:last-child {
+    display: flex;
+    gap: 6px;
+  }
+
+  body[data-vasi-driver] .top button,
+  body[data-vasi-driver] .top .btn {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  body[data-vasi-driver] .card {
+    border-radius: 18px;
+    padding: 15px;
+  }
+
+  body[data-vasi-driver] .toolgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body[data-vasi-driver] .toolstat {
+    padding: 9px 6px;
+  }
+
+  body[data-vasi-driver] .toolstat b {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 350px) {
+  body[data-vasi-driver] .toolgrid {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-vasi-driver] .top .vasi-wordmark {
+    width: 82px !important;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  body[data-vasi-driver] > .wrap {
+    padding-block: max(6px, var(--driver-safe-top)) max(6px, var(--driver-safe-bottom)) !important;
+    gap: 6px;
+  }
+
+  body[data-vasi-driver] .top {
+    min-height: 42px;
+  }
+
+  body[data-vasi-driver] .top .vasi-wordmark {
+    max-height: 34px !important;
+  }
+
+  body[data-vasi-driver] .driver-scroll {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

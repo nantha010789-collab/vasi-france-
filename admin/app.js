@@ -1,7 +1,8 @@
 (() => {
   'use strict';
   const config = window.VASI_ADMIN_CONFIG || {};
-  const db = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
+  const db = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {auth:{storageKey:'vasi-admin-auth'}});
+  const adminRole = window.VasiAccountRole?.scoped?.('admin') || window.VasiAccountRole;
   const app = document.getElementById('app'), nav = document.getElementById('nav'), title = document.getElementById('title');
   const connection = document.getElementById('connection');
   const sections = [
@@ -42,7 +43,7 @@
       padding:.12
     });
   }
-  async function endAdminSession(){await db.auth.signOut({scope:'local'});window.VasiAccountRole?.clear();location.replace('../admin-login.html')}
+  async function endAdminSession(){await db.auth.signOut({scope:'local'});adminRole?.clear();location.replace('../admin-login.html')}
   async function api(path,options={}){const {data}=await db.auth.getSession();accessToken=data.session?.access_token||'';if(!accessToken){await endAdminSession();throw new Error('Session administrateur expirée.')}const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const result=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(result.error||`Erreur ${response.status}`);return result}
   function syncMapSize(){
     if(!map)return;
@@ -199,6 +200,6 @@
   sections.forEach(([id,label])=>{const button=document.createElement('button');button.type='button';button.className='nav-button';button.dataset.section=id;button.innerHTML=`<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${sectionIcons[id]}</svg><span>${label}</span>`;button.addEventListener('click',()=>render(id));nav.appendChild(button)});
   document.getElementById('logout').addEventListener('click',endAdminSession);
   const language=document.getElementById('adminLanguage');language.value=['fr','en'].includes(window.VasiLanguage?.getLanguage?.())?window.VasiLanguage.getLanguage():'fr';language.addEventListener('change',()=>{window.VasiLanguage?.setLanguage(language.value);render(active)});
-  async function start(){const {data}=await db.auth.getSession();if(!data.session){window.VasiAccountRole?.clear();return location.replace('../admin-login.html')}const activeRole=window.VasiAccountRole?.active();if(activeRole&&activeRole!=='admin')return location.replace('../'+window.VasiAccountRole.destination(activeRole));accessToken=data.session.access_token;try{const response=await fetch(`${config.supabaseUrl}/functions/v1/admin-service`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({action:'check_access'})});if(!response.ok)throw new Error('Accès refusé');window.VasiAccountRole?.remember('admin');setConnected(true);render('overview')}catch{await endAdminSession()}}
+  async function start(){const {data}=await db.auth.getSession();if(!data.session){adminRole?.clear();return location.replace('../admin-login.html')}const activeRole=adminRole?.active();if(activeRole&&activeRole!=='admin')return endAdminSession();accessToken=data.session.access_token;try{const response=await fetch(`${config.supabaseUrl}/functions/v1/admin-service`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({action:'check_access'})});if(!response.ok)throw new Error('Accès refusé');adminRole?.remember('admin');setConnected(true);render('overview')}catch{await endAdminSession()}}
   start();
 })();

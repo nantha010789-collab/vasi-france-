@@ -25,7 +25,7 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script>
-      const client = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+      const client = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT',{auth:{storageKey:'vasi-admin-auth'}});
       const labels = {identity:'Pièce d’identité',business:'SIREN / KBIS / RNE',rib:'RIB',bag:'Sac isotherme',vehicle_photo:'Photo du véhicule',selfie:'Selfie en direct',profile_photo:'Photo de profil',licence:'Permis de conduire',insurance:'Assurance véhicule',carte_grise:'Carte grise',transport_licence:'Capacité de transport'};
       const vehicleLabels = {bike:'Vélo',ebike:'Vélo électrique',scooter:'Scooter',moto:'Moto',car:'Voiture'};
       let filter = 'pending';
@@ -33,7 +33,7 @@
       const safe = value => String(value || '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
       async function admin(body){
         const {data:{session}} = await client.auth.getSession();
-        if (!session) { location.href = 'auth.html'; return null; }
+        if (!session) { location.href = 'admin-login.html'; return null; }
         const response = await fetch('https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/admin-service', {method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
         return response.json();
       }

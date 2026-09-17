@@ -188,8 +188,9 @@
       .zone { display:flex; justify-content:space-between; gap:10px; border-radius:12px; background:#181818; padding:10px; font-size:12px; }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+    <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
   </head>
-  <body>
+  <body data-scroll-mode="viewport" data-vasi-driver="ride">
     <main class="wrap">
       <header class="top">
         <div class="logo"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
@@ -198,6 +199,7 @@
           <button onclick="logout()">Log out</button>
         </div>
       </header>
+      <div class="driver-scroll" data-scroll-region>
       <section class="card">
         <h1>Driver</h1>
         <div id="status" class="status">
@@ -250,6 +252,7 @@
           Checking cash-ride commission balance…
         </p>
       </section>
+      </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
@@ -259,7 +262,9 @@
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+        { auth: { storageKey: "vasi-driver-auth" } },
       );
+      const accountRole = VasiAccountRole.scoped("driver");
       const region = VasiRegion.getRegion();
       const money = (value) => VasiRegion.money(value, region.code);
       let online = false,
@@ -274,10 +279,10 @@
         monthlyEarnings = [];
       client.auth.getSession().then(async ({ data }) => {
         if (!data.session) {
-          localStorage.setItem("vasi_role", "ride");
+          accountRole.setIntent("ride");
           return (location.href = "auth.html?role=ride&surface=driver");
         }
-        if (!VasiAccountRole.require("ride", data.session)) return;
+        if (!accountRole.require("ride", data.session)) return;
         const stripeReturn = new URLSearchParams(location.search).get("stripe");
         if (stripeReturn === "complete") {
           document.getElementById("payoutStatus").textContent =
@@ -838,7 +843,7 @@
         stopOffers();
         stopGps();
         await client.auth.signOut({ scope: "local" });
-        VasiAccountRole.clear();
+        accountRole.clear();
         location.href = "driver-home.html";
       }
       window.addEventListener("beforeunload", () => {

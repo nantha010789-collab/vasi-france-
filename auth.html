@@ -262,13 +262,19 @@
       const requestedSurface = searchParams.get("surface");
       const partnerSurface =
         requestedSurface === "partner" || requestedRole === "restaurant";
+      const driverSurface =
+        requestedSurface === "driver" || ["ride", "courier"].includes(requestedRole);
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,
           storage: window.localStorage,
-          ...(partnerSurface ? { storageKey: "vasi-partner-auth" } : {}),
+          ...(partnerSurface
+            ? { storageKey: "vasi-partner-auth" }
+            : driverSurface
+              ? { storageKey: "vasi-driver-auth" }
+              : {}),
         },
       });
       const RESEND_WAIT_SECONDS = 90;
@@ -300,7 +306,9 @@
         ? requestedRole
         : partnerSurface
           ? localStorage.getItem("vasi_partner_role") || "restaurant"
-          : localStorage.getItem("vasi_role") || "customer";
+          : driverSurface
+            ? localStorage.getItem("vasi_driver_role") || "ride"
+            : localStorage.getItem("vasi_role") || "customer";
       const surface = ["customer", "driver", "partner"].includes(requestedSurface)
         ? requestedSurface
         : role === "restaurant"
@@ -315,10 +323,14 @@
       };
       if (!surfaceRoles[surface].has(role)) role = surface === "driver" ? "ride" : surface === "partner" ? "restaurant" : "customer";
       const accountRole = VasiAccountRole.scoped(
-        surface === "partner" ? "partner" : "default",
+        surface === "partner" ? "partner" : surface === "driver" ? "driver" : "default",
       );
       const returnStorageKey =
-        surface === "partner" ? "vasi_partner_return" : "vasi_return";
+        surface === "partner"
+          ? "vasi_partner_return"
+          : surface === "driver"
+            ? "vasi_driver_return"
+            : "vasi_return";
       let roleAtPageOpen = accountRole.active() || accountRole.intent() || "";
       let authMethod = ["phone", "email"].includes(requestedMethod)
         ? requestedMethod

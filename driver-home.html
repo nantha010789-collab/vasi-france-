@@ -58,10 +58,12 @@
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+        { auth: { storageKey: "vasi-driver-auth" } },
       );
+      const accountRole = VasiAccountRole.scoped("driver");
       const destinations = { ride: "driver.html", courier: "delivery-driver.html" };
       client.auth.getSession().then(({ data: { session } }) => {
-        const role = VasiAccountRole.active();
+        const role = accountRole.active();
         if (!session || !destinations[role]) return;
         const label = role === "ride" ? "chauffeur" : "coursier";
         document.getElementById("sessionTitle").textContent = "Compte " + label + " connecté";
@@ -72,7 +74,7 @@
       });
       document.getElementById("changeAccount").addEventListener("click", async () => {
         await client.auth.signOut({ scope: "local" });
-        VasiAccountRole.clear();
+        accountRole.clear();
         location.reload();
       });
     </script>
