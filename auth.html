@@ -256,12 +256,19 @@
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
       const PRODUCTION_ORIGIN = "https://vasi-new.vercel.app";
+      const searchParams = new URLSearchParams(location.search);
+      const requestedRole = searchParams.get("role");
+      const requestedMethod = searchParams.get("method");
+      const requestedSurface = searchParams.get("surface");
+      const partnerSurface =
+        requestedSurface === "partner" || requestedRole === "restaurant";
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,
           storage: window.localStorage,
+          ...(partnerSurface ? { storageKey: "vasi-partner-auth" } : {}),
         },
       });
       const RESEND_WAIT_SECONDS = 90;
@@ -273,12 +280,6 @@
       let routingSession = false;
       let currentSession = null;
       let roleConflict = false;
-      const searchParams = new URLSearchParams(location.search);
-      const requestedRole = searchParams.get("role");
-      const requestedMethod = searchParams.get("method");
-      const requestedSurface = searchParams.get("surface");
-      let roleAtPageOpen =
-        VasiAccountRole.active() || localStorage.getItem("vasi_role") || "";
       const allowedReturnPages = new Set([
         "index.html",
         "account.html",
@@ -297,7 +298,9 @@
       ]);
       let role = ["customer", "ride", "courier", "restaurant"].includes(requestedRole)
         ? requestedRole
-        : localStorage.getItem("vasi_role") || "customer";
+        : partnerSurface
+          ? localStorage.getItem("vasi_partner_role") || "restaurant"
+          : localStorage.getItem("vasi_role") || "customer";
       const surface = ["customer", "driver", "partner"].includes(requestedSurface)
         ? requestedSurface
         : role === "restaurant"
@@ -311,6 +314,12 @@
         partner: new Set(["restaurant"]),
       };
       if (!surfaceRoles[surface].has(role)) role = surface === "driver" ? "ride" : surface === "partner" ? "restaurant" : "customer";
+      const accountRole = VasiAccountRole.scoped(
+        surface === "partner" ? "partner" : "default",
+      );
+      const returnStorageKey =
+        surface === "partner" ? "vasi_partner_return" : "vasi_return";
+      let roleAtPageOpen = accountRole.active() || accountRole.intent() || "";
       let authMethod = ["phone", "email"].includes(requestedMethod)
         ? requestedMethod
         : role === "customer"
@@ -347,7 +356,7 @@
         if (!surfaceRoles[surface].has(next)) return;
         role = next;
         authMethod = next === "customer" ? "phone" : "email";
-        if (!currentSession) localStorage.setItem("vasi_role", role);
+        if (!currentSession) accountRole.setIntent(role);
         resetAuthForm();
         const params = new URLSearchParams(location.search);
         params.set("role", role);
@@ -379,7 +388,7 @@
       function render() {
         const customer = role === "customer";
         const phone = usesPhone();
-        const signedInRole = VasiAccountRole.active() || roleAtPageOpen;
+        const signedInRole = accountRole.active() || roleAtPageOpen;
         roleConflict = Boolean(
           currentSession && signedInRole && signedInRole !== role,
         );
@@ -455,11 +464,11 @@
           $("continueBtn").disabled = false;
           return show(error.message || t("Sign out failed. Please try again."));
         }
-        VasiAccountRole.clear();
+        accountRole.clear();
         roleAtPageOpen = "";
         currentSession = null;
         roleConflict = false;
-        localStorage.setItem("vasi_role", role);
+        accountRole.setIntent(role);
         resetAuthForm();
         render();
         $("identity").focus();
@@ -479,7 +488,7 @@
         sendingPhoneCode = true;
         $("continueBtn").disabled = true;
         show("Sending your SMS code…");
-        localStorage.setItem("vasi_role", role);
+        accountRole.setIntent(role);
         const { error } = await client.auth.signInWithOtp({ phone });
         sendingPhoneCode = false;
         $("continueBtn").disabled = false;
@@ -601,12 +610,12 @@
         const email = $("identity").value.trim();
         if (!email) return show("Enter your email address.");
         show("Sending secure login link…");
-        localStorage.setItem("vasi_role", role);
+        accountRole.setIntent(role);
         const { error } = await client.auth.signInWithOtp({
           email,
           options: {
             emailRedirectTo:
-              PRODUCTION_ORIGIN + "/auth.html?role=" + encodeURIComponent(role) + "&method=email",
+              PRODUCTION_ORIGIN + "/auth.html?role=" + encodeURIComponent(role) + "&method=email&surface=" + encodeURIComponent(surface),
             shouldCreateUser: true,
           },
         });
@@ -639,26 +648,26 @@
         }
       }
       function destination(savedRole, consumeReturn = true) {
-        const back = safeReturn(localStorage.getItem("vasi_return"));
+        const back = safeReturn(localStorage.getItem(returnStorageKey));
         if (savedRole === "restaurant" && back === "restaurant-register.html") {
-          if (consumeReturn) localStorage.removeItem("vasi_return");
+          if (consumeReturn) localStorage.removeItem(returnStorageKey);
           return back;
         }
         if (savedRole === "ride") return "driver.html";
         if (savedRole === "courier") return "delivery-driver.html";
         if (savedRole === "restaurant") return "restaurant-dashboard.html";
         if (back) {
-          if (consumeReturn) localStorage.removeItem("vasi_return");
+          if (consumeReturn) localStorage.removeItem(returnStorageKey);
           return back;
         }
-        if (consumeReturn) localStorage.removeItem("vasi_return");
+        if (consumeReturn) localStorage.removeItem(returnStorageKey);
         return "index.html";
       }
       async function routeSession(session) {
         if (!session || routingSession) return;
         clearPendingPhone();
         currentSession = session;
-        const signedInRole = VasiAccountRole.active() || roleAtPageOpen;
+        const signedInRole = accountRole.active() || roleAtPageOpen;
         if (signedInRole && signedInRole !== role) {
           render();
           return;
@@ -670,7 +679,7 @@
         );
         if (accountRoleError) {
           await client.auth.signOut({ scope: "local" });
-          VasiAccountRole.clear();
+          accountRole.clear();
           roleAtPageOpen = "";
           currentSession = null;
           routingSession = false;
@@ -682,7 +691,7 @@
           );
           return;
         }
-        const savedRole = VasiAccountRole.remember(role);
+        const savedRole = accountRole.remember(role);
         if (savedRole !== "customer") {
           location.href = destination(savedRole);
           return;
@@ -716,13 +725,13 @@
         if (!data.session) {
           currentSession = null;
           roleAtPageOpen = "";
-          VasiAccountRole.clear();
-          localStorage.setItem("vasi_role", role);
+          accountRole.clear();
+          accountRole.setIntent(role);
           show("");
           return;
         }
         currentSession = data.session;
-        const signedInRole = VasiAccountRole.active() || roleAtPageOpen;
+        const signedInRole = accountRole.active() || roleAtPageOpen;
         if (signedInRole && signedInRole !== role) {
           render();
           return;

@@ -4,8 +4,8 @@
     { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/driver", "destination": "/driver-home.html" },
     { "source": "/driver/", "destination": "/driver-home.html" },
-    { "source": "/partner", "destination": "/restaurant-register.html" },
-    { "source": "/partner/", "destination": "/restaurant-register.html" },
+    { "source": "/partner", "destination": "/partner.html" },
+    { "source": "/partner/", "destination": "/partner.html" },
     { "source": "/", "destination": "/app.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app.html", "destination": "/app.html" },
@@ -98,6 +98,22 @@
     {
       "source": "/partner-manifest.webmanifest",
       "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
+    },
+    {
+      "source": "/partner",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/partner.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/restaurant-dashboard.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
+    },
+    {
+      "source": "/restaurant-orders.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
     },
     {
       "source": "/admin-install.js",

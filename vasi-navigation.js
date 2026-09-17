@@ -18,6 +18,7 @@
     "app-easy.html",
     "app-fixed.html",
     "partner-register.html",
+    "partner.html",
     "vasi-admin.html",
     "vasi-app.html",
     "vasi-clean-start.html",
@@ -56,8 +57,10 @@
     "partners.html": "index.html",
     "pricing-admin.html": "vasi-admin.html",
     "restaurant-admin.html": "vasi-admin.html",
-    "restaurant-dashboard.html": "eats.html",
-    "restaurant-register.html": "eats.html",
+    "restaurant-dashboard.html": "partner.html",
+    "restaurant-orders.html": "restaurant-dashboard.html",
+    "restaurant-register-form.html": "partner.html",
+    "restaurant-register.html": "partner.html",
     "ride-chat.html": "ride-flow.html",
     "ride-flow.html": "index.html",
     "ride-history.html": "account.html",
@@ -72,7 +75,7 @@
   if (page === "auth.html") {
     const surface = new URLSearchParams(location.search).get("surface");
     if (surface === "driver") fallback = "driver-home.html";
-    if (surface === "partner") fallback = "restaurant-register.html";
+    if (surface === "partner") fallback = "partner.html";
   }
   if (parent === "website") fallback = "index.html";
   if (parent === "admin" || parent === "publicity") fallback = "../index.html";

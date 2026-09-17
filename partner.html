@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VASI Partner" />
+    <meta name="description" content="L’application professionnelle des restaurants partenaires VASI." />
+    <link rel="manifest" href="./partner-manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
+    <title>VASI Partner · Restaurant</title>
+    <style>
+      :root {
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #fff;
+        background: #050505;
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; background: #050505; }
+      body { margin: 0; }
+      button, a { font: inherit; }
+      .shell {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        width: min(100%, 760px);
+        margin: auto;
+        padding:
+          calc(env(safe-area-inset-top, 0px) + 18px)
+          max(18px, env(safe-area-inset-right, 0px))
+          calc(env(safe-area-inset-bottom, 0px) + 24px)
+          max(18px, env(safe-area-inset-left, 0px));
+      }
+      .top { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+      .logo { display: block; width: 112px; max-width: 34vw; height: auto; }
+      .install {
+        min-height: 44px;
+        border: 1px solid #333;
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: #151515;
+        color: #fff;
+        font-weight: 800;
+      }
+      .hero { align-self: center; padding: 42px 0; }
+      .eyebrow {
+        margin: 0 0 14px;
+        color: #8ee6aa;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+      }
+      h1 {
+        max-width: 620px;
+        margin: 0;
+        font-size: clamp(42px, 11vw, 72px);
+        line-height: .96;
+        letter-spacing: -.055em;
+      }
+      .lead {
+        max-width: 520px;
+        margin: 22px 0 0;
+        color: #aaa;
+        font-size: 17px;
+        line-height: 1.55;
+      }
+      .tools {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+        margin: 30px 0;
+      }
+      .tool {
+        min-width: 0;
+        padding: 16px 12px;
+        border: 1px solid #292929;
+        border-radius: 18px;
+        background: #101010;
+      }
+      .tool svg { width: 24px; height: 24px; stroke: #8ee6aa; }
+      .tool b { display: block; margin-top: 18px; font-size: 15px; }
+      .tool span { display: block; margin-top: 4px; color: #888; font-size: 12px; line-height: 1.35; }
+      .actions { display: grid; gap: 10px; }
+      .button {
+        display: grid;
+        place-items: center;
+        min-height: 58px;
+        border: 1px solid #343434;
+        border-radius: 17px;
+        padding: 14px 18px;
+        color: #fff;
+        background: #151515;
+        font-weight: 900;
+        text-align: center;
+        text-decoration: none;
+      }
+      .button.primary { border-color: #fff; background: #fff; color: #050505; }
+      .status { min-height: 24px; margin: 14px 0 0; color: #999; text-align: center; }
+      .footer { color: #666; font-size: 12px; line-height: 1.5; text-align: center; }
+      @media (max-width: 430px) {
+        .hero { padding: 28px 0; }
+        .tools { margin-block: 24px; }
+        .tool { padding: 14px 10px; }
+        .tool b { margin-top: 14px; font-size: 14px; }
+      }
+      @media (max-width: 350px) {
+        .tools { grid-template-columns: 1fr; }
+        .tool { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; align-items: center; }
+        .tool b, .tool span { margin: 0; }
+        .tool span { grid-column: 2; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="top">
+        <img class="logo" src="./assets/vasi-logo.png" alt="VASI" />
+        <button class="install" type="button" data-vasi-install hidden>Installer</button>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">VASI Partner · Restaurant</p>
+        <h1>Pilotez votre restaurant.</h1>
+        <p class="lead">Recevez vos commandes, gérez votre menu et suivez vos versements depuis votre espace professionnel.</p>
+
+        <div class="tools" aria-label="Outils restaurant">
+          <article class="tool">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h3" /></svg>
+            <b>Commandes</b><span>En direct</span>
+          </article>
+          <article class="tool">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+            <b>Menu</b><span>Prix et disponibilité</span>
+          </article>
+          <article class="tool">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" /></svg>
+            <b>Activité</b><span>Ventes et versements</span>
+          </article>
+        </div>
+
+        <div class="actions">
+          <a class="button primary" href="auth.html?role=restaurant&amp;surface=partner&amp;method=email">Se connecter à mon restaurant</a>
+          <a class="button" href="restaurant-register-form.html">Inscrire un nouveau restaurant</a>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+        <p data-vasi-install-help class="status" hidden></p>
+      </section>
+
+      <footer class="footer">Espace réservé aux propriétaires et équipes de restaurants partenaires VASI.</footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
+    <script src="./vasi-account-role.js"></script>
+    <script>
+      (async () => {
+        const status = document.getElementById("status");
+        const client = supabase.createClient(
+          "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+          "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+          {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true,
+              storage: localStorage,
+              storageKey: "vasi-partner-auth",
+            },
+          },
+        );
+        const partnerRole = VasiAccountRole.scoped("partner");
+        try {
+          const { data: { session } } = await client.auth.getSession();
+          if (!session) return;
+          status.textContent = "Ouverture de votre restaurant…";
+          const { error: roleError } = await client.rpc("vasi_claim_account_role", {
+            p_role: "restaurant",
+          });
+          if (roleError) {
+            await client.auth.signOut({ scope: "local" });
+            partnerRole.clear();
+            status.textContent = "Connectez-vous avec votre compte restaurant.";
+            return;
+          }
+          partnerRole.remember("restaurant");
+          const response = await fetch("/api/restaurant-partner", {
+            headers: { Authorization: "Bearer " + session.access_token },
+            cache: "no-store",
+          });
+          const result = await response.json().catch(() => ({}));
+          location.replace(
+            response.ok && result.restaurant
+              ? "restaurant-dashboard.html"
+              : "restaurant-register-form.html",
+          );
+        } catch (_) {
+          status.textContent = "Connexion impossible. Réessayez dans un instant.";
+        }
+      })();
+    </script>
+    <script src="./vasi-pwa.js"></script>
+  </body>
+</html>
