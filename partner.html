@@ -13,31 +13,28 @@
     <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Partner · Restaurant</title>
     <style>
-      :root {
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #fff;
-        background: #050505;
-        color-scheme: dark;
-      }
+      :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #fff; background: #050505; color-scheme: dark; }
       * { box-sizing: border-box; }
-      html, body { min-height: 100%; background: #050505; }
-      body { margin: 0; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; background: #050505; }
       button, a { font: inherit; }
       .shell {
-        min-height: 100vh;
-        min-height: 100dvh;
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        width: min(100%, 760px);
+        width: min(100%, 1080px);
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
         margin: auto;
         padding:
-          calc(env(safe-area-inset-top, 0px) + 18px)
-          max(18px, env(safe-area-inset-right, 0px))
-          calc(env(safe-area-inset-bottom, 0px) + 24px)
-          max(18px, env(safe-area-inset-left, 0px));
+          max(44px, calc(env(safe-area-inset-top, 0px) + 12px))
+          max(16px, env(safe-area-inset-right, 0px))
+          max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px))
+          max(16px, env(safe-area-inset-left, 0px));
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: clamp(8px, 1.7vh, 16px);
+        overflow: hidden;
       }
-      .top { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-      .logo { display: block; width: 112px; max-width: 34vw; height: auto; }
+      .top { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+      .logo { display: block; width: clamp(92px, 26vw, 118px); max-height: 42px; object-fit: contain; object-position: left center; }
       .install {
         min-height: 44px;
         border: 1px solid #333;
@@ -47,9 +44,10 @@
         color: #fff;
         font-weight: 800;
       }
-      .hero { align-self: center; padding: 42px 0; }
+      .hero { min-height: 0; align-self: stretch; display: grid; align-content: center; gap: clamp(13px, 2.2vh, 22px); }
+      .intro, .workbench { min-width: 0; }
       .eyebrow {
-        margin: 0 0 14px;
+        margin: 0 0 8px;
         color: #8ee6aa;
         font-size: 13px;
         font-weight: 900;
@@ -59,38 +57,39 @@
       h1 {
         max-width: 620px;
         margin: 0;
-        font-size: clamp(42px, 11vw, 72px);
-        line-height: .96;
+        font-size: clamp(34px, 9.4vw, 64px);
+        line-height: .98;
         letter-spacing: -.055em;
       }
       .lead {
         max-width: 520px;
-        margin: 22px 0 0;
+        margin: 12px 0 0;
         color: #aaa;
-        font-size: 17px;
-        line-height: 1.55;
+        font-size: clamp(14px, 3.7vw, 17px);
+        line-height: 1.4;
       }
       .tools {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 9px;
-        margin: 30px 0;
+        margin: 0 0 clamp(12px, 2vh, 18px);
       }
       .tool {
         min-width: 0;
-        padding: 16px 12px;
+        min-height: 92px;
+        padding: clamp(10px, 1.8vh, 15px) 11px;
         border: 1px solid #292929;
         border-radius: 18px;
         background: #101010;
       }
-      .tool svg { width: 24px; height: 24px; stroke: #8ee6aa; }
-      .tool b { display: block; margin-top: 18px; font-size: 15px; }
+      .tool svg { width: 22px; height: 22px; stroke: #8ee6aa; }
+      .tool b { display: block; margin-top: clamp(8px, 1.5vh, 14px); font-size: clamp(13px, 3.4vw, 15px); }
       .tool span { display: block; margin-top: 4px; color: #888; font-size: 12px; line-height: 1.35; }
       .actions { display: grid; gap: 10px; }
       .button {
         display: grid;
         place-items: center;
-        min-height: 58px;
+        min-height: clamp(48px, 7vh, 58px);
         border: 1px solid #343434;
         border-radius: 17px;
         padding: 14px 18px;
@@ -101,19 +100,52 @@
         text-decoration: none;
       }
       .button.primary { border-color: #fff; background: #fff; color: #050505; }
-      .status { min-height: 24px; margin: 14px 0 0; color: #999; text-align: center; }
-      .footer { color: #666; font-size: 12px; line-height: 1.5; text-align: center; }
+      .status:empty { display: none; }
+      .status { min-height: 18px; margin: 8px 0 0; color: #999; font-size: 12px; text-align: center; }
+      .footer { min-height: 18px; color: #666; font-size: 11px; line-height: 1.35; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       @media (max-width: 430px) {
-        .hero { padding: 28px 0; }
-        .tools { margin-block: 24px; }
         .tool { padding: 14px 10px; }
-        .tool b { margin-top: 14px; font-size: 14px; }
+        .tool b { font-size: 14px; }
       }
       @media (max-width: 350px) {
-        .tools { grid-template-columns: 1fr; }
-        .tool { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; align-items: center; }
-        .tool b, .tool span { margin: 0; }
-        .tool span { grid-column: 2; }
+        .shell { padding-inline: max(10px, env(safe-area-inset-left, 0px)) max(10px, env(safe-area-inset-right, 0px)); }
+        .tool { padding-inline: 7px; }
+        .tool span { font-size: 10px; }
+        .button { padding-inline: 10px; font-size: 14px; }
+      }
+      @media (min-width: 700px) {
+        .shell { padding-inline: max(28px, env(safe-area-inset-left, 0px)) max(28px, env(safe-area-inset-right, 0px)); }
+        .hero { grid-template-columns: minmax(260px, .86fr) minmax(380px, 1.14fr); column-gap: clamp(30px, 6vw, 72px); }
+        .intro, .workbench { align-self: center; }
+        .lead { margin-top: 18px; }
+        .tools { gap: 12px; }
+        .tool { min-height: 118px; padding: 18px 15px; }
+        .actions { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-height: 720px) {
+        .shell { padding-top: max(38px, calc(env(safe-area-inset-top, 0px) + 8px)); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); gap: 6px; }
+        .top { min-height: 36px; }
+        .logo { width: 88px; max-height: 34px; }
+        .hero { gap: 9px; }
+        .eyebrow { margin-bottom: 5px; font-size: 11px; }
+        h1 { font-size: clamp(28px, 7.4vw, 46px); }
+        .lead { margin-top: 7px; font-size: 13px; line-height: 1.28; }
+        .tools { margin-bottom: 8px; }
+        .tool { min-height: 73px; padding: 8px; border-radius: 14px; }
+        .tool svg { width: 18px; height: 18px; }
+        .tool b { margin-top: 5px; font-size: 12px; }
+        .tool span { font-size: 10px; }
+        .actions { gap: 7px; }
+        .button { min-height: 44px; padding-block: 9px; border-radius: 14px; font-size: 13px; }
+        .footer { font-size: 10px; }
+      }
+      @media (max-height: 590px) {
+        .shell { padding-top: max(30px, calc(env(safe-area-inset-top, 0px) + 5px)); }
+        .lead, .tool span, .footer { display: none; }
+        .hero { grid-template-columns: minmax(190px, .8fr) minmax(290px, 1.2fr); column-gap: 20px; }
+        .tools { margin-bottom: 6px; }
+        .tool { min-height: 56px; }
+        .actions { grid-template-columns: 1fr 1fr; }
       }
     </style>
   </head>
@@ -125,31 +157,33 @@
       </header>
 
       <section class="hero">
-        <p class="eyebrow">VASI Partner · Restaurant</p>
-        <h1>Pilotez votre restaurant.</h1>
-        <p class="lead">Recevez vos commandes, gérez votre menu et suivez vos versements depuis votre espace professionnel.</p>
-
-        <div class="tools" aria-label="Outils restaurant">
-          <article class="tool">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h3" /></svg>
-            <b>Commandes</b><span>En direct</span>
-          </article>
-          <article class="tool">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
-            <b>Menu</b><span>Prix et disponibilité</span>
-          </article>
-          <article class="tool">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" /></svg>
-            <b>Activité</b><span>Ventes et versements</span>
-          </article>
+        <div class="intro">
+          <p class="eyebrow">VASI Partner · Restaurant</p>
+          <h1>Pilotez votre restaurant.</h1>
+          <p class="lead">Recevez vos commandes, gérez votre menu et suivez vos versements depuis votre espace professionnel.</p>
         </div>
-
-        <div class="actions">
-          <a class="button primary" href="auth.html?role=restaurant&amp;surface=partner&amp;method=email">Se connecter à mon restaurant</a>
-          <a class="button" href="restaurant-register-form.html">Inscrire un nouveau restaurant</a>
+        <div class="workbench">
+          <div class="tools" aria-label="Outils restaurant">
+            <article class="tool">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M6 3h12v18H6zM9 7h6M9 11h6M9 15h3" /></svg>
+              <b>Commandes</b><span>En direct</span>
+            </article>
+            <article class="tool">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+              <b>Menu</b><span>Prix et disponibilité</span>
+            </article>
+            <article class="tool">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" /></svg>
+              <b>Activité</b><span>Ventes et versements</span>
+            </article>
+          </div>
+          <div class="actions">
+            <a class="button primary" href="auth.html?role=restaurant&amp;surface=partner&amp;method=email">Se connecter à mon restaurant</a>
+            <a class="button" href="restaurant-register-form.html">Inscrire un nouveau restaurant</a>
+          </div>
+          <p id="status" class="status" aria-live="polite"></p>
+          <p data-vasi-install-help class="status" hidden></p>
         </div>
-        <p id="status" class="status" aria-live="polite"></p>
-        <p data-vasi-install-help class="status" hidden></p>
       </section>
 
       <footer class="footer">Espace réservé aux propriétaires et équipes de restaurants partenaires VASI.</footer>

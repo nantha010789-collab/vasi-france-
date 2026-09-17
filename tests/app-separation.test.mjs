@@ -117,6 +117,18 @@ test("driver entry stays in one branded viewport on phones and tablets", () => {
   assert.equal(manifest.theme_color, "#06183f");
 });
 
+test("restaurant entry stays fixed inside phone and tablet safe areas", () => {
+  const partner = read("partner.html");
+
+  assert.match(partner, /height: 100dvh/);
+  assert.match(partner, /html, body \{[^}]*overflow: hidden/);
+  assert.match(partner, /env\(safe-area-inset-top/);
+  assert.match(partner, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
+  assert.match(partner, /@media \(min-width: 700px\)/);
+  assert.match(partner, /@media \(max-height: 590px\)/);
+  assert.match(partner, /class="workbench"/);
+});
+
 test("driver dashboard has a safe sign-in-free preview", () => {
   const home = read("driver-home.html");
   const auth = read("auth.html");
