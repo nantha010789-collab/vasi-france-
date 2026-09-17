@@ -631,6 +631,42 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(serviceWorker, /new Request\(url, \{ cache: "reload" \}\)/);
 });
 
+test("production-readiness surfaces disclose automation and use clear chauffeur naming", async () => {
+  const [auth, support, legal, webhook] = await Promise.all([
+    readFile("auth.html", "utf8"),
+    readFile("support.html", "utf8"),
+    readFile("legal.html", "utf8"),
+    readFile("supabase/functions/stripe-webhook/index.ts", "utf8"),
+  ]);
+  assert.match(auth, /<span>Chauffeur<\/span>/);
+  assert.doesNotMatch(auth, /<span>Ride<\/span>/);
+  assert.match(support, /VASI AI Assistant · Automated reply/);
+  assert.match(support, /Safety, payment, refund and fraud requests are queued/);
+  assert.match(legal, /Automated support/);
+  assert.match(legal, /Assistance automatisée/);
+  assert.match(legal, /retention schedules and deletion controls must be verified before commercial launch/);
+  assert.match(webhook, /charge\.refunded/);
+  assert.match(webhook, /refund\.updated/);
+  assert.match(webhook, /payout\.failed/);
+  assert.match(webhook, /disablePayoutsForAccount/);
+});
+
+test("health endpoint is minimal, read-only and not cached", async () => {
+  const { default: health } = await import(`../api/health.js?test=${Date.now()}`);
+  const getRes = mockRes();
+  health({ method: "GET" }, getRes);
+  assert.equal(getRes.statusCode, 200);
+  assert.equal(getRes.body.status, "ok");
+  assert.equal(getRes.body.service, "vasi-web");
+  assert.match(getRes.body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(getRes.headers["cache-control"], "no-store, max-age=0");
+
+  const postRes = mockRes();
+  health({ method: "POST" }, postRes);
+  assert.equal(postRes.statusCode, 405);
+  assert.equal(postRes.headers.allow, "GET");
+});
+
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {
   global.fetch = async () => response({ id: "user-1" });
   const { default: callConfig } = await import(`../api/call-config.js?test=${Date.now()}`);

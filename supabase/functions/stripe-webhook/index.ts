@@ -10,6 +10,26 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
+async function disablePayoutsForAccount(accountId: string) {
+  const updatedAt = new Date().toISOString();
+  const updates = await Promise.all([
+    supabase
+      .from("drivers")
+      .update({ stripe_payouts_enabled: false, online: false, updated_at: updatedAt })
+      .eq("stripe_account_id", accountId),
+    supabase
+      .from("delivery_drivers")
+      .update({ stripe_payouts_enabled: false, online: false, updated_at: updatedAt })
+      .eq("stripe_account_id", accountId),
+    supabase
+      .from("restaurants")
+      .update({ stripe_payouts_enabled: false, is_open: false, updated_at: updatedAt })
+      .eq("stripe_account_id", accountId),
+  ]);
+  const failed = updates.find((result) => result.error)?.error;
+  if (failed) throw failed;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   const signature = req.headers.get("stripe-signature");
@@ -37,6 +57,8 @@ Deno.serve(async (req) => {
   const orderId = object?.metadata?.order_id ?? object?.metadata?.orderId ?? null;
   const rideId = object?.metadata?.ride_id ?? object?.metadata?.rideId ?? null;
   const service = object?.metadata?.service ?? null;
+  const connectedAccountId =
+    typeof event.account === "string" ? event.account : null;
 
   try {
     if (service === "eats" && orderId && event.type === "payment_intent.succeeded") {
@@ -93,6 +115,26 @@ Deno.serve(async (req) => {
       if (error) throw error;
     }
 
+    if (["charge.refunded", "refund.updated"].includes(event.type)) {
+      const paymentIntentId =
+        typeof object?.payment_intent === "string"
+          ? object.payment_intent
+          : object?.payment_intent?.id;
+      const refundCompleted =
+        event.type === "charge.refunded" || object?.status === "succeeded";
+      if (paymentIntentId && refundCompleted) {
+        const { error } = await supabase
+          .from("eats_orders")
+          .update({ payment_status: "refunded" })
+          .eq("stripe_payment_intent_id", paymentIntentId);
+        if (error) throw error;
+      }
+    }
+
+    if (event.type === "payout.failed" && connectedAccountId) {
+      await disablePayoutsForAccount(connectedAccountId);
+    }
+
     if (event.type === "account.updated" && object?.metadata?.vasi_courier_id) {
       const payoutsEnabled = Boolean(object.payouts_enabled);
       const { error } = await supabase
@@ -136,6 +178,14 @@ Deno.serve(async (req) => {
         .eq("id", object.metadata.vasi_restaurant_id)
         .eq("stripe_account_id", object.id);
       if (error) throw error;
+    }
+
+    if (
+      event.type === "account.updated" &&
+      object?.id &&
+      !object?.payouts_enabled
+    ) {
+      await disablePayoutsForAccount(object.id);
     }
 
     const { error: eventError } = await supabase.from("vasi_payment_events").insert({

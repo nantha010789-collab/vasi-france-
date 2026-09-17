@@ -80,6 +80,14 @@ const checks = [
   expectPage(production, "/vasi-languages.js", ["fr:", "ta:", "de:", "ar:", "hi:"]),
   expectPage(production, "/manifest.webmanifest", ["vasi-word-icon-192.png", "vasi-word-icon-512.png"]),
   expectPage(production, "/legal.html", ["Legal & Privacy", "Politique de confidentialité", "contact@vasigo.eu"]),
+  (async () => {
+    const health = await fetchWithRetry(`${production}/api/health`);
+    assert.equal(health.status, 200, "health endpoint must return 200");
+    assert.match(health.headers.get("cache-control") || "", /no-store/);
+    const body = await health.json();
+    assert.equal(body.status, "ok");
+    assert.equal(body.service, "vasi-web");
+  })(),
   expectPage(production, "/vasi-clean-start.html", ["location.replace(\"index.html\")"]),
   expectPage(pages, "/vasi-france-/", ["Move.", "vasi-notifications.js"]),
   expectPage(pages, "/vasi-france-/ride-chat.html", ["callButton", "vasi-call.js"]),
