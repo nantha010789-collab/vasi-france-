@@ -200,7 +200,8 @@
       .driverMapPin { width:23px; height:23px; border:5px solid #fff; border-radius:50%; background:#1557ff; box-shadow:0 5px 16px #0008; }
       .driverMapPin.destination { border-radius:6px; background:#ef3340; }
       .driverMapCar { display:grid; place-items:center; width:43px; height:43px; border:3px solid #fff; border-radius:50%; background:#07142b; box-shadow:0 6px 18px #0008; font-size:21px; }
-      .navFallback { position:absolute; z-index:650; right:9px; bottom:9px; width:auto; min-height:38px; margin:0; padding:9px 11px; border:1px solid #ffffff30; border-radius:12px; background:#07142bee; color:#fff; font-size:11px; }
+      .navExternal { position:absolute; z-index:650; right:9px; bottom:9px; display:flex; gap:6px; }
+      .navExternal button { min-height:38px; margin:0; padding:9px 11px; border:1px solid #ffffff30; border-radius:12px; background:#07142bee; color:#fff; font:inherit; font-size:11px; font-weight:800; }
       .navPreference { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; border:1px solid #333; border-radius:14px; background:#181818; }
       .navPreference b,.navPreference span { display:block; }
       .navPreference span { margin-top:3px; color:#999; font-size:12px; line-height:1.35; }
@@ -252,8 +253,9 @@
         <button class="btn navbtn" onclick="saveCapabilities()">Save service options</button>
         <h3>Navigation GPS</h3>
         <label class="navPreference" for="navigationProvider">
-          <span><b>Application préférée</b><span>Après avoir accepté une course, l’itinéraire vers le départ s’ouvre automatiquement.</span></span>
+          <span><b>Navigation préférée</b><span>VASI GPS reste dans l’application. Google Maps et Waze restent disponibles en option.</span></span>
           <select id="navigationProvider" onchange="saveNavigationPreference()">
+            <option value="vasi">VASI GPS</option>
             <option value="google">Google Maps</option>
             <option value="waze">Waze</option>
           </select>
@@ -314,12 +316,14 @@
         driverMapTarget = null,
         driverMapLastRouteAt = 0;
       function navigationProvider() {
-        return localStorage.getItem(NAVIGATION_PREFERENCE_KEY) === "waze"
-          ? "waze"
-          : "google";
+        const saved = localStorage.getItem(NAVIGATION_PREFERENCE_KEY);
+        return saved === "google" || saved === "waze" ? saved : "vasi";
       }
       function navigationProviderLabel() {
-        return navigationProvider() === "waze" ? "Waze" : "Google Maps";
+        const provider = navigationProvider();
+        if (provider === "waze") return "Waze";
+        if (provider === "google") return "Google Maps";
+        return "VASI GPS";
       }
       function loadNavigationPreference() {
         const select = document.getElementById("navigationProvider");
@@ -327,11 +331,10 @@
       }
       function saveNavigationPreference() {
         const select = document.getElementById("navigationProvider");
-        const provider = select?.value === "waze" ? "waze" : "google";
+        const provider = ["vasi", "google", "waze"].includes(select?.value)
+          ? select.value
+          : "vasi";
         localStorage.setItem(NAVIGATION_PREFERENCE_KEY, provider);
-        const launchButton = document.getElementById("navLaunchButton");
-        if (launchButton)
-          launchButton.textContent = "↗ Ouvrir dans " + navigationProviderLabel();
       }
       loadNavigationPreference();
       client.auth.getSession().then(async ({ data }) => {
@@ -672,14 +675,18 @@
             })[c],
         );
       }
-      function navTo(lat, lng, address) {
+      function navTo(lat, lng, address, providerOverride) {
         const hasCoordinates =
           Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
         const destination = hasCoordinates
           ? Number(lat) + "," + Number(lng)
           : String(address || "").trim();
         if (!destination) return alert("Adresse de navigation indisponible.");
-        const provider = navigationProvider();
+        const provider = providerOverride || navigationProvider();
+        if (provider === "vasi") {
+          focusCurrentNavigation();
+          return;
+        }
         const url = provider === "waze"
           ? "https://waze.com/ul?" +
             (hasCoordinates
@@ -870,10 +877,22 @@
         const target = navigationTarget();
         if (target) navTo(target.lat, target.lng, target.address);
       }
+      function openExternalNavigation(provider) {
+        const target = navigationTarget();
+        if (target) navTo(target.lat, target.lng, target.address, provider);
+      }
+      function focusCurrentNavigation() {
+        const map = document.getElementById("driverNavigationMap");
+        if (!map) return;
+        map.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => driverMap?.invalidateSize(), 180);
+        updateDriverNavigation(true);
+      }
       function launchCurrentNavigation() {
         const target = navigationTarget();
         if (!target) return;
-        navTo(target.lat, target.lng, target.address);
+        if (navigationProvider() === "vasi") focusCurrentNavigation();
+        else navTo(target.lat, target.lng, target.address);
       }
       function routeHtml() {
         if (!activeRide) return "";
@@ -950,7 +969,7 @@
           : "";
         const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span>Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><button id="navLaunchButton" class="navFallback" type="button" onclick="openCurrentNavigation()">↗ Ouvrir dans ${navigationProviderLabel()}</button></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span>Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div class="navExternal" aria-label="Navigation externe facultative"><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
