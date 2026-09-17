@@ -163,6 +163,12 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(driver, /id="driverNavigationMap"/);
   assert.match(driver, /function updateDriverNavigation\(/);
   assert.match(driver, /Recalcul automatique avec votre position GPS/);
+  assert.match(driver, /vasi_driver_navigation_provider/);
+  assert.match(driver, /https:\/\/waze\.com\/ul\?/);
+  assert.match(driver, /dir_action=navigate/);
+  assert.match(driver, /launchCurrentNavigation\(\)/);
+  assert.match(demo, /openDemoNavigation\('google','pickup'\)/);
+  assert.match(demo, /openDemoNavigation\('waze','destination'\)/);
 });
 
 test("offline shell includes every app manifest and shared installer", () => {

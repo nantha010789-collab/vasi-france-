@@ -201,6 +201,10 @@
       .driverMapPin.destination { border-radius:6px; background:#ef3340; }
       .driverMapCar { display:grid; place-items:center; width:43px; height:43px; border:3px solid #fff; border-radius:50%; background:#07142b; box-shadow:0 6px 18px #0008; font-size:21px; }
       .navFallback { position:absolute; z-index:650; right:9px; bottom:9px; width:auto; min-height:38px; margin:0; padding:9px 11px; border:1px solid #ffffff30; border-radius:12px; background:#07142bee; color:#fff; font-size:11px; }
+      .navPreference { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; border:1px solid #333; border-radius:14px; background:#181818; }
+      .navPreference b,.navPreference span { display:block; }
+      .navPreference span { margin-top:3px; color:#999; font-size:12px; line-height:1.35; }
+      .navPreference select { min-height:44px; max-width:150px; padding:9px 34px 9px 11px; border:1px solid #484848; border-radius:12px; background:#0c0c0c; color:#fff; font:inherit; font-weight:800; }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
@@ -246,6 +250,14 @@
           <label class="capability"><input id="capPet" type="checkbox"> 🐾 Pet-friendly</label>
         </div>
         <button class="btn navbtn" onclick="saveCapabilities()">Save service options</button>
+        <h3>Navigation GPS</h3>
+        <label class="navPreference" for="navigationProvider">
+          <span><b>Application préférée</b><span>Après avoir accepté une course, l’itinéraire vers le départ s’ouvre automatiquement.</span></span>
+          <select id="navigationProvider" onchange="saveNavigationPreference()">
+            <option value="google">Google Maps</option>
+            <option value="waze">Waze</option>
+          </select>
+        </label>
         <h3>Busy areas</h3>
         <p class="muted">Demand is rounded to neighbourhood zones to protect customer privacy.</p>
         <div id="busyZones" class="zones"><div class="muted">Checking nearby demand…</div></div>
@@ -285,6 +297,7 @@
       const accountRole = VasiAccountRole.scoped("driver");
       const region = VasiRegion.getRegion();
       const money = (value) => VasiRegion.money(value, region.code);
+      const NAVIGATION_PREFERENCE_KEY = "vasi_driver_navigation_provider";
       let online = false,
         payoutReady = false,
         watch = null,
@@ -300,6 +313,27 @@
         driverMapCar = null,
         driverMapTarget = null,
         driverMapLastRouteAt = 0;
+      function navigationProvider() {
+        return localStorage.getItem(NAVIGATION_PREFERENCE_KEY) === "waze"
+          ? "waze"
+          : "google";
+      }
+      function navigationProviderLabel() {
+        return navigationProvider() === "waze" ? "Waze" : "Google Maps";
+      }
+      function loadNavigationPreference() {
+        const select = document.getElementById("navigationProvider");
+        if (select) select.value = navigationProvider();
+      }
+      function saveNavigationPreference() {
+        const select = document.getElementById("navigationProvider");
+        const provider = select?.value === "waze" ? "waze" : "google";
+        localStorage.setItem(NAVIGATION_PREFERENCE_KEY, provider);
+        const launchButton = document.getElementById("navLaunchButton");
+        if (launchButton)
+          launchButton.textContent = "↗ Ouvrir dans " + navigationProviderLabel();
+      }
+      loadNavigationPreference();
       client.auth.getSession().then(async ({ data }) => {
         if (!data.session) {
           accountRole.setIntent("ride");
@@ -583,6 +617,7 @@
             } catch (e) {}
           render();
           showActiveRide();
+          launchCurrentNavigation();
         } else {
           document.getElementById("ride").innerHTML =
             '<div class="offer"><p>Offer declined.</p></div>';
@@ -638,15 +673,23 @@
         );
       }
       function navTo(lat, lng, address) {
-        let dest = "";
-        if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)))
-          dest = Number(lat) + "," + Number(lng);
-        else dest = address || "";
-        window.open(
-          "https://www.google.com/maps/dir/?api=1&destination=" +
-            encodeURIComponent(dest),
-          "_blank",
-        );
+        const hasCoordinates =
+          Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+        const destination = hasCoordinates
+          ? Number(lat) + "," + Number(lng)
+          : String(address || "").trim();
+        if (!destination) return alert("Adresse de navigation indisponible.");
+        const provider = navigationProvider();
+        const url = provider === "waze"
+          ? "https://waze.com/ul?" +
+            (hasCoordinates
+              ? "ll=" + encodeURIComponent(destination)
+              : "q=" + encodeURIComponent(destination)) +
+            "&navigate=yes&utm_source=VASI"
+          : "https://www.google.com/maps/dir/?api=1&destination=" +
+            encodeURIComponent(destination) +
+            "&travelmode=driving&dir_action=navigate";
+        location.assign(url);
       }
       function navigationTarget() {
         if (!activeRide) return null;
@@ -827,6 +870,11 @@
         const target = navigationTarget();
         if (target) navTo(target.lat, target.lng, target.address);
       }
+      function launchCurrentNavigation() {
+        const target = navigationTarget();
+        if (!target) return;
+        navTo(target.lat, target.lng, target.address);
+      }
       function routeHtml() {
         if (!activeRide) return "";
         const pending = activeStops.find((s) => !s.completed_at);
@@ -902,7 +950,7 @@
           : "";
         const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span>Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><button class="navFallback" type="button" onclick="openCurrentNavigation()">↗ Ouvrir la navigation</button></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span>Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><button id="navLaunchButton" class="navFallback" type="button" onclick="openCurrentNavigation()">↗ Ouvrir dans ${navigationProviderLabel()}</button></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
@@ -989,6 +1037,7 @@
           gpsMode = "trip";
           render();
           showActiveRide();
+          launchCurrentNavigation();
           return;
         }
         const label =
