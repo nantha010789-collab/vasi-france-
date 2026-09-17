@@ -117,10 +117,24 @@ test("driver entry stays in one branded viewport on phones and tablets", () => {
   assert.equal(manifest.theme_color, "#06183f");
 });
 
+test("driver dashboard has a safe sign-in-free preview", () => {
+  const home = read("driver-home.html");
+  const auth = read("auth.html");
+  const preview = read("driver-preview.html");
+
+  assert.match(home, /href="driver-preview\.html"/);
+  assert.match(auth, /id="driverPreview"[^>]+href="driver-preview\.html"/);
+  assert.match(auth, /surface === "driver" && role === "ride"/);
+  assert.match(preview, /Aperçu chauffeur/);
+  assert.match(preview, /aucune donnée ou action réelle/);
+  assert.doesNotMatch(preview, /supabase|vasi-driver-auth|\/api\//i);
+});
+
 test("offline shell includes every app manifest and shared installer", () => {
   const serviceWorker = read("sw.js");
   for (const asset of [
     "driver-home.html",
+    "driver-preview.html",
     "driver.html",
     "delivery-driver.html",
     "vasi-driver-shell.css",

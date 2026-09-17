@@ -20,12 +20,15 @@
       @media(max-height:590px){.eyebrow{font-size:10px}.hero p{display:none}.choices{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}.choice{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;padding:10px}.vehicle{position:absolute;right:-10px;bottom:18px;width:64%;max-height:72%;opacity:.52}.choice.courier .vehicle{height:82%;width:75%}.choice p{display:none}.open{position:relative;font-size:11px}.foot{display:none}}
       @media(max-width:355px){.shell{padding-inline:max(10px,env(safe-area-inset-left,0px)) max(10px,env(safe-area-inset-right,0px))}.product{font-size:11px;padding-left:7px}.hero h1{font-size:27px}.hero p{font-size:12px}.choice{grid-template-columns:minmax(0,1fr) 72px;padding-inline:12px}.choice h2{font-size:21px}.choice p{font-size:12px}.open{font-size:11px}}
     </style>
+    <style>
+      .top-actions{display:flex;align-items:center;gap:7px}.preview{display:inline-flex;align-items:center;min-height:42px;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:9px 14px;background:rgba(7,22,51,.82);color:#fff;text-decoration:none;font:inherit;font-weight:850}
+    </style>
   </head>
   <body>
     <main class="shell">
       <header class="top">
         <div class="brand"><img src="./assets/vasi-logo.png" alt="VASI" /><span class="product">Driver</span></div>
-        <button class="install" type="button" data-vasi-install hidden>Installer</button>
+        <div class="top-actions"><a class="preview" href="driver-preview.html">Aperçu</a><button class="install" type="button" data-vasi-install hidden>Installer</button></div>
       </header>
       <section class="hero">
         <div class="eyebrow">Application partenaire</div>
