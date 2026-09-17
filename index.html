@@ -653,10 +653,7 @@
           </div>
           <button class="cta" onclick="location.href='ride-flow.html'">
             Book a ride</button
-          ><button class="driver" onclick="location.href='auth.html?role=ride'">
-            🚕 Driver app
-          </button>
-          <button class="driver" onclick="location.href='support.html'">
+          ><button class="driver" onclick="location.href='support.html'">
             💬 Customer Service
           </button>
           <button class="driver" onclick="location.href='legal.html'">
@@ -696,7 +693,7 @@
           region.flag + " " + region.name + " · " + region.currency;
       }
       function openAccount() {
-        location.href = signedIn ? "account.html" : "auth.html?role=customer";
+        location.href = signedIn ? "account.html" : "auth.html?role=customer&surface=customer";
       }
       async function showAccountState() {
         const { data } = await client.auth.getSession();
