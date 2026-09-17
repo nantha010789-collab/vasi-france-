@@ -2,6 +2,10 @@
   "rewrites": [
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
+    { "source": "/driver", "destination": "/driver-home.html" },
+    { "source": "/driver/", "destination": "/driver-home.html" },
+    { "source": "/partner", "destination": "/restaurant-register.html" },
+    { "source": "/partner/", "destination": "/restaurant-register.html" },
     { "source": "/", "destination": "/app.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app.html", "destination": "/app.html" },
@@ -85,6 +89,14 @@
     },
     {
       "source": "/admin-manifest.webmanifest",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
+    },
+    {
+      "source": "/driver-manifest.webmanifest",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
+    },
+    {
+      "source": "/partner-manifest.webmanifest",
       "headers": [{ "key": "Cache-Control", "value": "no-cache, max-age=0" }]
     },
     {

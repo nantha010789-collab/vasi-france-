@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="description" content="Espace professionnel VASI pour les chauffeurs et coursiers partenaires." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VASI Driver" />
+    <link rel="manifest" href="./driver-manifest.webmanifest" />
+    <link rel="icon" href="./vasi-word-icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
+    <title>VASI Driver</title>
+    <style>
+      :root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#fff;background:#050505;--line:#2d2d2d;--panel:#111;--muted:#a5a5a5;--green:#72e394}*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(circle at 50% -10%,#173522 0,#0a100c 30%,#050505 62%);color:#fff}.shell{width:min(100%,640px);min-height:100dvh;margin:auto;padding:max(20px,env(safe-area-inset-top)) 18px max(30px,env(safe-area-inset-bottom));display:flex;flex-direction:column}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand img{display:block;width:108px;max-width:30vw;height:auto}.product{font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#c7c7c7}.install{min-height:44px;border:1px solid #3a3a3a;border-radius:999px;padding:10px 14px;background:#151515;color:#fff;font:inherit;font-weight:800}.hero{padding:clamp(38px,8vh,74px) 0 24px}.eyebrow{color:var(--green);font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.hero h1{max-width:520px;margin:11px 0 13px;font-size:clamp(38px,10vw,58px);line-height:1;letter-spacing:-.045em}.hero p{max-width:480px;margin:0;color:var(--muted);font-size:16px;line-height:1.5}.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}.choice{position:relative;min-height:245px;padding:20px;border:1px solid var(--line);border-radius:26px;background:linear-gradient(155deg,#191919,#0c0c0c);color:#fff;text-decoration:none;overflow:hidden;display:flex;flex-direction:column}.choice:first-child{background:linear-gradient(155deg,#183a25,#0c120e);border-color:#356c45}.icon{display:grid;place-items:center;width:52px;height:52px;border:1px solid #414141;border-radius:17px;background:#202020;font-size:25px}.choice h2{margin:30px 0 7px;font-size:26px;letter-spacing:-.025em}.choice p{margin:0;color:#aaa;font-size:14px;line-height:1.45}.open{margin-top:auto;padding-top:24px;font-weight:900}.open span{float:right;font-size:22px}.account{margin-top:14px;padding:17px;border:1px solid var(--line);border-radius:20px;background:rgba(17,17,17,.9)}.account b{display:block}.account p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45}.account a,.signout{display:inline-flex;margin-top:12px;color:#fff;font-weight:850}.signout{border:0;padding:0;background:none;text-decoration:underline;font:inherit;cursor:pointer}.help{margin:10px 4px 0;color:#aaa;font-size:12px;line-height:1.45}.foot{margin-top:auto;padding-top:25px;color:#777;font-size:12px}.foot a{color:#bbb}@media(max-width:520px){.choices{grid-template-columns:1fr}.choice{min-height:190px}.choice h2{margin-top:20px}.hero{padding-top:34px}}@media(max-width:380px){.shell{padding-left:12px;padding-right:12px}.product{display:none}}
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="top">
+        <div class="brand"><img src="./assets/vasi-logo.png" alt="VASI" /><span class="product">Driver</span></div>
+        <button class="install" type="button" data-vasi-install hidden>Installer</button>
+      </header>
+      <section class="hero">
+        <div class="eyebrow">Application partenaire</div>
+        <h1>Travaillez avec VASI.</h1>
+        <p>Choisissez votre activité. Les comptes chauffeur et coursier restent séparés pour protéger vos documents, vos revenus et vos autorisations.</p>
+      </section>
+      <section class="choices" aria-label="Choisir une activité">
+        <a class="choice" id="driverChoice" href="auth.html?role=ride&amp;surface=driver">
+          <span class="icon" aria-hidden="true">🚘</span>
+          <h2>Chauffeur</h2>
+          <p>Courses passagers, demandes à proximité, navigation, statut en ligne et revenus.</p>
+          <div class="open">Ouvrir l’espace chauffeur <span>→</span></div>
+        </a>
+        <a class="choice" id="courierChoice" href="auth.html?role=courier&amp;surface=driver">
+          <span class="icon" aria-hidden="true">🛵</span>
+          <h2>Coursier</h2>
+          <p>Commandes VASI Eats, colis, navigation vers le retrait et suivi de livraison.</p>
+          <div class="open">Ouvrir l’espace coursier <span>→</span></div>
+        </a>
+      </section>
+      <section class="account" id="sessionCard" hidden>
+        <b id="sessionTitle">Compte partenaire connecté</b>
+        <p id="sessionCopy"></p>
+        <a id="continueLink" href="#">Continuer</a><br />
+        <button class="signout" id="changeAccount" type="button">Se déconnecter pour changer de compte</button>
+      </section>
+      <p class="help" data-vasi-install-help hidden></p>
+      <footer class="foot"><a href="support.html">Assistance VASI</a> · Les comptes partenaires sont vérifiés avant leur activation.</footer>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
+    <script src="./vasi-account-role.js"></script>
+    <script src="./vasi-pwa.js"></script>
+    <script>
+      const client = supabase.createClient(
+        "https://vhfyvkrvysrooaqzcxsp.supabase.co",
+        "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+      );
+      const destinations = { ride: "driver.html", courier: "delivery-driver.html" };
+      client.auth.getSession().then(({ data: { session } }) => {
+        const role = VasiAccountRole.active();
+        if (!session || !destinations[role]) return;
+        const label = role === "ride" ? "chauffeur" : "coursier";
+        document.getElementById("sessionTitle").textContent = "Compte " + label + " connecté";
+        document.getElementById("sessionCopy").textContent = "Continuez dans votre espace professionnel. Pour utiliser une autre activité, déconnectez d’abord ce compte.";
+        document.getElementById("continueLink").href = destinations[role];
+        document.getElementById("continueLink").textContent = "Continuer comme " + label + " →";
+        document.getElementById("sessionCard").hidden = false;
+      });
+      document.getElementById("changeAccount").addEventListener("click", async () => {
+        await client.auth.signOut({ scope: "local" });
+        VasiAccountRole.clear();
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

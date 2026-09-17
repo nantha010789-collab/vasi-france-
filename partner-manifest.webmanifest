@@ -1,0 +1,40 @@
+{
+  "id": "/partner-app",
+  "name": "VASI Partner",
+  "short_name": "VASI Partner",
+  "description": "Commandes, menu, horaires et versements pour les restaurants partenaires VASI.",
+  "lang": "fr",
+  "start_url": "/partner",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "categories": ["business", "food", "productivity"],
+  "icons": [
+    {
+      "src": "/vasi-word-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vasi-word-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tableau de bord",
+      "short_name": "Tableau de bord",
+      "url": "/restaurant-dashboard.html"
+    },
+    {
+      "name": "Commandes",
+      "short_name": "Commandes",
+      "url": "/restaurant-orders.html"
+    }
+  ]
+}

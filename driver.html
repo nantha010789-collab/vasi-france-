@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VASI Driver" />
+    <link rel="manifest" href="./driver-manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Driver</title>
     <style>
       body {
@@ -270,7 +275,7 @@
       client.auth.getSession().then(async ({ data }) => {
         if (!data.session) {
           localStorage.setItem("vasi_role", "ride");
-          return (location.href = "auth.html?role=ride");
+          return (location.href = "auth.html?role=ride&surface=driver");
         }
         if (!VasiAccountRole.require("ride", data.session)) return;
         const stripeReturn = new URLSearchParams(location.search).get("stripe");
@@ -369,7 +374,7 @@
         const button = document.getElementById("payoutButton");
         const status = document.getElementById("payoutStatus");
         const session = (await client.auth.getSession()).data.session;
-        if (!session) return (location.href = "auth.html?role=ride");
+        if (!session) return (location.href = "auth.html?role=ride&surface=driver");
         button.disabled = true;
         status.textContent = "Opening secure Stripe RIB setup…";
         try {
@@ -834,7 +839,7 @@
         stopGps();
         await client.auth.signOut({ scope: "local" });
         VasiAccountRole.clear();
-        location.href = "auth.html";
+        location.href = "driver-home.html";
       }
       window.addEventListener("beforeunload", () => {
         if (watch !== null) navigator.geolocation.clearWatch(watch);
@@ -843,5 +848,6 @@
     </script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-navigation.js?v=4"></script>
+    <script src="./vasi-pwa.js"></script>
 </body>
 </html>

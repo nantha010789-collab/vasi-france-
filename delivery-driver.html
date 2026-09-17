@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VASI Driver" />
+    <link rel="manifest" href="./driver-manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Courier</title>
     <style>
       :root {
@@ -229,7 +234,7 @@
         } = await client.auth.getSession();
         if (!session) {
           localStorage.setItem("vasi_role", "courier");
-          location.href = "auth.html?role=courier";
+          location.href = "auth.html?role=courier&surface=driver";
           return { error: "Login required" };
         }
         try {
@@ -440,12 +445,12 @@
         if (online) await service({ action: "set_online", online: false });
         await client.auth.signOut({ scope: "local" });
         VasiAccountRole.clear();
-        location.href = "auth.html?role=courier";
+        location.href = "driver-home.html";
       }
       client.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
           localStorage.setItem("vasi_role", "courier");
-          location.href = "auth.html?role=courier";
+          location.href = "auth.html?role=courier&surface=driver";
           return;
         }
         if (VasiAccountRole.require("courier", session)) loadProfile();
@@ -454,5 +459,6 @@
       VasiNotifications.start(client, { role: "courier" });
     </script>
   <script src="./vasi-languages.js?v=4"></script>  <script src="./vasi-navigation.js?v=4"></script>
+  <script src="./vasi-pwa.js"></script>
 </body>
 </html>

@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VASI Partner" />
+    <link rel="manifest" href="./partner-manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Restaurant</title>
     <style>
       :root { font-family: Inter, system-ui, -apple-system, sans-serif; color: #fff; background: #050505; }
@@ -55,7 +60,7 @@
           if (roleError) {
             await client.auth.signOut({ scope: "local" });
             VasiAccountRole.clear();
-            location.replace("auth.html?role=restaurant");
+            location.replace("auth.html?role=restaurant&surface=partner");
             return;
           }
           VasiAccountRole.remember("restaurant");
@@ -71,5 +76,6 @@
         }
       })();
     </script>
+    <script src="./vasi-pwa.js"></script>
   </body>
 </html>

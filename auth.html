@@ -4,7 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link id="appManifest" rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Login & Registration</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+        const role = params.get("role") || "customer";
+        const manifest = role === "restaurant"
+          ? "./partner-manifest.webmanifest"
+          : ["ride", "courier"].includes(role)
+            ? "./driver-manifest.webmanifest"
+            : "./manifest.webmanifest";
+        document.getElementById("appManifest").href = manifest;
+      })();
+    </script>
     <style>
       body {
         margin: 0;
@@ -48,6 +64,7 @@
         gap: 7px;
         margin-bottom: 20px;
       }
+      .switch.single { grid-template-columns: 1fr; }
       .method-switch {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -143,7 +160,7 @@
     <main class="wrap">
       <header class="top">
         <div class="logo"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
-        <a class="back" href="index.html" aria-label="Return to VASI home"
+        <a id="authBack" class="back" href="index.html" aria-label="Return to VASI home"
           >← <span>Back</span></a
         >
       </header>
@@ -217,7 +234,7 @@
         ><a id="register" class="link hidden" href="partner-register-v2.html"
           >New partner? Register with VASI →</a
         >
-        <p class="small">
+        <p id="roleHelp" class="small">
           Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.
         </p>
         <p class="small">
@@ -259,6 +276,7 @@
       const searchParams = new URLSearchParams(location.search);
       const requestedRole = searchParams.get("role");
       const requestedMethod = searchParams.get("method");
+      const requestedSurface = searchParams.get("surface");
       let roleAtPageOpen =
         VasiAccountRole.active() || localStorage.getItem("vasi_role") || "";
       const allowedReturnPages = new Set([
@@ -280,6 +298,19 @@
       let role = ["customer", "ride", "courier", "restaurant"].includes(requestedRole)
         ? requestedRole
         : localStorage.getItem("vasi_role") || "customer";
+      const surface = ["customer", "driver", "partner"].includes(requestedSurface)
+        ? requestedSurface
+        : role === "restaurant"
+          ? "partner"
+          : ["ride", "courier"].includes(role)
+            ? "driver"
+            : "customer";
+      const surfaceRoles = {
+        customer: new Set(["customer"]),
+        driver: new Set(["ride", "courier"]),
+        partner: new Set(["restaurant"]),
+      };
+      if (!surfaceRoles[surface].has(role)) role = surface === "driver" ? "ride" : surface === "partner" ? "restaurant" : "customer";
       let authMethod = ["phone", "email"].includes(requestedMethod)
         ? requestedMethod
         : role === "customer"
@@ -313,6 +344,7 @@
         } catch (_) { clearPendingPhone(); }
       }
       function setRole(next) {
+        if (!surfaceRoles[surface].has(next)) return;
         role = next;
         authMethod = next === "customer" ? "phone" : "email";
         if (!currentSession) localStorage.setItem("vasi_role", role);
@@ -380,9 +412,14 @@
             : "Send SMS code"
           : "Continue with email");
         $("codeStep").classList.toggle("hidden", !phone || !phoneAwaitingCode);
-        ["customerBtn", "rideBtn", "courierBtn", "restaurantBtn"].forEach((id) =>
-          $(id).classList.remove("active"),
-        );
+        const roleButtons = { customerBtn: "customer", rideBtn: "ride", courierBtn: "courier", restaurantBtn: "restaurant" };
+        Object.entries(roleButtons).forEach(([id, buttonRole]) => {
+          $(id).classList.remove("active");
+          $(id).classList.toggle("hidden", !surfaceRoles[surface].has(buttonRole));
+        });
+        document.querySelector(".switch").classList.toggle("single", surface !== "driver");
+        $("roleHelp").classList.toggle("hidden", surface !== "driver");
+        $("authBack").href = surface === "driver" ? "driver-home.html" : surface === "partner" ? "restaurant-register.html" : "app.html";
         $(
           customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
         ).classList.add("active");

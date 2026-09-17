@@ -22,6 +22,7 @@
     "vasi-app.html",
     "vasi-clean-start.html",
     "vasi-flow.html",
+    "driver-home.html",
     "vasi-new.html",
     "vasi-rich.html",
     "vasi-ui.html",
@@ -41,9 +42,9 @@
     "business-account.html": "account.html",
     "contact.html": "index.html",
     "delete-account.html": "settings.html#privacy",
-    "delivery-driver.html": "index.html",
+    "delivery-driver.html": "driver-home.html",
     "delivery.html": "index.html",
-    "driver.html": "index.html",
+    "driver.html": "driver-home.html",
     "eats-checkout.html": "eats.html",
     "eats.html": "index.html",
     "eats-orders.html": "eats.html",
@@ -68,6 +69,11 @@
   };
 
   let fallback = fallbacks[page] || "index.html";
+  if (page === "auth.html") {
+    const surface = new URLSearchParams(location.search).get("surface");
+    if (surface === "driver") fallback = "driver-home.html";
+    if (surface === "partner") fallback = "restaurant-register.html";
+  }
   if (parent === "website") fallback = "index.html";
   if (parent === "admin" || parent === "publicity") fallback = "../index.html";
 
