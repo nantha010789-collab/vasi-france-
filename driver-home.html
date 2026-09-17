@@ -3,18 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#050505" />
+    <meta name="theme-color" content="#06183f" />
     <meta name="description" content="Espace professionnel VASI pour les chauffeurs et coursiers partenaires." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="VASI Driver" />
     <link rel="manifest" href="./driver-manifest.webmanifest" />
     <link rel="icon" href="./vasi-word-icon-192.png" type="image/png" />
     <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Driver</title>
     <style>
-      :root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#fff;background:#050505;--line:#2d2d2d;--panel:#111;--muted:#a5a5a5;--green:#72e394}*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(circle at 50% -10%,#173522 0,#0a100c 30%,#050505 62%);color:#fff}.shell{width:min(100%,640px);min-height:100dvh;margin:auto;padding:max(20px,env(safe-area-inset-top)) 18px max(30px,env(safe-area-inset-bottom));display:flex;flex-direction:column}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand img{display:block;width:108px;max-width:30vw;height:auto}.product{font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#c7c7c7}.install{min-height:44px;border:1px solid #3a3a3a;border-radius:999px;padding:10px 14px;background:#151515;color:#fff;font:inherit;font-weight:800}.hero{padding:clamp(38px,8vh,74px) 0 24px}.eyebrow{color:var(--green);font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}.hero h1{max-width:520px;margin:11px 0 13px;font-size:clamp(38px,10vw,58px);line-height:1;letter-spacing:-.045em}.hero p{max-width:480px;margin:0;color:var(--muted);font-size:16px;line-height:1.5}.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}.choice{position:relative;min-height:245px;padding:20px;border:1px solid var(--line);border-radius:26px;background:linear-gradient(155deg,#191919,#0c0c0c);color:#fff;text-decoration:none;overflow:hidden;display:flex;flex-direction:column}.choice:first-child{background:linear-gradient(155deg,#183a25,#0c120e);border-color:#356c45}.icon{display:grid;place-items:center;width:52px;height:52px;border:1px solid #414141;border-radius:17px;background:#202020;font-size:25px}.choice h2{margin:30px 0 7px;font-size:26px;letter-spacing:-.025em}.choice p{margin:0;color:#aaa;font-size:14px;line-height:1.45}.open{margin-top:auto;padding-top:24px;font-weight:900}.open span{float:right;font-size:22px}.account{margin-top:14px;padding:17px;border:1px solid var(--line);border-radius:20px;background:rgba(17,17,17,.9)}.account b{display:block}.account p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45}.account a,.signout{display:inline-flex;margin-top:12px;color:#fff;font-weight:850}.signout{border:0;padding:0;background:none;text-decoration:underline;font:inherit;cursor:pointer}.help{margin:10px 4px 0;color:#aaa;font-size:12px;line-height:1.45}.foot{margin-top:auto;padding-top:25px;color:#777;font-size:12px}.foot a{color:#bbb}@media(max-width:520px){.choices{grid-template-columns:1fr}.choice{min-height:190px}.choice h2{margin-top:20px}.hero{padding-top:34px}}@media(max-width:380px){.shell{padding-left:12px;padding-right:12px}.product{display:none}}
+      :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;background:#020611;--blue:#1557ff;--blue-bright:#2f72ff;--red:#ef3340;--ink:#020611;--panel:#09152d;--line:rgba(255,255,255,.14);--muted:#b8c2d8}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none}body{background:radial-gradient(circle at 15% 10%,rgba(21,87,255,.32),transparent 34%),radial-gradient(circle at 95% 88%,rgba(239,51,64,.19),transparent 29%),linear-gradient(150deg,#071633 0,#030916 48%,#05050a 100%);color:#fff}.shell{width:min(100%,1080px);height:100vh;height:100svh;height:100dvh;margin:auto;padding:calc(env(safe-area-inset-top,0px) + 14px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 12px) max(16px,env(safe-area-inset-left,0px));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:clamp(8px,1.7vh,16px);overflow:hidden}.top{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:11px;min-width:0}.brand img{display:block;width:clamp(92px,26vw,124px);height:auto}.product{padding-left:10px;border-left:1px solid rgba(255,255,255,.28);font-size:clamp(12px,3vw,15px);font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#fff}.install{min-height:42px;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:9px 14px;background:rgba(7,22,51,.82);color:#fff;font:inherit;font-weight:850}.hero{min-width:0;padding:clamp(2px,1vh,10px) 0}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:#8fb1ff;font-size:clamp(11px,2.7vw,13px);font-weight:900;letter-spacing:.14em;text-transform:uppercase}.eyebrow::before{content:"";width:22px;height:4px;border-radius:99px;background:linear-gradient(90deg,var(--blue) 0 62%,#fff 62% 76%,var(--red) 76%)}.hero h1{max-width:620px;margin:7px 0 7px;font-size:clamp(29px,8.3vw,58px);line-height:.98;letter-spacing:-.045em}.hero p{max-width:620px;margin:0;color:var(--muted);font-size:clamp(14px,3.6vw,17px);line-height:1.36}.choices{min-height:0;display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:clamp(8px,1.4vh,13px)}.choice{position:relative;min-width:0;min-height:0;padding:clamp(13px,2.4vh,22px);border:1px solid var(--line);border-radius:clamp(20px,5vw,28px);color:#fff;text-decoration:none;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) clamp(86px,29vw,180px);grid-template-rows:auto auto 1fr;column-gap:10px;background:linear-gradient(135deg,rgba(12,35,86,.98),rgba(4,13,34,.98));box-shadow:0 18px 50px rgba(0,0,0,.22)}.choice::before{content:"";position:absolute;inset:0;border-top:3px solid var(--blue);border-radius:inherit;pointer-events:none}.choice.courier{background:linear-gradient(135deg,rgba(51,12,27,.98),rgba(13,8,20,.98))}.choice.courier::before{border-top-color:var(--red)}.vehicle{grid-column:2;grid-row:1/4;align-self:center;justify-self:end;width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 12px 16px rgba(0,0,0,.42));pointer-events:none}.choice.courier .vehicle{height:125%;width:118%;object-fit:cover;object-position:center 53%;border-radius:18px;opacity:.85;mask-image:linear-gradient(90deg,transparent 0,#000 24%,#000 100%)}.choice h2{grid-column:1;margin:0 0 5px;font-size:clamp(24px,6.4vw,38px);line-height:1;letter-spacing:-.035em}.choice p{grid-column:1;margin:0;color:#bdc8dc;font-size:clamp(13px,3.3vw,16px);line-height:1.32;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.open{grid-column:1;align-self:end;margin-top:6px;font-size:clamp(13px,3.3vw,16px);font-weight:900}.open span{display:inline-block;margin-left:7px;color:#fff;font-size:20px;vertical-align:-1px}.account{align-self:center;margin:0;padding:clamp(16px,3vw,24px);border:1px solid rgba(47,114,255,.48);border-radius:24px;background:rgba(7,22,51,.94)}.account b{display:block;font-size:20px}.account p{margin:6px 0 0;color:var(--muted);font-size:14px;line-height:1.42}.account a,.signout{display:inline-flex;margin-top:11px;color:#fff;font-weight:850}.signout{border:0;padding:0;background:none;text-decoration:underline;font:inherit;cursor:pointer}.help{margin:0;color:#b8c2d8;font-size:12px;line-height:1.35}.foot{min-height:22px;color:#8d99af;font-size:12px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.foot a{color:#d9e3f7;font-weight:750}.foot .flag{display:inline-flex;width:24px;height:4px;margin:0 7px;vertical-align:middle;border-radius:99px;background:linear-gradient(90deg,var(--blue) 0 34%,#fff 34% 66%,var(--red) 66%)}
+      @media(min-width:700px){.shell{grid-template-columns:minmax(230px,.78fr) minmax(400px,1.22fr);grid-template-rows:auto minmax(0,1fr) auto;column-gap:clamp(24px,5vw,60px)}.top{grid-column:1/-1}.hero{grid-column:1;grid-row:2;align-self:center}.hero h1{font-size:clamp(42px,6vw,66px)}.choices{grid-column:2;grid-row:2}.foot{grid-column:1/-1}.choice{grid-template-columns:minmax(0,1fr) minmax(130px,32%)}.choice.courier .vehicle{height:142%;width:125%}}
+      @media(max-height:720px){.shell{gap:7px;padding-top:calc(env(safe-area-inset-top,0px) + 9px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 7px)}.top{min-height:38px}.brand img{width:90px}.hero h1{font-size:clamp(27px,7.3vw,38px);margin-block:4px}.hero p{font-size:13px;line-height:1.25}.choice{padding:11px 13px;border-radius:18px;grid-template-columns:minmax(0,1fr) 82px}.choice h2{font-size:22px}.choice p{font-size:12px;-webkit-line-clamp:1}.open{font-size:12px}.choice.courier .vehicle{border-radius:14px}.foot{font-size:11px}}
+      @media(max-height:590px){.eyebrow{font-size:10px}.hero p{display:none}.choices{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}.choice{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;padding:10px}.vehicle{position:absolute;right:-10px;bottom:18px;width:64%;max-height:72%;opacity:.52}.choice.courier .vehicle{height:82%;width:75%}.choice p{display:none}.open{position:relative;font-size:11px}.foot{display:none}}
+      @media(max-width:355px){.shell{padding-inline:max(10px,env(safe-area-inset-left,0px)) max(10px,env(safe-area-inset-right,0px))}.product{font-size:11px;padding-left:7px}.hero h1{font-size:27px}.hero p{font-size:12px}.choice{grid-template-columns:minmax(0,1fr) 72px;padding-inline:12px}.choice h2{font-size:21px}.choice p{font-size:12px}.open{font-size:11px}}
     </style>
   </head>
   <body>
@@ -30,16 +34,16 @@
       </section>
       <section class="choices" aria-label="Choisir une activité">
         <a class="choice" id="driverChoice" href="auth.html?role=ride&amp;surface=driver">
-          <span class="icon" aria-hidden="true">🚘</span>
           <h2>Chauffeur</h2>
           <p>Courses passagers, demandes à proximité, navigation, statut en ligne et revenus.</p>
-          <div class="open">Ouvrir l’espace chauffeur <span>→</span></div>
+          <div class="open">Espace chauffeur <span>→</span></div>
+          <img class="vehicle" src="./assets/vehicles/go.webp" alt="" aria-hidden="true" />
         </a>
-        <a class="choice" id="courierChoice" href="auth.html?role=courier&amp;surface=driver">
-          <span class="icon" aria-hidden="true">🛵</span>
+        <a class="choice courier" id="courierChoice" href="auth.html?role=courier&amp;surface=driver">
           <h2>Coursier</h2>
           <p>Commandes VASI Eats, colis, navigation vers le retrait et suivi de livraison.</p>
-          <div class="open">Ouvrir l’espace coursier <span>→</span></div>
+          <div class="open">Espace coursier <span>→</span></div>
+          <img class="vehicle" src="./assets/delivery-service.webp" alt="" aria-hidden="true" />
         </a>
       </section>
       <section class="account" id="sessionCard" hidden>
@@ -49,7 +53,7 @@
         <button class="signout" id="changeAccount" type="button">Se déconnecter pour changer de compte</button>
       </section>
       <p class="help" data-vasi-install-help hidden></p>
-      <footer class="foot"><a href="support.html">Assistance VASI</a> · Les comptes partenaires sont vérifiés avant leur activation.</footer>
+      <footer class="foot"><a href="support.html">Assistance VASI</a><span class="flag" aria-hidden="true"></span>Comptes partenaires vérifiés avant activation.</footer>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-account-role.js"></script>
@@ -70,6 +74,7 @@
         document.getElementById("sessionCopy").textContent = "Continuez dans votre espace professionnel. Pour utiliser une autre activité, déconnectez d’abord ce compte.";
         document.getElementById("continueLink").href = destinations[role];
         document.getElementById("continueLink").textContent = "Continuer comme " + label + " →";
+        document.querySelector(".choices").hidden = true;
         document.getElementById("sessionCard").hidden = false;
       });
       document.getElementById("changeAccount").addEventListener("click", async () => {
