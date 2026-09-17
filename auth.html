@@ -13,9 +13,15 @@
       (() => {
         const params = new URLSearchParams(location.search);
         const role = params.get("role") || "customer";
+        const driverRole = ["ride", "courier"].includes(role);
+        const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+        if (standalone && driverRole && !document.referrer && !location.hash) {
+          location.replace("./driver-home.html?source=legacy-shortcut");
+          return;
+        }
         const manifest = role === "restaurant"
           ? "./partner-manifest.webmanifest"
-          : ["ride", "courier"].includes(role)
+          : driverRole
             ? "./driver-manifest.webmanifest"
             : "./manifest.webmanifest";
         document.getElementById("appManifest").href = manifest;

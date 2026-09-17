@@ -35,6 +35,8 @@ test("driver surface exposes only chauffeur and courier roles", () => {
   assert.match(auth, /driver: new Set\(\["ride", "courier"\]\)/);
   assert.match(auth, /customer: new Set\(\["customer"\]\)/);
   assert.match(auth, /partner: new Set\(\["restaurant"\]\)/);
+  assert.match(auth, /standalone && driverRole && !document\.referrer/);
+  assert.match(auth, /driver-home\.html\?source=legacy-shortcut/);
 });
 
 test("registered restaurant entry resumes the dashboard instead of onboarding", () => {
