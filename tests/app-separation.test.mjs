@@ -145,16 +145,24 @@ test("driver dashboard has a safe sign-in-free preview", () => {
 test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   const preview = read("driver-preview.html");
   const demo = read("ride-live-demo.html");
+  const driver = read("driver.html");
 
   assert.match(preview, /location\.href = "ride-live-demo\.html"/);
   assert.match(demo, /id="driverPhase"/);
-  assert.match(demo, /id="customerPhase"/);
-  assert.match(demo, /id="trackingPhase"/);
+  assert.match(demo, /id="pickupPhase"/);
+  assert.match(demo, /id="arrivedPhase"/);
+  assert.match(demo, /id="tripPhase"/);
+  assert.match(demo, /id="completePhase"/);
   assert.match(demo, /function driverAccepts\(\)/);
-  assert.match(demo, /function customerConfirms\(\)/);
-  assert.match(demo, /requestAnimationFrame\(tick\)/);
-  assert.match(demo, /aucune course, donnée ou facturation réelle/);
+  assert.match(demo, /function driverArrives\(\)/);
+  assert.match(demo, /function startTrip\(\)/);
+  assert.match(demo, /function completeTrip\(\)/);
+  assert.match(demo, /La navigation démarre dès l’acceptation/);
+  assert.doesNotMatch(demo, /customerConfirms|customerPhase/);
   assert.doesNotMatch(demo, /supabase|\/api\//i);
+  assert.match(driver, /id="driverNavigationMap"/);
+  assert.match(driver, /function updateDriverNavigation\(/);
+  assert.match(driver, /Recalcul automatique avec votre position GPS/);
 });
 
 test("offline shell includes every app manifest and shared installer", () => {
