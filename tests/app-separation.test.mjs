@@ -142,6 +142,21 @@ test("driver dashboard has a safe sign-in-free preview", () => {
   assert.doesNotMatch(preview, /supabase|vasi-driver-auth|\/api\//i);
 });
 
+test("ride acceptance has a safe sign-in-free live GPS demo", () => {
+  const preview = read("driver-preview.html");
+  const demo = read("ride-live-demo.html");
+
+  assert.match(preview, /location\.href = "ride-live-demo\.html"/);
+  assert.match(demo, /id="driverPhase"/);
+  assert.match(demo, /id="customerPhase"/);
+  assert.match(demo, /id="trackingPhase"/);
+  assert.match(demo, /function driverAccepts\(\)/);
+  assert.match(demo, /function customerConfirms\(\)/);
+  assert.match(demo, /requestAnimationFrame\(tick\)/);
+  assert.match(demo, /aucune course, donnée ou facturation réelle/);
+  assert.doesNotMatch(demo, /supabase|\/api\//i);
+});
+
 test("offline shell includes every app manifest and shared installer", () => {
   const serviceWorker = read("sw.js");
   for (const asset of [
