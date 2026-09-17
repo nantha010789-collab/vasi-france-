@@ -19,11 +19,25 @@
   }
 
   function createScope(name) {
-    const partner = name === "partner";
-    const sessionKey = partner
-      ? "vasi_partner_session_role"
-      : "vasi_session_role";
-    const intentKey = partner ? "vasi_partner_role" : "vasi_role";
+    const scopeKeys = {
+      default: {
+        sessionKey: "vasi_session_role",
+        intentKey: "vasi_role",
+      },
+      driver: {
+        sessionKey: "vasi_driver_session_role",
+        intentKey: "vasi_driver_role",
+      },
+      partner: {
+        sessionKey: "vasi_partner_session_role",
+        intentKey: "vasi_partner_role",
+      },
+      admin: {
+        sessionKey: "vasi_admin_session_role",
+        intentKey: "vasi_admin_role",
+      },
+    };
+    const { sessionKey, intentKey } = scopeKeys[name] || scopeKeys.default;
 
     function active() {
       return clean(localStorage.getItem(sessionKey));

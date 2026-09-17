@@ -153,14 +153,16 @@
       }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+    <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
   </head>
-  <body>
+  <body data-scroll-mode="viewport" data-vasi-driver="courier">
     <main class="wrap">
       <header class="top">
         <button class="btn home" type="button" data-vasi-return>Back</button>
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
         <button class="btn home" type="button" onclick="logout()">Sign out</button>
       </header>
+      <div class="driver-scroll" data-scroll-region>
       <section class="card">
         <span class="badge">🛵 COURIER · EATS + DELIVERY</span>
         <p id="profile" class="status">Checking courier account…</p>
@@ -196,6 +198,7 @@
           Go online to see courier jobs.
         </div>
       </section>
+      </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
@@ -205,10 +208,12 @@
       const client = supabase.createClient(
           "https://vhfyvkrvysrooaqzcxsp.supabase.co",
           "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+          { auth: { storageKey: "vasi-driver-auth" } },
         ),
         ENDPOINT =
           "https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/delivery-driver-service";
       const region = VasiRegion.getRegion();
+      const accountRole = VasiAccountRole.scoped("driver");
       const money = (value) => VasiRegion.money(value, region.code);
       let online = false,
         tab = "eats",
@@ -233,7 +238,7 @@
           data: { session },
         } = await client.auth.getSession();
         if (!session) {
-          localStorage.setItem("vasi_role", "courier");
+          accountRole.setIntent("courier");
           location.href = "auth.html?role=courier&surface=driver";
           return { error: "Login required" };
         }
@@ -444,16 +449,16 @@
       async function logout() {
         if (online) await service({ action: "set_online", online: false });
         await client.auth.signOut({ scope: "local" });
-        VasiAccountRole.clear();
+        accountRole.clear();
         location.href = "driver-home.html";
       }
       client.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
-          localStorage.setItem("vasi_role", "courier");
+          accountRole.setIntent("courier");
           location.href = "auth.html?role=courier&surface=driver";
           return;
         }
-        if (VasiAccountRole.require("courier", session)) loadProfile();
+        if (accountRole.require("courier", session)) loadProfile();
       });
       setInterval(loadJobs, 10000);
       VasiNotifications.start(client, { role: "courier" });

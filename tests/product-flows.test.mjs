@@ -1692,8 +1692,11 @@ test("customer, driver, courier and restaurant sessions stay separated", async (
   assert.match(roleGuard, /signedInRole !== requiredRole/);
   assert.match(customer, /VasiAccountRole\.require\("customer"/);
   assert.match(customerEats, /VasiAccountRole\.require\('customer'/);
-  assert.match(driver, /VasiAccountRole\.require\("ride"/);
-  assert.match(courier, /VasiAccountRole\.require\("courier"/);
+  assert.match(driver, /accountRole\.require\("ride"/);
+  assert.match(driver, /storageKey: "vasi-driver-auth"/);
+  assert.match(courier, /accountRole\.require\("courier"/);
+  assert.match(courier, /storageKey: "vasi-driver-auth"/);
+  assert.match(roleGuard, /vasi_driver_session_role/);
   assert.match(restaurantGate, /vasi_claim_account_role/);
   assert.match(restaurantForm, /vasi_claim_account_role/);
   assert.match(restaurantDashboard, /partnerRole\.require\("restaurant"/);

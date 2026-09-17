@@ -34,18 +34,19 @@
   </section></main>
   <script>if(location.hostname.endsWith('.github.io'))location.replace('https://vasi-new.vercel.app/admin-login.html');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
-  <script src="./vasi-account-role.js?v=2"></script>
+  <script src="./vasi-account-role.js?v=3"></script>
   <script>
-    const db=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT'),$=id=>document.getElementById(id);
+    const db=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT',{auth:{storageKey:'vasi-admin-auth'}}),$=id=>document.getElementById(id);
+    const adminRole=VasiAccountRole.scoped('admin');
     let mustSignOut=false;
     async function signOutAndContinue(){
-      await db.auth.signOut({scope:'local'});VasiAccountRole.clear();mustSignOut=false;
+      await db.auth.signOut({scope:'local'});adminRole.clear();mustSignOut=false;
       $('loginFields').classList.remove('hidden');$('intro').textContent='Utilisez uniquement votre compte administrateur VASI autorisé.';$('submit').textContent='Se connecter';$('submit').classList.remove('secondary');$('msg').textContent='Vous pouvez maintenant vous connecter avec le compte administrateur.';
     }
     async function checkExistingSession(){
       const {data:{session}}=await db.auth.getSession();
-      if(!session){VasiAccountRole.clear();return}
-      const activeRole=VasiAccountRole.active();
+      if(!session){adminRole.clear();return}
+      const activeRole=adminRole.active();
       if(activeRole==='admin'){
         const response=await fetch('https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/admin-service',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'check_access'})});
         if(response.ok){location.replace('admin/');return}
@@ -60,8 +61,8 @@
       const{data,error}=await db.auth.signInWithPassword({email,password});
       if(error){$('msg').textContent='Connexion impossible. Vérifiez vos identifiants.';button.disabled=false;return}
       const response=await fetch('https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/admin-service',{method:'POST',headers:{Authorization:'Bearer '+data.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action:'check_access'})});
-      if(!response.ok){await db.auth.signOut({scope:'local'});VasiAccountRole.clear();$('msg').textContent='Ce compte n’est pas autorisé à administrer VASI.';button.disabled=false;return}
-      VasiAccountRole.remember('admin');location.replace('admin/');
+      if(!response.ok){await db.auth.signOut({scope:'local'});adminRole.clear();$('msg').textContent='Ce compte n’est pas autorisé à administrer VASI.';button.disabled=false;return}
+      adminRole.remember('admin');location.replace('admin/');
     }
     async function requestReset(){
       const email=$('email').value.trim().toLowerCase(),button=$('forgot');

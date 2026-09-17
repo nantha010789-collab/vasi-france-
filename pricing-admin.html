@@ -266,6 +266,7 @@
       const db = supabase.createClient(
           "https://vhfyvkrvysrooaqzcxsp.supabase.co",
           "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
+          { auth: { storageKey: "vasi-admin-auth" } },
         ),
         keys = ["go", "comfort", "xl", "van"],
         names = {
