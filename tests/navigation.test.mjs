@@ -46,6 +46,7 @@ const nestedSecondaryPages = [
   "website/help.html",
   "website/legal.html",
   "website/partners.html",
+  "website/investors.html",
 ];
 
 test("every secondary VASI page loads the shared return control", () => {

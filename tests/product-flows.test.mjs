@@ -667,6 +667,23 @@ test("health endpoint is minimal, read-only and not cached", async () => {
   assert.equal(postRes.headers.allow, "GET");
 });
 
+test("public investor option is a non-binding enquiry, never an online share checkout", async () => {
+  const [home, contact, investors] = await Promise.all([
+    readFile("website/index.html", "utf8"),
+    readFile("website/contact.html", "utf8"),
+    readFile("website/investors.html", "utf8"),
+  ]);
+  assert.match(home, /href="\.\/investors\.html"/);
+  assert.match(contact, /Espace investisseurs/);
+  assert.match(investors, /Investissement minoritaire/);
+  assert.match(investors, /acquisition potentielle de 100 %/);
+  assert.match(investors, /lancement en Inde pourra être étudié/);
+  assert.match(investors, /manifestations d’intérêt non contraignantes/);
+  assert.match(investors, /Aucun investissement et aucun paiement ne peuvent être réalisés sur ce site/);
+  assert.match(investors, /Request the investor pack/);
+  assert.doesNotMatch(investors, /Buy shares|Acheter des actions|Stripe|checkout/i);
+});
+
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {
   global.fetch = async () => response({ id: "user-1" });
   const { default: callConfig } = await import(`../api/call-config.js?test=${Date.now()}`);
