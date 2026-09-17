@@ -935,7 +935,7 @@ test("ride choices use distinct professional vehicle images", async () => {
 
 test("ride flow loads the current language bundle for pin confirmation labels", async () => {
   const source = await readFile("ride-flow.html", "utf8");
-  assert.match(source, /vasi-languages\.js\?v=5/);
+  assert.match(source, /vasi-languages\.js\?v=6/);
 });
 
 test("customer-to-driver lifecycle exposes call, payment and receipt contracts", async () => {
