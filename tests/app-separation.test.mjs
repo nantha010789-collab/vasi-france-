@@ -97,6 +97,23 @@ test("driver workspaces use one fixed viewport with an internal responsive scrol
   assert.match(css, /@media \(max-height: 560px\) and \(orientation: landscape\)/);
 });
 
+test("driver entry stays in one branded viewport on phones and tablets", () => {
+  const home = read("driver-home.html");
+  const manifest = JSON.parse(read("driver-manifest.webmanifest"));
+
+  assert.match(home, /height:100dvh/);
+  assert.match(home, /html,body\{[^}]*overflow:hidden/);
+  assert.match(home, /env\(safe-area-inset-top/);
+  assert.match(home, /@media\(min-width:700px\)/);
+  assert.match(home, /@media\(max-height:590px\)/);
+  assert.match(home, /--blue:#1557ff/);
+  assert.match(home, /--red:#ef3340/);
+  assert.match(home, /assets\/vehicles\/go\.webp/);
+  assert.match(home, /assets\/delivery-service\.webp/);
+  assert.doesNotMatch(home, /--green|#72e394|#173522|#183a25/);
+  assert.equal(manifest.theme_color, "#06183f");
+});
+
 test("offline shell includes every app manifest and shared installer", () => {
   const serviceWorker = read("sw.js");
   for (const asset of [
