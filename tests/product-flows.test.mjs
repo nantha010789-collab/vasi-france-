@@ -905,11 +905,19 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.doesNotMatch(source, /pinAddressCard/);
 });
 
-test("ride map keeps road labels crisp and buffers production tiles", async () => {
+test("ride map uses crisp vector road labels with a buffered raster fallback", async () => {
   const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /maplibre-gl@5\.24\.0/);
+  assert.match(source, /maplibre-gl-leaflet@0\.1\.4/);
+  assert.match(source, /https:\/\/tiles\.openfreemap\.org\/styles\/liberty/);
+  assert.match(source, /window\.maplibregl\?\.supported\?\.\(\)/);
+  assert.match(source, /vectorMap\.once\("load"/);
+  assert.match(source, /vectorMap\.resize\(\)/);
+  assert.match(source, /mapAttributionControl\.addAttribution/);
+  assert.match(source, /margin-top: max\(148px/);
   assert.match(source, /https:\/\/\{s\}\.tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
-  assert.match(source, /\.map \.leaflet-tile-pane\s*\{[\s\S]*?saturate\(0\.88\)[\s\S]*?contrast\(1\.08\)/);
-  assert.doesNotMatch(source, /grayscale\(/);
+  assert.match(source, /\.map \.maplibregl-canvas\s*\{[\s\S]*?outline: 0/);
+  assert.doesNotMatch(source, /\.map \.leaflet-tile-pane\s*\{[^}]*filter:/);
   assert.match(source, /updateWhenIdle: true/);
   assert.match(source, /keepBuffer: 3/);
 });
