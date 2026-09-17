@@ -10,6 +10,8 @@
     <link rel="manifest" href="./driver-manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./vasi-word-icon-192.png" />
     <title>VASI Driver</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
     <style>
       body {
         margin: 0;
@@ -186,6 +188,19 @@
       .notice { margin-top:9px; border-radius:13px; padding:11px; background:#211b0d; color:#f2d17a; font-size:12px; }
       .zones { display:grid; gap:7px; margin-top:10px; }
       .zone { display:flex; justify-content:space-between; gap:10px; border-radius:12px; background:#181818; padding:10px; font-size:12px; }
+      .driverNavigation { position:relative; height:270px; margin:14px 0 10px; overflow:hidden; border:1px solid #3a465d; border-radius:18px; background:#dce5ef; isolation:isolate; }
+      .driverNavigation .leaflet-container { width:100%; height:100%; font:inherit; }
+      .driverNavigation .leaflet-control-attribution { max-width:75%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:8px!important; }
+      .driverNavigation .leaflet-control-zoom a { color:#06132b!important; }
+      .navOverlay { position:absolute; z-index:700; top:9px; left:9px; right:9px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid #ffffff30; border-radius:14px; background:#07142bef; box-shadow:0 8px 24px #0006; pointer-events:none; }
+      .navOverlay b,.navOverlay span { display:block; }
+      .navOverlay b { font-size:13px; }
+      .navOverlay span { margin-top:2px; color:#b6c4da; font-size:10px; }
+      .navMetric { flex:0 0 auto; color:#fff!important; font-size:13px!important; font-weight:900; }
+      .driverMapPin { width:23px; height:23px; border:5px solid #fff; border-radius:50%; background:#1557ff; box-shadow:0 5px 16px #0008; }
+      .driverMapPin.destination { border-radius:6px; background:#ef3340; }
+      .driverMapCar { display:grid; place-items:center; width:43px; height:43px; border:3px solid #fff; border-radius:50%; background:#07142b; box-shadow:0 6px 18px #0008; font-size:21px; }
+      .navFallback { position:absolute; z-index:650; right:9px; bottom:9px; width:auto; min-height:38px; margin:0; padding:9px 11px; border:1px solid #ffffff30; border-radius:12px; background:#07142bee; color:#fff; font-size:11px; }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
@@ -254,6 +269,9 @@
       </section>
       </div>
     </main>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
@@ -276,7 +294,12 @@
         activeRide = null,
         gpsMode = "offline",
         activeStops = [],
-        monthlyEarnings = [];
+        monthlyEarnings = [],
+        driverMap = null,
+        driverMapRoute = null,
+        driverMapCar = null,
+        driverMapTarget = null,
+        driverMapLastRouteAt = 0;
       client.auth.getSession().then(async ({ data }) => {
         if (!data.session) {
           accountRole.setIntent("ride");
@@ -429,6 +452,7 @@
               await setPresence(mode === "online", p);
               if (mode === "online") online = true;
               render();
+              updateDriverNavigation(p, true);
             } catch (e) {
               alert(e.message);
             }
@@ -443,6 +467,7 @@
             try {
               await setPresence(gpsMode === "online", pos);
             } catch (e) {}
+            updateDriverNavigation(pos);
           },
           () => (document.getElementById("gps").textContent = "GPS denied"),
           { enableHighAccuracy: true, maximumAge: 3000, timeout: 12000 },
@@ -623,6 +648,185 @@
           "_blank",
         );
       }
+      function navigationTarget() {
+        if (!activeRide) return null;
+        if (activeRide.status === "in_progress") {
+          const next = activeStops.find((stop) => !stop.completed_at);
+          if (next)
+            return {
+              lat: Number(next.latitude),
+              lng: Number(next.longitude),
+              address: next.address,
+              label: "Prochain arrêt",
+            };
+          return {
+            lat: Number(activeRide.destination_lat),
+            lng: Number(activeRide.destination_lng),
+            address: activeRide.destination_address,
+            label: "Destination",
+          };
+        }
+        return {
+          lat: Number(activeRide.pickup_lat),
+          lng: Number(activeRide.pickup_lng),
+          address: activeRide.pickup_address,
+          label: "Point de départ",
+        };
+      }
+      function destroyDriverNavigation() {
+        if (driverMap) {
+          try { driverMap.remove(); } catch (_) {}
+        }
+        driverMap = null;
+        driverMapRoute = null;
+        driverMapCar = null;
+        driverMapTarget = null;
+        driverMapLastRouteAt = 0;
+      }
+      function initDriverNavigation() {
+        const container = document.getElementById("driverNavigationMap");
+        if (!container || !activeRide || typeof L === "undefined") return;
+        destroyDriverNavigation();
+        driverMap = L.map(container, {
+          zoomControl: true,
+          attributionControl: true,
+          minZoom: 3,
+          maxZoom: 20,
+        });
+        const fallback = L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            maxNativeZoom: 19,
+            maxZoom: 20,
+            keepBuffer: 3,
+            attribution: "© OpenStreetMap contributors",
+          },
+        ).addTo(driverMap);
+        if (
+          window.maplibregl?.supported?.() &&
+          typeof L.maplibreGL === "function"
+        ) {
+          try {
+            const ownerMap = driverMap;
+            const vector = L.maplibreGL({
+              style: "https://tiles.openfreemap.org/styles/liberty",
+              attributionControl: false,
+              interactive: false,
+            }).addTo(ownerMap);
+            vector.getMaplibreMap().once("load", () => {
+              if (driverMap !== ownerMap) return;
+              if (ownerMap.hasLayer(fallback)) ownerMap.removeLayer(fallback);
+              requestAnimationFrame(() => vector.getMaplibreMap().resize());
+            });
+          } catch (_) {}
+        }
+        requestAnimationFrame(() => {
+          driverMap?.invalidateSize();
+          updateDriverNavigation(lastPos, true);
+        });
+      }
+      async function updateDriverNavigation(position, force = false) {
+        const summary = document.getElementById("driverNavigationSummary");
+        const metric = document.getElementById("driverNavigationMetric");
+        if (!driverMap || !activeRide || !summary || !metric) return;
+        const target = navigationTarget();
+        if (
+          !target ||
+          !Number.isFinite(target.lat) ||
+          !Number.isFinite(target.lng)
+        ) {
+          summary.textContent = "Coordonnées de destination indisponibles";
+          metric.textContent = "—";
+          return;
+        }
+        const targetPoint = [target.lat, target.lng];
+        summary.textContent = target.label + " · " + (target.address || "");
+        const targetIcon = L.divIcon({
+          className: "",
+          html: `<div class="driverMapPin ${activeRide.status === "in_progress" ? "destination" : ""}"></div>`,
+          iconSize: [23, 23],
+          iconAnchor: [12, 12],
+        });
+        if (!driverMapTarget)
+          driverMapTarget = L.marker(targetPoint, {
+            icon: targetIcon,
+            title: target.label,
+          }).addTo(driverMap);
+        else {
+          driverMapTarget.setIcon(targetIcon);
+          driverMapTarget.setLatLng(targetPoint);
+        }
+        const source = position?.coords
+          ? [Number(position.coords.latitude), Number(position.coords.longitude)]
+          : null;
+        if (
+          !source ||
+          !Number.isFinite(source[0]) ||
+          !Number.isFinite(source[1])
+        ) {
+          metric.textContent = "GPS…";
+          driverMap.setView(targetPoint, 16);
+          return;
+        }
+        const carIcon = L.divIcon({
+          className: "",
+          html: '<div class="driverMapCar">🚘</div>',
+          iconSize: [43, 43],
+          iconAnchor: [22, 22],
+        });
+        if (!driverMapCar)
+          driverMapCar = L.marker(source, {
+            icon: carIcon,
+            title: "Position du chauffeur",
+            zIndexOffset: 500,
+          }).addTo(driverMap);
+        else driverMapCar.setLatLng(source);
+        if (!force && Date.now() - driverMapLastRouteAt < 12000) return;
+        driverMapLastRouteAt = Date.now();
+        metric.textContent = "Calcul…";
+        try {
+          const response = await fetch("/api/route-preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              points: [
+                { lat: source[0], lng: source[1] },
+                { lat: target.lat, lng: target.lng },
+              ],
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.geometry)
+            throw new Error(result.error || "Route indisponible");
+          if (driverMapRoute) driverMapRoute.remove();
+          driverMapRoute = L.geoJSON(result.geometry, {
+            style: {
+              color: "#1557ff",
+              weight: 7,
+              opacity: 0.96,
+              lineCap: "round",
+              lineJoin: "round",
+            },
+          }).addTo(driverMap);
+          const km = Number(result.distance_km);
+          const minutes = Number(result.duration_min);
+          metric.textContent =
+            (Number.isFinite(minutes) ? Math.max(1, Math.ceil(minutes)) + " min" : "—") +
+            (Number.isFinite(km) ? " · " + km.toFixed(1) + " km" : "");
+          driverMap.fitBounds(driverMapRoute.getBounds(), {
+            paddingTopLeft: [35, 72],
+            paddingBottomRight: [35, 44],
+          });
+        } catch (_) {
+          metric.textContent = "Itinéraire à actualiser";
+          const bounds = L.latLngBounds([source, targetPoint]);
+          driverMap.fitBounds(bounds, { padding: [42, 42] });
+        }
+      }
+      function openCurrentNavigation() {
+        const target = navigationTarget();
+        if (target) navTo(target.lat, target.lng, target.address);
+      }
       function routeHtml() {
         if (!activeRide) return "";
         const pending = activeStops.find((s) => !s.completed_at);
@@ -667,6 +871,7 @@
       }
       function showActiveRide() {
         if (!activeRide) return;
+        destroyDriverNavigation();
         const st = String(activeRide.status);
         const fare =
           Number(activeRide.driver_amount) > 0
@@ -697,12 +902,13 @@
           : "";
         const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span>Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><button class="navFallback" type="button" onclick="openCurrentNavigation()">↗ Ouvrir la navigation</button></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
         );
         if (["accepted","driver_arriving"].includes(st)) document.getElementById("ride").insertAdjacentHTML("beforeend",'<button class="btn decline" onclick="cancelAndReassign()">Cannot take this ride · find another driver</button>');
+        initDriverNavigation();
       }
       async function cancelAndReassign(){
         if(!activeRide||!confirm("Cancel your assignment and immediately search for another driver for the passenger?"))return;
