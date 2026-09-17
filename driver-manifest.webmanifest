@@ -4,9 +4,12 @@
   "short_name": "VASI Driver",
   "description": "Application VASI pour les chauffeurs et coursiers partenaires.",
   "lang": "fr",
-  "start_url": "/driver",
+  "start_url": "/driver-home.html?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "orientation": "portrait",
   "background_color": "#020611",
   "theme_color": "#06183f",
