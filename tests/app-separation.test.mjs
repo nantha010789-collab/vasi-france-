@@ -164,9 +164,14 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(driver, /function updateDriverNavigation\(/);
   assert.match(driver, /Recalcul automatique avec votre position GPS/);
   assert.match(driver, /vasi_driver_navigation_provider/);
+  assert.match(driver, /<option value="vasi">VASI GPS<\/option>/);
+  assert.match(driver, /return saved === "google" \|\| saved === "waze" \? saved : "vasi"/);
   assert.match(driver, /https:\/\/waze\.com\/ul\?/);
   assert.match(driver, /dir_action=navigate/);
   assert.match(driver, /launchCurrentNavigation\(\)/);
+  assert.match(driver, /if \(navigationProvider\(\) === "vasi"\) focusCurrentNavigation\(\)/);
+  assert.match(driver, /openExternalNavigation\('google'\)/);
+  assert.match(driver, /openExternalNavigation\('waze'\)/);
   assert.match(demo, /openDemoNavigation\('google','pickup'\)/);
   assert.match(demo, /openDemoNavigation\('waze','destination'\)/);
 });
