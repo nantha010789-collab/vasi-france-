@@ -125,7 +125,7 @@ test("restaurant entry stays fixed inside phone and tablet safe areas", () => {
   assert.match(partner, /env\(safe-area-inset-top/);
   assert.match(partner, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
   assert.match(partner, /@media \(min-width: 700px\)/);
-  assert.match(partner, /@media \(max-height: 590px\)/);
+  assert.match(partner, /@media \(max-height: 590px\) and \(min-width: 600px\)/);
   assert.match(partner, /class="workbench"/);
 });
 

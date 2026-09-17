@@ -142,9 +142,11 @@
       @media (max-height: 590px) {
         .shell { padding-top: max(30px, calc(env(safe-area-inset-top, 0px) + 5px)); }
         .lead, .tool span, .footer { display: none; }
-        .hero { grid-template-columns: minmax(190px, .8fr) minmax(290px, 1.2fr); column-gap: 20px; }
         .tools { margin-bottom: 6px; }
         .tool { min-height: 56px; }
+      }
+      @media (max-height: 590px) and (min-width: 600px) {
+        .hero { grid-template-columns: minmax(190px, .8fr) minmax(290px, 1.2fr); column-gap: 20px; }
         .actions { grid-template-columns: 1fr 1fr; }
       }
     </style>
