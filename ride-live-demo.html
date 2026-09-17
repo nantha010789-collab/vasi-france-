@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#020611" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Démo GPS en direct · VASI</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+    <style>
+      :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;background:#020611;--blue:#1557ff;--red:#ef3340;--ink:#020611;--panel:#08142b;--muted:#afbdd5;--line:rgba(255,255,255,.15)}
+      *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none}body{background:#020611}button,a{font:inherit}.app{position:relative;width:100%;height:100vh;height:100svh;height:100dvh;overflow:hidden}.map{position:absolute;inset:0 0 clamp(330px,43dvh,410px);background:#dce5ef}.leaflet-container{width:100%;height:100%;font:inherit}.leaflet-control-attribution{max-width:72vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px!important}.leaflet-control-zoom{margin-top:max(86px,calc(env(safe-area-inset-top,0px) + 68px))!important}.leaflet-control-zoom a{color:#06132b!important}.mapShade{position:absolute;z-index:500;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(2,6,17,.32),transparent 22%,transparent 78%,rgba(2,6,17,.18))}
+      .top{position:absolute;z-index:800;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(16px,calc(env(safe-area-inset-top,0px) + 9px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));pointer-events:none}.back,.brand,.demoBadge{pointer-events:auto;box-shadow:0 10px 28px #0005}.back{display:grid;place-items:center;width:46px;height:46px;border:1px solid #ffffff22;border-radius:50%;background:#050b19e8;color:#fff;text-decoration:none;font-size:25px;font-weight:900}.brand{display:flex;align-items:center;gap:9px;min-height:46px;padding:7px 12px;border:1px solid #ffffff20;border-radius:17px;background:#050b19e8}.brand img{display:block;width:76px;height:auto}.brand b{padding-left:8px;border-left:1px solid #ffffff30;font-size:11px;letter-spacing:.12em;text-transform:uppercase}.demoBadge{padding:8px 11px;border:1px solid #4e7fff;border-radius:999px;background:#0a2559e8;color:#dbe7ff;font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+      .routeSummary{position:absolute;z-index:700;top:max(82px,calc(env(safe-area-inset-top,0px) + 76px));left:max(14px,env(safe-area-inset-left,0px));padding:9px 12px;border:1px solid #ffffff20;border-radius:14px;background:#050b19e8;box-shadow:0 10px 28px #0004}.routeSummary b,.routeSummary span{display:block}.routeSummary b{font-size:14px}.routeSummary span{margin-top:2px;color:#c0cbe0;font-size:11px}.routeSummary[hidden]{display:none}
+      .sheet{position:absolute;z-index:900;left:0;right:0;bottom:0;min-height:330px;height:clamp(330px,43dvh,410px);padding:10px max(16px,env(safe-area-inset-right,0px)) max(12px,calc(env(safe-area-inset-bottom,0px) + 8px)) max(16px,env(safe-area-inset-left,0px));border-top:1px solid #ffffff1f;border-radius:28px 28px 0 0;background:linear-gradient(160deg,rgba(10,25,52,.985),rgba(2,6,17,.995));box-shadow:0 -22px 54px #0007;overflow:hidden}.grab{width:42px;height:4px;margin:0 auto 10px;border-radius:99px;background:#ffffff38}.phase{height:calc(100% - 14px);max-width:720px;margin:auto;display:grid;align-content:center;gap:12px}.phase[hidden]{display:none}.kicker{margin:0;color:#89aaff;font-size:11px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}.phase h1{margin:0;font-size:clamp(25px,6.8vw,34px);line-height:1.02;letter-spacing:-.035em}.copy{margin:0;color:var(--muted);font-size:13px;line-height:1.42}.offer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;padding:12px;border:1px solid #ffffff18;border-radius:17px;background:#050c1c}.offer strong,.offer span{display:block}.offer span{margin-top:3px;color:#aebad0;font-size:12px;line-height:1.3}.fare{align-self:center;font-size:20px;font-weight:950}.buttonRow{display:grid;grid-template-columns:.75fr 1.25fr;gap:8px}.primary,.secondary{min-height:48px;border-radius:14px;padding:11px 13px;font-weight:900}.primary{border:0;background:#fff;color:#061024}.secondary{border:1px solid #ffffff28;background:#14213d;color:#fff}.customerCheck{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #2f72ff66;border-radius:17px;background:#0a2453}.customerIcon{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:50%;background:#1557ff;font-size:21px}.customerCheck b,.customerCheck span{display:block}.customerCheck span{margin-top:3px;color:#b7c6df;font-size:12px}
+      .tracking{align-content:start;grid-template-rows:auto auto auto 1fr;gap:9px}.trackingHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.trackingHead h1{font-size:24px}.eta{flex:0 0 auto;text-align:right}.eta b,.eta span{display:block}.eta b{font-size:24px}.eta span{color:#aebad0;font-size:10px;text-transform:uppercase;letter-spacing:.09em}.driver{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:1px solid #ffffff18;border-radius:17px;background:#050c1c}.driverPhoto{display:grid;place-items:center;width:52px;height:52px;border-radius:15px;background:linear-gradient(145deg,#183c87,#091a3e);font-size:27px}.driver b,.driver span{display:block}.driver span{margin-top:3px;color:#aebad0;font-size:11px}.rating{font-weight:900}.progress{height:5px;border-radius:99px;background:#ffffff16;overflow:hidden}.progress span{display:block;width:8%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),#6ea1ff);transition:width .6s ease}.liveActions{align-self:end;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.liveActions button{min-height:45px;border:1px solid #ffffff1f;border-radius:14px;background:#101c35;color:#fff;font-size:12px;font-weight:850}.safeNote{margin:0;color:#7f8da7;font-size:10px;text-align:center}.carMarker{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;background:#07142be8;border:3px solid #fff;box-shadow:0 8px 22px #0008}.carMarker img{width:48px;height:34px;object-fit:contain}.pickupMarker{width:24px;height:24px;border:5px solid #fff;border-radius:50%;background:#1557ff;box-shadow:0 5px 16px #0008}.pulse{animation:pulse 1.7s infinite}@keyframes pulse{50%{box-shadow:0 0 0 10px #1557ff2b,0 5px 16px #0008}}
+      @media(min-width:780px) and (orientation:landscape){.map{inset:0 clamp(390px,38vw,470px) 0 0}.sheet{top:0;left:auto;width:clamp(390px,38vw,470px);height:100dvh;min-height:0;border-radius:28px 0 0 28px;padding-top:max(22px,calc(env(safe-area-inset-top,0px) + 14px));display:grid;align-items:center}.top{right:clamp(390px,38vw,470px)}.routeSummary{right:calc(clamp(390px,38vw,470px) + 14px)}.phase{width:100%}.tracking{align-content:center}.leaflet-control-attribution{max-width:46vw}}
+      @media(max-height:690px){.sheet{height:350px;min-height:350px;padding-top:7px}.map{bottom:350px}.grab{margin-bottom:7px}.phase{gap:8px}.phase h1{font-size:23px}.copy{font-size:12px}.offer{padding:9px}.primary,.secondary{min-height:43px;padding-block:8px}.driver{padding:8px}.liveActions button{min-height:40px}.trackingHead h1,.eta b{font-size:21px}}
+      @media(max-width:355px){.sheet{padding-inline:max(10px,env(safe-area-inset-left,0px)) max(10px,env(safe-area-inset-right,0px))}.brand b{display:none}.demoBadge{padding-inline:8px}.buttonRow{grid-template-columns:1fr}.phase{gap:7px}.copy{font-size:11px}.offer{padding:8px}.liveActions{gap:5px}.liveActions button{font-size:11px}}
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div id="map" class="map" aria-label="Carte GPS de démonstration"></div>
+      <div class="mapShade"></div>
+      <header class="top">
+        <a class="back" href="driver-preview.html" aria-label="Retour">‹</a>
+        <div class="brand"><img src="./assets/vasi-logo.png" alt="VASI" /><b>GPS en direct</b></div>
+        <span class="demoBadge">Démo</span>
+      </header>
+      <div id="routeSummary" class="routeSummary" hidden><b id="mapStatus">Chauffeur en route</b><span id="mapEta">Arrivée dans environ 6 min</span></div>
+
+      <section class="sheet">
+        <div class="grab" aria-hidden="true"></div>
+        <div id="driverPhase" class="phase">
+          <p class="kicker">Étape 1 · Application chauffeur</p>
+          <h1>Nouvelle course VASI</h1>
+          <p class="copy">Le chauffeur voit le prix, le départ et la destination avant d’accepter.</p>
+          <div class="offer"><div><strong>4 Rue Pierre Leroux</strong><span>→ 2 Avenue de Quincy · 11,6 km</span></div><div class="fare">11,48 €</div></div>
+          <div class="buttonRow"><button class="secondary" type="button" onclick="resetDemo()">Refuser</button><button id="acceptButton" class="primary" type="button" onclick="driverAccepts()">Le chauffeur accepte</button></div>
+        </div>
+
+        <div id="customerPhase" class="phase" hidden>
+          <p class="kicker">Étape 2 · Application client</p>
+          <h1>Chauffeur trouvé</h1>
+          <p class="copy">Le client vérifie le point de départ. Après confirmation, le suivi GPS du chauffeur apparaît.</p>
+          <div class="customerCheck"><span class="customerIcon">📍</span><div><b>Départ confirmé</b><span>4 Rue Pierre Leroux, Savigny-le-Temple</span></div></div>
+          <button id="confirmButton" class="primary" type="button" onclick="customerConfirms()">Le client confirme · Voir le GPS</button>
+          <button class="secondary" type="button" onclick="showPhase('driverPhase')">Retour à la demande</button>
+        </div>
+
+        <div id="trackingPhase" class="phase tracking" hidden>
+          <div class="trackingHead"><div><p class="kicker">Étape 3 · GPS client en direct</p><h1 id="trackingTitle">Votre chauffeur arrive</h1></div><div class="eta"><b id="eta">6 min</b><span>Arrivée</span></div></div>
+          <div class="driver"><span class="driverPhoto">🚘</span><div><b>Alex · VASI Go</b><span>Toyota Corolla blanche · AB-123-VS</span></div><span class="rating">★ 4,9</span></div>
+          <div class="progress" aria-label="Progression du chauffeur"><span id="progress"></span></div>
+          <div class="liveActions"><button type="button" onclick="demoMessage('Appel disponible pendant une vraie course.')">☎ Appeler</button><button type="button" onclick="demoMessage('Chat sécurisé disponible pendant une vraie course.')">✉ Message</button><button type="button" onclick="demoMessage('Les outils de sécurité VASI apparaissent ici.')">🛡 Sécurité</button></div>
+          <p id="demoNotice" class="safeNote">Position simulée · aucune course, donnée ou facturation réelle.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
+    <script>
+      const route = [
+        [48.6076, 2.6022], [48.6062, 2.5986], [48.6048, 2.5951],
+        [48.6030, 2.5918], [48.6012, 2.5885], [48.5995, 2.5854],
+        [48.5980, 2.5830], [48.5969, 2.5817],
+      ];
+      const pickup = route[route.length - 1];
+      const map = L.map("map", { zoomControl: true, attributionControl: true, minZoom: 3, maxZoom: 20, dragging: true }).setView([48.6022, 2.5916], 14);
+      let fallback = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxNativeZoom: 19, maxZoom: 20, keepBuffer: 3, attribution: "© OpenStreetMap contributors" }).addTo(map);
+      if (window.maplibregl?.supported?.() && typeof L.maplibreGL === "function") {
+        try {
+          const vector = L.maplibreGL({ style: "https://tiles.openfreemap.org/styles/liberty", attributionControl: false, interactive: false }).addTo(map);
+          vector.getMaplibreMap().once("load", () => { if (map.hasLayer(fallback)) map.removeLayer(fallback); requestAnimationFrame(() => vector.getMaplibreMap().resize()); });
+        } catch (_) {}
+      }
+      const routeLine = L.polyline(route, { color: "#1557ff", weight: 7, opacity: .92, lineCap: "round" }).addTo(map);
+      L.marker(pickup, { icon: L.divIcon({ className: "", html: '<div class="pickupMarker pulse"></div>', iconSize: [24,24], iconAnchor: [12,12] }), title: "Point de départ" }).addTo(map);
+      const carIcon = L.divIcon({ className: "", html: '<div class="carMarker"><img src="./assets/vehicles/go.webp" alt=""></div>', iconSize: [58,58], iconAnchor: [29,29] });
+      const car = L.marker(route[0], { icon: carIcon, title: "Chauffeur VASI" });
+      map.fitBounds(routeLine.getBounds(), { padding: [58,58] });
+      let animation = 0;
+
+      function showPhase(id) {
+        ["driverPhase", "customerPhase", "trackingPhase"].forEach((name) => document.getElementById(name).hidden = name !== id);
+      }
+      function driverAccepts() {
+        showPhase("customerPhase");
+        document.getElementById("routeSummary").hidden = true;
+      }
+      function customerConfirms() {
+        showPhase("trackingPhase");
+        document.getElementById("routeSummary").hidden = false;
+        if (!map.hasLayer(car)) car.addTo(map);
+        startTracking();
+      }
+      function startTracking() {
+        cancelAnimationFrame(animation);
+        const started = performance.now();
+        const duration = 22000;
+        const tick = (now) => {
+          const ratio = Math.min(1, (now - started) / duration);
+          const scaled = ratio * (route.length - 1);
+          const index = Math.min(route.length - 2, Math.floor(scaled));
+          const local = Math.min(1, scaled - index);
+          const a = route[index], b = route[index + 1];
+          car.setLatLng([a[0] + (b[0] - a[0]) * local, a[1] + (b[1] - a[1]) * local]);
+          const minutes = Math.max(1, Math.ceil(6 * (1 - ratio)));
+          document.getElementById("eta").textContent = ratio === 1 ? "Arrivé" : minutes + " min";
+          document.getElementById("mapEta").textContent = ratio === 1 ? "Le chauffeur est au point de départ" : "Arrivée dans environ " + minutes + " min";
+          document.getElementById("progress").style.width = Math.max(8, Math.round(ratio * 100)) + "%";
+          if (ratio < 1) animation = requestAnimationFrame(tick);
+          else {
+            document.getElementById("trackingTitle").textContent = "Votre chauffeur est arrivé";
+            document.getElementById("mapStatus").textContent = "Chauffeur arrivé";
+          }
+        };
+        animation = requestAnimationFrame(tick);
+      }
+      function resetDemo() {
+        cancelAnimationFrame(animation);
+        if (map.hasLayer(car)) map.removeLayer(car);
+        document.getElementById("routeSummary").hidden = true;
+        document.getElementById("eta").textContent = "6 min";
+        document.getElementById("mapEta").textContent = "Arrivée dans environ 6 min";
+        document.getElementById("mapStatus").textContent = "Chauffeur en route";
+        document.getElementById("trackingTitle").textContent = "Votre chauffeur arrive";
+        document.getElementById("progress").style.width = "8%";
+        car.setLatLng(route[0]);
+        showPhase("driverPhase");
+      }
+      function demoMessage(text) {
+        const notice = document.getElementById("demoNotice");
+        notice.textContent = text + " Démonstration uniquement.";
+        window.setTimeout(() => notice.textContent = "Position simulée · aucune course, donnée ou facturation réelle.", 2600);
+      }
+      window.setTimeout(() => map.invalidateSize(), 200);
+    </script>
+  </body>
+</html>
