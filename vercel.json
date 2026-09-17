@@ -132,6 +132,7 @@
     "api/admin-partners.js": { "includeFiles": "api/admin-partners.js" },
     "api/restaurant-admin.js": { "includeFiles": "api/restaurant-admin.js" },
     "api/support.js": { "includeFiles": "api/support.js" },
-    "api/pricing.js": { "includeFiles": "api/pricing.js" }
+    "api/pricing.js": { "includeFiles": "api/pricing.js" },
+    "api/health.js": { "includeFiles": "api/health.js" }
   }
 }

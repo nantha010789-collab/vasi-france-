@@ -12,6 +12,10 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+    />
     <style>
       :root {
         font-family:
@@ -114,8 +118,21 @@
         border: 0;
         background: #d8dde0;
       }
-      .map .leaflet-tile-pane {
-        filter: saturate(0.88) contrast(1.08) brightness(1.01);
+      .map .leaflet-tile-pane,
+      .map .leaflet-gl-layer,
+      .map .maplibregl-map,
+      .map .maplibregl-canvas-container {
+        width: 100%;
+        height: 100%;
+      }
+      .map .leaflet-tile-pane,
+      .map .maplibregl-canvas {
+        image-rendering: auto;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      .map .maplibregl-canvas {
+        outline: 0;
       }
       .map::after {
         position: absolute;
@@ -126,14 +143,16 @@
         background: linear-gradient(180deg, #0000002b 0, transparent 26%, transparent 64%, #00000038 100%);
       }
       .leaflet-control-attribution {
-        margin: 74px 12px 0 0 !important;
+        max-width: calc(100vw - 28px);
+        margin: 148px 12px 0 0 !important;
         padding: 3px 7px !important;
         border-radius: 8px;
         background: #ffffffdc !important;
         color: #3f4549 !important;
         font-size: 10px !important;
         line-height: 1.15 !important;
-        white-space: nowrap !important;
+        text-align: right;
+        white-space: normal !important;
       }
       .leaflet-control-attribution a {
         color: #265d91 !important;
@@ -1081,7 +1100,7 @@
       }
 
       .leaflet-control-attribution {
-        margin-top: max(74px, calc(env(safe-area-inset-top) + 62px)) !important;
+        margin-top: max(148px, calc(env(safe-area-inset-top) + 136px)) !important;
       }
 
       .panel {
@@ -1399,6 +1418,8 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
     <script src="./vasi-airports.js?v=1"></script>
@@ -1407,6 +1428,9 @@
         SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
         sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       let map,
+        mapBaseLayer,
+        mapFallbackLayer,
+        mapAttributionControl,
         pickupMarker,
         destMarker,
         routeLine,
@@ -2086,16 +2110,51 @@
         map = L.map("map", {
           zoomControl: false,
           attributionControl: false,
+          minZoom: 2,
+          maxZoom: 20,
         }).setView(fallback, 13);
-        L.control
+        mapAttributionControl = L.control
           .attribution({ position: "topright", prefix: false })
           .addTo(map);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
+        mapFallbackLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxNativeZoom: 19,
+          maxZoom: 20,
           updateWhenIdle: true,
           keepBuffer: 3,
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
+        if (
+          window.maplibregl?.supported?.() &&
+          typeof L.maplibreGL === "function"
+        ) {
+          try {
+            const vectorLayer = L.maplibreGL({
+              style: "https://tiles.openfreemap.org/styles/liberty",
+              attributionControl: false,
+              interactive: false,
+              padding: 0.12,
+            }).addTo(map);
+            const vectorMap = vectorLayer.getMaplibreMap();
+            vectorMap.once("load", () => {
+              mapBaseLayer = vectorLayer;
+              if (mapFallbackLayer && map.hasLayer(mapFallbackLayer)) {
+                map.removeLayer(mapFallbackLayer);
+              }
+              mapAttributionControl.addAttribution(
+                '<a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://www.openmaptiles.org" target="_blank" rel="noreferrer">© OpenMapTiles</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>',
+              );
+              requestAnimationFrame(() => vectorMap.resize());
+            });
+            vectorMap.on("error", () => {
+              if (mapBaseLayer === vectorLayer || vectorMap.loaded()) return;
+              if (map.hasLayer(vectorLayer)) map.removeLayer(vectorLayer);
+            });
+          } catch (error) {
+            mapBaseLayer = mapFallbackLayer;
+          }
+        } else {
+          mapBaseLayer = mapFallbackLayer;
+        }
         map.on("click", (e) => {
           if (activePinKind()) return;
           if (!pickup || mapSelectionKind === "pickup")

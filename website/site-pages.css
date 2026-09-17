@@ -61,6 +61,8 @@ details p { max-width: 760px; margin: -5px 0 24px; color: var(--muted); line-hei
 .legal-page .card a { color: var(--blue); font-weight: 750; }
 .legal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .legal-actions .button { min-height: 48px; }
+.investor-process { grid-template-columns: repeat(3,1fr); }
+.investor-legal { padding-top: 0; }
 .page-header-solid { position: absolute; }
 @media (max-width:900px) { .page-hero .shell,.page-heading { grid-template-columns:1fr;gap:28px; } .faq-layout { grid-template-columns:1fr;gap:38px; } .faq-nav { position:static;grid-template-columns:repeat(3,1fr); } .partner-detail { grid-template-columns:1fr;gap:28px; } }
 @media (max-width:760px) { .page-hero { min-height:470px;padding:130px 0 58px; } .page-section { padding-block:72px; } .audience-grid { grid-template-columns:1fr; } .audience-card { min-height:310px;padding:28px; } .contact-note,.support-banner { grid-template-columns:1fr;padding:34px 26px; } .contact-note .button,.support-banner .button { width:100%; } .faq-nav { grid-template-columns:1fr 1fr;padding:12px; } .process-strip { grid-template-columns:1fr; } .partner-detail { padding:46px 0; } .requirement-list { grid-template-columns:1fr; } .legal-page { padding-block:58px 76px; } .legal-page .card { padding:24px; } .legal-actions { display:grid; } .legal-actions .button { width:100%; } }

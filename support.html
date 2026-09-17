@@ -111,6 +111,17 @@
         min-height: 22px;
         color: #aaa;
       }
+      .ai-notice {
+        grid-column: 1/-1;
+        margin: 0;
+        padding: 12px 13px;
+        border: 1px solid #343434;
+        border-radius: 13px;
+        color: #bbb;
+        background: #151515;
+        line-height: 1.45;
+        font-size: 14px;
+      }
       @media (max-width: 580px) {
         .grid {
           grid-template-columns: 1fr;
@@ -132,7 +143,7 @@
         <div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
       </header>
       <section class="hero">
-        <p class="muted">24/7 help</p>
+        <p class="muted">VASI help</p>
         <h1>VASI Support</h1>
         <p class="muted">
           Tamil · English · French. For immediate danger call
@@ -166,6 +177,11 @@
             placeholder="Tell VASI what happened…"
             required
           ></textarea
+          ><p class="ai-notice">
+            An automated VASI AI assistant may draft the first reply. AI replies are
+            clearly labelled. Safety, payment, refund and fraud requests are queued
+            for human review. Never include a card number, password or login code.
+          </p
           ><button class="btn primary full" type="submit">
             Send to VASI Support
           </button>
@@ -229,7 +245,7 @@
             d.tickets
               .map(
                 (t) =>
-                  `<article class="ticket"><div class="ticket-head"><b>#${t.id.slice(0, 8).toUpperCase()} · ${esc(t.subject)}</b><span class="badge">${esc(t.status.replace("_", " "))}</span></div><p class="muted">${esc(t.category)} · ${new Date(t.created_at).toLocaleString()}</p><div>${esc(t.description)}</div>${t.ai_reply ? `<div class="reply"><b>VASI Assistant</b><br>${esc(t.ai_reply)}</div>` : ""}${t.human_reply ? `<div class="reply human"><b>VASI Human Support</b><br>${esc(t.human_reply)}</div>` : ""}</article>`,
+                  `<article class="ticket"><div class="ticket-head"><b>#${t.id.slice(0, 8).toUpperCase()} · ${esc(t.subject)}</b><span class="badge">${esc(t.status.replace("_", " "))}</span></div><p class="muted">${esc(t.category)} · ${new Date(t.created_at).toLocaleString()}</p><div>${esc(t.description)}</div>${t.ai_reply ? `<div class="reply"><b>VASI AI Assistant · Automated reply</b><br>${esc(t.ai_reply)}</div>` : ""}${t.human_reply ? `<div class="reply human"><b>VASI Human Support</b><br>${esc(t.human_reply)}</div>` : ""}</article>`,
               )
               .join("") || '<p class="muted">No support tickets yet.</p>';
         } catch (e) {

@@ -631,6 +631,59 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   assert.match(serviceWorker, /new Request\(url, \{ cache: "reload" \}\)/);
 });
 
+test("production-readiness surfaces disclose automation and use clear chauffeur naming", async () => {
+  const [auth, support, legal, webhook] = await Promise.all([
+    readFile("auth.html", "utf8"),
+    readFile("support.html", "utf8"),
+    readFile("legal.html", "utf8"),
+    readFile("supabase/functions/stripe-webhook/index.ts", "utf8"),
+  ]);
+  assert.match(auth, /<span>Chauffeur<\/span>/);
+  assert.doesNotMatch(auth, /<span>Ride<\/span>/);
+  assert.match(support, /VASI AI Assistant · Automated reply/);
+  assert.match(support, /Safety, payment, refund and fraud requests are queued/);
+  assert.match(legal, /Automated support/);
+  assert.match(legal, /Assistance automatisée/);
+  assert.match(legal, /retention schedules and deletion controls must be verified before commercial launch/);
+  assert.match(webhook, /charge\.refunded/);
+  assert.match(webhook, /refund\.updated/);
+  assert.match(webhook, /payout\.failed/);
+  assert.match(webhook, /disablePayoutsForAccount/);
+});
+
+test("health endpoint is minimal, read-only and not cached", async () => {
+  const { default: health } = await import(`../api/health.js?test=${Date.now()}`);
+  const getRes = mockRes();
+  health({ method: "GET" }, getRes);
+  assert.equal(getRes.statusCode, 200);
+  assert.equal(getRes.body.status, "ok");
+  assert.equal(getRes.body.service, "vasi-web");
+  assert.match(getRes.body.timestamp, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(getRes.headers["cache-control"], "no-store, max-age=0");
+
+  const postRes = mockRes();
+  health({ method: "POST" }, postRes);
+  assert.equal(postRes.statusCode, 405);
+  assert.equal(postRes.headers.allow, "GET");
+});
+
+test("public investor option is a non-binding enquiry, never an online share checkout", async () => {
+  const [home, contact, investors] = await Promise.all([
+    readFile("website/index.html", "utf8"),
+    readFile("website/contact.html", "utf8"),
+    readFile("website/investors.html", "utf8"),
+  ]);
+  assert.match(home, /href="\.\/investors\.html"/);
+  assert.match(contact, /Espace investisseurs/);
+  assert.match(investors, /Investissement minoritaire/);
+  assert.match(investors, /acquisition potentielle de 100 %/);
+  assert.match(investors, /lancement en Inde pourra être étudié/);
+  assert.match(investors, /manifestations d’intérêt non contraignantes/);
+  assert.match(investors, /Aucun investissement et aucun paiement ne peuvent être réalisés sur ce site/);
+  assert.match(investors, /Request the investor pack/);
+  assert.doesNotMatch(investors, /Buy shares|Acheter des actions|Stripe|checkout/i);
+});
+
 test("voice-call ICE configuration requires an authenticated VASI user", async () => {
   global.fetch = async () => response({ id: "user-1" });
   const { default: callConfig } = await import(`../api/call-config.js?test=${Date.now()}`);
@@ -852,11 +905,19 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.doesNotMatch(source, /pinAddressCard/);
 });
 
-test("ride map keeps road labels crisp and buffers production tiles", async () => {
+test("ride map uses crisp vector road labels with a buffered raster fallback", async () => {
   const source = await readFile("ride-flow.html", "utf8");
+  assert.match(source, /maplibre-gl@5\.24\.0/);
+  assert.match(source, /maplibre-gl-leaflet@0\.1\.4/);
+  assert.match(source, /https:\/\/tiles\.openfreemap\.org\/styles\/liberty/);
+  assert.match(source, /window\.maplibregl\?\.supported\?\.\(\)/);
+  assert.match(source, /vectorMap\.once\("load"/);
+  assert.match(source, /vectorMap\.resize\(\)/);
+  assert.match(source, /mapAttributionControl\.addAttribution/);
+  assert.match(source, /margin-top: max\(148px/);
   assert.match(source, /https:\/\/\{s\}\.tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
-  assert.match(source, /\.map \.leaflet-tile-pane\s*\{[\s\S]*?saturate\(0\.88\)[\s\S]*?contrast\(1\.08\)/);
-  assert.doesNotMatch(source, /grayscale\(/);
+  assert.match(source, /\.map \.maplibregl-canvas\s*\{[\s\S]*?outline: 0/);
+  assert.doesNotMatch(source, /\.map \.leaflet-tile-pane\s*\{[^}]*filter:/);
   assert.match(source, /updateWhenIdle: true/);
   assert.match(source, /keepBuffer: 3/);
 });

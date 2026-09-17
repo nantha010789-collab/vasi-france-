@@ -31,6 +31,7 @@
       "Deliver.": "Faites livrer.",
       "One VASI app for rides, food and delivery.": "VASI pour vos trajets, Eats et livraisons.",
       "Ride": "Trajet",
+      "Chauffeur": "Chauffeur",
       "Fast city trips": "Trajets en ville",
       "Eats": "Eats",
       "Food delivery": "Livraison de plats",
@@ -371,7 +372,7 @@
       "Continue with email": "Continuer avec mon e-mail",
       "New restaurant? Join VASI →": "Nouveau restaurant ? Rejoignez VASI →",
       "New partner? Register with VASI →": "Nouveau partenaire ? Inscrivez-vous sur VASI →",
-      "Ride = passenger trips. Courier = delivery. Restaurant = food partner.": "Trajet = transport de passagers. Livreur = livraison. Restaurant = partenaire de restauration.",
+      "Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.": "Chauffeur = transport de passagers. Livreur = livraison. Restaurant = partenaire de restauration.",
       "Login help:": "Aide à la connexion :",
       "Resend code in 90s": "Renvoyer le code dans 90 s",
       "Phone": "Téléphone"
@@ -419,7 +420,7 @@
       "Continue with email": "மின்னஞ்சலுடன் தொடரவும்",
       "New restaurant? Join VASI →": "புதிய உணவகமா? VASI-ல் இணையுங்கள் →",
       "New partner? Register with VASI →": "புதிய பார்ட்னரா? VASI-ல் பதிவு செய்யுங்கள் →",
-      "Ride = passenger trips. Courier = delivery. Restaurant = food partner.": "Ride = பயணிகள் பயணம். Courier = டெலிவரி. Restaurant = உணவு பார்ட்னர்.",
+      "Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.": "Chauffeur = பயணிகள் போக்குவரத்து. Courier = டெலிவரி. Restaurant = உணவகப் பார்ட்னர்.",
       "Login help:": "உள்நுழைவு உதவி:",
       "Phone": "தொலைபேசி"
     }
@@ -942,7 +943,7 @@
     "Resend code in 90s": "Renvoyer le code dans 90 s",
     "SMS delivery can take up to 2 minutes on some mobile networks. Resending cancels every earlier code, so after a resend use only the code from the newest SMS.": "La réception du SMS peut prendre jusqu’à 2 minutes sur certains réseaux. Un nouvel envoi annule tous les codes précédents : utilisez uniquement le code du SMS le plus récent.",
     "New partner? Register with VASI →": "Nouveau partenaire ? Inscrivez-vous sur VASI →",
-    "Ride = passenger trips. Courier = delivery. Restaurant = food partner.": "Trajet = transport de passagers. Livreur = livraison. Restaurant = partenaire de restauration.",
+    "Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.": "Chauffeur = transport de passagers. Livreur = livraison. Restaurant = partenaire de restauration.",
     "Login help:": "Aide à la connexion :",
     "Wait for the newest SMS and enter only its 6-digit code. Earlier codes stop working after a resend.": "Attendez le SMS le plus récent et saisissez uniquement son code à 6 chiffres. Les codes précédents ne fonctionnent plus après un nouvel envoi.",
     "Enter a valid mobile number, for example": "Saisissez un numéro de mobile valide, par exemple",
