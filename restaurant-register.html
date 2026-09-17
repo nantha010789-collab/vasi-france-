@@ -44,26 +44,27 @@
         const fallback = document.getElementById("fallback");
         try {
           const client = supabase.createClient(URL, KEY, {
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: localStorage },
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: localStorage, storageKey: "vasi-partner-auth" },
           });
+          const partnerRole = VasiAccountRole.scoped("partner");
           const { data: { session } } = await client.auth.getSession();
           if (!session) {
             location.replace("restaurant-register-form.html" + location.search + location.hash);
             return;
           }
-          const activeRole = VasiAccountRole.active();
+          const activeRole = partnerRole.active();
           if (activeRole && activeRole !== "restaurant") {
-            VasiAccountRole.require("restaurant", session);
+            partnerRole.require("restaurant", session);
             return;
           }
           const { error: roleError } = await client.rpc("vasi_claim_account_role", { p_role: "restaurant" });
           if (roleError) {
             await client.auth.signOut({ scope: "local" });
-            VasiAccountRole.clear();
+            partnerRole.clear();
             location.replace("auth.html?role=restaurant&surface=partner");
             return;
           }
-          VasiAccountRole.remember("restaurant");
+          partnerRole.remember("restaurant");
           const response = await fetch("/api/restaurant-partner", {
             headers: { Authorization: "Bearer " + session.access_token },
             cache: "no-store",

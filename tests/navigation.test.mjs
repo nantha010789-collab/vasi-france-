@@ -69,6 +69,7 @@ test("home and redirect-only pages do not show a misleading return control", () 
     "app-easy.html",
     "app-fixed.html",
     "driver-home.html",
+    "partner.html",
     "partner-register.html",
     "vasi-admin.html",
     "vasi-app.html",
@@ -109,6 +110,8 @@ test("the shared return control is valid JavaScript and has safe navigation rule
   assert.match(source, /"admin-login\.html": "index\.html"/);
   assert.match(source, /"driver\.html": "driver-home\.html"/);
   assert.match(source, /"delivery-driver\.html": "driver-home\.html"/);
+  assert.match(source, /"restaurant-dashboard\.html": "partner\.html"/);
+  assert.match(source, /"restaurant-register-form\.html": "partner\.html"/);
   assert.match(source, /min-width: 44px/);
   assert.match(source, /aria-label/);
 });

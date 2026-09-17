@@ -1042,7 +1042,8 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
     readFile("auth.html", "utf8"),
   ]);
   assert.match(register, /Créer mon compte restaurant/);
-  assert.match(register, /localStorage\.setItem\(["']vasi_role["'],\s*["']restaurant["']\)/);
+  assert.match(register, /partnerRole\.setIntent\('restaurant'\)/);
+  assert.match(register, /storageKey:'vasi-partner-auth'/);
   assert.match(register, /emailRedirectTo:\s*new URL\(["']restaurant-register\.html["']/);
   assert.match(register, /shouldCreateUser:\s*true/);
   assert.match(register, /Continuer avec mon numéro de téléphone/);
@@ -1051,8 +1052,9 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(register, /id="restaurantPanel" class="panel hidden"/);
   assert.match(auth, /const requestedMethod = searchParams\.get\("method"\)/);
   assert.match(auth, /const usesPhone = \(\) => authMethod === "phone"/);
-  assert.match(auth, /localStorage\.setItem\("vasi_role", role\)/);
-  assert.match(dashboard, /localStorage\.setItem\('vasi_role','restaurant'\)/);
+  assert.match(auth, /accountRole\.setIntent\(role\)/);
+  assert.match(auth, /storageKey: "vasi-partner-auth"/);
+  assert.match(dashboard, /partnerRole\.setIntent\('restaurant'\)/);
   assert.match(dashboard, /auth\.html\?role=restaurant/);
   assert.doesNotMatch(
     dashboard,
@@ -1694,7 +1696,9 @@ test("customer, driver, courier and restaurant sessions stay separated", async (
   assert.match(courier, /VasiAccountRole\.require\("courier"/);
   assert.match(restaurantGate, /vasi_claim_account_role/);
   assert.match(restaurantForm, /vasi_claim_account_role/);
-  assert.match(restaurantDashboard, /VasiAccountRole\.require\("restaurant"/);
+  assert.match(restaurantDashboard, /partnerRole\.require\("restaurant"/);
+  assert.match(restaurantDashboard, /storageKey:'vasi-partner-auth'/);
+  assert.match(roleGuard, /vasi_partner_session_role/);
   assert.match(partner, /Créez un compte séparé/);
   assert.doesNotMatch(partner, /Créez un seul compte/);
   assert.match(migration, /create table if not exists public\.account_roles/);

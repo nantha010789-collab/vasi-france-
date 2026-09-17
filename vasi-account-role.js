@@ -14,41 +14,65 @@
     return roles.has(role) ? role : "";
   }
 
-  function active() {
-    return clean(localStorage.getItem("vasi_session_role"));
-  }
-
-  function remember(role) {
-    const safeRole = clean(role);
-    if (!safeRole) return "";
-    localStorage.setItem("vasi_session_role", safeRole);
-    localStorage.setItem("vasi_role", safeRole);
-    return safeRole;
-  }
-
-  function clear() {
-    localStorage.removeItem("vasi_session_role");
-    localStorage.removeItem("vasi_role");
-  }
-
   function destination(role) {
     return destinations[clean(role)] || "index.html";
   }
 
-  function require(role, session) {
-    const requiredRole = clean(role);
-    if (!session || !requiredRole) return false;
-    const signedInRole = active();
-    if (!signedInRole || signedInRole !== requiredRole) {
-      location.replace(
-        signedInRole
-          ? destination(signedInRole)
-          : "auth.html?role=" + encodeURIComponent(requiredRole),
-      );
-      return false;
+  function createScope(name) {
+    const partner = name === "partner";
+    const sessionKey = partner
+      ? "vasi_partner_session_role"
+      : "vasi_session_role";
+    const intentKey = partner ? "vasi_partner_role" : "vasi_role";
+
+    function active() {
+      return clean(localStorage.getItem(sessionKey));
     }
-    return true;
+
+    function intent() {
+      return clean(localStorage.getItem(intentKey));
+    }
+
+    function setIntent(role) {
+      const safeRole = clean(role);
+      if (!safeRole) return "";
+      localStorage.setItem(intentKey, safeRole);
+      return safeRole;
+    }
+
+    function remember(role) {
+      const safeRole = setIntent(role);
+      if (!safeRole) return "";
+      localStorage.setItem(sessionKey, safeRole);
+      return safeRole;
+    }
+
+    function clear() {
+      localStorage.removeItem(sessionKey);
+      localStorage.removeItem(intentKey);
+    }
+
+    function require(role, session) {
+      const requiredRole = clean(role);
+      if (!session || !requiredRole) return false;
+      const signedInRole = active();
+      if (!signedInRole || signedInRole !== requiredRole) {
+        location.replace(
+          signedInRole
+            ? destination(signedInRole)
+            : "auth.html?role=" + encodeURIComponent(requiredRole),
+        );
+        return false;
+      }
+      return true;
+    }
+
+    return { active, intent, setIntent, remember, clear, destination, require };
   }
 
-  window.VasiAccountRole = { active, remember, clear, destination, require };
+  const defaultScope = createScope("default");
+  window.VasiAccountRole = {
+    ...defaultScope,
+    scoped: createScope,
+  };
 })();

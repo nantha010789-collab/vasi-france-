@@ -43,10 +43,36 @@ test("registered restaurant entry resumes the dashboard instead of onboarding", 
   assert.match(read("restaurant-orders.html"), /partner-manifest\.webmanifest/);
 });
 
+test("restaurant owners have a dedicated entry and isolated login session", () => {
+  const partnerEntry = read("partner.html");
+  const routes = read("vercel.json");
+  const accountRole = read("vasi-account-role.js");
+  const auth = read("auth.html");
+
+  assert.match(routes, /"source": "\/partner", "destination": "\/partner\.html"/);
+  assert.match(partnerEntry, /VASI Partner · Restaurant/);
+  assert.match(partnerEntry, /Se connecter à mon restaurant/);
+  assert.match(partnerEntry, /storageKey: "vasi-partner-auth"/);
+  assert.doesNotMatch(partnerEntry, /admin-login|driver-home|ride-flow/);
+  assert.match(accountRole, /vasi_partner_session_role/);
+  assert.match(accountRole, /scoped: createScope/);
+  assert.match(auth, /storageKey: "vasi-partner-auth"/);
+
+  for (const file of [
+    "restaurant-register.html",
+    "restaurant-register-form.html",
+    "restaurant-dashboard.html",
+    "restaurant-orders.html",
+  ]) {
+    assert.match(read(file), /vasi-partner-auth/, file);
+  }
+});
+
 test("offline shell includes every app manifest and shared installer", () => {
   const serviceWorker = read("sw.js");
   for (const asset of [
     "driver-home.html",
+    "partner.html",
     "driver-manifest.webmanifest",
     "partner-manifest.webmanifest",
     "vasi-pwa.js",
