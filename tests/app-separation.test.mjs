@@ -166,9 +166,11 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(demo, /--sheet-height:clamp\(184px,23dvh,218px\)/);
   assert.match(demo, /routeOutline=L\.polyline/);
   assert.match(demo, /map\.panBy\(\[0,Math\.round\(sheetHeight\(\)\*\.16\)\]/);
+  assert.match(demo, /fetch\("\/api\/route-preview"/);
+  assert.match(demo, /result\.geometry\.coordinates\.map/);
   assert.match(demo, /La navigation démarre dès l’acceptation/);
   assert.doesNotMatch(demo, /customerConfirms|customerPhase/);
-  assert.doesNotMatch(demo, /supabase|\/api\//i);
+  assert.doesNotMatch(demo, /supabase/i);
   assert.match(driver, /id="driverNavigationMap"/);
   assert.match(driver, /function updateDriverNavigation\(/);
   assert.match(driver, /Recalcul automatique avec votre position GPS/);
