@@ -160,6 +160,8 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(demo, /function followDriver\(position,force=false\)/);
   assert.match(demo, /map\.panTo\(position/);
   assert.match(demo, /zIndexOffset:1200/);
+  assert.match(demo, /\.map\{position:absolute;inset:0;background:/);
+  assert.match(demo, /backdrop-filter:blur\(18px\)/);
   assert.match(demo, /La navigation démarre dès l’acceptation/);
   assert.doesNotMatch(demo, /customerConfirms|customerPhase/);
   assert.doesNotMatch(demo, /supabase|\/api\//i);
