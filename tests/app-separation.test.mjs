@@ -146,6 +146,7 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   const preview = read("driver-preview.html");
   const demo = read("ride-live-demo.html");
   const driver = read("driver.html");
+  const routeApi = read("api/route-preview.js");
 
   assert.match(preview, /location\.href = "ride-live-demo\.html"/);
   assert.match(demo, /id="driverPhase"/);
@@ -183,6 +184,15 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(driver, /if \(navigationProvider\(\) === "vasi"\) focusCurrentNavigation\(\)/);
   assert.match(driver, /openExternalNavigation\('google'\)/);
   assert.match(driver, /openExternalNavigation\('waze'\)/);
+  assert.match(driver, /navigator\.geolocation\.watchPosition/);
+  assert.match(driver, /syncDriverLocation\(pos\)/);
+  assert.match(driver, /classList\.add\("is-fullscreen"\)/);
+  assert.match(driver, /updateDriverNavigation\(lastPos, true\)/);
+  assert.match(driver, /function updateTurnInstruction\(steps, target\)/);
+  assert.match(driver, /SpeechSynthesisUtterance/);
+  assert.match(routeApi, /steps=true/);
+  assert.match(routeApi, /distance_m:/);
+  assert.match(routeApi, /modifier:/);
   assert.match(demo, /openDemoNavigation\('google','pickup'\)/);
   assert.match(demo, /openDemoNavigation\('waze','destination'\)/);
 });

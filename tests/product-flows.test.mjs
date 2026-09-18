@@ -868,6 +868,43 @@ test("ride map reverse geocodes the fixed centre pin after the map moves", async
   assert.equal(res.body.result.display_name, "6 Rue Pierre Leroux, 77176 Savigny-le-Temple, France");
 });
 
+test("driver navigation returns road-following turn instructions", async () => {
+  global.fetch = async (url) => {
+    assert.match(String(url), /route\/v1\/driving/);
+    assert.match(String(url), /steps=true/);
+    return response({
+      routes: [{
+        distance: 2340,
+        duration: 420,
+        geometry: { type: "LineString", coordinates: [[2.58, 48.59], [2.61, 48.62]] },
+        legs: [{ steps: [{
+          distance: 380,
+          duration: 75,
+          name: "Avenue de Quincy",
+          maneuver: { type: "turn", modifier: "right", location: [2.59, 48.60] },
+        }] }],
+      }],
+    });
+  };
+  const { default: routePreview } = await import(`../api/route-preview.js?navigation=${Date.now()}`);
+  const res = mockRes();
+  await routePreview({
+    method: "POST",
+    headers: {},
+    body: { points: [{ lat: 48.59, lng: 2.58 }, { lat: 48.62, lng: 2.61 }] },
+  }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.distance_km, 2.34);
+  assert.deepEqual(res.body.steps[0], {
+    distance_m: 380,
+    duration_s: 75,
+    name: "Avenue de Quincy",
+    type: "turn",
+    modifier: "right",
+    location: [2.59, 48.60],
+  });
+});
+
 test("ride map uses debounced Google suggestions without destination pin confirmation", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /schedulePlaceSuggestions/);
