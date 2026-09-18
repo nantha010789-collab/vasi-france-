@@ -202,6 +202,15 @@
       .driverMapCar { display:grid; place-items:center; width:43px; height:43px; border:3px solid #fff; border-radius:50%; background:#07142b; box-shadow:0 6px 18px #0008; font-size:21px; }
       .navExternal { position:absolute; z-index:650; right:9px; bottom:9px; display:flex; gap:6px; }
       .navExternal button { min-height:38px; margin:0; padding:9px 11px; border:1px solid #ffffff30; border-radius:12px; background:#07142bee; color:#fff; font:inherit; font-size:11px; font-weight:800; }
+      .driverNavigation.is-fullscreen { position:fixed; inset:0; z-index:2000; width:100vw; height:100dvh; margin:0; border:0; border-radius:0; }
+      .driverNavigation.is-fullscreen .navOverlay { top:max(14px,env(safe-area-inset-top)); left:14px; right:14px; padding:14px 15px; border-radius:18px; }
+      .driverNavigation.is-fullscreen .navOverlay b { font-size:17px; line-height:1.2; }
+      .driverNavigation.is-fullscreen .navOverlay span { font-size:13px; }
+      .driverNavigation.is-fullscreen .navExternal { right:14px; bottom:max(18px,env(safe-area-inset-bottom)); left:14px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .driverNavigation.is-fullscreen .navExternal button { min-height:50px; font-size:13px; background:#07142bf5; }
+      .navClose { display:none; }
+      .driverNavigation.is-fullscreen .navClose { display:block; position:absolute; z-index:760; top:max(92px,calc(env(safe-area-inset-top) + 78px)); left:14px; width:48px; height:48px; border:1px solid #ffffff30; border-radius:50%; background:#07142bf2; color:#fff; font-size:25px; font-weight:900; }
+      body.vasi-navigation-open { overflow:hidden; }
       .navPreference { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; border:1px solid #333; border-radius:14px; background:#181818; }
       .navPreference b,.navPreference span { display:block; }
       .navPreference span { margin-top:3px; color:#999; font-size:12px; line-height:1.35; }
@@ -314,7 +323,11 @@
         driverMapRoute = null,
         driverMapCar = null,
         driverMapTarget = null,
-        driverMapLastRouteAt = 0;
+        driverMapLastRouteAt = 0,
+        driverMapExpanded = false,
+        lastPresenceAt = 0,
+        lastPresencePoint = null,
+        lastSpokenInstruction = "";
       function navigationProvider() {
         const saved = localStorage.getItem(NAVIGATION_PREFERENCE_KEY);
         return saved === "google" || saved === "waze" ? saved : "vasi";
@@ -469,6 +482,23 @@
         const { error } = await client.rpc("vasi_driver_set_online", args);
         if (error) throw error;
       }
+      function locationDistanceMeters(a, b) {
+        if (!a || !b) return Infinity;
+        const rad = (value) => (Number(value) * Math.PI) / 180;
+        const dLat = rad(Number(b.latitude) - Number(a.latitude));
+        const dLng = rad(Number(b.longitude) - Number(a.longitude));
+        const lat1 = rad(a.latitude), lat2 = rad(b.latitude);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+      }
+      async function syncDriverLocation(pos, force = false) {
+        const point = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        const moved = locationDistanceMeters(lastPresencePoint, point);
+        if (!force && Date.now() - lastPresenceAt < 4000 && moved < 10) return;
+        await setPresence(gpsMode === "online", pos);
+        lastPresenceAt = Date.now();
+        lastPresencePoint = point;
+      }
       function stopGps() {
         if (watch !== null) navigator.geolocation.clearWatch(watch);
         watch = null;
@@ -486,7 +516,7 @@
           async (p) => {
             lastPos = p;
             try {
-              await setPresence(mode === "online", p);
+              await syncDriverLocation(p, true);
               if (mode === "online") online = true;
               render();
               updateDriverNavigation(p, true);
@@ -502,7 +532,7 @@
             lastPos = pos;
             document.getElementById("gps").textContent = "GPS live";
             try {
-              await setPresence(gpsMode === "online", pos);
+              await syncDriverLocation(pos);
             } catch (e) {}
             updateDriverNavigation(pos);
           },
@@ -660,6 +690,7 @@
           startGps("trip");
           render();
           showActiveRide();
+          if (navigationProvider() === "vasi") launchCurrentNavigation();
         } else render();
       }
       function esc(s) {
@@ -732,6 +763,8 @@
         driverMapCar = null;
         driverMapTarget = null;
         driverMapLastRouteAt = 0;
+        driverMapExpanded = false;
+        document.body.classList.remove("vasi-navigation-open");
       }
       function initDriverNavigation() {
         const container = document.getElementById("driverNavigationMap");
@@ -777,8 +810,9 @@
       }
       async function updateDriverNavigation(position, force = false) {
         const summary = document.getElementById("driverNavigationSummary");
+        const road = document.getElementById("driverNavigationRoad");
         const metric = document.getElementById("driverNavigationMetric");
-        if (!driverMap || !activeRide || !summary || !metric) return;
+        if (!driverMap || !activeRide || !summary || !road || !metric) return;
         const target = navigationTarget();
         if (
           !target ||
@@ -786,11 +820,13 @@
           !Number.isFinite(target.lng)
         ) {
           summary.textContent = "Coordonnées de destination indisponibles";
+          road.textContent = "Vérifiez l’adresse de la course";
           metric.textContent = "—";
           return;
         }
         const targetPoint = [target.lat, target.lng];
-        summary.textContent = target.label + " · " + (target.address || "");
+        summary.textContent = target.label;
+        road.textContent = target.address || "";
         const targetIcon = L.divIcon({
           className: "",
           html: `<div class="driverMapPin ${activeRide.status === "in_progress" ? "destination" : ""}"></div>`,
@@ -863,6 +899,7 @@
           metric.textContent =
             (Number.isFinite(minutes) ? Math.max(1, Math.ceil(minutes)) + " min" : "—") +
             (Number.isFinite(km) ? " · " + km.toFixed(1) + " km" : "");
+          updateTurnInstruction(result.steps, target);
           driverMap.fitBounds(driverMapRoute.getBounds(), {
             paddingTopLeft: [35, 72],
             paddingBottomRight: [35, 44],
@@ -871,6 +908,42 @@
           metric.textContent = "Itinéraire à actualiser";
           const bounds = L.latLngBounds([source, targetPoint]);
           driverMap.fitBounds(bounds, { padding: [42, 42] });
+        }
+      }
+      function turnInstruction(step) {
+        const type = String(step?.type || "continue");
+        const modifier = String(step?.modifier || "straight");
+        if (type === "arrive") return "Vous êtes arrivé";
+        if (type === "roundabout" || type === "rotary") return "Prenez le rond-point";
+        if (modifier.includes("left")) return modifier.includes("slight") ? "Restez légèrement à gauche" : "Tournez à gauche";
+        if (modifier.includes("right")) return modifier.includes("slight") ? "Restez légèrement à droite" : "Tournez à droite";
+        if (modifier === "uturn") return "Faites demi-tour";
+        return type === "depart" ? "Démarrez sur l’itinéraire" : "Continuez tout droit";
+      }
+      function updateTurnInstruction(steps, target) {
+        const summary = document.getElementById("driverNavigationSummary");
+        const road = document.getElementById("driverNavigationRoad");
+        if (!summary || !road) return;
+        const list = Array.isArray(steps) ? steps : [];
+        const step = list.find((item) => item.type !== "depart" && Number(item.distance_m) > 8) || list.find((item) => Number(item.distance_m) > 8) || list[0];
+        if (!step) {
+          summary.textContent = target.label;
+          road.textContent = target.address || "";
+          return;
+        }
+        const instruction = turnInstruction(step);
+        summary.textContent = instruction + (Number(step.distance_m) > 0 ? " · " + Math.round(step.distance_m) + " m" : "");
+        road.textContent = step.name || target.address || "Itinéraire VASI";
+        const spokenKey = instruction + "|" + String(step.name || "");
+        if (driverMapExpanded && spokenKey !== lastSpokenInstruction && "speechSynthesis" in window) {
+          lastSpokenInstruction = spokenKey;
+          try {
+            speechSynthesis.cancel();
+            const voice = new SpeechSynthesisUtterance(instruction + (step.name ? " sur " + step.name : ""));
+            voice.lang = "fr-FR";
+            voice.rate = 1;
+            speechSynthesis.speak(voice);
+          } catch (_) {}
         }
       }
       function openCurrentNavigation() {
@@ -884,9 +957,27 @@
       function focusCurrentNavigation() {
         const map = document.getElementById("driverNavigationMap");
         if (!map) return;
-        map.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => driverMap?.invalidateSize(), 180);
-        updateDriverNavigation(true);
+        expandDriverNavigation();
+      }
+      function expandDriverNavigation() {
+        const shell = document.querySelector(".driverNavigation");
+        if (!shell) return;
+        shell.classList.add("is-fullscreen");
+        document.body.classList.add("vasi-navigation-open");
+        driverMapExpanded = true;
+        setTimeout(() => {
+          driverMap?.invalidateSize();
+          updateDriverNavigation(lastPos, true);
+        }, 180);
+      }
+      function collapseDriverNavigation() {
+        const shell = document.querySelector(".driverNavigation");
+        if (!shell) return;
+        shell.classList.remove("is-fullscreen");
+        document.body.classList.remove("vasi-navigation-open");
+        driverMapExpanded = false;
+        if ("speechSynthesis" in window) speechSynthesis.cancel();
+        setTimeout(() => driverMap?.invalidateSize(), 120);
       }
       function launchCurrentNavigation() {
         const target = navigationTarget();
@@ -969,7 +1060,7 @@
           : "";
         const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span>Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div class="navExternal" aria-label="Navigation externe facultative"><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><button class="navClose" type="button" onclick="collapseDriverNavigation()" aria-label="Réduire la navigation">‹</button><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span id="driverNavigationRoad">Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div class="navExternal" aria-label="Options de navigation"><button type="button" onclick="expandDriverNavigation()">Plein écran</button><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',

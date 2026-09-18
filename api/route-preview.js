@@ -187,7 +187,7 @@ export default async function handler(req, res) {
       .map((point) => `${point.lng},${point.lat}`)
       .join(";");
     const data = await getJson(
-      `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`,
+      `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`,
       "Route service",
     );
     const route = data?.routes?.[0];
@@ -201,6 +201,18 @@ export default async function handler(req, res) {
       distance_km: route.distance / 1000,
       duration_min: Math.ceil(route.duration / 60),
       geometry: route.geometry,
+      steps: (route.legs || []).flatMap((leg) =>
+        (leg.steps || []).slice(0, 24).map((step) => ({
+          distance_m: Math.round(Number(step.distance) || 0),
+          duration_s: Math.round(Number(step.duration) || 0),
+          name: String(step.name || "").slice(0, 160),
+          type: String(step.maneuver?.type || "continue").slice(0, 40),
+          modifier: String(step.maneuver?.modifier || "straight").slice(0, 40),
+          location: Array.isArray(step.maneuver?.location)
+            ? step.maneuver.location.slice(0, 2).map(Number)
+            : null,
+        })),
+      ),
     });
   } catch (error) {
     return res
