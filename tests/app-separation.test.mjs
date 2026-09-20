@@ -159,7 +159,7 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(demo, /function startTrip\(\)/);
   assert.match(demo, /function completeTrip\(\)/);
   assert.match(demo, /function followDriver\(position,force=false\)/);
-  assert.match(demo, /navigationZoom=window\.innerWidth<520\?16\.75:17\.25/);
+  assert.match(demo, /navigationZoom=window\.innerWidth<520\?17:17\.5/);
   assert.match(demo, /map\.panTo\(position/);
   assert.match(demo, /zIndexOffset:1200/);
   assert.match(demo, /\.map\{position:absolute;inset:0;background:/);
@@ -170,6 +170,9 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(demo, /map\.panBy\(\[0,Math\.round\(Math\.min\(150,sheetHeight\(\)\*\.24\)\)\]/);
   assert.match(demo, /fetch\("\/api\/route-preview"/);
   assert.match(demo, /result\.geometry\.coordinates\.map/);
+  assert.match(demo, /steps:Array\.isArray\(result\.steps\)\?result\.steps:\[\]/);
+  assert.match(demo, /function navigationCue\(/);
+  assert.match(demo, /function recenterDriver\(\)/);
   assert.match(demo, /La navigation démarre dès l’acceptation/);
   assert.doesNotMatch(demo, /customerConfirms|customerPhase/);
   assert.doesNotMatch(demo, /supabase/i);
