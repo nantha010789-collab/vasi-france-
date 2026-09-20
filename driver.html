@@ -775,6 +775,8 @@
           attributionControl: true,
           minZoom: 3,
           maxZoom: 20,
+          zoomSnap: 0.25,
+          zoomDelta: 0.5,
         });
         const fallback = L.tileLayer(
           "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -900,10 +902,16 @@
             (Number.isFinite(minutes) ? Math.max(1, Math.ceil(minutes)) + " min" : "—") +
             (Number.isFinite(km) ? " · " + km.toFixed(1) + " km" : "");
           updateTurnInstruction(result.steps, target);
-          driverMap.fitBounds(driverMapRoute.getBounds(), {
-            paddingTopLeft: [35, 72],
-            paddingBottomRight: [35, 44],
-          });
+          if (driverMapExpanded) {
+            driverMap.setView(source, window.innerWidth < 520 ? 16.75 : 17.25, { animate: false });
+            driverMap.panBy([0, Math.round(Math.min(150, window.innerHeight * 0.13))], { animate: false });
+          } else {
+            driverMap.fitBounds(driverMapRoute.getBounds(), {
+              paddingTopLeft: [35, 72],
+              paddingBottomRight: [35, 44],
+              maxZoom: 16.25,
+            });
+          }
         } catch (_) {
           metric.textContent = "Itinéraire à actualiser";
           const bounds = L.latLngBounds([source, targetPoint]);
