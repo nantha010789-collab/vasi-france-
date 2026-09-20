@@ -89,8 +89,7 @@
       const tripRoute=[[48.5969,2.5817],[48.5981,2.5771],[48.6010,2.5718],[48.6054,2.5670],[48.6100,2.5619],[48.6148,2.5584],[48.6191,2.5576]];
       const pickup=pickupRoute[pickupRoute.length-1],destination=tripRoute[tripRoute.length-1];
       const map=L.map("map",{zoomControl:true,attributionControl:true,minZoom:3,maxZoom:20,zoomSnap:.25,zoomDelta:.5,dragging:true}).setView([48.6022,2.5916],14);
-      let fallback=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxNativeZoom:19,maxZoom:20,keepBuffer:3,attribution:"© OpenStreetMap contributors"}).addTo(map);
-      if(window.maplibregl?.supported?.()&&typeof L.maplibreGL==="function"){try{const vector=L.maplibreGL({style:"https://tiles.openfreemap.org/styles/liberty",attributionControl:false,interactive:false}).addTo(map);vector.getMaplibreMap().once("load",()=>{if(map.hasLayer(fallback))map.removeLayer(fallback);requestAnimationFrame(()=>vector.getMaplibreMap().resize())})}catch(_){}}
+      const streetTiles=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxNativeZoom:19,maxZoom:20,keepBuffer:4,detectRetina:true,updateWhenIdle:false,updateWhenZooming:true,attribution:"© OpenStreetMap contributors"}).addTo(map);
       const carIcon=L.divIcon({className:"",html:'<div class="carMarker"><img src="./assets/vehicles/go.webp" alt=""></div>',iconSize:[56,56],iconAnchor:[28,28]});
       const pickupIcon=L.divIcon({className:"",html:'<div class="pickupMarker pulse"></div>',iconSize:[24,24],iconAnchor:[12,12]});
       const destinationIcon=L.divIcon({className:"",html:'<div class="destinationMarker"></div>',iconSize:[24,24],iconAnchor:[12,12]});
