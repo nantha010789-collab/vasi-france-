@@ -64,3 +64,19 @@ export function calculateEatsPricing({
     total: roundMoney(foodSubtotal + deliveryFee + serviceFee),
   };
 }
+
+export default function handler(req, res) {
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const input = req.method === "POST" ? (req.body || {}) : (req.query || {});
+    const pricing = calculateEatsPricing(input);
+    return res.status(200).json({ ok: true, pricing });
+  } catch (error) {
+    console.error("eats-pricing failed", error);
+    return res.status(500).json({ ok: false, error: "Unable to calculate Eats pricing" });
+  }
+}
