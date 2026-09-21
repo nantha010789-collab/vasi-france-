@@ -905,6 +905,58 @@ test("driver navigation returns road-following turn instructions", async () => {
   });
 });
 
+test("driver navigation prefers Google traffic-aware high-quality routes", async () => {
+  process.env.GOOGLE_ROUTES_API_KEY = "server-only-test-key";
+  global.fetch = async (url, options = {}) => {
+    assert.equal(String(url), "https://routes.googleapis.com/directions/v2:computeRoutes");
+    assert.equal(options.method, "POST");
+    assert.equal(options.headers["X-Goog-Api-Key"], "server-only-test-key");
+    assert.match(options.headers["X-Goog-FieldMask"], /navigationInstruction/);
+    const request = JSON.parse(options.body);
+    assert.equal(request.routingPreference, "TRAFFIC_AWARE");
+    assert.equal(request.polylineQuality, "HIGH_QUALITY");
+    return response({
+      routes: [{
+        distanceMeters: 2340,
+        duration: "360s",
+        polyline: { encodedPolyline: "_p~iF~ps|U_ulLnnqC_mqNvxq`@" },
+        legs: [{ steps: [{
+          distanceMeters: 380,
+          staticDuration: "75s",
+          startLocation: { latLng: { latitude: 38.5, longitude: -120.2 } },
+          navigationInstruction: {
+            maneuver: "TURN_RIGHT",
+            instructions: "Tournez à droite sur Avenue de Quincy",
+          },
+        }] }],
+      }],
+    });
+  };
+  const { default: routePreview } = await import(`../api/route-preview.js?google-navigation=${Date.now()}`);
+  const res = mockRes();
+  await routePreview({
+    method: "POST",
+    headers: {},
+    body: { points: [{ lat: 48.59, lng: 2.58 }, { lat: 48.62, lng: 2.61 }] },
+  }, res);
+  delete process.env.GOOGLE_ROUTES_API_KEY;
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.provider, "google-routes");
+  assert.equal(res.body.traffic_aware, true);
+  assert.equal(res.body.duration_min, 6);
+  assert.equal(res.body.geometry.type, "LineString");
+  assert.equal(res.body.geometry.coordinates.length, 3);
+  assert.deepEqual(res.body.steps[0], {
+    distance_m: 380,
+    duration_s: 75,
+    name: "Tournez à droite sur Avenue de Quincy",
+    instruction: "Tournez à droite sur Avenue de Quincy",
+    type: "turn",
+    modifier: "right",
+    location: [-120.2, 38.5],
+  });
+});
+
 test("ride map uses debounced Google suggestions without destination pin confirmation", async () => {
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /schedulePlaceSuggestions/);

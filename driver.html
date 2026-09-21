@@ -1030,7 +1030,7 @@
           road.textContent = target.address || "";
           return;
         }
-        const instruction = turnInstruction(step);
+        const instruction = String(step.instruction || "").trim() || turnInstruction(step);
         summary.textContent = instruction + (Number(step.distance_m) > 0 ? " · " + Math.round(step.distance_m) + " m" : "");
         road.textContent = step.name || target.address || "Itinéraire VASI";
         const spokenKey = instruction + "|" + String(step.name || "");
