@@ -199,18 +199,33 @@
       .navMetric { flex:0 0 auto; color:#fff!important; font-size:13px!important; font-weight:900; }
       .driverMapPin { width:23px; height:23px; border:5px solid #fff; border-radius:50%; background:#1557ff; box-shadow:0 5px 16px #0008; }
       .driverMapPin.destination { border-radius:6px; background:#ef3340; }
-      .driverMapCar { display:grid; place-items:center; width:43px; height:43px; border:3px solid #fff; border-radius:50%; background:#07142b; box-shadow:0 6px 18px #0008; font-size:21px; }
+      .driverMapCar { position:relative; display:grid; place-items:center; width:43px; height:43px; border:3px solid #fff; border-radius:50%; background:#07142b; box-shadow:0 6px 18px #0008; font-size:21px; }
+      .driverMapCarEmoji { position:relative; z-index:2; line-height:1; }
+      .driverMapHeading { position:absolute; z-index:1; top:50%; left:50%; width:0; height:0; border-right:7px solid transparent; border-bottom:18px solid #1557ff; border-left:7px solid transparent; filter:drop-shadow(0 2px 2px #0008); transform:translate(-50%,-50%) rotate(var(--driver-heading,0deg)) translateY(-31px); transform-origin:50% 50%; transition:transform .3s linear; }
       .navExternal { position:absolute; z-index:650; right:9px; bottom:9px; display:flex; gap:6px; }
       .navExternal button { min-height:38px; margin:0; padding:9px 11px; border:1px solid #ffffff30; border-radius:12px; background:#07142bee; color:#fff; font:inherit; font-size:11px; font-weight:800; }
+      .navMapControls { position:absolute; z-index:720; right:10px; bottom:58px; display:flex; flex-direction:column; gap:8px; }
+      .navMapControls button { display:grid; place-items:center; width:44px; height:44px; margin:0; padding:0; border:1px solid #ffffff40; border-radius:50%; background:#07142bf2; color:#fff; box-shadow:0 7px 20px #0006; font:inherit; font-size:20px; font-weight:900; }
+      .navMapControls button.is-active { background:#1557ff; }
+      .navSpeed { position:absolute; z-index:710; bottom:58px; left:10px; min-width:74px; padding:8px 10px; border:1px solid #ffffff38; border-radius:12px; background:#07142bef; color:#fff; text-align:center; font-size:12px; font-weight:900; }
       .driverNavigation.is-fullscreen { position:fixed; inset:0; z-index:2000; width:100vw; height:100dvh; margin:0; border:0; border-radius:0; }
       .driverNavigation.is-fullscreen .navOverlay { top:max(14px,env(safe-area-inset-top)); left:14px; right:14px; padding:14px 15px; border-radius:18px; }
       .driverNavigation.is-fullscreen .navOverlay b { font-size:17px; line-height:1.2; }
       .driverNavigation.is-fullscreen .navOverlay span { font-size:13px; }
       .driverNavigation.is-fullscreen .navExternal { right:14px; bottom:max(18px,env(safe-area-inset-bottom)); left:14px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
       .driverNavigation.is-fullscreen .navExternal button { min-height:50px; font-size:13px; background:#07142bf5; }
+      .driverNavigation.is-fullscreen .navMapControls { right:14px; bottom:calc(max(18px,env(safe-area-inset-bottom)) + 64px); }
+      .driverNavigation.is-fullscreen .navMapControls button { width:50px; height:50px; }
+      .driverNavigation.is-fullscreen .navSpeed { bottom:calc(max(18px,env(safe-area-inset-bottom)) + 68px); left:14px; padding:10px 12px; font-size:13px; }
       .navClose { display:none; }
       .driverNavigation.is-fullscreen .navClose { display:block; position:absolute; z-index:760; top:max(92px,calc(env(safe-area-inset-top) + 78px)); left:14px; width:48px; height:48px; border:1px solid #ffffff30; border-radius:50%; background:#07142bf2; color:#fff; font-size:25px; font-weight:900; }
       body.vasi-navigation-open { overflow:hidden; }
+      @media(max-width:420px){
+        .driverNavigation.is-fullscreen .navExternal { gap:6px; }
+        .driverNavigation.is-fullscreen .navExternal button { min-height:48px; padding:8px 6px; font-size:12px; }
+        .driverNavigation.is-fullscreen .navOverlay { padding:12px; }
+        .driverNavigation.is-fullscreen .navOverlay b { font-size:15px; }
+      }
       .navPreference { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; border:1px solid #333; border-radius:14px; background:#181818; }
       .navPreference b,.navPreference span { display:block; }
       .navPreference span { margin-top:3px; color:#999; font-size:12px; line-height:1.35; }
@@ -309,6 +324,7 @@
       const region = VasiRegion.getRegion();
       const money = (value) => VasiRegion.money(value, region.code);
       const NAVIGATION_PREFERENCE_KEY = "vasi_driver_navigation_provider";
+      const NAVIGATION_VOICE_KEY = "vasi_driver_navigation_voice";
       let online = false,
         payoutReady = false,
         watch = null,
@@ -325,6 +341,10 @@
         driverMapTarget = null,
         driverMapLastRouteAt = 0,
         driverMapExpanded = false,
+        driverMapFollowing = true,
+        driverMapLastPosition = null,
+        driverMapHeading = 0,
+        driverMapVoiceEnabled = localStorage.getItem(NAVIGATION_VOICE_KEY) !== "off",
         lastPresenceAt = 0,
         lastPresencePoint = null,
         lastSpokenInstruction = "";
@@ -337,6 +357,65 @@
         if (provider === "waze") return "Waze";
         if (provider === "google") return "Google Maps";
         return "VASI GPS";
+      }
+      function mapBearing(from, to) {
+        if (!from || !to) return null;
+        const radians = (value) => (Number(value) * Math.PI) / 180;
+        const degrees = (value) => (Number(value) * 180) / Math.PI;
+        const lat1 = radians(from.lat), lat2 = radians(to.lat), dLng = radians(to.lng - from.lng);
+        const y = Math.sin(dLng) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+        return (degrees(Math.atan2(y, x)) + 360) % 360;
+      }
+      function updateDriverMapMotion(position) {
+        const coords = position?.coords;
+        if (!coords) return;
+        const current = { lat: Number(coords.latitude), lng: Number(coords.longitude) };
+        let heading = Number(coords.heading);
+        if (!Number.isFinite(heading) || heading < 0) {
+          const moved = driverMapLastPosition
+            ? locationDistanceMeters(
+                { latitude: driverMapLastPosition.lat, longitude: driverMapLastPosition.lng },
+                { latitude: current.lat, longitude: current.lng },
+              )
+            : 0;
+          if (moved >= 4) heading = mapBearing(driverMapLastPosition, current);
+        }
+        if (Number.isFinite(heading) && heading >= 0) driverMapHeading = heading;
+        driverMapLastPosition = current;
+        const carElement = driverMapCar?.getElement()?.querySelector(".driverMapCar");
+        if (carElement) carElement.style.setProperty("--driver-heading", driverMapHeading + "deg");
+        const speed = Number(coords.speed);
+        const speedElement = document.getElementById("driverNavigationSpeed");
+        if (speedElement) speedElement.textContent = Number.isFinite(speed) && speed >= 0 ? Math.round(speed * 3.6) + " km/h" : "GPS live";
+      }
+      function updateDriverVoiceButton() {
+        const button = document.getElementById("driverVoiceButton");
+        if (!button) return;
+        button.textContent = driverMapVoiceEnabled ? "🔊" : "🔇";
+        button.classList.toggle("is-active", driverMapVoiceEnabled);
+        button.setAttribute("aria-label", driverMapVoiceEnabled ? "Couper les instructions vocales" : "Activer les instructions vocales");
+        button.setAttribute("title", driverMapVoiceEnabled ? "Voix activée" : "Voix désactivée");
+      }
+      function toggleDriverVoice() {
+        driverMapVoiceEnabled = !driverMapVoiceEnabled;
+        localStorage.setItem(NAVIGATION_VOICE_KEY, driverMapVoiceEnabled ? "on" : "off");
+        if (driverMapVoiceEnabled) lastSpokenInstruction = "";
+        if (!driverMapVoiceEnabled && "speechSynthesis" in window) speechSynthesis.cancel();
+        updateDriverVoiceButton();
+      }
+      function followDriverOnMap(source, force = false) {
+        if (!driverMap || !source || !driverMapExpanded || (!driverMapFollowing && !force)) return;
+        driverMap.setView(source, window.innerWidth < 520 ? 17 : 17.25, { animate: false });
+        driverMap.panBy([0, Math.round(Math.min(150, window.innerHeight * 0.13))], { animate: false, noMoveStart: true });
+      }
+      function recenterDriverMap() {
+        driverMapFollowing = true;
+        document.getElementById("driverRecenterButton")?.classList.add("is-active");
+        if (lastPos?.coords) {
+          const source = [Number(lastPos.coords.latitude), Number(lastPos.coords.longitude)];
+          followDriverOnMap(source, true);
+        }
       }
       function loadNavigationPreference() {
         const select = document.getElementById("navigationProvider");
@@ -764,6 +843,8 @@
         driverMapTarget = null;
         driverMapLastRouteAt = 0;
         driverMapExpanded = false;
+        driverMapFollowing = true;
+        driverMapLastPosition = null;
         document.body.classList.remove("vasi-navigation-open");
       }
       function initDriverNavigation() {
@@ -779,14 +860,22 @@
           zoomDelta: 0.5,
         });
         const fallback = L.tileLayer(
-          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
           {
             maxNativeZoom: 19,
             maxZoom: 20,
-            keepBuffer: 3,
+            keepBuffer: 8,
+            detectRetina: false,
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            updateInterval: 240,
             attribution: "© OpenStreetMap contributors",
           },
         ).addTo(driverMap);
+        driverMap.on("dragstart", () => {
+          driverMapFollowing = false;
+          document.getElementById("driverRecenterButton")?.classList.remove("is-active");
+        });
         if (
           window.maplibregl?.supported?.() &&
           typeof L.maplibreGL === "function"
@@ -807,6 +896,7 @@
         }
         requestAnimationFrame(() => {
           driverMap?.invalidateSize();
+          updateDriverVoiceButton();
           updateDriverNavigation(lastPos, true);
         });
       }
@@ -858,7 +948,7 @@
         }
         const carIcon = L.divIcon({
           className: "",
-          html: '<div class="driverMapCar">🚘</div>',
+          html: '<div class="driverMapCar"><span class="driverMapHeading" aria-hidden="true"></span><span class="driverMapCarEmoji" aria-hidden="true">🚘</span></div>',
           iconSize: [43, 43],
           iconAnchor: [22, 22],
         });
@@ -869,7 +959,9 @@
             zIndexOffset: 500,
           }).addTo(driverMap);
         else driverMapCar.setLatLng(source);
-        if (!force && Date.now() - driverMapLastRouteAt < 12000) return;
+        updateDriverMapMotion(position);
+        followDriverOnMap(source);
+        if (!force && Date.now() - driverMapLastRouteAt < 8000) return;
         driverMapLastRouteAt = Date.now();
         metric.textContent = "Calcul…";
         try {
@@ -903,8 +995,7 @@
             (Number.isFinite(km) ? " · " + km.toFixed(1) + " km" : "");
           updateTurnInstruction(result.steps, target);
           if (driverMapExpanded) {
-            driverMap.setView(source, window.innerWidth < 520 ? 16.75 : 17.25, { animate: false });
-            driverMap.panBy([0, Math.round(Math.min(150, window.innerHeight * 0.13))], { animate: false });
+            followDriverOnMap(source);
           } else {
             driverMap.fitBounds(driverMapRoute.getBounds(), {
               paddingTopLeft: [35, 72],
@@ -943,7 +1034,7 @@
         summary.textContent = instruction + (Number(step.distance_m) > 0 ? " · " + Math.round(step.distance_m) + " m" : "");
         road.textContent = step.name || target.address || "Itinéraire VASI";
         const spokenKey = instruction + "|" + String(step.name || "");
-        if (driverMapExpanded && spokenKey !== lastSpokenInstruction && "speechSynthesis" in window) {
+        if (driverMapExpanded && driverMapVoiceEnabled && spokenKey !== lastSpokenInstruction && "speechSynthesis" in window) {
           lastSpokenInstruction = spokenKey;
           try {
             speechSynthesis.cancel();
@@ -973,6 +1064,9 @@
         shell.classList.add("is-fullscreen");
         document.body.classList.add("vasi-navigation-open");
         driverMapExpanded = true;
+        driverMapFollowing = true;
+        document.getElementById("driverRecenterButton")?.classList.add("is-active");
+        updateDriverVoiceButton();
         setTimeout(() => {
           driverMap?.invalidateSize();
           updateDriverNavigation(lastPos, true);
@@ -1068,7 +1162,7 @@
           : "";
         const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><button class="navClose" type="button" onclick="collapseDriverNavigation()" aria-label="Réduire la navigation">‹</button><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span id="driverNavigationRoad">Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div class="navExternal" aria-label="Options de navigation"><button type="button" onclick="expandDriverNavigation()">Plein écran</button><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><button class="navClose" type="button" onclick="collapseDriverNavigation()" aria-label="Réduire la navigation">‹</button><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span id="driverNavigationRoad">Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div id="driverNavigationSpeed" class="navSpeed" aria-live="polite">GPS…</div><div class="navMapControls" aria-label="Contrôles de la carte"><button id="driverRecenterButton" class="is-active" type="button" onclick="recenterDriverMap()" aria-label="Recentrer la carte sur le chauffeur" title="Recentrer">◎</button><button id="driverVoiceButton" class="is-active" type="button" onclick="toggleDriverVoice()" aria-label="Couper les instructions vocales" title="Voix activée">🔊</button></div><div class="navExternal" aria-label="Options de navigation"><button type="button" onclick="expandDriverNavigation()">Plein écran</button><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',

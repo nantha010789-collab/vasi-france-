@@ -195,6 +195,17 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(driver, /driverMapExpanded[\s\S]*?driverMap\.setView\(source/);
   assert.match(driver, /function updateTurnInstruction\(steps, target\)/);
   assert.match(driver, /SpeechSynthesisUtterance/);
+  assert.match(driver, /vasi_driver_navigation_voice/);
+  assert.match(driver, /function recenterDriverMap\(\)/);
+  assert.match(driver, /function toggleDriverVoice\(\)/);
+  assert.match(driver, /function updateDriverMapMotion\(position\)/);
+  assert.match(driver, /driverMapFollowing = false/);
+  assert.match(driver, /driverMapLastRouteAt < 8000/);
+  assert.match(driver, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
+  assert.match(driver, /keepBuffer: 8/);
+  assert.match(driver, /id="driverRecenterButton"/);
+  assert.match(driver, /id="driverVoiceButton"/);
+  assert.match(driver, /id="driverNavigationSpeed"/);
   assert.match(routeApi, /steps=true/);
   assert.match(routeApi, /distance_m:/);
   assert.match(routeApi, /modifier:/);
