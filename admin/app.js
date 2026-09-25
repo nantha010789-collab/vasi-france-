@@ -6,12 +6,13 @@
   const app = document.getElementById('app'), nav = document.getElementById('nav'), title = document.getElementById('title');
   const connection = document.getElementById('connection');
   const sections = [
-    ['overview','Vue d’ensemble'],['bookings','Courses'],['gps','GPS en direct'],
+    ['overview','Vue d’ensemble'],['control','Centre de contrôle'],['bookings','Courses'],['gps','GPS en direct'],
     ['drivers','Chauffeurs'],['documents','Documents'],['couriers','Coursiers'],['restaurants','Restaurants'],
-    ['orders','Commandes'],['finance','Paiements'],['pricing','Tarifs'],['support','Support'],['deletions','Suppressions'],['audit','Journal']
+    ['orders','Commandes'],['finance','Paiements'],['reports','Rapports'],['pricing','Tarifs'],['support','Support'],['deletions','Suppressions'],['audit','Journal']
   ];
   const sectionIcons={
     overview:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    control:'<path d="M3 12h4l2-6 4 12 2-6h6"/><circle cx="12" cy="12" r="9"/>',
     bookings:'<path d="M5 17h14l-1.4-5.1A2 2 0 0 0 15.7 10H8.3a2 2 0 0 0-1.9 1.4L5 17Z"/><path d="M7 17v2M17 17v2M7 14h.01M17 14h.01"/>',
     gps:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
     drivers:'<circle cx="12" cy="7" r="3"/><path d="M5 21v-2a7 7 0 0 1 14 0v2M8 15h8"/>',
@@ -23,6 +24,7 @@
     pricing:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
     support:'<path d="M4 4h16v12H8l-4 4Z"/><path d="M8 9h8M8 12h5"/>',
     deletions:'<path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/>',
+    reports:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
     audit:'<path d="M12 2 20 5v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5Z"/><path d="m9 12 2 2 4-5"/>'
   };
   let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapLayoutTargets = [], mapWidth = 0, mapHeight = 0, mapLoadFailures = 0, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
@@ -84,6 +86,44 @@
   }
   function shell(name,content,actions=''){title.textContent=name;app.setAttribute('aria-busy','false');app.innerHTML=`${actions}<div id="content">${content}</div>`}
   function errorView(error){setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}</div>`}
+  function gotoButton(label,target,kind=''){return `<button class="button ${kind}" data-goto="${esc(target)}">${esc(label)}</button>`}
+  function alertCard(level,title,value,note,target){return `<article class="ops-alert ${level}"><div><span class="ops-kicker">${level==='critical'?'Priorité':level==='warn'?'À traiter':'OK'}</span><h3>${esc(title)}</h3><strong>${esc(value)}</strong><p>${esc(note)}</p></div>${target?gotoButton('Ouvrir',target):''}</article>`}
+  async function control(){
+    try{
+      const [s,bookings,drivers]=await Promise.all([api('/api/admin-stats'),api('/api/admin-bookings'),api('/api/admin-drivers')]);
+      const pendingRides=bookings.filter(x=>['pending','searching'].includes(String(x.status||''))).length;
+      const unassigned=bookings.filter(x=>['pending','searching','accepted'].includes(String(x.status||''))&&!x.driver_id).length;
+      const onlineDrivers=drivers.filter(x=>x.online).length;
+      const payoutBlocked=drivers.filter(x=>!(x.stripe_details_submitted&&x.stripe_payouts_enabled)).length;
+      const shortage=pendingRides>0&&onlineDrivers===0;
+      const alerts=[
+        alertCard(shortage?'critical':pendingRides?'warn':'ok','Courses en attente',pendingRides,shortage?'Aucun chauffeur en ligne pour répondre aux demandes.':'Demandes qui nécessitent une surveillance opérationnelle.','bookings'),
+        alertCard(unassigned>0?'warn':'ok','Courses non affectées',unassigned,'Courses sans chauffeur actuellement affecté.','bookings'),
+        alertCard(Number(s.pendingDocuments||0)>0?'warn':'ok','Documents à vérifier',s.pendingDocuments||0,'Contrôler les pièces chauffeurs avant activation.','documents'),
+        alertCard(Number(s.pendingCouriers||0)>0?'warn':'ok','Coursiers en attente',s.pendingCouriers||0,'Demandes partenaires à approuver ou refuser.','couriers'),
+        alertCard(Number(s.pendingRestaurants||0)>0?'warn':'ok','Restaurants en attente',s.pendingRestaurants||0,'Onboarding restaurant en attente de validation.','restaurants'),
+        alertCard(payoutBlocked>0?'warn':'ok','Paiements chauffeurs incomplets',payoutBlocked,'Comptes Stripe/RIB qui ne sont pas encore prêts pour les versements.','drivers')
+      ].join('');
+      shell('Centre de contrôle',`<section class="ops-hero"><div><p class="eyebrow">TEMPS RÉEL</p><h2>Exploitation VASI</h2><p>Les points qui demandent une action sont regroupés ici pour éviter de chercher dans plusieurs écrans.</p></div><div class="ops-actions">${gotoButton('Voir le GPS','gps','primary')}${gotoButton('Courses','bookings')}${gotoButton('Support','support')}</div></section><div class="ops-grid">${alerts}</div><section class="panel"><div class="panel-head"><h2>État du réseau</h2><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Chauffeurs en ligne',onlineDrivers,'Disponibles maintenant')}${metric('Courses actives',s.activeRides||0,'En cours')}${metric('Commission VASI',money(s.todayCommission),'Aujourd’hui')}${metric('Chiffre brut',money(s.todayGross),'Aujourd’hui')}</div></section>`);
+      setConnected(true);
+    }catch(e){shell('Centre de contrôle',errorView(e))}
+  }
+  async function reports(){
+    try{
+      const [s,bookings,drivers]=await Promise.all([api('/api/admin-stats'),api('/api/admin-bookings'),api('/api/admin-drivers')]);
+      const total=bookings.length;
+      const completed=bookings.filter(x=>String(x.status)==='completed').length;
+      const cancelled=bookings.filter(x=>String(x.status)==='cancelled').length;
+      const active=bookings.filter(x=>['accepted','in_progress','driver_arriving'].includes(String(x.status||''))).length;
+      const gross=bookings.reduce((sum,x)=>sum+Number(x.estimated_price||0),0);
+      const avg=total?gross/total:0;
+      const completion=total?Math.round(completed*100/total):0;
+      const cancellation=total?Math.round(cancelled*100/total):0;
+      const online=drivers.filter(x=>x.online).length;
+      shell('Rapports',`<section class="panel"><div class="panel-head"><div><h2>Performance opérationnelle</h2><p class="muted">Vue synthétique basée sur les données actuellement disponibles dans VASI.</p></div><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Courses listées',total)}${metric('Terminées',completed,`${completion}% du total`)}${metric('Annulées',cancelled,`${cancellation}% du total`)}${metric('Actives',active)}${metric('Valeur estimée',money(gross),'Courses listées')}${metric('Panier moyen',money(avg),'Par course')}${metric('Chauffeurs en ligne',online,'Temps réel')}${metric('Commission aujourd’hui',money(s.todayCommission),'VASI')}</div></section><section class="panel"><div class="panel-head"><h2>Accès rapides</h2></div><div class="ops-actions">${gotoButton('Paiements','finance','primary')}${gotoButton('Chauffeurs','drivers')}${gotoButton('Restaurants','restaurants')}${gotoButton('Journal','audit')}</div></section>`);
+      setConnected(true);
+    }catch(e){shell('Rapports',errorView(e))}
+  }
   async function overview(){try{const s=await api('/api/admin-stats');setConnected(true);shell('Vue d’ensemble',`<div class="summary-grid">${metric('Courses',s.bookings)}${metric('Courses actives',s.activeRides)}${metric('Chauffeurs en ligne',s.onlineDrivers)}${metric('Documents à vérifier',s.pendingDocuments)}${metric('Coursiers en attente',s.pendingCouriers)}${metric('Restaurants en attente',s.pendingRestaurants)}${metric('Clients',s.customers)}${metric('Chiffre brut aujourd’hui',money(s.todayGross))}</div><section class="panel"><div class="panel-head"><h2>Résumé financier</h2><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Commission VASI',money(s.todayCommission),'Aujourd’hui')}${metric('Revenus chauffeurs',money(s.todayDriverAmount),'Aujourd’hui')}${metric('RIB chauffeurs prêts',s.payoutReadyDrivers,'Stripe vérifié')}${metric('RIB partenaires prêts',(s.payoutReadyCouriers||0)+(s.payoutReadyRestaurants||0),'Coursiers + restaurants')}</div></section>`)}catch(e){shell('Vue d’ensemble',errorView(e))}}
   function filters(statuses){return `<div class="filters"><input id="search" class="field search" type="search" placeholder="Rechercher…" aria-label="Rechercher"><select id="status" class="field"><option value="">Tous les statuts</option>${statuses.map(x=>`<option>${esc(x)}</option>`).join('')}</select><button class="button" data-refresh>Actualiser</button></div>`}
   function table(headers,rows){return rows.length?`<div class="table-wrap"><table><thead><tr>${headers.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`:'<div class="empty">Aucune donnée pour le moment.</div>'}
@@ -195,8 +235,8 @@
       gpsTimer=setTimeout(()=>active==='gps'&&gps(),15000);
     }
   }
-  const loaders={overview,bookings,gps,drivers,documents,couriers,restaurants,orders,finance,pricing,support,deletions,audit};
-  async function render(id){stopGps();active=id;document.querySelectorAll('.nav-button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));app.setAttribute('aria-busy','true');app.innerHTML='<div class="loading">Chargement…</div>';await loaders[id]();document.querySelectorAll('[data-refresh]').forEach(btn=>btn.addEventListener('click',()=>active==='gps'?gps():render(active)))}
+  const loaders={overview,control,bookings,gps,drivers,documents,couriers,restaurants,orders,finance,reports,pricing,support,deletions,audit};
+  async function render(id){stopGps();active=id;document.querySelectorAll('.nav-button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));app.setAttribute('aria-busy','true');app.innerHTML='<div class="loading">Chargement…</div>';await loaders[id]();document.querySelectorAll('[data-refresh]').forEach(btn=>btn.addEventListener('click',()=>active==='gps'?gps():render(active)));document.querySelectorAll('[data-goto]').forEach(btn=>btn.addEventListener('click',()=>render(btn.dataset.goto)))}
   sections.forEach(([id,label])=>{const button=document.createElement('button');button.type='button';button.className='nav-button';button.dataset.section=id;button.innerHTML=`<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${sectionIcons[id]}</svg><span>${label}</span>`;button.addEventListener('click',()=>render(id));nav.appendChild(button)});
   document.getElementById('logout').addEventListener('click',endAdminSession);
   const language=document.getElementById('adminLanguage');language.value=['fr','en'].includes(window.VasiLanguage?.getLanguage?.())?window.VasiLanguage.getLanguage():'fr';language.addEventListener('change',()=>{window.VasiLanguage?.setLanguage(language.value);render(active)});
