@@ -13,16 +13,14 @@
   "orientation": "portrait",
   "background_color": "#020611",
   "theme_color": "#06183f",
-  "categories": ["business", "navigation", "travel"],
+  "categories": [
+    "business",
+    "navigation",
+    "travel"
+  ],
   "icons": [
     {
-      "src": "/vasi-word-icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/vasi-word-icon-512.png",
+      "src": "/vasi-driver-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
