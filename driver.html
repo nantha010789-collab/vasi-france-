@@ -878,7 +878,7 @@
           zoomDelta: 0.5,
         });
         const fallback = L.tileLayer(
-          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          "/api/map-tile?z={z}&x={x}&y={y}",
           {
             maxNativeZoom: 19,
             maxZoom: 20,
