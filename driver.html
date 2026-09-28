@@ -313,6 +313,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-network.js?v=1"></script>
     <script src="./vasi-account-role.js"></script>
     <script>
       const client = supabase.createClient(
@@ -574,10 +575,27 @@
         const point = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         const moved = locationDistanceMeters(lastPresencePoint, point);
         if (!force && Date.now() - lastPresenceAt < 4000 && moved < 10) return;
-        await setPresence(gpsMode === "online", pos);
-        lastPresenceAt = Date.now();
-        lastPresencePoint = point;
+        try {
+          await setPresence(gpsMode === "online", pos);
+          localStorage.removeItem("vasi_driver_pending_location");
+          lastPresenceAt = Date.now();
+          lastPresencePoint = point;
+        } catch (error) {
+          try { localStorage.setItem("vasi_driver_pending_location", JSON.stringify({ latitude: point.latitude, longitude: point.longitude, online: gpsMode === "online", at: Date.now() })); } catch (_) {}
+          document.getElementById("gps").textContent = "GPS live · réseau faible";
+          throw error;
+        }
       }
+      window.addEventListener("online", async () => {
+        try {
+          const pending = JSON.parse(localStorage.getItem("vasi_driver_pending_location") || "null");
+          if (!pending || Date.now() - Number(pending.at || 0) > 15 * 60 * 1000) return;
+          const fake = { coords: { latitude: pending.latitude, longitude: pending.longitude } };
+          await setPresence(Boolean(pending.online), fake);
+          localStorage.removeItem("vasi_driver_pending_location");
+          if (lastPos) updateDriverNavigation(lastPos, true);
+        } catch (_) {}
+      });
       function stopGps() {
         if (watch !== null) navigator.geolocation.clearWatch(watch);
         watch = null;
@@ -877,6 +895,8 @@
           document.getElementById("driverRecenterButton")?.classList.remove("is-active");
         });
         if (
+          !VasiNet.isSlow() &&
+          navigator.onLine !== false &&
           window.maplibregl?.supported?.() &&
           typeof L.maplibreGL === "function"
         ) {
@@ -887,10 +907,16 @@
               attributionControl: false,
               interactive: false,
             }).addTo(ownerMap);
-            vector.getMaplibreMap().once("load", () => {
+            const vectorMap = vector.getMaplibreMap();
+            vectorMap.once("load", () => {
               if (driverMap !== ownerMap) return;
               if (ownerMap.hasLayer(fallback)) ownerMap.removeLayer(fallback);
-              requestAnimationFrame(() => vector.getMaplibreMap().resize());
+              requestAnimationFrame(() => vectorMap.resize());
+            });
+            vectorMap.on("error", () => {
+              if (driverMap !== ownerMap) return;
+              if (!ownerMap.hasLayer(fallback)) fallback.addTo(ownerMap);
+              if (!vectorMap.loaded() && ownerMap.hasLayer(vector)) ownerMap.removeLayer(vector);
             });
           } catch (_) {}
         }
@@ -965,19 +991,29 @@
         driverMapLastRouteAt = Date.now();
         metric.textContent = "Calcul…";
         try {
-          const response = await fetch("/api/route-preview", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              points: [
-                { lat: source[0], lng: source[1] },
-                { lat: target.lat, lng: target.lng },
-              ],
-            }),
-          });
-          const result = await response.json();
-          if (!response.ok || !result.geometry)
-            throw new Error(result.error || "Route indisponible");
+          let result;
+          let degraded = false;
+          const points = [source, targetPoint];
+          const routeKey = "driver-route:" + points.map((p)=>p.map((n)=>Number(n).toFixed(4)).join(",")).join("|");
+          try {
+            const net = await VasiNet.json("/api/route-preview", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                points: [
+                  { lat: source[0], lng: source[1] },
+                  { lat: target.lat, lng: target.lng },
+                ],
+              }),
+            }, { timeout: 7000, retries: 1, cacheKey: routeKey, maxAge: 5 * 60 * 1000 });
+            result = net.data;
+            degraded = Boolean(net.fromCache && net.stale);
+          } catch (_) {
+            result = VasiNet.approximateRoute(points);
+            degraded = true;
+          }
+          if (!result?.geometry)
+            throw new Error(result?.error || "Route indisponible");
           if (driverMapRoute) driverMapRoute.remove();
           driverMapRoute = L.geoJSON(result.geometry, {
             style: {
@@ -991,8 +1027,10 @@
           const km = Number(result.distance_km);
           const minutes = Number(result.duration_min);
           metric.textContent =
+            (degraded ? "≈ " : "") +
             (Number.isFinite(minutes) ? Math.max(1, Math.ceil(minutes)) + " min" : "—") +
             (Number.isFinite(km) ? " · " + km.toFixed(1) + " km" : "");
+          if (degraded) road.textContent = "Connexion faible · itinéraire approximatif jusqu’au retour du réseau";
           updateTurnInstruction(result.steps, target);
           if (driverMapExpanded) {
             followDriverOnMap(source);
