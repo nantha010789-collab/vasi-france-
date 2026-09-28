@@ -2125,7 +2125,7 @@
           .attribution({ position: "topright", prefix: false })
           .addTo(map);
         let rasterTilesLoaded = 0;
-        mapFallbackLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        mapFallbackLayer = L.tileLayer("/api/map-tile?z={z}&x={x}&y={y}", {
           maxNativeZoom: 19,
           maxZoom: 20,
           updateWhenIdle: false,
