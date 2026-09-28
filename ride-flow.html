@@ -1423,7 +1423,7 @@
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
     <script src="./vasi-airports.js?v=1"></script>
-    <script src="./vasi-network.js?v=1"></script>
+    <script src="./vasi-network.js?v=2"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
@@ -2124,15 +2124,21 @@
         mapAttributionControl = L.control
           .attribution({ position: "topright", prefix: false })
           .addTo(map);
-        mapFallbackLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        let rasterTilesLoaded = 0;
+        mapFallbackLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxNativeZoom: 19,
           maxZoom: 20,
-          updateWhenIdle: true,
-          keepBuffer: 3,
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          keepBuffer: 6,
+          detectRetina: false,
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
+        mapFallbackLayer.on("tileload", () => { rasterTilesLoaded += 1; });
+        mapFallbackLayer.on("tileerror", () => {
+          document.body.dataset.mapRaster = "error";
+        });
         if (
-          !VasiNet.isSlow() &&
           navigator.onLine !== false &&
           window.maplibregl?.supported?.() &&
           typeof L.maplibreGL === "function"
@@ -2147,15 +2153,14 @@
             const vectorMap = vectorLayer.getMaplibreMap();
             vectorMap.once("load", () => {
               mapBaseLayer = vectorLayer;
-              if (mapFallbackLayer && map.hasLayer(mapFallbackLayer)) {
-                map.removeLayer(mapFallbackLayer);
-              }
+              document.body.dataset.mapVector = "ready";
               mapAttributionControl.addAttribution(
                 '<a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://www.openmaptiles.org" target="_blank" rel="noreferrer">© OpenMapTiles</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>',
               );
               requestAnimationFrame(() => vectorMap.resize());
             });
             vectorMap.on("error", () => {
+              document.body.dataset.mapVector = "error";
               if (!map.hasLayer(mapFallbackLayer)) mapFallbackLayer.addTo(map);
               if (!vectorMap.loaded() && map.hasLayer(vectorLayer)) map.removeLayer(vectorLayer);
             });
@@ -2165,7 +2170,26 @@
         } else {
           mapBaseLayer = mapFallbackLayer;
         }
-        map.on("click", (e) => {
+        const mapHealthCheck = () => {
+          map.invalidateSize({ animate: false });
+          if (!rasterTilesLoaded && document.body.dataset.mapVector !== "ready") {
+            if (!map.hasLayer(mapFallbackLayer)) mapFallbackLayer.addTo(map);
+            mapFallbackLayer.redraw();
+            $("status").textContent = navigator.onLine === false
+              ? "Connexion faible — la carte utilisera les zones déjà chargées et le GPS."
+              : "Chargement de la carte…";
+          }
+        };
+        [800, 2200, 5000].forEach((delay) => setTimeout(mapHealthCheck, delay));
+        window.addEventListener("online", () => {
+          mapFallbackLayer.redraw();
+          map.invalidateSize({ animate: false });
+        });
+        window.addEventListener("pageshow", () => setTimeout(mapHealthCheck, 80));
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) setTimeout(mapHealthCheck, 80);
+        });
+                map.on("click", (e) => {
           if (activePinKind()) return;
           if (!pickup || mapSelectionKind === "pickup")
             setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map");
