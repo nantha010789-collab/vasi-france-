@@ -1423,6 +1423,7 @@
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
     <script src="./vasi-airports.js?v=1"></script>
+    <script src="./vasi-network.js?v=1"></script>
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co",
         SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT",
@@ -1671,13 +1672,14 @@
           fieldElement = $("pickup");
         addressElement.textContent = "Finding address…";
         try {
-          const response = await fetch(apiUrl(
+          const key = "reverse:" + country + ":" + Number(point[0]).toFixed(4) + ":" + Number(point[1]).toFixed(4);
+          const net = await VasiNet.json(apiUrl(
             `/api/route-preview?lat=${encodeURIComponent(point[0])}&lng=${encodeURIComponent(point[1])}&country=${encodeURIComponent(country)}`,
-          ));
-          const data = await response.json();
+          ), {}, { timeout: 6500, retries: 1, cacheKey: key, maxAge: 30 * 24 * 60 * 60 * 1000 });
+          const data = net.data;
           if (request !== pinAddressRequest || activePinKind() !== kind) return;
           const fallbackLabel = "Selected map location",
-            label = response.ok && data?.result
+            label = data?.result
               ? formatGeocodedAddress(data.result, fallbackLabel)
               : fallbackLabel;
           addressElement.textContent = label;
@@ -2106,6 +2108,12 @@
           $("promo").textContent = "VASI offer price";
         }
       }
+      window.addEventListener("offline", () => {
+        $("status").textContent = "Weak connection detected — cached map data and GPS will be used where available.";
+      });
+      window.addEventListener("online", () => {
+        if (pickupConfirmed && destination) buildRoute();
+      });
       async function init() {
         map = L.map("map", {
           zoomControl: false,
@@ -2124,6 +2132,8 @@
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
         if (
+          !VasiNet.isSlow() &&
+          navigator.onLine !== false &&
           window.maplibregl?.supported?.() &&
           typeof L.maplibreGL === "function"
         ) {
@@ -2146,8 +2156,8 @@
               requestAnimationFrame(() => vectorMap.resize());
             });
             vectorMap.on("error", () => {
-              if (mapBaseLayer === vectorLayer || vectorMap.loaded()) return;
-              if (map.hasLayer(vectorLayer)) map.removeLayer(vectorLayer);
+              if (!map.hasLayer(mapFallbackLayer)) mapFallbackLayer.addTo(map);
+              if (!vectorMap.loaded() && map.hasLayer(vectorLayer)) map.removeLayer(vectorLayer);
             });
           } catch (error) {
             mapBaseLayer = mapFallbackLayer;
@@ -2224,13 +2234,24 @@
           return;
         }
         $("status").textContent = "Requesting your location…";
+        let settled = false;
+        const acceptPosition = (p, label = "Current location") => {
+          if (!p?.coords) return;
+          settled = true;
+          setPickup([p.coords.latitude, p.coords.longitude], label);
+          try { localStorage.setItem("vasi_last_location", JSON.stringify({lat:p.coords.latitude,lng:p.coords.longitude,at:Date.now()})); } catch (_) {}
+        };
+        try {
+          const last = JSON.parse(localStorage.getItem("vasi_last_location") || "null");
+          if (last && Date.now() - Number(last.at || 0) < 10 * 60 * 1000) {
+            settled = true;
+            setPickup([Number(last.lat), Number(last.lng)], "Recent location");
+          }
+        } catch (_) {}
         navigator.geolocation.getCurrentPosition(
-          (p) =>
-            setPickup(
-              [p.coords.latitude, p.coords.longitude],
-              "Current location",
-            ),
+          (p) => acceptPosition(p),
           () => {
+            if (settled) return;
             pickup = null;
             if (pickupMarker) {
               pickupMarker.remove();
@@ -2240,8 +2261,15 @@
             $("booking").classList.add("hidden");
             $("fare").textContent = "—";
             $("status").innerHTML =
-              '<span class="error">Allow location access or tap the map to select your pickup. No price is calculated until pickup is confirmed.</span>';
+              '<span class="error">Location is slow or unavailable — tap the map to select your pickup.</span>';
           },
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
+        );
+        navigator.geolocation.getCurrentPosition(
+          (p) => {
+            if (!pickupConfirmed) acceptPosition(p, "Current location");
+          },
+          () => {},
           { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
         );
       }
@@ -2427,7 +2455,7 @@
         $("status").textContent = "Confirming the selected pickup address…";
         clearPickupSuggestions();
         try {
-          const response = await fetch(apiUrl("/api/places"), {
+          const net = await VasiNet.json(apiUrl("/api/places"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2435,11 +2463,10 @@
               place_id: suggestion.place_id,
               country,
             }),
-          });
-          const data = await response.json();
+          }, { timeout: 7000, retries: 2, cacheKey: "places:resolve:" + suggestion.place_id, maxAge: 604800000 });
+          const data = net.data;
           const place = data?.place;
           if (
-            !response.ok ||
             !Number.isFinite(Number(place?.lat)) ||
             !Number.isFinite(Number(place?.lng))
           ) throw Error("Place unavailable");
@@ -2490,7 +2517,7 @@
         if (input.length < 4) return clearPlaceSuggestions();
         const requestId = ++placeSuggestionRequest;
         try {
-          const response = await fetch(apiUrl("/api/places"), {
+          const net = await VasiNet.json(apiUrl("/api/places"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2499,10 +2526,10 @@
               country,
               location: pickup ? { lat: pickup[0], lng: pickup[1] } : null,
             }),
-          });
-          const data = await response.json();
+          }, { timeout: 7000, retries: 1, cacheKey: "places:auto:" + country + ":" + input.toLowerCase(), maxAge: 86400000 });
+          const data = net.data;
           if (requestId !== placeSuggestionRequest) return;
-          if (!response.ok || !Array.isArray(data?.suggestions)) {
+          if (!Array.isArray(data?.suggestions)) {
             document.body.dataset.placesStatus =
               data?.reason || (data?.enabled === false ? "not_configured" : "unavailable");
             return clearPlaceSuggestions();
@@ -2574,10 +2601,13 @@
           "&_=" +
           Date.now(),
         );
-        const r = await fetch(u, { cache: "no-store" });
-        if (!r.ok) throw Error("Geocoding unavailable");
-        const d = await r.json();
-        return d?.results?.[0] || null;
+        const net = await VasiNet.json(u, { cache: "no-store" }, {
+          timeout: 7000,
+          retries: 2,
+          cacheKey: "geocode:" + country + ":" + normalizeDestinationQuery(q).toLowerCase(),
+          maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+        return net.data?.results?.[0] || null;
       }
       async function aiMapSuggestions(query, kind) {
         try {
@@ -2693,16 +2723,24 @@
             ...stops.map((s) => [s.lat, s.lng]),
             destination,
           ];
-          const response = await fetch(apiUrl("/api/route-preview"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              points: points.map((p) => ({ lat: p[0], lng: p[1] })),
-            }),
-          });
-          const r = await response.json();
-          if (!response.ok || !r.geometry)
-            throw Error(r.error || "Route unavailable");
+          const routeKey = "route:" + points.map((p) => p.map((n) => Number(n).toFixed(4)).join(",")).join("|");
+          let r;
+          let degraded = false;
+          try {
+            const net = await VasiNet.json(apiUrl("/api/route-preview"), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                points: points.map((p) => ({ lat: p[0], lng: p[1] })),
+              }),
+            }, { timeout: 8500, retries: 2, cacheKey: routeKey, maxAge: 15 * 60 * 1000 });
+            r = net.data;
+            degraded = Boolean(net.fromCache && net.stale);
+          } catch (networkError) {
+            r = VasiNet.approximateRoute(points);
+            degraded = true;
+          }
+          if (!r?.geometry) throw Error(r?.error || "Route unavailable");
           route.km = r.distance_km;
           route.mins = r.duration_min;
           if (routeLine) routeLine.remove();
@@ -2726,7 +2764,7 @@
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
-          const routeSummary = `${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
+          const routeSummary = `${degraded ? "Approx. · " : ""}${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
           $("tripInfo").textContent = routeSummary;
           $("mapTripSummary").textContent = routeSummary;
           $("mapTripSummary").classList.remove("hidden");
@@ -2735,9 +2773,11 @@
             localStorage.removeItem("vasi_open_schedule");
             chooseCustomTime();
           } else
-            $("status").textContent = stops.length
-              ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
-              : "Choose your vehicle, stops and pickup time";
+            $("status").textContent = degraded
+              ? "Weak connection — showing an approximate route. VASI will refresh automatically when the network improves."
+              : stops.length
+                ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
+                : "Choose your vehicle, stops and pickup time";
         } catch (e) {
           console.error(
             "[ride-route] " +
