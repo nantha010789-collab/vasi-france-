@@ -23,7 +23,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: native/customer/package.json
-      - uses: android-actions/setup-android@v3
+      - run: yes | sdkmanager --licenses >/dev/null || true
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - run: npm install
       - run: npx cap add android
@@ -53,7 +53,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: native/driver/package.json
-      - uses: android-actions/setup-android@v3
+      - run: yes | sdkmanager --licenses >/dev/null || true
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - run: npm install
       - run: npx cap add android
@@ -83,7 +83,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: native/partner/package.json
-      - uses: android-actions/setup-android@v3
+      - run: yes | sdkmanager --licenses >/dev/null || true
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - run: npm install
       - run: npx cap add android
