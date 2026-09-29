@@ -1,0 +1,155 @@
+name: Native Store Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "native/**"
+      - "store/**"
+      - ".github/workflows/native-store-check.yml"
+
+jobs:
+  android-customer:
+    name: Android customer compile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/customer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: native/customer/package.json
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap sync android
+      - name: Target Android API 36
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("android/variables.gradle")
+          s=p.read_text()
+          s=s.replace("compileSdkVersion = 35","compileSdkVersion = 36")
+          s=s.replace("targetSdkVersion = 35","targetSdkVersion = 36")
+          p.write_text(s)
+          PY
+      - run: cd android && ./gradlew assembleDebug
+
+  android-driver:
+    name: Android driver compile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/driver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: native/driver/package.json
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap sync android
+      - name: Target Android API 36
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("android/variables.gradle")
+          s=p.read_text()
+          s=s.replace("compileSdkVersion = 35","compileSdkVersion = 36")
+          s=s.replace("targetSdkVersion = 35","targetSdkVersion = 36")
+          p.write_text(s)
+          PY
+      - run: cd android && ./gradlew assembleDebug
+
+  android-partner:
+    name: Android partner compile
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native/partner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: native/partner/package.json
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap sync android
+      - name: Target Android API 36
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("android/variables.gradle")
+          s=p.read_text()
+          s=s.replace("compileSdkVersion = 35","compileSdkVersion = 36")
+          s=s.replace("targetSdkVersion = 35","targetSdkVersion = 36")
+          p.write_text(s)
+          PY
+      - run: cd android && ./gradlew assembleDebug
+
+  ios-customer:
+    name: iOS customer compile
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: native/customer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: native/customer/package.json
+      - run: npm install
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+
+  ios-driver:
+    name: iOS driver compile
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: native/driver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: native/driver/package.json
+      - run: npm install
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+
+  ios-partner:
+    name: iOS partner compile
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: native/partner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: native/partner/package.json
+      - run: npm install
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
