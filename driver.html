@@ -260,6 +260,12 @@
         <div id="ride" class="ride"></div>
       </section>
       <section class="card">
+        <h2>VASI AI</h2>
+        <p class="muted">Conseils uniquement · aucune décision de paiement, remboursement, suspension ou validation n’est prise automatiquement.</p>
+        <button class="btn navbtn" type="button" onclick="askDriverAI()">Obtenir mon résumé</button>
+        <p id="driverAiAdvice" class="muted" aria-live="polite"></p>
+      </section>
+      <section class="card">
         <h2>Driver tools</h2>
         <div class="toolgrid">
           <div class="toolstat"><span class="muted">This month</span><b id="monthEarnings">€0.00</b></div>
@@ -446,7 +452,34 @@
         }
         await Promise.all([loadActiveRide(), loadPayoutBalance(), loadPayoutAccount(), loadDriverTools()]);
       });
-      async function loadDriverTools() {
+      async function askDriverAI() {
+        const out = document.getElementById("driverAiAdvice");
+        out.textContent = "Analyse en cours…";
+        try {
+          const session = (await client.auth.getSession()).data.session;
+          if (!session) throw new Error("Reconnectez-vous.");
+          const response = await fetch("/api/ai-advisor", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + session.access_token, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              surface: "driver",
+              task: "next_steps",
+              context: {
+                online,
+                month_trips: monthlyEarnings.length,
+                pending_documents: document.querySelectorAll("#documentNotices .notice").length,
+                busy_zones: document.querySelectorAll("#busyZones > *").length
+              }
+            })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "VASI AI indisponible");
+          out.textContent = data.reply;
+        } catch (error) {
+          out.textContent = error.message || "VASI AI indisponible";
+        }
+      }
+            async function loadDriverTools() {
         const monthStart = new Date();
         monthStart.setDate(1); monthStart.setHours(0,0,0,0);
         const [{ data: drivers }, { data: earnings }, { data: documents }, heat] = await Promise.all([
