@@ -144,7 +144,8 @@
       }
       .leaflet-control-attribution {
         max-width: calc(100vw - 28px);
-        margin: 148px 12px 0 0 !important;
+        margin-top: max(148px, env(safe-area-inset-top)) !important;
+        margin-right: 12px !important;
         padding: 3px 7px !important;
         border-radius: 8px;
         background: #ffffffdc !important;
@@ -2125,6 +2126,15 @@
           .attribution({ position: "topright", prefix: false })
           .addTo(map);
         let rasterTilesLoaded = 0;
+        let proxyTileErrors = 0;
+        const publicRasterFallback = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxNativeZoom: 19,
+          maxZoom: 20,
+          updateWhenIdle: true,
+          keepBuffer: 3,
+          detectRetina: false,
+          attribution: "© OpenStreetMap contributors",
+        });
         mapFallbackLayer = L.tileLayer("/api/map-tile?z={z}&x={x}&y={y}", {
           maxNativeZoom: 19,
           maxZoom: 20,
@@ -2134,9 +2144,13 @@
           detectRetina: false,
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
-        mapFallbackLayer.on("tileload", () => { rasterTilesLoaded += 1; });
+        mapFallbackLayer.on("tileload", () => { rasterTilesLoaded += 1; if (map.hasLayer(publicRasterFallback)) map.removeLayer(publicRasterFallback); });
         mapFallbackLayer.on("tileerror", () => {
+          proxyTileErrors += 1;
           document.body.dataset.mapRaster = "error";
+          if (proxyTileErrors >= 2 && navigator.onLine !== false && !map.hasLayer(publicRasterFallback)) {
+            publicRasterFallback.addTo(map);
+          }
         });
         if (
           navigator.onLine !== false &&
