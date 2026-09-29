@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
-    <title>VASI Safety Centre</title>
+    <title>VASI — Centre de sécurité</title>
     <style>
       :root { font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #fff; background: #050505; }
       * { box-sizing: border-box; }
@@ -35,33 +35,33 @@
   </head>
   <body>
     <main>
-      <header><div class="brand"><img class="vasi-mark" src="./vasi-icon-192.png" alt="VASI" style="display:block;width:38px;height:38px;object-fit:contain;border-radius:10px" /></div><button class="back" onclick="history.back()">← Back</button></header>
-      <h1>Safety Centre</h1>
-      <p class="lead">Emergency help, ride-start PIN, and a private live trip link in one place.</p>
+      <header><div class="brand"><img class="vasi-mark" src="./vasi-icon-192.png" alt="VASI" style="display:block;width:38px;height:38px;object-fit:contain;border-radius:10px" /></div><button class="back" onclick="history.back()">← Retour</button></header>
+      <h1>Centre de sécurité</h1>
+      <p class="lead">Aide d’urgence, code PIN de départ et partage privé du trajet au même endroit.</p>
 
       <section class="card emergency">
-        <h2>Emergency assistance</h2>
-        <p class="muted">If you or someone else is in immediate danger in France or the EU, call 112.</p>
-        <a class="btn danger" href="tel:112">Call emergency services · 112</a>
+        <h2>Assistance d’urgence</h2>
+        <p class="muted">En cas de danger immédiat en France ou dans l’Union européenne, appelez le 112.</p>
+        <a class="btn danger" href="tel:112">Appeler les secours · 112</a>
       </section>
 
       <section class="card">
-        <h2>Ride-start PIN</h2>
+        <h2>Code PIN de départ</h2>
         <p id="pinHelp" class="muted">Give this PIN to your driver only after you are inside the correct vehicle.</p>
         <div id="pin" class="pin">••••</div>
       </section>
 
       <section class="card">
-        <h2>Share live trip</h2>
-        <p class="muted">Share an unlisted link with someone you trust. Your phone number and email are never shown.</p>
-        <button id="shareBtn" class="btn" onclick="shareTrip()">Share live trip</button>
-        <button id="stopBtn" class="btn secondary hidden" onclick="stopSharing()">Stop sharing</button>
+        <h2>Partager le trajet en direct</h2>
+        <p class="muted">Partagez un lien privé avec une personne de confiance. Votre numéro de téléphone et votre e-mail ne sont jamais affichés.</p>
+        <button id="shareBtn" class="btn" onclick="shareTrip()">Partager le trajet</button>
+        <button id="stopBtn" class="btn secondary hidden" onclick="stopSharing()">Arrêter le partage</button>
       </section>
 
       <section class="card">
         <h2 id="rideState">Loading ride…</h2>
         <div class="route">
-          <div class="point"><small>Pickup</small><span id="pickup">—</span></div>
+          <div class="point"><small>Départ</small><span id="pickup">—</span></div>
           <div class="point"><small>Destination</small><span id="destination">—</span></div>
         </div>
       </section>
