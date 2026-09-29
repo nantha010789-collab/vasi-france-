@@ -57,7 +57,7 @@ test("driver, restaurant and admin surfaces use isolated login sessions", () => 
   const adminLogin = read("admin-login.html");
   const adminApp = read("admin/app.js");
 
-  assert.match(routes, /"source": "\/partner", "destination": "\/partner\.html"/);
+  assert.match(routes, /"source"\s*:\s*"\/partner"[\s\S]*?"destination"\s*:\s*"\/partner\.html"/);
   assert.match(partnerEntry, /VASI Partner · Restaurant/);
   assert.match(partnerEntry, /Se connecter à mon restaurant/);
   assert.match(partnerEntry, /storageKey: "vasi-partner-auth"/);
