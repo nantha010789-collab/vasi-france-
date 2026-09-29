@@ -877,6 +877,18 @@
           zoomSnap: 0.25,
           zoomDelta: 0.5,
         });
+        const publicFallback = L.tileLayer(
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            maxNativeZoom: 19,
+            maxZoom: 20,
+            keepBuffer: 8,
+            detectRetina: false,
+            updateWhenIdle: true,
+            attribution: "© OpenStreetMap contributors",
+          },
+        );
+        let fallbackErrors = 0;
         const fallback = L.tileLayer(
           "/api/map-tile?z={z}&x={x}&y={y}",
           {
@@ -890,6 +902,15 @@
             attribution: "© OpenStreetMap contributors",
           },
         ).addTo(driverMap);
+        fallback.on("tileerror", () => {
+          fallbackErrors += 1;
+          if (fallbackErrors >= 2 && navigator.onLine !== false && !driverMap.hasLayer(publicFallback)) {
+            publicFallback.addTo(driverMap);
+          }
+        });
+        fallback.on("tileload", () => {
+          if (driverMap.hasLayer(publicFallback)) driverMap.removeLayer(publicFallback);
+        });
         driverMap.on("dragstart", () => {
           driverMapFollowing = false;
           document.getElementById("driverRecenterButton")?.classList.remove("is-active");
