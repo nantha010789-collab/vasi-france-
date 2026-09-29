@@ -179,6 +179,12 @@
         </button>
       </section>
       <section class="card">
+        <b>VASI AI</b>
+        <p class="status">Conseils uniquement · aucune décision de paiement, suspension ou validation n’est automatisée.</p>
+        <button class="btn" type="button" onclick="askCourierAI()">Obtenir mon résumé</button>
+        <p id="courierAiAdvice" class="status" aria-live="polite"></p>
+      </section>
+            <section class="card">
         <b>Payments &amp; RIB</b>
         <p id="payoutStatus" class="status">Checking payout account…</p>
         <button id="payoutBtn" class="btn" onclick="openPayoutSetup()" hidden>
@@ -259,7 +265,19 @@
           return { error: error.message || "Courier service unavailable" };
         }
       }
-      async function loadProfile() {
+      async function askCourierAI() {
+        const out=$("courierAiAdvice");
+        out.textContent="Analyse en cours…";
+        try{
+          const {data:{session}}=await client.auth.getSession();
+          if(!session) throw new Error("Reconnectez-vous.");
+          const response=await fetch("/api/ai-advisor",{method:"POST",headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({surface:"courier",task:"next_steps",context:{online,payout_ready:payoutReady,active_job:Boolean(activeJob),verified:Boolean(courierProfile?.verified)}})});
+          const data=await response.json();
+          if(!response.ok) throw new Error(data.error||"VASI AI indisponible");
+          out.textContent=data.reply;
+        }catch(error){out.textContent=error.message||"VASI AI indisponible";}
+      }
+            async function loadProfile() {
         const data = await service({ action: "get_profile" });
         if (data.error) return ($("profile").textContent = data.error);
         const profile = data.driver || data.courier || {};
