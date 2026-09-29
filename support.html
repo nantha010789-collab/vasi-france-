@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <title>VASI Support</title>
+    <title>VASI — Assistance</title>
     <style>
       :root {
         font-family: Inter, system-ui;
@@ -111,6 +111,7 @@
         min-height: 22px;
         color: #aaa;
       }
+      .ai-assistant-box{background:#10151f;border:1px solid #2f3b52;border-radius:20px;padding:17px;margin-top:13px}.ai-assistant-box textarea{width:100%;min-height:92px}.ai-answer{margin-top:12px;padding:12px;border-radius:12px;background:#151b27;color:#e8eefc;white-space:pre-wrap;line-height:1.5}.ai-actions{display:flex;gap:8px;flex-wrap:wrap}.ai-actions .btn{flex:1;min-width:150px}.ai-assistant-box small{display:block;color:#94a3b8;margin-top:8px;line-height:1.4}
       .ai-notice {
         grid-column: 1/-1;
         margin: 0;
@@ -149,6 +150,17 @@
           Tamil · English · French. For immediate danger call
           <a href="tel:112" style="color: #fff">112</a>.
         </p>
+      </section>
+      <section class="ai-assistant-box">
+        <b>VASI AI Assistant</b>
+        <p class="muted">Posez une question en français, anglais ou tamoul. L’IA donne des conseils uniquement et n’effectue aucun remboursement, paiement, suspension ou validation.</p>
+        <textarea id="aiQuestion" placeholder="Ex. Mon chauffeur est en retard, que dois-je faire ?"></textarea>
+        <div class="ai-actions">
+          <button id="askAiBtn" class="btn" type="button">Demander à VASI AI</button>
+          <button id="useAiForTicket" class="btn" type="button" hidden>Créer un ticket avec cette question</button>
+        </div>
+        <div id="aiAnswer" class="ai-answer" hidden aria-live="polite"></div>
+        <small>En cas de danger immédiat, appelez le 112. Les cas de sécurité, paiement, remboursement et fraude sont transmis à un humain.</small>
       </section>
       <section class="panel">
         <form id="form" class="grid">
@@ -274,6 +286,47 @@
           status.textContent = x.message;
         }
       };
+
+      let lastAiQuestion = "";
+      async function askVasiAi() {
+        const question = document.getElementById("aiQuestion").value.trim();
+        const answer = document.getElementById("aiAnswer");
+        const button = document.getElementById("askAiBtn");
+        if (question.length < 3) {
+          answer.hidden = false;
+          answer.textContent = "Décrivez votre question en quelques mots.";
+          return;
+        }
+        button.disabled = true;
+        answer.hidden = false;
+        answer.textContent = "VASI AI analyse votre demande…";
+        try {
+          const response = await fetch("/api/ai-advisor", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+            body: JSON.stringify({ surface: "customer", task: "support", question, context: {} }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "VASI AI indisponible");
+          answer.textContent = data.reply || "Aucun conseil disponible.";
+          lastAiQuestion = question;
+          document.getElementById("useAiForTicket").hidden = false;
+        } catch (error) {
+          answer.textContent = error.message || "VASI AI indisponible";
+        } finally {
+          button.disabled = false;
+        }
+      }
+      document.getElementById("askAiBtn").addEventListener("click", askVasiAi);
+      document.getElementById("useAiForTicket").addEventListener("click", () => {
+        if (!lastAiQuestion) return;
+        const form = document.getElementById("form");
+        form.elements.category.value = "other";
+        form.elements.subject.value = "Question transmise depuis VASI AI";
+        form.elements.description.value = lastAiQuestion;
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+
       client.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
           localStorage.setItem("vasi_return", "support.html");
