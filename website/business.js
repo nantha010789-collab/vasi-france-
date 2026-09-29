@@ -1,10 +1,10 @@
 const translations = {
   fr: {
-    pageTitle: "VASI — Trajets, repas et livraisons", pageDescription: "VASI réunit trajets, livraison de repas et envoi de colis dans une seule expérience simple et fiable.", skip: "Aller au contenu",
+    pageTitle: "VASI — Trajets, repas et livraisons", pageDescription: "VASI réunit trajets, livraison de repas et envoi de colis dans une expérience simple, claire et fiable.", skip: "Aller au contenu",
     navServices: "Services", navPartners: "Partenaires", navSafety: "Sécurité", navHelp: "Aide", navInvestors: "Investisseurs", navContact: "Contact", openApp: "Ouvrir l’app", heroAlt: "Voiture et coursier VASI circulant dans une ville française",
-    heroEyebrow: "Mobilité • Repas • Livraison", heroTitle: "La ville avance.<br />VASI aussi.", heroCopy: "Réservez un trajet, commandez un repas ou envoyez un colis depuis une seule expérience pensée pour la France.",
+    heroEyebrow: "Mobilité • Repas • Livraison", heroTitle: "La ville avance.<br />VASI aussi.", heroCopy: "Réservez un trajet, commandez un repas ou envoyez un colis avec VASI, pensé pour la France.",
     pickupLabel: "Départ", pickupPlaceholder: "Votre adresse de départ", destinationLabel: "Destination", destinationPlaceholder: "Où allez-vous ?", searchRide: "Rechercher",
-    startNow: "Commencer maintenant", becomePartner: "Devenir partenaire", investorRelations: "Investisseurs", proofOne: "Une seule application", proofTwo: "Trois services essentiels",
+    startNow: "Commencer maintenant", becomePartner: "Devenir partenaire", investorRelations: "Investisseurs", proofOne: "VASI au quotidien", proofTwo: "Trois services essentiels",
     introKicker: "VASI, simplement", introTitle: "Tout ce dont votre journée a besoin, au même endroit.", introCopy: "Du premier trajet du matin au dîner livré le soir, VASI vous aide à avancer avec une expérience claire, rapide et locale.",
     servicesKicker: "Nos services", servicesTitle: "Choisissez. Réservez. Avancez.", servicesCopy: "Chaque service VASI est conçu pour aller droit à l’essentiel.",
     rideTitle: "VASI Ride", rideCopy: "Réservez votre trajet et suivez votre chauffeur en temps réel.", rideFeatureOne: "Réservation simple", rideFeatureTwo: "Suivi du chauffeur", rideFeatureThree: "Assistance accessible", bookRide: "Réserver un trajet", eatsTitle: "VASI Eats", eatsCopy: "Commandez auprès de restaurants partenaires, simplement.", eatsFeatureOne: "Restaurants partenaires", eatsFeatureTwo: "Commande claire", eatsFeatureThree: "Suivi de livraison", orderMeal: "Commander un repas",
@@ -16,14 +16,14 @@ const translations = {
     safetyKicker: "Confiance et sécurité", safetyTitle: "La tranquillité fait partie du trajet.", safetyCopy: "VASI rassemble les outils utiles pour suivre vos activités, protéger votre compte et demander de l’aide.", discoverSafety: "Découvrir la sécurité VASI",
     secureAccount: "Compte protégé", secureAccountCopy: "Connexion sécurisée et préférences de confidentialité.", liveTracking: "Suivi en direct", liveTrackingCopy: "Les informations essentielles de votre activité au même endroit.", supportTitle: "Assistance VASI", supportCopy: "Une aide accessible depuis l’application.",
     appKicker: "VASI sur votre téléphone", appTitle: "Tout VASI dans votre poche.", appCopy: "Réservez un trajet, commandez un repas ou envoyez un colis depuis une expérience claire conçue pour votre mobile.", appBenefitOne: "Simple", appBenefitTwo: "Sécurisé", appBenefitThree: "Toujours accessible", qrTitle: "Scannez pour ouvrir VASI", qrAlt: "QR code vers l’application VASI", qrHelp: "Ou ouvrez directement l’application sur votre téléphone.",
-    contactKicker: "Parlons de votre projet", contactTitle: "Une question sur VASI ?", contactCopy: "Notre équipe est disponible pour les clients et les futurs partenaires.", contactUs: "Nous contacter", footerCopy: "Trajets, repas et livraisons dans une seule application.", footerServices: "Services", footerCompany: "VASI", footerLegal: "Informations", helpCentre: "Centre d’aide", legalPrivacy: "Mentions légales & confidentialité", madeForFrance: "Conçu pour la France."
+    contactKicker: "Parlons de votre projet", contactTitle: "Une question sur VASI ?", contactCopy: "Notre équipe est disponible pour les clients et les futurs partenaires.", contactUs: "Nous contacter", footerCopy: "Trajets, repas et livraisons avec VASI.", footerServices: "Services", footerCompany: "VASI", footerLegal: "Informations", helpCentre: "Centre d’aide", legalPrivacy: "Mentions légales & confidentialité", madeForFrance: "Conçu pour la France."
   },
   en: {
-    pageTitle: "VASI — Rides, food and delivery", pageDescription: "VASI brings rides, food delivery and local parcel delivery together in one simple, dependable experience.", skip: "Skip to content",
+    pageTitle: "VASI — Rides, food and delivery", pageDescription: "VASI brings rides, food delivery and local parcel delivery together in a simple, dependable experience.", skip: "Skip to content",
     navServices: "Services", navPartners: "Partners", navSafety: "Safety", navHelp: "Help", navInvestors: "Investors", navContact: "Contact", openApp: "Open the app", heroAlt: "VASI car and courier moving through a French city",
-    heroEyebrow: "Mobility • Food • Delivery", heroTitle: "The city moves.<br />So does VASI.", heroCopy: "Book a ride, order a meal or send a parcel through one experience designed for France.",
+    heroEyebrow: "Mobility • Food • Delivery", heroTitle: "The city moves.<br />So does VASI.", heroCopy: "Book a ride, order a meal or send a parcel with VASI, designed for France.",
     pickupLabel: "Pickup", pickupPlaceholder: "Your pickup address", destinationLabel: "Destination", destinationPlaceholder: "Where are you going?", searchRide: "Search",
-    startNow: "Get started", becomePartner: "Become a partner", investorRelations: "Investors", proofOne: "One application", proofTwo: "Three essential services",
+    startNow: "Get started", becomePartner: "Become a partner", investorRelations: "Investors", proofOne: "VASI for everyday life", proofTwo: "Three essential services",
     introKicker: "VASI, made simple", introTitle: "Everything your day needs, in one place.", introCopy: "From your first morning ride to dinner delivered at night, VASI helps you keep moving with a clear, fast and local experience.",
     servicesKicker: "Our services", servicesTitle: "Choose. Book. Move.", servicesCopy: "Every VASI service is designed to keep things straightforward.",
     rideTitle: "VASI Ride", rideCopy: "Book your trip and follow your driver in real time.", rideFeatureOne: "Simple booking", rideFeatureTwo: "Driver tracking", rideFeatureThree: "Accessible support", bookRide: "Book a ride", eatsTitle: "VASI Eats", eatsCopy: "Order from partner restaurants with ease.", eatsFeatureOne: "Partner restaurants", eatsFeatureTwo: "Clear ordering", eatsFeatureThree: "Delivery tracking", orderMeal: "Order a meal",
@@ -35,7 +35,7 @@ const translations = {
     safetyKicker: "Trust and safety", safetyTitle: "Peace of mind is part of the journey.", safetyCopy: "VASI brings together the tools you need to track activity, protect your account and ask for help.", discoverSafety: "Explore VASI safety",
     secureAccount: "Protected account", secureAccountCopy: "Secure sign-in and privacy preferences.", liveTracking: "Live tracking", liveTrackingCopy: "Essential activity information in one place.", supportTitle: "VASI Support", supportCopy: "Help available directly from the app.",
     appKicker: "VASI on your phone", appTitle: "All of VASI in your pocket.", appCopy: "Book a ride, order a meal or send a parcel through a clear experience designed for mobile.", appBenefitOne: "Simple", appBenefitTwo: "Secure", appBenefitThree: "Always accessible", qrTitle: "Scan to open VASI", qrAlt: "QR code to the VASI application", qrHelp: "Or open the application directly on your phone.",
-    contactKicker: "Let’s talk", contactTitle: "Have a question about VASI?", contactCopy: "Our team is available for customers and future partners.", contactUs: "Contact us", footerCopy: "Rides, food and deliveries in one application.", footerServices: "Services", footerCompany: "VASI", footerLegal: "Information", helpCentre: "Help Centre", legalPrivacy: "Legal & privacy", madeForFrance: "Designed for France."
+    contactKicker: "Let’s talk", contactTitle: "Have a question about VASI?", contactCopy: "Our team is available for customers and future partners.", contactUs: "Contact us", footerCopy: "Rides, food and deliveries with VASI.", footerServices: "Services", footerCompany: "VASI", footerLegal: "Information", helpCentre: "Help Centre", legalPrivacy: "Legal & privacy", madeForFrance: "Designed for France."
   }
 };
 function setLanguage(language) {
@@ -57,7 +57,7 @@ document.getElementById("quickBooking")?.addEventListener("submit",(event) => {
   const pickup = document.getElementById("quickPickup")?.value.trim();
   const destination = document.getElementById("quickDestination")?.value.trim();
   if (!destination) return document.getElementById("quickDestination")?.focus();
-  const rideUrl = new URL("https://vasi-new.vercel.app/ride-flow.html");
+  const rideUrl = new URL("/ride");
   if (pickup) rideUrl.searchParams.set("pickup",pickup);
   rideUrl.searchParams.set("destination",destination);
   window.location.href = rideUrl.toString();
@@ -66,7 +66,7 @@ document.getElementById("coverageForm")?.addEventListener("submit",(event) => {
   event.preventDefault();
   const address = document.getElementById("coverageAddress")?.value.trim();
   if (!address) return document.getElementById("coverageAddress")?.focus();
-  const appUrl = new URL("https://vasi-new.vercel.app/");
+  const appUrl = new URL("/app");
   appUrl.searchParams.set("address",address);
   window.location.href = appUrl.toString();
 });
