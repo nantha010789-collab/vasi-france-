@@ -57,7 +57,7 @@ document.getElementById("quickBooking")?.addEventListener("submit",(event) => {
   const pickup = document.getElementById("quickPickup")?.value.trim();
   const destination = document.getElementById("quickDestination")?.value.trim();
   if (!destination) return document.getElementById("quickDestination")?.focus();
-  const rideUrl = new URL("/ride");
+  const rideUrl = new URL("/ride-flow.html", window.location.origin);
   if (pickup) rideUrl.searchParams.set("pickup",pickup);
   rideUrl.searchParams.set("destination",destination);
   window.location.href = rideUrl.toString();
@@ -66,7 +66,7 @@ document.getElementById("coverageForm")?.addEventListener("submit",(event) => {
   event.preventDefault();
   const address = document.getElementById("coverageAddress")?.value.trim();
   if (!address) return document.getElementById("coverageAddress")?.focus();
-  const appUrl = new URL("/app");
+  const appUrl = new URL("/app.html", window.location.origin);
   appUrl.searchParams.set("address",address);
   window.location.href = appUrl.toString();
 });
