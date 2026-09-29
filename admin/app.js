@@ -96,6 +96,7 @@
       out.textContent=result.reply||'Aucun conseil disponible.';
     }catch(e){out.textContent=e.message||'VASI AI indisponible';}
   }
+  window.askAdminAI=askAdminAI;
     async function control(){
     try{
       const [s,bookings,drivers]=await Promise.all([api('/api/admin-stats'),api('/api/admin-bookings'),api('/api/admin-drivers')]);
