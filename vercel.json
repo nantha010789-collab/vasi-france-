@@ -1,72 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/website/index.html"
-    },
-    {
-      "source": "/partners",
-      "destination": "/website/partners.html"
-    },
-    {
-      "source": "/partners.html",
-      "destination": "/website/partners.html"
-    },
-    {
-      "source": "/help",
-      "destination": "/website/help.html"
-    },
-    {
-      "source": "/help.html",
-      "destination": "/website/help.html"
-    },
-    {
-      "source": "/investors",
-      "destination": "/website/investors.html"
-    },
-    {
-      "source": "/investors.html",
-      "destination": "/website/investors.html"
-    },
-    {
-      "source": "/contact",
-      "destination": "/website/contact.html"
-    },
-    {
-      "source": "/contact.html",
-      "destination": "/website/contact.html"
-    },
-    {
-      "source": "/legal",
-      "destination": "/website/legal.html"
-    },
-    {
-      "source": "/legal.html",
-      "destination": "/website/legal.html"
-    },
-    {
       "source": "/app",
       "destination": "/app.html"
-    },
-    {
-      "source": "/ride",
-      "destination": "/ride-flow.html"
-    },
-    {
-      "source": "/eats",
-      "destination": "/eats.html"
-    },
-    {
-      "source": "/delivery",
-      "destination": "/delivery.html"
-    },
-    {
-      "source": "/safety",
-      "destination": "/safety.html"
-    },
-    {
-      "source": "/support",
-      "destination": "/support.html"
     },
     {
       "source": "/driver",
