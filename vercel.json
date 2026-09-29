@@ -137,6 +137,7 @@
     "api/call-config.js": { "includeFiles": "api/call-config.js" },
     "api/push-config.js": { "includeFiles": "api/push-config.js" },
     "api/ai-map-assist.js": { "includeFiles": "api/ai-map-assist.js" },
+    "api/ai-advisor.js": { "includeFiles": "api/ai-advisor.js" },
     "api/places.js": { "includeFiles": "api/places.js" },
     "api/create-payment-intent.js": {
       "includeFiles": "api/create-payment-intent.js"
