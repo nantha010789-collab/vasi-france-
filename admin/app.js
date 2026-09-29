@@ -27,7 +27,7 @@
     reports:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
     audit:'<path d="M12 2 20 5v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5Z"/><path d="m9 12 2 2 4-5"/>'
   };
-  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapLayoutTargets = [], mapWidth = 0, mapHeight = 0, mapLoadFailures = 0, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending';
+  let accessToken = '', active = 'overview', gpsTimer = null, map = null, mapTiles = null, mapResizeObserver = null, mapLayoutTargets = [], mapWidth = 0, mapHeight = 0, mapLoadFailures = 0, markers = {}, gpsFitted = false, courierStatus = 'pending', restaurantStatus = 'pending', adminAiContext = {};
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const isFrench = () => (window.VasiLanguage?.getLanguage?.() || 'fr') === 'fr';
   const money = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
@@ -88,7 +88,15 @@
   function errorView(error){setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}</div>`}
   function gotoButton(label,target,kind=''){return `<button class="button ${kind}" data-goto="${esc(target)}">${esc(label)}</button>`}
   function alertCard(level,title,value,note,target){return `<article class="ops-alert ${level}"><div><span class="ops-kicker">${level==='critical'?'Priorité':level==='warn'?'À traiter':'OK'}</span><h3>${esc(title)}</h3><strong>${esc(value)}</strong><p>${esc(note)}</p></div>${target?gotoButton('Ouvrir',target):''}</article>`}
-  async function control(){
+  async function askAdminAI(){
+    const out=document.getElementById('adminAiAdvice'); if(!out)return;
+    out.textContent='Analyse en cours…';
+    try{
+      const result=await api('/api/ai-advisor',{method:'POST',body:JSON.stringify({surface:'admin',task:'risk_check',context:adminAiContext})});
+      out.textContent=result.reply||'Aucun conseil disponible.';
+    }catch(e){out.textContent=e.message||'VASI AI indisponible';}
+  }
+    async function control(){
     try{
       const [s,bookings,drivers]=await Promise.all([api('/api/admin-stats'),api('/api/admin-bookings'),api('/api/admin-drivers')]);
       const pendingRides=bookings.filter(x=>['pending','searching'].includes(String(x.status||''))).length;
@@ -104,7 +112,8 @@
         alertCard(Number(s.pendingRestaurants||0)>0?'warn':'ok','Restaurants en attente',s.pendingRestaurants||0,'Onboarding restaurant en attente de validation.','restaurants'),
         alertCard(payoutBlocked>0?'warn':'ok','Paiements chauffeurs incomplets',payoutBlocked,'Comptes Stripe/RIB qui ne sont pas encore prêts pour les versements.','drivers')
       ].join('');
-      shell('Centre de contrôle',`<section class="ops-hero"><div><p class="eyebrow">TEMPS RÉEL</p><h2>Exploitation VASI</h2><p>Les points qui demandent une action sont regroupés ici pour éviter de chercher dans plusieurs écrans.</p></div><div class="ops-actions">${gotoButton('Voir le GPS','gps','primary')}${gotoButton('Courses','bookings')}${gotoButton('Support','support')}</div></section><div class="ops-grid">${alerts}</div><section class="panel"><div class="panel-head"><h2>État du réseau</h2><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Chauffeurs en ligne',onlineDrivers,'Disponibles maintenant')}${metric('Courses actives',s.activeRides||0,'En cours')}${metric('Commission VASI',money(s.todayCommission),'Aujourd’hui')}${metric('Chiffre brut',money(s.todayGross),'Aujourd’hui')}</div></section>`);
+      adminAiContext={pending_rides:pendingRides,unassigned_rides:unassigned,online_drivers:onlineDrivers,pending_documents:Number(s.pendingDocuments||0),pending_couriers:Number(s.pendingCouriers||0),pending_restaurants:Number(s.pendingRestaurants||0),payout_blocked:payoutBlocked,active_rides:Number(s.activeRides||0)};
+      shell('Centre de contrôle',`<section class="ops-hero"><div><p class="eyebrow">TEMPS RÉEL</p><h2>Exploitation VASI</h2><p>Les points qui demandent une action sont regroupés ici pour éviter de chercher dans plusieurs écrans.</p></div><div class="ops-actions">${gotoButton('Voir le GPS','gps','primary')}${gotoButton('Courses','bookings')}${gotoButton('Support','support')}</div></section><div class="ops-grid">${alerts}</div><section class="panel"><div class="panel-head"><h2>État du réseau</h2><button class="button" data-refresh>Actualiser</button></div><div class="summary-grid">${metric('Chauffeurs en ligne',onlineDrivers,'Disponibles maintenant')}${metric('Courses actives',s.activeRides||0,'En cours')}${metric('Commission VASI',money(s.todayCommission),'Aujourd’hui')}${metric('Chiffre brut',money(s.todayGross),'Aujourd’hui')}</div></section><section class="panel"><div class="panel-head"><div><h2>VASI AI</h2><p class="muted">Conseils uniquement. Toute décision de paiement, remboursement, suspension, validation ou suppression reste humaine.</p></div><button class="button primary" onclick="askAdminAI()">Analyser</button></div><p id="adminAiAdvice" class="muted" aria-live="polite">Utilisez l’analyse pour prioriser les éléments à vérifier.</p></section>`);
       setConnected(true);
     }catch(e){shell('Centre de contrôle',errorView(e))}
   }
