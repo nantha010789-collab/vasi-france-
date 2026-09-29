@@ -1,0 +1,3 @@
+Contact: mailto:contact@vasigo.eu
+Preferred-Languages: fr, en
+Canonical: https://vasigo.eu/.well-known/security.txt
