@@ -1426,7 +1426,7 @@ test("approved couriers must self-connect a verified RIB before going online", a
 
 test("PWA install metadata and baseline security headers stay production-ready", async () => {
   const [index, manifestSource, worker, vercel, icon192, icon512] = await Promise.all([
-    readFile("index.html", "utf8"),
+    readFile("app.html", "utf8"),
     readFile("manifest.webmanifest", "utf8"),
     readFile("sw.js", "utf8"),
     readFile("vercel.json", "utf8"),
