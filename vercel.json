@@ -6,7 +6,7 @@
     { "source": "/driver/", "destination": "/driver-home.html" },
     { "source": "/partner", "destination": "/partner.html" },
     { "source": "/partner/", "destination": "/partner.html" },
-    { "source": "/", "destination": "/website/index.html" },
+    { "source": "/", "destination": "/website" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app.html", "destination": "/app.html" },
     { "source": "/app-easy", "destination": "/app.html" },
