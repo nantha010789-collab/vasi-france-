@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/website", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
@@ -6,7 +9,6 @@
     { "source": "/driver/", "destination": "/driver-home.html" },
     { "source": "/partner", "destination": "/partner.html" },
     { "source": "/partner/", "destination": "/partner.html" },
-    { "source": "/", "destination": "/website" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app.html", "destination": "/app.html" },
     { "source": "/app-easy", "destination": "/app.html" },
