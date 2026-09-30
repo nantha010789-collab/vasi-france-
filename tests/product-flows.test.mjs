@@ -644,6 +644,7 @@ test("production-readiness surfaces disclose automation and use clear chauffeur 
   assert.match(support, /Safety, payment, refund and fraud requests are queued/);
   assert.match(support, /surface: token \? "customer" : "public"/);
   assert.match(support, /L’assistant VASI ci-dessus reste disponible sans connexion/);
+  assert.match(support, /\[hidden\] \{\s*display: none !important;/);
   assert.doesNotMatch(
     support,
     /if \(!session\) \{\s*localStorage\.setItem\("vasi_return", "support\.html"\);\s*location\.href/,
