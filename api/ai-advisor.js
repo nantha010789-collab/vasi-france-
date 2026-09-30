@@ -1,7 +1,10 @@
 const supabaseUrl=process.env.VASI_SUPABASE_URL||process.env.SUPABASE_URL||"https://vhfyvkrvysrooaqzcxsp.supabase.co";
 const anonKey=process.env.VASI_SUPABASE_ANON_KEY||process.env.SUPABASE_ANON_KEY||"sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
-const allowedSurfaces=new Set(["customer","driver","courier","restaurant","admin"]);
+const allowedSurfaces=new Set(["public","customer","driver","courier","restaurant","admin"]);
 const allowedTasks=new Set(["summary","next_steps","risk_check","support"]);
+const publicRateLimit=globalThis.__vasiPublicAiRateLimit||(globalThis.__vasiPublicAiRateLimit=new Map());
+const publicWindowMs=10*60*1000;
+const publicLimit=12;
 
 async function currentUser(auth){
   if(!String(auth||"").startsWith("Bearer ")) return null;
@@ -22,6 +25,19 @@ function cleanContext(input){
     else if(typeof value==="string") out[k]=cleanText(value,160);
   }
   return out;
+}
+function publicRequestAllowed(req){
+  const now=Date.now();
+  const forwarded=String(req.headers?.["x-forwarded-for"]||"").split(",")[0].trim();
+  const key=cleanText(forwarded||req.headers?.["x-real-ip"]||"unknown",80);
+  const current=publicRateLimit.get(key);
+  if(!current||now-current.startedAt>=publicWindowMs){
+    publicRateLimit.set(key,{count:1,startedAt:now});
+    return true;
+  }
+  if(current.count>=publicLimit) return false;
+  current.count+=1;
+  return true;
 }
 function fallback(surface,task,ctx){
   const notes=[];
@@ -58,11 +74,14 @@ export default async function handler(req,res){
   if(req.method!=="POST") return res.status(405).json({error:"POST required"});
   const auth=req.headers?.authorization||"";
   const user=await currentUser(auth).catch(()=>null);
-  if(!user?.id) return res.status(401).json({error:"Sign in required"});
   const surface=allowedSurfaces.has(req.body?.surface)?req.body.surface:"customer";
   const task=allowedTasks.has(req.body?.task)?req.body.task:"summary";
+  const publicSupport=!user?.id&&surface==="public"&&task==="support";
+  if(!user?.id&&!publicSupport) return res.status(401).json({error:"Sign in required"});
+  if(publicSupport&&!publicRequestAllowed(req)) return res.status(429).json({error:"Trop de demandes. Réessayez dans quelques minutes."});
   const context=cleanContext(req.body?.context);
   const question=cleanText(req.body?.question,500);
+  if(task==="support"&&question.length<3) return res.status(400).json({error:"Question required"});
   const fallbackReply=fallback(surface,task,context);
   if(!process.env.OPENAI_API_KEY) return res.status(200).json({enabled:false,advisory:true,reply:fallbackReply});
 

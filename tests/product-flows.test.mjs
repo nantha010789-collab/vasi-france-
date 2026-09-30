@@ -642,6 +642,12 @@ test("production-readiness surfaces disclose automation and use clear chauffeur 
   assert.doesNotMatch(auth, /<span>Ride<\/span>/);
   assert.match(support, /VASI AI Assistant · Automated reply/);
   assert.match(support, /Safety, payment, refund and fraud requests are queued/);
+  assert.match(support, /surface: token \? "customer" : "public"/);
+  assert.match(support, /L’assistant VASI ci-dessus reste disponible sans connexion/);
+  assert.doesNotMatch(
+    support,
+    /if \(!session\) \{\s*localStorage\.setItem\("vasi_return", "support\.html"\);\s*location\.href/,
+  );
   assert.match(legal, /Automated support/);
   assert.match(legal, /Assistance automatisée/);
   assert.match(legal, /retention schedules and deletion controls must be verified before commercial launch/);
@@ -649,6 +655,34 @@ test("production-readiness surfaces disclose automation and use clear chauffeur 
   assert.match(webhook, /refund\.updated/);
   assert.match(webhook, /payout\.failed/);
   assert.match(webhook, /disablePayoutsForAccount/);
+});
+
+test("public VASI support advice works without login while private advisor tasks stay protected", async () => {
+  const originalKey = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  const { default: aiAdvisor } = await import(`../api/ai-advisor.js?public-support=${Date.now()}`);
+
+  const publicRes = mockRes();
+  await aiAdvisor({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.21" },
+    body: { surface: "public", task: "support", question: "Mon chauffeur est en retard", context: {} },
+  }, publicRes);
+  assert.equal(publicRes.statusCode, 200);
+  assert.equal(publicRes.body.advisory, true);
+  assert.match(publicRes.body.reply, /conseils uniquement/i);
+
+  const privateRes = mockRes();
+  await aiAdvisor({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.22" },
+    body: { surface: "customer", task: "support", question: "Montrez mes paiements", context: {} },
+  }, privateRes);
+  assert.equal(privateRes.statusCode, 401);
+  assert.match(privateRes.body.error, /sign in required/i);
+
+  if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+  else process.env.OPENAI_API_KEY = originalKey;
 });
 
 test("health endpoint is minimal, read-only and not cached", async () => {
