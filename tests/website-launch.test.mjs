@@ -8,9 +8,9 @@ test("public website exposes clean about, privacy and terms routes", () => {
   const config = JSON.parse(read("vercel.json"));
   const routes = new Map(config.rewrites.map(({ source, destination }) => [source, destination]));
 
-  assert.equal(routes.get("/about"), "/website/about.html");
-  assert.equal(routes.get("/privacy"), "/website/privacy.html");
-  assert.equal(routes.get("/terms"), "/website/terms.html");
+  assert.equal(routes.get("/about"), "/website/about");
+  assert.equal(routes.get("/privacy"), "/website/privacy");
+  assert.equal(routes.get("/terms"), "/website/terms");
 });
 
 test("public policy pages are bilingual and have stable canonical URLs", () => {

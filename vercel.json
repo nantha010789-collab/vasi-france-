@@ -3,12 +3,12 @@
     { "source": "/", "destination": "/website", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/about", "destination": "/website/about.html" },
-    { "source": "/about/", "destination": "/website/about.html" },
-    { "source": "/privacy", "destination": "/website/privacy.html" },
-    { "source": "/privacy/", "destination": "/website/privacy.html" },
-    { "source": "/terms", "destination": "/website/terms.html" },
-    { "source": "/terms/", "destination": "/website/terms.html" },
+    { "source": "/about", "destination": "/website/about" },
+    { "source": "/about/", "destination": "/website/about" },
+    { "source": "/privacy", "destination": "/website/privacy" },
+    { "source": "/privacy/", "destination": "/website/privacy" },
+    { "source": "/terms", "destination": "/website/terms" },
+    { "source": "/terms/", "destination": "/website/terms" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/driver", "destination": "/driver-home.html" },
