@@ -673,7 +673,7 @@ test("public investor option is a non-binding enquiry, never an online share che
     readFile("website/contact.html", "utf8"),
     readFile("website/investors.html", "utf8"),
   ]);
-  assert.match(home, /href="\.\/investors\.html"/);
+  assert.match(home, /href="\/website\/investors\.html"/);
   assert.match(contact, /Espace investisseurs/);
   assert.match(investors, /Investissement minoritaire/);
   assert.match(investors, /acquisition potentielle de 100 %/);
