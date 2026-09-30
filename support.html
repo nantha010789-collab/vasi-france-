@@ -163,7 +163,12 @@
         <small>En cas de danger immédiat, appelez le 112. Les cas de sécurité, paiement, remboursement et fraude sont transmis à un humain.</small>
       </section>
       <section class="panel">
-        <form id="form" class="grid">
+        <div id="guestSupport" hidden>
+          <b>Assistance liée à votre compte</b>
+          <p class="muted">Connectez-vous uniquement pour créer un ticket personnel ou consulter son suivi. L’assistant VASI ci-dessus reste disponible sans connexion.</p>
+          <a id="loginForSupport" class="btn primary" href="auth.html?role=customer">Se connecter pour créer un ticket</a>
+        </div>
+        <form id="form" class="grid" hidden>
           <select name="user_role">
             <option value="customer">Customer</option>
             <option value="ride">Ride driver</option>
@@ -212,7 +217,7 @@
         </p>
       </section>
       <section>
-        <h2>Your support tickets</h2>
+        <h2>Vos tickets d’assistance</h2>
         <div id="tickets"><p class="muted">Loading…</p></div>
       </section>
     </main>
@@ -275,6 +280,11 @@
       }
       document.getElementById("form").onsubmit = async (e) => {
         e.preventDefault();
+        if (!token) {
+          localStorage.setItem("vasi_return", "support.html");
+          location.href = "auth.html?role=customer";
+          return;
+        }
         status.textContent = "VASI is checking your request…";
         try {
           const d = await api(Object.fromEntries(new FormData(e.target)));
@@ -303,8 +313,11 @@
         try {
           const response = await fetch("/api/ai-advisor", {
             method: "POST",
-            headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-            body: JSON.stringify({ surface: "customer", task: "support", question, context: {} }),
+            headers: {
+              ...(token ? { Authorization: "Bearer " + token } : {}),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ surface: token ? "customer" : "public", task: "support", question, context: {} }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || "VASI AI indisponible");
@@ -320,6 +333,12 @@
       document.getElementById("askAiBtn").addEventListener("click", askVasiAi);
       document.getElementById("useAiForTicket").addEventListener("click", () => {
         if (!lastAiQuestion) return;
+        if (!token) {
+          sessionStorage.setItem("vasi_support_draft", lastAiQuestion);
+          localStorage.setItem("vasi_return", "support.html");
+          location.href = "auth.html?role=customer";
+          return;
+        }
         const form = document.getElementById("form");
         form.elements.category.value = "other";
         form.elements.subject.value = "Question transmise depuis VASI AI";
@@ -329,10 +348,20 @@
 
       client.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
-          localStorage.setItem("vasi_return", "support.html");
-          location.href = "auth.html?role=customer";
+          document.getElementById("guestSupport").hidden = false;
+          box.innerHTML = '<p class="muted">Connectez-vous pour consulter vos tickets personnels.</p>';
+          document.getElementById("useAiForTicket").textContent = "Se connecter pour créer un ticket";
         } else {
           token = session.access_token;
+          document.getElementById("form").hidden = false;
+          const draft = sessionStorage.getItem("vasi_support_draft");
+          if (draft) {
+            const form = document.getElementById("form");
+            form.elements.category.value = "other";
+            form.elements.subject.value = "Question transmise depuis VASI AI";
+            form.elements.description.value = draft;
+            sessionStorage.removeItem("vasi_support_draft");
+          }
           load();
         }
       });
