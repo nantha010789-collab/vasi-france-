@@ -10,6 +10,8 @@ import { test } from "node:test";
 import vm from "node:vm";
 
 const root = process.cwd();
+const vercelConfig = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+const rewriteSources = new Set((vercelConfig.rewrites || []).map(({ source }) => source));
 
 function walk(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -50,6 +52,7 @@ function localTargetExists(page, rawTarget) {
 
   const target = decodeURIComponent(rawTarget.split(/[?#]/, 1)[0]);
   if (!target) return true;
+  if (rewriteSources.has(target) || rewriteSources.has(target.replace(/\/$/, ""))) return true;
 
   if (target.startsWith("/api/")) {
     return existsSync(join(root, `${target.slice(1)}.js`));

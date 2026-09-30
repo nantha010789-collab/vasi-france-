@@ -14,12 +14,12 @@
     <link rel="preload" href="/website/assets/hero-mobility-v1.webp" as="image" type="image/webp" />
     <link rel="stylesheet" href="/website/business.css" />
     <title>VASI — Trajets, repas et livraisons</title>
-    <link rel="canonical" href="https://www.vasigo.eu/website/" />
+    <link rel="canonical" href="https://www.vasigo.eu/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="VASI" />
     <meta property="og:title" content="VASI — Trajets, repas et livraisons" />
     <meta property="og:description" content="VASI réunit trajets, livraison de repas et envoi de colis dans une expérience simple, claire et fiable." />
-    <meta property="og:url" content="https://www.vasigo.eu/website/" />
+    <meta property="og:url" content="https://www.vasigo.eu/" />
     <meta property="og:image" content="https://www.vasigo.eu/website/assets/hero-mobility-v1.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="VASI — Trajets, repas et livraisons" />
@@ -36,18 +36,17 @@
         <a class="brand brand-image-link" href="/" aria-label="VASI accueil"><img class="brand-logo" src="/website/vasi-logo-brand.png" alt="VASI" /></a>
         <nav class="desktop-nav" aria-label="Navigation principale">
           <a href="#services" data-i18n="navServices">Services</a>
-          <a href="#partners" data-i18n="navPartners">Partenaires</a>
           <a href="#safety" data-i18n="navSafety">Sécurité</a>
+          <a href="#partners" data-i18n="navPartners">Partenaires</a>
           <a href="/website/help.html" data-i18n="navHelp">Aide</a>
-          <a href="/website/investors.html" data-i18n="navInvestors">Investisseurs</a>
-          <a href="/website/contact.html" data-i18n="navContact">Contact</a>
         </nav>
         <div class="header-actions">
           <div class="language-switch" role="group" aria-label="Choisir la langue">
             <button class="lang-button is-active" type="button" data-lang="fr" aria-pressed="true">FR</button>
             <button class="lang-button" type="button" data-lang="en" aria-pressed="false">EN</button>
           </div>
-          <a class="button button-small button-light" href="/app.html" data-i18n="openApp">Ouvrir l’app</a>
+          <a class="button button-small button-ghost header-login" href="/auth.html?role=customer" data-i18n="login">Connexion</a>
+          <a class="button button-small button-light" href="/ride-flow.html" data-i18n="orderRide">Commander</a>
         </div>
       </div>
     </header>
@@ -66,10 +65,10 @@
             <label><span data-i18n="destinationLabel">Destination</span><input id="quickDestination" type="text" autocomplete="street-address" data-i18n-placeholder="destinationPlaceholder" placeholder="Où allez-vous ?" required /></label>
             <button type="submit" aria-label="Rechercher un trajet"><span data-i18n="searchRide">Rechercher</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></button>
           </form>
+          <p class="booking-note" data-i18n="priceBeforeLogin">Consultez l’itinéraire et le prix avant de vous connecter. La connexion est demandée uniquement pour confirmer.</p>
           <div class="hero-actions">
             <a class="button button-primary" href="/app.html"><span data-i18n="startNow">Commencer maintenant</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
             <a class="button button-ghost" href="#partners" data-i18n="becomePartner">Devenir partenaire</a>
-            <a class="button button-ghost" href="/website/investors.html" data-i18n="investorRelations">Investisseurs</a>
           </div>
           <div class="hero-proof premium-proof" aria-label="Services VASI"><span data-i18n="proofOne">VASI au quotidien</span><span aria-hidden="true"></span><span data-i18n="proofTwo">Trois services essentiels</span><span aria-hidden="true"></span><span data-i18n="proofThree">Pensé pour le mobile</span></div>
         </div>
@@ -113,6 +112,13 @@
           </div>
         </div>
       </section>
+      <section class="local-guides shell" aria-labelledby="local-guides-title">
+        <div class="section-heading"><div><p class="section-kicker" data-i18n="localKicker">VASI en Île-de-France</p><h2 id="local-guides-title" data-i18n="localTitle">Préparez vos déplacements à Paris et aux aéroports.</h2></div><p data-i18n="localCopy">Consultez les zones de lancement, les aéroports desservis et les itinéraires fréquemment recherchés.</p></div>
+        <div class="local-guide-grid">
+          <a class="local-guide-card local-guide-paris" href="/website/paris.html"><span data-i18n="parisTag">VILLE</span><h3 data-i18n="parisTitle">VASI à Paris</h3><p data-i18n="parisCopy">Trajets en Île-de-France, gares et destinations populaires.</p><b data-i18n="discoverParis">Découvrir Paris →</b></a>
+          <a class="local-guide-card local-guide-airports" href="/website/airports.html"><span data-i18n="airportsTag">AÉROPORTS</span><h3 data-i18n="airportsTitle">CDG, Orly et Beauvais</h3><p data-i18n="airportsCopy">Terminaux, réservation programmée et prise en charge.</p><b data-i18n="discoverAirports">Voir les aéroports →</b></a>
+        </div>
+      </section>
       <section class="partners shell" id="partners" aria-labelledby="partners-title">
         <div class="section-heading partners-heading"><div><p class="section-kicker" data-i18n="partnersKicker">Grandir avec VASI</p><h2 id="partners-title" data-i18n="partnersTitle">Votre activité. Votre rythme.</h2></div><p data-i18n="partnersCopy">Rejoignez la plateforme en tant que chauffeur, coursier ou restaurant partenaire.</p></div>
         <div class="partner-grid">
@@ -146,8 +152,8 @@
         <div><a class="brand footer-brand brand-image-link" href="/" aria-label="VASI accueil"><img class="brand-logo" src="/website/vasi-logo-brand.png" alt="VASI" /></a><p data-i18n="footerCopy">Trajets, repas et livraisons avec VASI.</p></div>
         <div class="footer-links">
           <div><h3 data-i18n="footerServices">Services</h3><a href="/ride-flow.html" data-i18n="rideTitle">VASI Ride</a><a href="/eats.html" data-i18n="eatsTitle">VASI Eats</a><a href="/delivery.html" data-i18n="deliveryTitle">VASI Delivery</a></div>
-          <div><h3 data-i18n="footerCompany">VASI</h3><a href="/website/partners.html" data-i18n="navPartners">Partenaires</a><a href="/website/investors.html" data-i18n="navInvestors">Investisseurs</a><a href="/website/help.html" data-i18n="helpCentre">Centre d’aide</a><a href="/website/contact.html" data-i18n="navContact">Contact</a></div>
-          <div><h3 data-i18n="footerLegal">Informations</h3><a href="/website/legal.html" data-i18n="legalPrivacy">Mentions légales & confidentialité</a><a href="/safety.html" data-i18n="navSafety">Sécurité</a><a href="mailto:contact@vasigo.eu">contact@vasigo.eu</a></div>
+          <div><h3 data-i18n="footerCompany">VASI</h3><a href="/about" data-i18n="navAbout">À propos</a><a href="/website/partners.html" data-i18n="navPartners">Partenaires</a><a href="/website/paris.html" data-i18n="parisTitle">VASI à Paris</a><a href="/website/airports.html" data-i18n="airportsShort">Aéroports</a><a href="/website/help.html" data-i18n="helpCentre">Centre d’aide</a><a href="/website/contact.html" data-i18n="navContact">Contact</a></div>
+          <div><h3 data-i18n="footerLegal">Informations</h3><a href="/privacy" data-i18n="privacyPolicy">Confidentialité</a><a href="/terms" data-i18n="termsOfUse">Conditions d’utilisation</a><a href="/website/legal.html" data-i18n="legalNotice">Mentions légales</a><a href="/safety.html" data-i18n="navSafety">Sécurité</a><a href="/website/investors.html" data-i18n="navInvestors">Investisseurs</a><a href="mailto:contact@vasigo.eu">contact@vasigo.eu</a></div>
         </div>
       </div>
       <div class="shell footer-bottom"><span>© 2026 VASI</span><span data-i18n="madeForFrance">Conçu pour la France.</span></div>
