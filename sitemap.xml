@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://vasigo.eu/</loc></url>
-  <url><loc>https://vasigo.eu/website/partners.html</loc></url>
-  <url><loc>https://vasigo.eu/website/help.html</loc></url>
-  <url><loc>https://vasigo.eu/website/contact.html</loc></url>
-  <url><loc>https://vasigo.eu/website/legal.html</loc></url>
-  <url><loc>https://vasigo.eu/website/investors.html</loc></url>
+  <url><loc>https://www.vasigo.eu/</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://www.vasigo.eu/website/</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://www.vasigo.eu/website/partners.html</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://www.vasigo.eu/website/help.html</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://www.vasigo.eu/website/contact.html</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://www.vasigo.eu/website/legal.html</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://www.vasigo.eu/website/investors.html</loc><lastmod>2026-09-30</lastmod></url>
 </urlset>
