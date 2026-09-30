@@ -19,4 +19,4 @@ function setPageLanguage(language) {
   localStorage.setItem("vasiBusinessLanguage",lang);
 }
 document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click",() => setPageLanguage(button.dataset.lang)));
-setPageLanguage(localStorage.getItem("vasiBusinessLanguage") || (navigator.language?.toLowerCase().startsWith("fr") ? "fr" : "en"));
+setPageLanguage(localStorage.getItem("vasiBusinessLanguage") || "fr");

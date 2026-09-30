@@ -57,6 +57,7 @@ svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: 
 .quick-booking label span { color: var(--muted); font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .quick-booking input { width: 100%; min-height: 28px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: .91rem; font-weight: 700; }
 .quick-booking input::placeholder { color: #8591a2; font-weight: 550; }
+.booking-note { max-width: 760px; margin: 11px 4px 0; color: rgba(255,255,255,.68); font-size: .78rem; line-height: 1.5; }
 .quick-booking button { min-width: 148px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px; border: 0; border-radius: 14px; background: var(--blue); color: var(--white); cursor: pointer; font-weight: 850; }
 .quick-booking button:hover { background: var(--blue-dark); }
 .quick-booking button svg { width: 18px; height: 18px; }
@@ -113,6 +114,16 @@ svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: 
 .experience-list article > span { color: #8cacff; font-size: .75rem; font-weight: 850; }
 .experience-list h3 { margin: 0 0 8px; font-size: 1.08rem; }
 .experience-list p { margin: 0; color: rgba(255,255,255,.62); font-size: .93rem; line-height: 1.55; }
+.local-guides { padding-block: 120px; }
+.local-guide-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.local-guide-card { min-height:360px; display:flex; flex-direction:column; justify-content:flex-end; padding:38px; overflow:hidden; border-radius:var(--radius-lg); color:var(--white); box-shadow:var(--shadow); transition:transform .25s ease; }
+.local-guide-card:hover { transform:translateY(-6px); }
+.local-guide-paris { background:linear-gradient(150deg,rgba(4,18,47,.2),rgba(4,18,47,.94)),url('/website/assets/hero-mobility-v1.webp') center/cover; }
+.local-guide-airports { background:radial-gradient(circle at 82% 18%,rgba(255,255,255,.18),transparent 28%),linear-gradient(135deg,#1557ff,#071b52); }
+.local-guide-card span { font-size:.72rem; font-weight:900; letter-spacing:.14em; }
+.local-guide-card h3 { margin:18px 0 10px; font-size:clamp(2rem,4vw,3.45rem); letter-spacing:-.05em; }
+.local-guide-card p { max-width:470px; margin:0 0 28px; color:rgba(255,255,255,.72); line-height:1.65; }
+.local-guide-card b { font-size:.9rem; }
 .partners { padding-block: 120px; }
 .partner-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
 .partner-card { position: relative; min-height: 330px; padding: 30px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--white); transition: transform .25s ease,border-color .25s ease; }
@@ -178,6 +189,7 @@ svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: 
   .hero-actions { margin-top:24px; } .hero-actions .button { width:100%; } .hero-proof { flex-wrap:wrap;margin-top:24px; } .hero-accent { display:none; }
   .intro { display:block;padding-block:84px 74px; } .intro h2 { margin-top:18px; } .intro > p:last-child { margin-top:24px; } .section-heading { display:block; } .section-heading > p { margin-top:22px; }
   .services,.partners { padding-bottom:84px; } .service-card { min-height:570px;padding:0; } .service-media { height:230px; } .service-card-copy { padding:24px; } .coverage { width:100%;grid-template-columns:1fr;gap:38px;padding:64px 24px;margin-bottom:0;border-inline:0;border-radius:0; } .coverage-search { display:grid; } .coverage-search button { min-height:52px; } .coverage-visual { min-height:300px; } .coverage-visual img { max-height:290px; } .experience { padding-block:84px; } .experience-grid { grid-template-columns:1fr;gap:52px; }
+  .local-guides { padding-block:84px; } .local-guide-grid { grid-template-columns:1fr; } .local-guide-card { min-height:320px;padding:28px; }
   .partners { padding-top:84px; } .partner-card { min-height:300px;padding:26px; } .safety { width:100%;display:block;padding:72px 24px;margin-bottom:0;border-radius:0; } .safety-features { margin-top:48px; }
   .app-showcase { margin-bottom:0; } .app-showcase-grid { width:100%;grid-template-columns:1fr;gap:30px;padding:64px 24px 0; } .app-showcase-copy .button { width:100%; } .app-phone { order:3;height:430px; } .qr-card { order:2;grid-column:auto;grid-template-columns:1fr;justify-items:center;text-align:center; } .qr-code { width:164px;height:164px; }
   .contact { width:100%;min-height:410px;display:block;padding:64px 24px;margin:0;border-radius:0; } .contact .button { width:100%;margin-top:36px; }
