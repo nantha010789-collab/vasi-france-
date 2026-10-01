@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
-const production = "https://vasi-new.vercel.app";
+const production = "https://www.vasigo.eu";
+const apex = "https://vasigo.eu";
 const pages = "https://nantha010789-collab.github.io/vasi-france-";
 
 async function fetchWithRetry(url, options = {}, attempts = 4) {
@@ -50,6 +51,11 @@ async function expectPage(base, path, markers) {
 
 const checks = [
   (async () => {
+    const response = await fetchWithRetry(`${apex}/`, { redirect: "manual" });
+    assert.ok([301, 302, 307, 308].includes(response.status), `${apex}/ must redirect`);
+    assert.equal(new URL(response.headers.get("location"), apex).origin, production);
+  })(),
+  (async () => {
     await eventually(async () => {
       const response = await fetchWithRetry(`${production}/`);
       assert.equal(response.status, 200);
@@ -59,7 +65,7 @@ const checks = [
       assert.match(response.headers.get("content-security-policy") || "", /frame-ancestors 'none'/);
       assert.match(response.headers.get("permissions-policy") || "", /geolocation=\(self\)/);
       const html = await response.text();
-      for (const marker of ["Move.", "vasi-notifications.js", "vasi-languages.js", "apple-touch-icon"]) {
+      for (const marker of ["VASI — Trajets, repas et livraisons", "data-vasi-business", "/website/business.css", "apple-touch-icon"]) {
         assert.ok(html.includes(marker), `${production}/ must contain ${marker}`);
       }
     });

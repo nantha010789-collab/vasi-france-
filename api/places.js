@@ -10,10 +10,9 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 const REGIONS = {
   FR: { country: "fr", language: "fr", region: "fr" },
-  GB: { country: "gb", language: "en", region: "uk" },
 };
 function selectedRegion(value) {
-  return REGIONS[String(value || "FR").toUpperCase()] || REGIONS.FR;
+  return REGIONS.FR;
 }
 const buckets = new Map();
 

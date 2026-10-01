@@ -4,11 +4,6 @@ const PRICING = {
   document: { base: 4, km: 0.65, min: 0.10, minimum: 6 },
   parcel: { base: 5, km: 0.80, min: 0.12, minimum: 7.5 },
 };
-const UK_PRICING = {
-  document: { base: 3.5, km: 0.75, min: 0.10, minimum: 5.5 },
-  parcel: { base: 4.5, km: 0.95, min: 0.12, minimum: 7 },
-};
-
 function cleanAddress(value) {
   const address = String(value || "").trim();
   if (address.length < 4 || address.length > 200) throw new Error("Enter a valid full address");
@@ -16,7 +11,7 @@ function cleanAddress(value) {
 }
 
 async function geocode(address, country) {
-  const query = new URLSearchParams({ format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: country === "GB" ? "gb" : "fr", q: address });
+  const query = new URLSearchParams({ format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: "fr", q: address });
   const response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
   if (!response.ok) throw new Error("Address search is temporarily unavailable");
   const result = (await response.json())?.[0];
@@ -54,9 +49,9 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   try {
     const body = req.body || {};
-    const country = String(body.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
-    const currency = country === "GB" ? "GBP" : "EUR";
-    const pricing = country === "GB" ? UK_PRICING : PRICING;
+    const country = "FR";
+    const currency = "EUR";
+    const pricing = PRICING;
     const type = String(body.item_type || "parcel").toLowerCase();
     if (!pricing[type]) return res.status(400).json({ error: "Choose parcel or document" });
     const [pickup, dropoff] = await Promise.all([geocode(cleanAddress(body.pickup_address), country), geocode(cleanAddress(body.dropoff_address), country)]);

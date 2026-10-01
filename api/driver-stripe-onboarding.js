@@ -96,8 +96,7 @@ async function configureWeeklyMondayPayout(accountId) {
 }
 
 function driverCountry(value) {
-  const country = String(value || "FR").trim().toUpperCase();
-  return country === "GB" ? "GB" : "FR";
+  return "FR";
 }
 
 async function edgePayout(auth, action, country = "FR") {
@@ -191,7 +190,7 @@ export default async function handler(req, res) {
       params.set("controller[stripe_dashboard][type]", "express");
       params.set("capabilities[transfers][requested]", "true");
       params.set("country", country);
-      params.set("default_currency", country === "GB" ? "gbp" : "eur");
+      params.set("default_currency", "eur");
       if (driver.full_name)
         params.set("business_profile[name]", driver.full_name);
       if (driver.phone)

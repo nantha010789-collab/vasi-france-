@@ -113,7 +113,7 @@ async function edgePayout(authorization, action, country = "FR") {
     },
     body: JSON.stringify({
       action,
-      country: String(country).toUpperCase() === "GB" ? "GB" : "FR",
+      country: "FR",
     }),
   });
   const data = await response.json().catch(() => ({ error: "Payout service unavailable" }));
@@ -184,14 +184,14 @@ export default async function handler(req, res) {
     }
 
     if (!accountId) {
-      const country = String(req.body?.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+      const country = "FR";
       const params = new URLSearchParams();
       params.set("controller[fees][payer]", "application");
       params.set("controller[losses][payments]", "application");
       params.set("controller[stripe_dashboard][type]", "express");
       params.set("capabilities[transfers][requested]", "true");
       params.set("country", country);
-      params.set("default_currency", country === "GB" ? "gbp" : "eur");
+      params.set("default_currency", "eur");
       params.set("business_type", "company");
       params.set("business_profile[name]", restaurant.name || restaurant.legal_name);
       if (restaurant.phone)

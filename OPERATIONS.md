@@ -42,7 +42,7 @@ Customers initiate deletion from `delete-account.html`. Requests are stored in `
 Before completing a request:
 
 1. Verify there is no active ride, order, payment dispute, safety case or unpaid balance.
-2. Retain only transaction, tax, fraud-prevention and safety records required by French or UK law.
+2. Retain only transaction, tax, fraud-prevention and safety records required by French law.
 3. Remove or anonymise optional profile, address, marketing and device data.
 4. Soft-delete the Supabase Auth user from a trusted server process; never expose the service-role key to a browser.
 5. Mark the request completed with the processing timestamp and an internal audit note.
