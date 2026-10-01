@@ -294,8 +294,8 @@ Deno.serve(async (req: Request) => {
 
   const body = await req.json().catch(() => null);
   const action = String(body?.action || "").trim();
-  const country = String(body?.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
-  const currency = country === "GB" ? "gbp" : "eur";
+  const country = "FR";
+  const currency = "eur";
   if (!action) return json({ error: "Missing action" }, 400);
   const now = new Date().toISOString();
 

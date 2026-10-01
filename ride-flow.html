@@ -1551,14 +1551,8 @@
             min: 0.2,
             minFare: 13.5,
           },
-        },
-        ukClasses = {
-          go: { name: "Go", seats: 4, emoji: "🚗", base: 2.2, km: 1.1, min: 0.18, minFare: 6.5 },
-          comfort: { name: "Comfort", seats: 4, emoji: "🚘", base: 3, km: 1.35, min: 0.22, minFare: 9 },
-          xl: { name: "XL", seats: 6, emoji: "🚙", base: 4, km: 1.6, min: 0.25, minFare: 12 },
-          van: { name: "Van", seats: 9, emoji: "🚐", base: 5, km: 1.8, min: 0.28, minFare: 15 },
         };
-      let classes = country === "GB" ? ukClasses : offerClasses,
+      let classes = offerClasses,
         pricingOffer = {
           active: true,
           mode: "fixed",
@@ -1568,7 +1562,8 @@
         },
         smartOffer = null;
       const $ = (id) => document.getElementById(id),
-        money = (n) => VasiRegion.money(n, country);
+        money = (n) => VasiRegion.money(n, country),
+        tr = (value) => window.VasiLanguage?.translate?.(value) || value;
       const pickupIcon = L.divIcon({
           className: "vasi-marker-host",
           html: '<div class="vasi-pin"><span>V</span></div>',
@@ -2057,13 +2052,6 @@
         }
       }
       async function loadPricing() {
-        if (country === "GB") {
-          classes = ukClasses;
-          pricingOffer = { active: false, mode: "regular", percent: 0, cap: null, threshold: null };
-          $("promo").textContent = "UK launch pricing";
-          $("promo").classList.remove("hidden");
-          return;
-        }
         try {
           const r = await fetch("/api/pricing", { cache: "no-store" });
           const d = await r.json();
@@ -2268,7 +2256,7 @@
           pickup = null;
           $("pickup").textContent = "Select pickup location";
           $("status").innerHTML =
-            '<span class="error">Location is unavailable — tap the map to select your pickup. Price will appear after pickup is confirmed.</span>';
+            '<span class="error">' + esc(tr("Location is unavailable — tap the map to select your pickup. Price will appear after pickup is confirmed.")) + '</span>';
           return;
         }
         $("status").textContent = "Requesting your location…";
@@ -2299,7 +2287,7 @@
             $("booking").classList.add("hidden");
             $("fare").textContent = "—";
             $("status").innerHTML =
-              '<span class="error">Location is slow or unavailable — tap the map to select your pickup.</span>';
+              '<span class="error">' + esc(tr("Location is slow or unavailable — tap the map to select your pickup.")) + '</span>';
           },
           { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 },
         );
@@ -2847,7 +2835,7 @@
         if (el) el.classList.add("active");
         const f = priceFor(route.km, route.mins, k);
         $("fare").textContent = money(f);
-        $("routeBtn").textContent = `Request ${classes[k].name} · ${money(f)}`;
+        $("routeBtn").textContent = `${tr("Request ride")} ${classes[k].name} · ${money(f)}`;
         if ($("airportPickup").checked) {
           $("waitingPolicy").textContent = k === "go"
             ? "45 min free after airport arrival · €0.30/min"
@@ -3453,6 +3441,7 @@
         );
       }
       window.addEventListener("vasi:languagechange", () => {
+        if (!$("booking")?.classList.contains("hidden")) selectType(selected);
         if ($("airportPickup")?.checked) {
           refreshAirportGuidance(
             ride?.flight_arrival_airport || ride?.pickup_address || "",

@@ -1377,7 +1377,7 @@ test("French is applied once as the app default and later language choices persi
   assert.equal(nextWindow.VasiLanguage.getLanguage(), "en");
 });
 
-test("one VASI region runtime switches France and UK rules safely", async () => {
+test("VASI region runtime keeps the France-only launch configuration", async () => {
   const source = await readFile("vasi-region.js", "utf8");
   let selected = "FR";
   const window = { dispatchEvent() {} };
@@ -1394,9 +1394,36 @@ test("one VASI region runtime switches France and UK rules safely", async () => 
   assert.equal(window.VasiRegion.getRegion().currency, "EUR");
   assert.equal(window.VasiRegion.normalizePhone("06 12 34 56 78"), "+33612345678");
   window.VasiRegion.setCountry("GB");
-  assert.equal(window.VasiRegion.getRegion().currency, "GBP");
-  assert.equal(window.VasiRegion.normalizePhone("07123 456789"), "+447123456789");
-  assert.match(window.VasiRegion.money(7.5), /£/);
+  assert.equal(window.VasiRegion.getCountry(), "FR");
+  assert.equal(window.VasiRegion.getRegion().currency, "EUR");
+  assert.equal(window.VasiRegion.normalizePhone("07123 456789"), "");
+  assert.match(window.VasiRegion.money(7.5), /€/);
+});
+
+test("partner onboarding and account settings are France-only", async () => {
+  const [partner, restaurant, settings, account] = await Promise.all([
+    readFile("partner-register-v2.html", "utf8"),
+    readFile("restaurant-register-form.html", "utf8"),
+    readFile("settings.html", "utf8"),
+    readFile("account.html", "utf8"),
+  ]);
+  for (const source of [partner, restaurant, settings, account]) {
+    assert.doesNotMatch(source, /<option value=["']GB["']/);
+    assert.doesNotMatch(source, /<option value=["']GBP["']/);
+  }
+});
+
+test("stale unmatched ride requests expire without a fee", async () => {
+  const migration = await readFile(
+    "supabase/migrations/20261001162940_expire_stale_requested_rides.sql",
+    "utf8",
+  );
+  assert.match(migration, /status = 'requested'/);
+  assert.match(migration, /driver_id is null/);
+  assert.match(migration, /interval '15 minutes'/);
+  assert.match(migration, /cancellation_fee = 0/);
+  assert.match(migration, /expire-vasi-stale-requested-rides/);
+  assert.match(migration, /revoke all on function public\.expire_stale_requested_rides\(\) from public, anon, authenticated/);
 });
 
 test("legacy public pages redirect to the current product", async () => {

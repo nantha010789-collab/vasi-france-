@@ -41,7 +41,7 @@
       const topInput=doc.getElementById('to');
       function autocomplete(input){
         if(!input||!google.maps.places)return;
-        const ac=new google.maps.places.Autocomplete(input,{fields:['formatted_address','geometry','name'],componentRestrictions:{country:['fr','gb']}});
+        const ac=new google.maps.places.Autocomplete(input,{fields:['formatted_address','geometry','name'],componentRestrictions:{country:'fr'}});
         ac.addListener('place_changed',function(){
           const place=ac.getPlace();
           if(place&&place.geometry&&place.geometry.location){

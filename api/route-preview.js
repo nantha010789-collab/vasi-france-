@@ -1,9 +1,8 @@
 const REGIONS = {
   FR: { countryCode: "fr", language: "fr", googleRegion: "fr" },
-  GB: { countryCode: "gb", language: "en", googleRegion: "uk" },
 };
 function region(value) {
-  return REGIONS[String(value || "FR").toUpperCase()] || REGIONS.FR;
+  return REGIONS.FR;
 }
 const ALLOWED_ORIGINS = new Set([
   "https://nantha010789-collab.github.io",

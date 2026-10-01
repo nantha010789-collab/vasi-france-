@@ -38,11 +38,11 @@ async function adminDb(path, options = {}) {
 }
 
 function countryCode(value) {
-  return String(value || "FR").toUpperCase() === "GB" ? "GB" : "FR";
+  return "FR";
 }
 
 function restaurantCountry(restaurant) {
-  return /[A-Z]/i.test(String(restaurant?.postal_code || "")) ? "GB" : "FR";
+  return "FR";
 }
 
 async function catalog(country = "FR") {
@@ -95,7 +95,7 @@ async function geocode(value, country) {
   const query = new URLSearchParams({
     format: "jsonv2",
     limit: "1",
-    countrycodes: countryCode(country) === "GB" ? "gb" : "fr",
+    countrycodes: "fr",
     q: cleanAddress(value),
   });
   const response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, {
@@ -140,8 +140,8 @@ async function deliveryRoute(restaurant, deliveryAddress, country) {
 
 async function price(body) {
   const country = countryCode(body.country);
-  const currency = country === "GB" ? "GBP" : "EUR";
-  const currencySymbol = country === "GB" ? "£" : "€";
+  const currency = "EUR";
+  const currencySymbol = "€";
   const restaurant = (await catalog(country)).find(
     (item) => item.id === String(body.restaurant_id || ""),
   );

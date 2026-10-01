@@ -1015,13 +1015,6 @@
                 <label for="country">Country</label>
                 <select id="country" name="country_code">
                   <option value="FR">France</option>
-                  <option value="BE">Belgium</option>
-                  <option value="DE">Germany</option>
-                  <option value="ES">Spain</option>
-                  <option value="IT">Italy</option>
-                  <option value="NL">Netherlands</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="CH">Switzerland</option>
                 </select>
               </div>
 
@@ -1029,8 +1022,6 @@
                 <label for="currency">Preferred currency</label>
                 <select id="currency" name="currency">
                   <option value="EUR">EUR · €</option>
-                  <option value="GBP">GBP · £</option>
-                  <option value="CHF">CHF</option>
                 </select>
               </div>
             </div>
@@ -1085,13 +1076,6 @@
                 <label for="addressCountry">Country</label>
                 <select id="addressCountry" name="country_code" required>
                   <option value="FR">France</option>
-                  <option value="BE">Belgium</option>
-                  <option value="DE">Germany</option>
-                  <option value="ES">Spain</option>
-                  <option value="IT">Italy</option>
-                  <option value="NL">Netherlands</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="CH">Switzerland</option>
                 </select>
               </div>
               <div class="field full">
@@ -1220,17 +1204,8 @@
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       const el = (id) => document.getElementById(id);
-      const allowedCountries = new Set([
-        "FR",
-        "BE",
-        "DE",
-        "ES",
-        "IT",
-        "NL",
-        "GB",
-        "CH",
-      ]);
-      const allowedCurrencies = new Set(["EUR", "GBP", "CHF"]);
+      const allowedCountries = new Set(["FR"]);
+      const allowedCurrencies = new Set(["EUR"]);
       const allowedAddressLabels = new Set(["Home", "Work", "Other"]);
       const allowedNextPages = new Set([
         "index.html",
@@ -1441,14 +1416,6 @@
       }
 
       function inferredCountry(phone) {
-        if (phone.startsWith("+33")) return "FR";
-        if (phone.startsWith("+32")) return "BE";
-        if (phone.startsWith("+49")) return "DE";
-        if (phone.startsWith("+34")) return "ES";
-        if (phone.startsWith("+39")) return "IT";
-        if (phone.startsWith("+31")) return "NL";
-        if (phone.startsWith("+44")) return "GB";
-        if (phone.startsWith("+41")) return "CH";
         return "FR";
       }
 
@@ -1770,11 +1737,7 @@
           : inferredCountry(phone);
         const currency = allowedCurrencies.has(currentProfile?.currency)
           ? currentProfile.currency
-          : country === "GB"
-            ? "GBP"
-            : country === "CH"
-              ? "CHF"
-              : "EUR";
+          : "EUR";
 
         el("pageTitle").textContent = isCompleting
           ? isComplete

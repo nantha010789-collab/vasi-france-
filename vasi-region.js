@@ -19,27 +19,10 @@
       googleRegion: "fr",
       defaultMap: [48.8566, 2.3522],
     }),
-    GB: Object.freeze({
-      code: "GB",
-      countryCode: "gb",
-      name: "United Kingdom",
-      shortName: "UK",
-      flag: "🇬🇧",
-      currency: "GBP",
-      currencySymbol: "£",
-      locale: "en-GB",
-      phonePrefix: "+44",
-      phonePlaceholder: "07123 456789",
-      emergencyNumber: "999 / 112",
-      addressSuffix: "United Kingdom",
-      googleRegion: "uk",
-      defaultMap: [51.5074, -0.1278],
-    }),
   });
 
   function normalizeCountry(value) {
-    const code = String(value || "").trim().toUpperCase();
-    return code === "UK" ? "GB" : REGIONS[code] ? code : "FR";
+    return "FR";
   }
 
   function getCountry() {
@@ -85,10 +68,6 @@
     if (region.code === "FR") {
       if (/^0[1-9]\d{8}$/.test(compact)) return "+33" + compact.slice(1);
       if (/^33[1-9]\d{8}$/.test(compact)) return "+" + compact;
-    }
-    if (region.code === "GB") {
-      if (/^0\d{10}$/.test(compact)) return "+44" + compact.slice(1);
-      if (/^44\d{10}$/.test(compact)) return "+" + compact;
     }
     return "";
   }

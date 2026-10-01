@@ -19,12 +19,6 @@ const OFFER_PRICING = {
   "VASI XL": { base: 2.8, km: 0.95, min: 0.18, minFare: 11.5 },
   "VASI Van": { base: 3.5, km: 1.05, min: 0.2, minFare: 13.5 },
 };
-const UK_PRICING = {
-  "VASI Go": { base: 2.2, km: 1.1, min: 0.18, minFare: 6.5 },
-  "VASI Comfort": { base: 3, km: 1.35, min: 0.22, minFare: 9 },
-  "VASI XL": { base: 4, km: 1.6, min: 0.25, minFare: 12 },
-  "VASI Van": { base: 5, km: 1.8, min: 0.28, minFare: 15 },
-};
 const PAYMENT_METHODS = new Set(["cash", "card", "apple_pay", "google_pay"]);
 const RIDE_OPTIONS = new Set([
   "wheelchair_accessible",
@@ -41,14 +35,6 @@ function rideCommissionPercent(value) {
 }
 
 async function activePricing(country = "FR") {
-  if (country === "GB")
-    return {
-      rates: UK_PRICING,
-      mode: "fixed",
-      offer: "UK launch pricing",
-      endsAt: null,
-      commissionPercent: DEFAULT_RIDE_COMMISSION_PERCENT,
-    };
   try {
     const r = await fetch(
       `${supabaseUrl}/rest/v1/vasi_pricing_settings?id=eq.active&select=*`,
@@ -186,8 +172,7 @@ function normalizeRideOptions(value) {
   );
 }
 async function geocodeStop(address, country) {
-  const countryCode = country === "GB" ? "gb" : "fr";
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${countryCode}&addressdetails=0&q=${encodeURIComponent(address)}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&addressdetails=0&q=${encodeURIComponent(address)}`;
   const response = await fetch(url, {
     headers: { "User-Agent": "VASI/1.0 (ride-booking)" },
   });
@@ -224,8 +209,8 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   try {
     const b = req.body || {};
-    const country = String(b.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
-    const currency = country === "GB" ? "GBP" : "EUR";
+    const country = "FR";
+    const currency = "EUR";
     const service = String(b.service || "VASI Go");
     const pricing = await activePricing(country);
     if (!pricing.rates[service])
@@ -299,9 +284,7 @@ export default async function handler(req, res) {
     const metrics = await routeMetrics(points);
     const preOfferFare = fareFor(service, metrics.km, metrics.mins, pricing);
     const smartOffer =
-      pricing.mode === "percentage" || country === "GB"
-        ? null
-        : await customerOffer(auth);
+      pricing.mode === "percentage" ? null : await customerOffer(auth);
     let discountAmount = smartOffer
       ? (preOfferFare * Number(smartOffer.discount_percent)) / 100
       : 0;

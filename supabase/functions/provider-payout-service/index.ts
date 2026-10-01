@@ -142,8 +142,8 @@ Deno.serve(async (req: Request) => {
   if (userError || !user) return json({ error: "Unauthorized" }, 401);
   const body = await req.json().catch(() => null);
   const action = String(body?.action || "");
-  const country = String(body?.country || "FR").toUpperCase() === "GB" ? "GB" : "FR";
-  const currency = country === "GB" ? "gbp" : "eur";
+  const country = "FR";
+  const currency = "eur";
   const stripe = stripeClient();
   const now = new Date().toISOString();
   const publicUrl = Deno.env.get("VASI_PUBLIC_URL") || "https://vasi-new.vercel.app";

@@ -41,7 +41,7 @@
       <section class="card" aria-labelledby="identity-title">
         <h2 id="identity-title">Identité</h2>
         <label class="field"><span class="label">Nom complet</span><input id="name" class="input" autocomplete="name" placeholder="Votre nom complet" /></label>
-        <label class="field"><span class="label">Pays d’activité</span><select id="country" class="input" aria-label="Pays d’activité VASI"><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option></select></label>
+        <label class="field"><span class="label">Pays d’activité</span><select id="country" class="input" aria-label="Pays d’activité VASI"><option value="FR">🇫🇷 France</option></select></label>
         <label class="field"><span class="label">Téléphone</span><input id="phone" class="input" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" /></label>
         <label class="field"><span class="label">Adresse</span><input id="address" class="input" autocomplete="street-address" placeholder="Votre adresse complète" /></label>
         <label class="field"><span class="label">Pièce d’identité <span>Obligatoire</span></span><input id="identity" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
@@ -68,12 +68,10 @@
         <div id="rideDocs" class="docs">
           <label class="doc"><span id="ridePermitLabel" class="label">Carte professionnelle VTC</span><input id="vtc" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
           <label class="doc"><span id="rideLicenceLabel" class="label">Permis de conduire</span><input id="ride_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label id="rideVehicleLicenceDoc" class="doc hidden"><span class="label">Private hire vehicle licence</span><input id="ride_vehicle_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
           <label class="doc"><span id="rideBusinessLabel" class="label">SIREN / KBIS / RNE</span><input id="ride_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
           <label class="doc"><span id="rideInsuranceLabel" class="label">Assurance professionnelle</span><input id="ride_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
           <label class="doc"><span id="rideRegistrationLabel" class="label">Carte grise</span><input id="ride_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
         </div>
-        <div id="ukLicenceNote" class="rule hidden" role="status"><span aria-hidden="true">!</span><span><strong>UK private hire licensing</strong>The driver, vehicle and operator must have the licences required by the same local licensing authority. London applications are handled by TfL.</span></div>
 
         <div id="courierDocs" class="docs hidden">
           <label class="doc"><span id="courierBusinessLabel" class="label">SIREN / KBIS / RNE</span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span id="courierBusinessHelp" class="doc-help">Preuve de votre activité indépendante en France.</span></label>
@@ -131,25 +129,20 @@
       }
       function setVehicle(next){ vehicle = next; renderVehicle(); }
       function renderCountry(){
-        const region = VasiRegion.getRegion($('country').value);
-        VasiRegion.setCountry(region.code);
+        const region = VasiRegion.getRegion('FR');
+        VasiRegion.setCountry('FR');
         $('phone').placeholder = region.phonePlaceholder;
-        const uk = region.code === 'GB';
-        $('ridePermitLabel').textContent = uk ? 'Private hire driver licence' : 'Carte professionnelle VTC';
-        $('rideLicenceLabel').textContent = uk ? 'UK driving licence' : 'Permis de conduire';
-        $('rideVehicleLicenceDoc').classList.toggle('hidden', !uk);
-        $('rideBusinessLabel').textContent = uk ? 'Sole trader or company registration' : 'SIREN / KBIS / RNE';
-        $('rideInsuranceLabel').textContent = uk ? 'Private hire insurance' : 'Assurance professionnelle';
-        $('rideRegistrationLabel').textContent = uk ? 'V5C vehicle logbook' : 'Carte grise';
-        $('ukLicenceNote').classList.toggle('hidden', !uk);
-        $('courierBusinessLabel').textContent = uk ? 'Self-employment or company proof' : 'SIREN / KBIS / RNE';
-        $('courierBusinessHelp').textContent = uk ? 'Proof that you may work as a self-employed courier in the UK.' : 'Preuve de votre activité indépendante en France.';
-        $('courierRegistrationLabel').textContent = uk ? 'V5C vehicle logbook' : 'Carte grise';
-        $('transportLicenceDoc').classList.toggle('hidden', uk);
+        $('ridePermitLabel').textContent = 'Carte professionnelle VTC';
+        $('rideLicenceLabel').textContent = 'Permis de conduire';
+        $('rideBusinessLabel').textContent = 'SIREN / KBIS / RNE';
+        $('rideInsuranceLabel').textContent = 'Assurance professionnelle';
+        $('rideRegistrationLabel').textContent = 'Carte grise';
+        $('courierBusinessLabel').textContent = 'SIREN / KBIS / RNE';
+        $('courierBusinessHelp').textContent = 'Preuve de votre activité indépendante en France.';
+        $('courierRegistrationLabel').textContent = 'Carte grise';
+        $('transportLicenceDoc').classList.remove('hidden');
         $('payoutIcon').textContent = region.currencySymbol;
-        $('payoutCopy').innerHTML = uk
-          ? '<strong>Connect your own bank account</strong>After approval, open the Driver or Courier app and use “Connect bank account”. Stripe securely collects your payout details; VASI does not store the full account number.'
-          : '<strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.';
+        $('payoutCopy').innerHTML = '<strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.';
       }
       function render(){
         $('ride').classList.toggle('active', role === 'ride');
@@ -192,7 +185,6 @@
           identity:selected('identity'), vtc:selected('vtc'), licence:selected('ride_licence'), business:selected('ride_business'),
           insurance:selected('ride_insurance'), carte_grise:selected('ride_carte_grise')
           };
-          if ($('country').value === 'GB') files.vehicle_licence = selected('ride_vehicle_licence');
           return files;
         }
         const files = {
