@@ -625,6 +625,72 @@
         font-size: 25px;
         font-weight: 950;
       }
+      .fareSummary {
+        margin: 12px 0 14px;
+        overflow: hidden;
+        border: 1px solid #323232;
+        border-radius: 17px;
+        background: linear-gradient(145deg, #191919, #111);
+      }
+      .fareSummaryTop {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 16px;
+        align-items: center;
+        padding: 14px;
+      }
+      .fareSummaryTop span,
+      .fareBreakdown span {
+        color: #999;
+        font-size: 11px;
+      }
+      .fareSummaryTop b {
+        text-align: right;
+        font-size: 13px;
+      }
+      .fareDetails {
+        border-top: 1px solid #303030;
+      }
+      .fareDetails summary {
+        padding: 13px 14px;
+        color: #ddd;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 850;
+        list-style: none;
+      }
+      .fareDetails summary::-webkit-details-marker { display: none; }
+      .fareDetails summary::after { content: "+"; float: right; color: #8a8a8a; font-size: 16px; }
+      .fareDetails[open] summary::after { content: "−"; }
+      .fareBreakdown {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px 16px;
+        padding: 0 14px 14px;
+      }
+      .fareBreakdown b {
+        text-align: right;
+        font-size: 12px;
+      }
+      .fareBreakdown .fareTotalValue { color: #86efa9; }
+      .fareDisclosure {
+        grid-column: 1 / -1;
+        margin: 2px 0 0;
+        color: #8f8f8f;
+        font-size: 10px;
+        line-height: 1.45;
+      }
+      .fareContinue {
+        width: calc(100% - 20px);
+        min-height: 46px;
+        margin: 0 10px 10px;
+        border: 0;
+        border-radius: 13px;
+        background: #fff;
+        color: #050505;
+        cursor: pointer;
+        font-weight: 900;
+      }
       .trip {
         text-align: center;
         color: #aaa;
@@ -1260,6 +1326,22 @@
             ><span class="fare" id="fare">—</span>
           </div>
           <div id="tripInfo" class="trip"></div>
+          <div class="fareSummary" aria-live="polite">
+            <div class="fareSummaryTop">
+              <span>Selected service</span><b id="fareService">VASI Go</b>
+              <span>Payment method</span><b id="farePayment">Cash</b>
+            </div>
+            <details class="fareDetails">
+              <summary>Price details</summary>
+              <div class="fareBreakdown">
+                <span>Route</span><b id="fareRoute">—</b>
+                <span>Current rate</span><b id="fareRate">VASI offer applied</b>
+                <span>Estimated total</span><b class="fareTotalValue" id="fareTotal">—</b>
+                <p class="fareDisclosure">The fare is shown before booking. Tolls or customer-approved trip changes may adjust the final amount.</p>
+              </div>
+            </details>
+            <button class="fareContinue" type="button" id="fareContinue" onclick="showTripOptions()">Continue · VASI Go</button>
+          </div>
           <div class="section">Trip preferences</div>
           <div class="preferenceGrid">
             <label class="preference"><input id="airportPickup" type="checkbox" onchange="toggleAirport()" /> ✈️ Airport pickup</label>
@@ -2836,6 +2918,7 @@
         const f = priceFor(route.km, route.mins, k);
         $("fare").textContent = money(f);
         $("routeBtn").textContent = `${tr("Request ride")} ${classes[k].name} · ${money(f)}`;
+        renderFareSummary(f);
         if ($("airportPickup").checked) {
           $("waitingPolicy").textContent = k === "go"
             ? "45 min free after airport arrival · €0.30/min"
@@ -2848,6 +2931,26 @@
           .querySelectorAll(".pay")
           .forEach((x) => x.classList.remove("active"));
         el.classList.add("active");
+        renderFareSummary(priceFor(route.km, route.mins, selected));
+      }
+      function renderFareSummary(fareValue = priceFor(route.km, route.mins, selected)) {
+        const paymentLabels = {
+          cash: "Cash",
+          card: "Card",
+          apple_pay: "Apple Pay",
+          google_pay: "Google Pay",
+        };
+        $("fareService").textContent = `VASI ${classes[selected].name}`;
+        $("farePayment").textContent = tr(paymentLabels[pay] || "Cash");
+        $("fareRoute").textContent = `${route.km.toFixed(1)} km · ${route.mins} min`;
+        $("fareRate").textContent = pricingOffer.active || smartOffer
+          ? tr("VASI offer applied")
+          : tr("Standard VASI rate");
+        $("fareTotal").textContent = money(fareValue);
+        $("fareContinue").textContent = `${tr("Continue")} · VASI ${classes[selected].name} · ${money(fareValue)}`;
+      }
+      function showTripOptions() {
+        document.querySelector(".preferenceGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }
       async function addStop() {
         if (stops.length >= 5) return toast("Maximum 5 stops");
@@ -3012,6 +3115,7 @@
           if (d.pricing?.estimated_fare != null) {
             ride.estimated_fare = d.pricing.estimated_fare;
             $("fare").textContent = money(d.pricing.estimated_fare);
+            renderFareSummary(d.pricing.estimated_fare);
           }
           showRide(ride);
           startStatusPolling();
