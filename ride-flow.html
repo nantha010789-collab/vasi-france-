@@ -1195,6 +1195,20 @@
         overflow-y: hidden !important;
       }
 
+      /* Use the whole map surface on laptops and tablets. */
+      @media (min-width: 761px) {
+        body > .app {
+          max-width: none !important;
+        }
+
+        .panel {
+          left: max(20px, env(safe-area-inset-left)) !important;
+          right: auto !important;
+          bottom: max(20px, env(safe-area-inset-bottom)) !important;
+          width: min(460px, calc(100vw - 40px));
+        }
+      }
+
       @supports not (height: 100dvh) {
         .panel {
           max-height: min(46vh, 500px) !important;
