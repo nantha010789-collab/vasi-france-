@@ -458,23 +458,20 @@ body[data-vasi-business]{
 .reveal-ready.is-revealed{opacity:1;transform:none;}
 .service-card:nth-child(2).reveal-ready,.partner-card:nth-child(2).reveal-ready{transition-delay:.09s}.service-card:nth-child(3).reveal-ready,.partner-card:nth-child(3).reveal-ready{transition-delay:.18s}
 .hero-image{transform:translateY(var(--hero-shift,0)) scale(1.045);will-change:transform;}
-.mobile-cta{display:none;}
 
 @media(max-width:980px){
   .product-story{grid-template-columns:1fr;gap:46px;padding:64px;}
   .product-preview{width:min(100%,620px);justify-self:center;}
 }
 @media(max-width:760px){
-  body[data-vasi-business]{padding-bottom:calc(74px + env(safe-area-inset-bottom));}
   .product-story{width:100%;min-height:0;padding:70px 24px;margin-bottom:0;border-radius:0;}
   .product-story h2{font-size:2.55rem;}
   .product-tabs{display:grid;grid-template-columns:repeat(3,1fr);}.product-tab{padding-inline:8px;}
   .product-preview{min-height:484px;padding:12px;border-radius:25px;}
   .preview-map{height:220px}.preview-card{margin:-20px 8px 0;padding:18px}.preview-card-head{grid-template-columns:42px 1fr}.preview-icon{width:42px;height:42px}.preview-ready{grid-column:1/-1;width:max-content}.preview-meta{gap:10px}.preview-meta span+span{padding-left:10px}
-  .coverage-radar{left:56%;top:31%;}.coverage-cities{left:0;bottom:8px;max-width:70%;}.coverage-visual .coverage-badge{right:0;bottom:8px;}
-  .mobile-cta{position:fixed;z-index:60;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;padding:8px;border:1px solid rgba(255,255,255,.2);border-radius:20px;background:rgba(7,17,31,.9);box-shadow:0 18px 50px rgba(0,0,0,.28);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);opacity:0;pointer-events:none;transform:translateY(calc(100% + 28px));transition:opacity .25s ease,transform .25s ease;}
-  .mobile-cta.is-visible{opacity:1;pointer-events:auto;transform:none;}
-  .mobile-cta a{min-height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px;color:#fff;font-size:.82rem;font-weight:850;}.mobile-cta a:last-child{background:var(--blue);box-shadow:0 8px 20px rgba(21,87,255,.3);}
+  .coverage-radar{left:56%;top:31%;}
+  .coverage-cities{left:0;right:0;bottom:54px;max-width:none;justify-content:center;}
+  .coverage-visual .coverage-badge{left:50%;right:auto;bottom:8px;white-space:nowrap;transform:translateX(-50%);}
   .hero-image{transform:scale(1.035);will-change:auto;}
 }
 @media(prefers-reduced-motion:reduce){
