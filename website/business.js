@@ -125,10 +125,6 @@ document.querySelectorAll("[data-product-tab]").forEach((button) => button.addEv
 }));
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const siteHeader = document.querySelector(".site-header");
-const updateHeaderState = () => siteHeader?.classList.toggle("is-scrolled",window.scrollY > 24);
-updateHeaderState();
-window.addEventListener("scroll",updateHeaderState,{ passive:true });
 if (!reduceMotion.matches && "IntersectionObserver" in window) {
   const revealTargets = document.querySelectorAll(".trust-rail article,.intro,.section-heading,.service-card,.product-story,.coverage,.experience-panel,.experience-list article,.local-guide-card,.partner-card,.safety,.app-showcase-copy,.app-phone,.qr-card,.contact");
   revealTargets.forEach((element) => element.classList.add("reveal-ready"));
