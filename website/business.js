@@ -4,7 +4,7 @@ const translations = {
     navServices: "Services", navPartners: "Partenaires", navSafety: "Sécurité", navHelp: "Aide", navInvestors: "Investisseurs", navContact: "Contact", openApp: "Ouvrir l’app", login: "Connexion", orderRide: "Commander", heroAlt: "Voiture et coursier VASI circulant dans une ville française",
     launchChip: "TRÈS BIENTÔT · ÎLE-DE-FRANCE", heroEyebrow: "Mobilité • Repas • Livraison", heroTitle: "La ville avance.<br />VASI aussi.", heroCopy: "Réservez un trajet, commandez un repas ou envoyez un colis avec VASI, pensé pour la France.",
     pickupLabel: "Départ", pickupPlaceholder: "Votre adresse de départ", destinationLabel: "Destination", destinationPlaceholder: "Où allez-vous ?", searchRide: "Rechercher", priceBeforeLogin: "Consultez l’itinéraire et le prix avant de vous connecter. La connexion est demandée uniquement pour confirmer.",
-    startNow: "Commencer maintenant", becomePartner: "Devenir partenaire", investorRelations: "Investisseurs", proofOne: "VASI au quotidien", proofTwo: "Trois services essentiels", proofThree: "Pensé pour le mobile",
+    startNow: "Commencer maintenant", becomePartner: "Devenir partenaire", investorRelations: "Investisseurs", proofOne: "VASI au quotidien", proofTwo: "Trois services essentiels", proofThree: "Pensé pour le mobile", trustPriceTitle: "Prix clair", trustPriceCopy: "Une estimation affichée avant confirmation.", trustTrackingTitle: "Suivi en direct", trustTrackingCopy: "Les informations utiles restent accessibles.", trustLocalTitle: "Pensé pour la France", trustLocalCopy: "Une expérience locale en français et en anglais.",
     introKicker: "VASI, simplement", introTitle: "Tout ce dont votre journée a besoin, au même endroit.", introCopy: "Du premier trajet du matin au dîner livré le soir, VASI vous aide à avancer avec une expérience claire, rapide et locale.",
     servicesKicker: "Nos services", servicesTitle: "Choisissez. Réservez. Avancez.", servicesCopy: "Chaque service VASI est conçu pour aller droit à l’essentiel.",
     productKicker: "L’expérience VASI", productTitle: "Tout est clair, du premier geste jusqu’à l’arrivée.", productCopy: "Découvrez comment chaque service vous accompagne avec les informations essentielles, au bon moment.", rideShort: "Trajet", eatsShort: "Repas", deliveryShort: "Colis", previewFrom: "Départ", previewTo: "Arrivée", previewRideAction: "Préparer un trajet", previewEatsAction: "Voir les restaurants", previewDeliveryAction: "Préparer un envoi",
@@ -25,7 +25,7 @@ const translations = {
     navServices: "Services", navPartners: "Partners", navSafety: "Safety", navHelp: "Help", navInvestors: "Investors", navContact: "Contact", openApp: "Open the app", login: "Log in", orderRide: "Book", heroAlt: "VASI car and courier moving through a French city",
     launchChip: "COMING SOON · ÎLE-DE-FRANCE", heroEyebrow: "Mobility • Food • Delivery", heroTitle: "The city moves.<br />So does VASI.", heroCopy: "Book a ride, order a meal or send a parcel with VASI, designed for France.",
     pickupLabel: "Pickup", pickupPlaceholder: "Your pickup address", destinationLabel: "Destination", destinationPlaceholder: "Where are you going?", searchRide: "Search", priceBeforeLogin: "Review the route and price before signing in. Sign-in is requested only when you confirm.",
-    startNow: "Get started", becomePartner: "Become a partner", investorRelations: "Investors", proofOne: "VASI for everyday life", proofTwo: "Three essential services", proofThree: "Made for mobile",
+    startNow: "Get started", becomePartner: "Become a partner", investorRelations: "Investors", proofOne: "VASI for everyday life", proofTwo: "Three essential services", proofThree: "Made for mobile", trustPriceTitle: "Clear pricing", trustPriceCopy: "An estimate is shown before confirmation.", trustTrackingTitle: "Live tracking", trustTrackingCopy: "Essential information stays within reach.", trustLocalTitle: "Designed for France", trustLocalCopy: "A local experience in French and English.",
     introKicker: "VASI, made simple", introTitle: "Everything your day needs, in one place.", introCopy: "From your first morning ride to dinner delivered at night, VASI helps you keep moving with a clear, fast and local experience.",
     servicesKicker: "Our services", servicesTitle: "Choose. Book. Move.", servicesCopy: "Every VASI service is designed to keep things straightforward.",
     productKicker: "The VASI experience", productTitle: "Everything stays clear, from the first tap to arrival.", productCopy: "See how every service keeps the essential information visible at the right moment.", rideShort: "Ride", eatsShort: "Food", deliveryShort: "Parcel", previewFrom: "From", previewTo: "To", previewRideAction: "Plan a ride", previewEatsAction: "View restaurants", previewDeliveryAction: "Prepare a delivery",
@@ -125,8 +125,12 @@ document.querySelectorAll("[data-product-tab]").forEach((button) => button.addEv
 }));
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const siteHeader = document.querySelector(".site-header");
+const updateHeaderState = () => siteHeader?.classList.toggle("is-scrolled",window.scrollY > 24);
+updateHeaderState();
+window.addEventListener("scroll",updateHeaderState,{ passive:true });
 if (!reduceMotion.matches && "IntersectionObserver" in window) {
-  const revealTargets = document.querySelectorAll(".intro,.section-heading,.service-card,.product-story,.coverage,.experience-panel,.experience-list article,.local-guide-card,.partner-card,.safety,.app-showcase-copy,.app-phone,.qr-card,.contact");
+  const revealTargets = document.querySelectorAll(".trust-rail article,.intro,.section-heading,.service-card,.product-story,.coverage,.experience-panel,.experience-list article,.local-guide-card,.partner-card,.safety,.app-showcase-copy,.app-phone,.qr-card,.contact");
   revealTargets.forEach((element) => element.classList.add("reveal-ready"));
   const revealObserver = new IntersectionObserver((entries,observer) => {
     entries.forEach((entry) => {
