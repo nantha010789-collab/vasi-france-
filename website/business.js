@@ -125,6 +125,17 @@ document.querySelectorAll("[data-product-tab]").forEach((button) => button.addEv
 }));
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const mobileCta = document.querySelector(".mobile-cta");
+const hero = document.querySelector(".hero");
+function syncMobileCta() {
+  if (!mobileCta || !hero) return;
+  const pastHero = window.scrollY >= Math.max(0,hero.offsetHeight - 120);
+  mobileCta.classList.toggle("is-visible",window.innerWidth <= 760 && pastHero);
+}
+window.addEventListener("scroll",syncMobileCta,{ passive: true });
+window.addEventListener("resize",syncMobileCta);
+syncMobileCta();
+
 if (!reduceMotion.matches && "IntersectionObserver" in window) {
   const revealTargets = document.querySelectorAll(".intro,.section-heading,.service-card,.product-story,.coverage,.experience-panel,.experience-list article,.local-guide-card,.partner-card,.safety,.app-showcase-copy,.app-phone,.qr-card,.contact");
   revealTargets.forEach((element) => element.classList.add("reveal-ready"));
