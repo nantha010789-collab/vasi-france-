@@ -7,6 +7,7 @@ const translations = {
     startNow: "Commencer maintenant", becomePartner: "Devenir partenaire", investorRelations: "Investisseurs", proofOne: "VASI au quotidien", proofTwo: "Trois services essentiels", proofThree: "Pensé pour le mobile",
     introKicker: "VASI, simplement", introTitle: "Tout ce dont votre journée a besoin, au même endroit.", introCopy: "Du premier trajet du matin au dîner livré le soir, VASI vous aide à avancer avec une expérience claire, rapide et locale.",
     servicesKicker: "Nos services", servicesTitle: "Choisissez. Réservez. Avancez.", servicesCopy: "Chaque service VASI est conçu pour aller droit à l’essentiel.",
+    productKicker: "L’expérience VASI", productTitle: "Tout est clair, du premier geste jusqu’à l’arrivée.", productCopy: "Découvrez comment chaque service vous accompagne avec les informations essentielles, au bon moment.", rideShort: "Trajet", eatsShort: "Repas", deliveryShort: "Colis", previewFrom: "Départ", previewTo: "Arrivée", previewRideAction: "Préparer un trajet", previewEatsAction: "Voir les restaurants", previewDeliveryAction: "Préparer un envoi",
     rideTitle: "VASI Ride", rideCopy: "Réservez votre trajet et suivez votre chauffeur en temps réel.", rideFeatureOne: "Réservation simple", rideFeatureTwo: "Suivi du chauffeur", rideFeatureThree: "Assistance accessible", bookRide: "Réserver un trajet", eatsTitle: "VASI Eats", eatsCopy: "Commandez auprès de restaurants partenaires, simplement.", eatsFeatureOne: "Restaurants partenaires", eatsFeatureTwo: "Commande claire", eatsFeatureThree: "Suivi de livraison", orderMeal: "Commander un repas",
     deliveryTitle: "VASI Delivery", deliveryCopy: "Envoyez un colis local et suivez sa progression.", deliveryFeatureOne: "Envois locaux", deliveryFeatureTwo: "Progression en direct", deliveryFeatureThree: "Aide accessible", sendParcel: "Envoyer un colis", availabilityKicker: "Notre couverture", availabilityTitle: "VASI se développe progressivement en France.", availabilityCopy: "La disponibilité dépend de votre adresse et des partenaires actifs. Vérifiez directement dans l’application les services accessibles près de vous.", coverageLabel: "Votre adresse", coveragePlaceholder: "Entrez votre adresse", checkAvailability: "Vérifier dans l’app", coverageNote: "Les zones sont activées au fur et à mesure du lancement.", coverageBadge: "Déploiement progressif",
     experienceKicker: "Une expérience cohérente", experienceTitle: "Un compte. Une ville. Toutes vos possibilités.", experienceOneTitle: "Simple à utiliser", experienceOneCopy: "Des parcours courts et clairs, du choix au suivi.",
@@ -27,6 +28,7 @@ const translations = {
     startNow: "Get started", becomePartner: "Become a partner", investorRelations: "Investors", proofOne: "VASI for everyday life", proofTwo: "Three essential services", proofThree: "Made for mobile",
     introKicker: "VASI, made simple", introTitle: "Everything your day needs, in one place.", introCopy: "From your first morning ride to dinner delivered at night, VASI helps you keep moving with a clear, fast and local experience.",
     servicesKicker: "Our services", servicesTitle: "Choose. Book. Move.", servicesCopy: "Every VASI service is designed to keep things straightforward.",
+    productKicker: "The VASI experience", productTitle: "Everything stays clear, from the first tap to arrival.", productCopy: "See how every service keeps the essential information visible at the right moment.", rideShort: "Ride", eatsShort: "Food", deliveryShort: "Parcel", previewFrom: "From", previewTo: "To", previewRideAction: "Plan a ride", previewEatsAction: "View restaurants", previewDeliveryAction: "Prepare a delivery",
     rideTitle: "VASI Ride", rideCopy: "Book your trip and follow your driver in real time.", rideFeatureOne: "Simple booking", rideFeatureTwo: "Driver tracking", rideFeatureThree: "Accessible support", bookRide: "Book a ride", eatsTitle: "VASI Eats", eatsCopy: "Order from partner restaurants with ease.", eatsFeatureOne: "Partner restaurants", eatsFeatureTwo: "Clear ordering", eatsFeatureThree: "Delivery tracking", orderMeal: "Order a meal",
     deliveryTitle: "VASI Delivery", deliveryCopy: "Send a local parcel and follow its progress.", deliveryFeatureOne: "Local parcels", deliveryFeatureTwo: "Live progress", deliveryFeatureThree: "Accessible help", sendParcel: "Send a parcel", availabilityKicker: "Our coverage", availabilityTitle: "VASI is expanding progressively across France.", availabilityCopy: "Availability depends on your address and active partners. Check the app directly to see which services are accessible near you.", coverageLabel: "Your address", coveragePlaceholder: "Enter your address", checkAvailability: "Check in the app", coverageNote: "Areas are activated gradually as VASI launches.", coverageBadge: "Progressive rollout",
     experienceKicker: "One consistent experience", experienceTitle: "One account. One city. Every possibility.", experienceOneTitle: "Easy to use", experienceOneCopy: "Clear, focused journeys from selection to tracking.",
@@ -40,14 +42,54 @@ const translations = {
     contactKicker: "Let’s talk", contactTitle: "Have a question about VASI?", contactCopy: "Our team is available for customers and future partners.", contactUs: "Contact us", footerCopy: "Rides, food and deliveries with VASI.", footerServices: "Services", footerCompany: "VASI", footerLegal: "Information", helpCentre: "Help Centre", navAbout: "About", privacyPolicy: "Privacy", termsOfUse: "Terms of use", legalNotice: "Legal notice", legalPrivacy: "Legal & privacy", madeForFrance: "Designed for France."
   }
 };
+const productScenarios = {
+  fr: {
+    ride: { step: "01 · Adresse", detailTitle: "Choisissez votre destination", detailCopy: "Indiquez le départ et l’arrivée, puis consultez votre demande avant de la confirmer.", status: "Aperçu du trajet", icon: "R", label: "Votre trajet", title: "Paris Centre", ready: "Prêt à réserver", from: "Votre position", to: "Destination", actionKey: "previewRideAction", href: "/ride-flow.html" },
+    eats: { step: "02 · Sélection", detailTitle: "Trouvez votre prochain repas", detailCopy: "Parcourez les restaurants disponibles, composez votre panier et suivez la commande depuis un seul écran.", status: "Aperçu de la commande", icon: "E", label: "Votre commande", title: "Cuisine locale", ready: "Panier à préparer", from: "Restaurant", to: "Votre adresse", actionKey: "previewEatsAction", href: "/eats.html" },
+    delivery: { step: "03 · Envoi", detailTitle: "Préparez votre colis simplement", detailCopy: "Ajoutez les adresses de collecte et de livraison, puis gardez la progression accessible à tout moment.", status: "Aperçu de l’envoi", icon: "D", label: "Votre livraison", title: "Envoi local", ready: "Détails à confirmer", from: "Collecte", to: "Livraison", actionKey: "previewDeliveryAction", href: "/delivery.html" }
+  },
+  en: {
+    ride: { step: "01 · Address", detailTitle: "Choose your destination", detailCopy: "Add the pickup and destination, then review your request before confirming it.", status: "Ride preview", icon: "R", label: "Your ride", title: "Central Paris", ready: "Ready to book", from: "Your location", to: "Destination", actionKey: "previewRideAction", href: "/ride-flow.html" },
+    eats: { step: "02 · Selection", detailTitle: "Find your next meal", detailCopy: "Browse available restaurants, build your basket and follow the order from one clear screen.", status: "Order preview", icon: "E", label: "Your order", title: "Local cuisine", ready: "Basket to prepare", from: "Restaurant", to: "Your address", actionKey: "previewEatsAction", href: "/eats.html" },
+    delivery: { step: "03 · Delivery", detailTitle: "Prepare your parcel with ease", detailCopy: "Add pickup and delivery addresses, then keep progress within easy reach at every step.", status: "Delivery preview", icon: "D", label: "Your delivery", title: "Local parcel", ready: "Details to confirm", from: "Pickup", to: "Delivery", actionKey: "previewDeliveryAction", href: "/delivery.html" }
+  }
+};
+
+let currentLanguage = "fr";
+let currentProduct = "ride";
+
+function renderProductPreview() {
+  const scenario = productScenarios[currentLanguage][currentProduct];
+  const copy = translations[currentLanguage];
+  const values = {
+    productStep: scenario.step,
+    productDetailTitle: scenario.detailTitle,
+    productDetailCopy: scenario.detailCopy,
+    previewStatus: scenario.status,
+    previewIcon: scenario.icon,
+    previewLabel: scenario.label,
+    previewTitle: scenario.title,
+    previewReady: scenario.ready,
+    previewFromValue: scenario.from,
+    previewToValue: scenario.to
+  };
+  Object.entries(values).forEach(([id,value]) => { const node = document.getElementById(id); if (node) node.textContent = value; });
+  const action = document.getElementById("previewAction");
+  if (action) { action.textContent = copy[scenario.actionKey]; action.href = scenario.href; }
+  const preview = document.getElementById("product-preview");
+  if (preview) preview.dataset.service = currentProduct;
+}
+
 function setLanguage(language) {
   const lang = language === "en" ? "en" : "fr"; const copy = translations[lang];
+  currentLanguage = lang;
   document.documentElement.lang = lang; document.title = copy.pageTitle; document.querySelector('meta[name="description"]').setAttribute("content",copy.pageDescription);
   document.querySelectorAll("[data-i18n]").forEach((element) => { const value = copy[element.dataset.i18n]; if (value) element.textContent = value; });
   document.querySelectorAll("[data-i18n-html]").forEach((element) => { const value = copy[element.dataset.i18nHtml]; if (value) element.innerHTML = value; });
   document.querySelectorAll("[data-i18n-alt]").forEach((element) => { const value = copy[element.dataset.i18nAlt]; if (value) element.setAttribute("alt",value); });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => { const value = copy[element.dataset.i18nPlaceholder]; if (value) element.setAttribute("placeholder",value); });
   document.querySelectorAll("[data-lang]").forEach((button) => { const active = button.dataset.lang === lang; button.classList.toggle("is-active",active); button.setAttribute("aria-pressed",String(active)); });
+  renderProductPreview();
   localStorage.setItem("vasiBusinessLanguage",lang);
 }
 document.querySelectorAll("[data-lang]").forEach((button) => button.addEventListener("click",() => setLanguage(button.dataset.lang)));
@@ -71,3 +113,38 @@ document.getElementById("coverageForm")?.addEventListener("submit",(event) => {
   appUrl.searchParams.set("address",address);
   window.location.href = appUrl.toString();
 });
+
+document.querySelectorAll("[data-product-tab]").forEach((button) => button.addEventListener("click",() => {
+  currentProduct = button.dataset.productTab;
+  document.querySelectorAll("[data-product-tab]").forEach((tab) => {
+    const active = tab === button;
+    tab.classList.toggle("is-active",active);
+    tab.setAttribute("aria-selected",String(active));
+  });
+  renderProductPreview();
+}));
+
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+if (!reduceMotion.matches && "IntersectionObserver" in window) {
+  const revealTargets = document.querySelectorAll(".intro,.section-heading,.service-card,.product-story,.coverage,.experience-panel,.experience-list article,.local-guide-card,.partner-card,.safety,.app-showcase-copy,.app-phone,.qr-card,.contact");
+  revealTargets.forEach((element) => element.classList.add("reveal-ready"));
+  const revealObserver = new IntersectionObserver((entries,observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-revealed");
+      observer.unobserve(entry.target);
+    });
+  },{ threshold: .12, rootMargin: "0px 0px -7%" });
+  revealTargets.forEach((element) => revealObserver.observe(element));
+
+  const heroImage = document.querySelector(".hero-image");
+  let ticking = false;
+  window.addEventListener("scroll",() => {
+    if (ticking || !heroImage || window.innerWidth < 761) return;
+    ticking = true;
+    window.requestAnimationFrame(() => {
+      heroImage.style.setProperty("--hero-shift",`${Math.min(window.scrollY * .08,48)}px`);
+      ticking = false;
+    });
+  },{ passive: true });
+}
