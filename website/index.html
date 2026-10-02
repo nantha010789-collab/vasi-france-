@@ -98,9 +98,39 @@
           </a>
         </div>
       </section>
+      <section class="product-story shell" id="experience-preview" aria-labelledby="product-story-title">
+        <div class="product-story-copy">
+          <p class="section-kicker light" data-i18n="productKicker">L’expérience VASI</p>
+          <h2 id="product-story-title" data-i18n="productTitle">Tout est clair, du premier geste jusqu’à l’arrivée.</h2>
+          <p data-i18n="productCopy">Découvrez comment chaque service vous accompagne avec les informations essentielles, au bon moment.</p>
+          <div class="product-tabs" role="tablist" aria-label="Aperçu des services VASI">
+            <button class="product-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="product-preview" data-product-tab="ride" data-i18n="rideShort">Trajet</button>
+            <button class="product-tab" type="button" role="tab" aria-selected="false" aria-controls="product-preview" data-product-tab="eats" data-i18n="eatsShort">Repas</button>
+            <button class="product-tab" type="button" role="tab" aria-selected="false" aria-controls="product-preview" data-product-tab="delivery" data-i18n="deliveryShort">Colis</button>
+          </div>
+          <div class="product-detail">
+            <span class="product-step" id="productStep">01 · Adresse</span>
+            <h3 id="productDetailTitle">Choisissez votre destination</h3>
+            <p id="productDetailCopy">Indiquez le départ et l’arrivée, puis consultez votre demande avant de la confirmer.</p>
+          </div>
+        </div>
+        <div class="product-preview" id="product-preview" role="tabpanel" aria-live="polite">
+          <div class="preview-topbar"><span class="preview-brand">VASI</span><span class="preview-status" id="previewStatus">Aperçu du trajet</span></div>
+          <div class="preview-map" aria-hidden="true">
+            <span class="preview-route"></span><span class="preview-point preview-point-a"></span><span class="preview-point preview-point-b"></span>
+            <span class="preview-car">V</span>
+          </div>
+          <div class="preview-card">
+            <div class="preview-card-head"><span class="preview-icon" aria-hidden="true" id="previewIcon">R</span><div><small id="previewLabel">Votre trajet</small><strong id="previewTitle">Paris Centre</strong></div><span class="preview-ready" id="previewReady">Prêt à réserver</span></div>
+            <div class="preview-progress" aria-hidden="true"><span></span></div>
+            <div class="preview-meta"><span><small data-i18n="previewFrom">Départ</small><b id="previewFromValue">Votre position</b></span><span><small data-i18n="previewTo">Arrivée</small><b id="previewToValue">Destination</b></span></div>
+            <a class="preview-action" id="previewAction" href="/ride-flow.html" data-i18n="previewRideAction">Préparer un trajet</a>
+          </div>
+        </div>
+      </section>
       <section class="coverage shell" id="coverage" aria-labelledby="coverage-title">
         <div class="coverage-copy"><p class="section-kicker" data-i18n="availabilityKicker">Notre couverture</p><h2 id="coverage-title" data-i18n="availabilityTitle">VASI se développe progressivement en France.</h2><p data-i18n="availabilityCopy">La disponibilité dépend de votre adresse et des partenaires actifs. Vérifiez directement dans l’application les services accessibles près de vous.</p><form class="coverage-search" id="coverageForm"><label class="visually-hidden" for="coverageAddress" data-i18n="coverageLabel">Votre adresse</label><input id="coverageAddress" type="text" autocomplete="street-address" data-i18n-placeholder="coveragePlaceholder" placeholder="Entrez votre adresse" required /><button type="submit" aria-label="Vérifier dans l’application"><span data-i18n="checkAvailability">Vérifier dans l’app</span><span aria-hidden="true">→</span></button></form><p class="coverage-note" data-i18n="coverageNote">Les zones sont activées au fur et à mesure du lancement.</p></div>
-        <div class="coverage-visual" aria-hidden="true"><img src="/website/assets/coverage-france-v1.webp" alt="" loading="lazy" decoding="async" /><span data-i18n="coverageBadge">Déploiement progressif</span></div>
+        <div class="coverage-visual" aria-hidden="true"><img src="/website/assets/coverage-france-v1.webp" alt="" loading="lazy" decoding="async" /><div class="coverage-radar"><span></span><i></i></div><span class="coverage-badge" data-i18n="coverageBadge">Déploiement progressif</span><div class="coverage-cities"><span>Paris</span><span>CDG</span><span>Orly</span><span>Beauvais</span></div></div>
       </section>
       <section class="experience" aria-labelledby="experience-title">
         <div class="shell experience-grid">
@@ -158,6 +188,10 @@
       </div>
       <div class="shell footer-bottom"><span>© 2026 VASI</span><span data-i18n="madeForFrance">Conçu pour la France.</span></div>
     </footer>
+    <nav class="mobile-cta" aria-label="Actions rapides">
+      <a href="/app.html" data-i18n="openApp">Ouvrir l’app</a>
+      <a href="/ride-flow.html" data-i18n="orderRide">Commander</a>
+    </nav>
     <script src="/website/business.js" defer></script>
   </body>
 </html>
