@@ -7,7 +7,7 @@
 4. Review fare and vehicle type.
 5. Create a ride request in the reviewer/test environment.
 6. Open Safety Centre and verify trip sharing/account deletion links.
-7. Open Eats and view a restaurant/order flow.
+7. Open Food and view a restaurant/order flow.
 
 ## Driver
 1. Sign in with an approved reviewer driver account.
