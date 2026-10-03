@@ -606,7 +606,7 @@
             ["profile", client.from("profiles").select("*").eq("id", userId).maybeSingle()],
             ["saved_addresses", client.from("customer_saved_addresses").select("*").eq("user_id", userId).limit(100)],
             ["rides", client.from("rides").select("*").eq("customer_id", userId).limit(500)],
-            ["eats_orders", client.from("eats_orders").select("*").eq("customer_id", userId).limit(500)],
+            ["food_orders", client.from("food_orders").select("*").eq("customer_id", userId).limit(500)],
             ["delivery_orders", client.from("delivery_orders").select("*").eq("customer_id", userId).limit(500)],
           ];
           const results = await Promise.all(requests.map((entry) => entry[1]));
