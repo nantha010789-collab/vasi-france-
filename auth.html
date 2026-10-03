@@ -443,10 +443,10 @@
           : role === "ride"
             ? "VTC passenger driver account."
             : role === "courier"
-              ? "Eats + Delivery courier account."
+              ? "Food + Delivery courier account."
               : phone
                 ? "Enter your mobile number. We will send a 6-digit SMS code."
-                : "Manage your restaurant, menu and VASI Eats orders.");
+                : "Manage your restaurant, menu and VASI Food orders.");
         $("methodSwitch").classList.toggle("hidden", !customer);
         $("phoneMethodBtn").classList.toggle("active", customer && phone);
         $("emailMethodBtn").classList.toggle("active", customer && !phone);
