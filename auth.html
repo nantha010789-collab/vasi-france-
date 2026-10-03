@@ -203,20 +203,23 @@
         </div>
         <h1 id="title">Customer login</h1>
         <p id="desc" class="muted">Quick phone sign-in for VASI customers.</p>
-        <div id="methodSwitch" class="method-switch" aria-label="Customer sign-in method">
-          <a
+        <div id="methodSwitch" class="method-switch" aria-label="Sign-in method">
+          <button
             id="phoneMethodBtn"
-            href="./auth.html?role=customer&amp;method=phone"
+            type="button"
+            onclick="setAuthMethod('phone')"
           >
-            📱 <span>Phone</span>
-          </a>
-          <a
+            <span id="phoneMethodLabel">Phone</span>
+          </button>
+          <button
             id="emailMethodBtn"
-            href="./auth.html?role=customer&amp;method=email"
+            type="button"
+            onclick="setAuthMethod('email')"
           >
-            ✉️ E-mail
-          </a>
+            <span>E-mail</span>
+          </button>
         </div>
+        <p id="methodHint" class="muted"></p>
         <input
           id="identity"
           class="input"
@@ -396,7 +399,8 @@
       function setRole(next) {
         if (!surfaceRoles[surface].has(next)) return;
         role = next;
-        authMethod = next === "customer" ? "phone" : "email";
+        if (next === "customer") authMethod = "phone";
+        else if (next === "restaurant") authMethod = "email";
         if (!currentSession) accountRole.setIntent(role);
         resetAuthForm();
         const params = new URLSearchParams(location.search);
@@ -406,7 +410,7 @@
         render();
       }
       function setAuthMethod(next) {
-        if (role !== "customer" || !["phone", "email"].includes(next) || next === authMethod) return;
+        if (!["customer", "driver"].includes(surface) || !["phone", "email"].includes(next) || next === authMethod) return;
         authMethod = next;
         resetAuthForm();
         const params = new URLSearchParams(location.search);
@@ -441,37 +445,47 @@
             : t(customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login");
         $("desc").textContent = t(customer
           ? registerMode
-            ? authCopy("Saisissez votre e-mail. Le lien sécurisé créera votre compte client VASI.", "Enter your email. Your secure link will create your VASI customer account.")
+            ? phone
+              ? authCopy("Saisissez votre numéro. Le code SMS sécurisé créera votre compte client VASI.", "Enter your number. The secure SMS code will create your VASI customer account.")
+              : authCopy("Saisissez votre e-mail. Le lien sécurisé créera votre compte client VASI.", "Enter your email. Your secure link will create your VASI customer account.")
             : phone
             ? "Enter your mobile number. We will send a 6-digit SMS code."
             : "Enter your email. We will send you a secure sign-in link."
           : driverRegistration
-            ? authCopy("Saisissez votre e-mail. Le lien sécurisé vous permettra de commencer votre dossier étape par étape.", "Enter your email. The secure link will let you start your application step by step.")
+            ? phone
+              ? authCopy("Saisissez votre numéro. Nous vous enverrons un code SMS à 6 chiffres pour commencer votre dossier.", "Enter your number. We will send a 6-digit SMS code to start your application.")
+              : authCopy("Saisissez votre e-mail. Le lien sécurisé vous permettra de commencer votre dossier étape par étape.", "Enter your email. The secure link will let you start your application step by step.")
             : role === "ride"
-              ? "VTC passenger driver account."
+              ? phone ? authCopy("Connexion chauffeur par code SMS.", "Driver login with SMS code.") : "VTC passenger driver account."
               : role === "courier"
-                ? "Food + Delivery courier account."
+                ? phone ? authCopy("Connexion livreur par code SMS.", "Courier login with SMS code.") : "Food + Delivery courier account."
               : phone
                 ? "Enter your mobile number. We will send a 6-digit SMS code."
                 : "Manage your restaurant, menu and VASI Food orders.");
-        $("methodSwitch").classList.toggle("hidden", !customer);
-        $("phoneMethodBtn").classList.toggle("active", customer && phone);
-        $("emailMethodBtn").classList.toggle("active", customer && !phone);
-        $("phoneMethodBtn").setAttribute("aria-pressed", String(customer && phone));
-        $("emailMethodBtn").setAttribute("aria-pressed", String(customer && !phone));
+        const methodChoice = customer || surface === "driver";
+        $("methodSwitch").classList.toggle("hidden", !methodChoice);
+        $("phoneMethodBtn").classList.toggle("active", methodChoice && phone);
+        $("emailMethodBtn").classList.toggle("active", methodChoice && !phone);
+        $("phoneMethodBtn").setAttribute("aria-pressed", String(methodChoice && phone));
+        $("emailMethodBtn").setAttribute("aria-pressed", String(methodChoice && !phone));
+        $("phoneMethodLabel").textContent = authCopy("Téléphone", "Phone");
+        $("methodHint").textContent = surface === "driver"
+          ? authCopy("Choisissez une méthode et utilisez toujours la même pour retrouver votre dossier.", "Choose one method and always use the same one to access your application.")
+          : "";
+        $("methodHint").classList.toggle("hidden", surface !== "driver");
         $("identity").type = phone ? "tel" : "email";
         $("identity").inputMode = phone ? "tel" : "email";
         $("identity").autocomplete = phone ? "tel" : "email";
         $("identity").placeholder = phone
           ? VasiRegion.getRegion().phonePlaceholder
           : "you@example.com";
-        $("continueBtn").textContent = t(registerMode && (customer || surface === "driver")
-          ? authCopy(surface === "driver" ? "Commencer mon inscription" : "Créer mon compte par e-mail", surface === "driver" ? "Start my registration" : "Create my account by email")
-          : phone
+        $("continueBtn").textContent = t(phone
           ? phoneAwaitingCode
-            ? "Verify & continue"
-            : "Send SMS code"
-          : "Continue with email");
+            ? authCopy("Vérifier et continuer", "Verify & continue")
+            : authCopy("Envoyer le code SMS", "Send SMS code")
+          : registerMode && (customer || surface === "driver")
+            ? authCopy(surface === "driver" ? "Continuer avec l’e-mail" : "Créer mon compte par e-mail", surface === "driver" ? "Continue with email" : "Create my account by email")
+            : authCopy("Continuer avec l’e-mail", "Continue with email"));
         $("codeStep").classList.toggle("hidden", !phone || !phoneAwaitingCode);
         const roleButtons = { customerBtn: "customer", rideBtn: "ride", courierBtn: "courier", restaurantBtn: "restaurant" };
         Object.entries(roleButtons).forEach(([id, buttonRole]) => {
@@ -495,8 +509,8 @@
           : role === "restaurant"
           ? "restaurant-register.html"
           : registerMode
-            ? "auth.html?role=" + encodeURIComponent(role) + "&method=email&surface=driver"
-            : "auth.html?role=" + encodeURIComponent(role) + "&method=email&surface=driver&mode=register";
+            ? "auth.html?role=" + encodeURIComponent(role) + "&method=" + encodeURIComponent(authMethod) + "&surface=driver"
+            : "auth.html?role=" + encodeURIComponent(role) + "&method=" + encodeURIComponent(authMethod) + "&surface=driver&mode=register";
         $("register").textContent = customer
           ? registerMode ? authCopy("Déjà inscrit ? Se connecter →", "Already registered? Sign in →") : authCopy("Nouveau client ? Créer un compte VASI →", "New customer? Create a VASI account →")
           : role === "restaurant"
@@ -544,6 +558,13 @@
       function normalizePhone(value) {
         return VasiRegion.normalizePhone(value);
       }
+      function rememberDriverRegistrationReturn() {
+        if (surface !== "driver" || !registerMode) return;
+        localStorage.setItem(
+          "vasi_driver_return",
+          "partner-register-v2.html?role=" + encodeURIComponent(role) + "&surface=driver",
+        );
+      }
       async function sendPhoneCode() {
         if (sendingPhoneCode) return;
         const phone = normalizePhone($("identity").value.trim());
@@ -557,6 +578,7 @@
         $("continueBtn").disabled = true;
         show("Sending your SMS code…");
         accountRole.setIntent(role);
+        rememberDriverRegistrationReturn();
         const { error } = await client.auth.signInWithOtp({ phone });
         sendingPhoneCode = false;
         $("continueBtn").disabled = false;
@@ -679,12 +701,7 @@
         if (!email) return show("Enter your email address.");
         show("Sending secure login link…");
         accountRole.setIntent(role);
-        if (surface === "driver" && registerMode) {
-          localStorage.setItem(
-            "vasi_driver_return",
-            "partner-register-v2.html?role=" + encodeURIComponent(role) + "&surface=driver",
-          );
-        }
+        rememberDriverRegistrationReturn();
         const { error } = await client.auth.signInWithOtp({
           email,
           options: {
