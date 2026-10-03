@@ -42,11 +42,32 @@ test("driver app exposes chauffeur and delivery without customer or restaurant r
   assert.match(auth, /&surface=driver/);
   assert.match(register, /const driverSurface = pageParams\.get\('surface'\) === 'driver'/);
   assert.match(register, /\['ride','courier'\]\.includes\(requestedRole\)/);
+  assert.match(register, /storageKey:'vasi-driver-auth'/);
+  assert.match(register, /VasiAccountRole\.scoped\('driver'\)/);
+  assert.match(register, /localStorage\.setItem\('vasi_driver_return', returnUrl\)/);
+  assert.match(register, /<main class="wrap" hidden>/);
+  assert.ok(register.indexOf('await sb.auth.getSession()') < register.indexOf('startCamera();'));
+  assert.match(auth, /"partner-register-v2\.html"/);
+  assert.ok(auth.indexOf('if \(back\) {') < auth.indexOf('if \(savedRole === "ride"\)'));
   assert.equal(manifest.shortcuts.length, 2);
   assert.equal(manifest.shortcuts[0].url, "/driver.html");
   assert.equal(manifest.shortcuts[1].url, "/delivery-driver.html");
   assert.match(auth, /standalone && driverRole && !document\.referrer/);
   assert.match(auth, /driver-home\.html\?source=legacy-shortcut/);
+});
+
+test("driver registration keeps approval server-controlled and supports safe document resubmission", () => {
+  const page = read("partner-register-v2.html");
+  const migration = read("supabase/migrations/20261003150000_harden_driver_registration_resubmission.sql");
+  assert.match(page, /existingDriver\?\.status === 'approved'/);
+  assert.match(page, /saveRideDocuments\(user\.id, docs\)/);
+  assert.match(migration, /verified = false/);
+  assert.match(migration, /status = 'pending'/);
+  assert.match(migration, /drivers_resubmit_own_documents/);
+  assert.match(migration, /vasi_resubmit_driver_application/);
+  assert.match(migration, /vasi_resubmit_courier_application/);
+  assert.match(migration, /grant update \(file_path, status, rejection_reason, updated_at\)/);
+  assert.doesNotMatch(migration, /grant update \([^)]*verified/is);
 });
 
 test("registered restaurant entry resumes the dashboard instead of onboarding", () => {
