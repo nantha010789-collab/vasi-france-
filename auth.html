@@ -321,6 +321,7 @@
         "ride-history.html",
         "settings.html",
         "support.html",
+        "partner-register-v2.html",
         "restaurant-register.html",
         "restaurant-dashboard.html",
       ]);
@@ -685,17 +686,13 @@
       }
       function destination(savedRole, consumeReturn = true) {
         const back = safeReturn(localStorage.getItem(returnStorageKey));
-        if (savedRole === "restaurant" && back === "restaurant-register.html") {
+        if (back) {
           if (consumeReturn) localStorage.removeItem(returnStorageKey);
           return back;
         }
         if (savedRole === "ride") return "driver.html";
         if (savedRole === "courier") return "delivery-driver.html";
         if (savedRole === "restaurant") return "restaurant-dashboard.html";
-        if (back) {
-          if (consumeReturn) localStorage.removeItem(returnStorageKey);
-          return back;
-        }
         if (consumeReturn) localStorage.removeItem(returnStorageKey);
         return "index.html";
       }

@@ -148,9 +148,11 @@ test('edge admin service authorizes every operation and keeps privileged keys se
 
 test('ride registration sends uploaded documents into the protected admin review queue', async () => {
   const register = await read('partner-register-v2.html');
-  assert.match(register, /from\('driver_documents'\)\.insert\(documentRows\)/);
-  assert.match(register, /driver_id:user\.id,document_type:documentType,file_path:filePath/);
-  assert.match(register, /documentType !== 'profile_photo'/);
+  assert.match(register, /async function saveRideDocuments/);
+  assert.match(register, /from\('driver_documents'\)\.insert\(\{/);
+  assert.match(register, /status:'pending',rejection_reason:null/);
+  assert.match(register, /driver_id:userId,document_type:documentType,file_path:filePath/);
+  assert.doesNotMatch(register, /documentType !== 'profile_photo'/);
 });
 
 // The /admin rewrite retains the URL without a trailing slash in the browser.
