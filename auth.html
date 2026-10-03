@@ -209,14 +209,14 @@
             type="button"
             onclick="setAuthMethod('phone')"
           >
-            📱 <span>Phone</span>
+            <span id="phoneMethodLabel">Phone</span>
           </button>
           <button
             id="emailMethodBtn"
             type="button"
             onclick="setAuthMethod('email')"
           >
-            ✉️ E-mail
+            <span>E-mail</span>
           </button>
         </div>
         <p id="methodHint" class="muted"></p>
@@ -468,7 +468,7 @@
         $("emailMethodBtn").classList.toggle("active", methodChoice && !phone);
         $("phoneMethodBtn").setAttribute("aria-pressed", String(methodChoice && phone));
         $("emailMethodBtn").setAttribute("aria-pressed", String(methodChoice && !phone));
-        $("phoneMethodBtn").querySelector("span").textContent = authCopy("Téléphone", "Phone");
+        $("phoneMethodLabel").textContent = authCopy("Téléphone", "Phone");
         $("methodHint").textContent = surface === "driver"
           ? authCopy("Choisissez une méthode et utilisez toujours la même pour retrouver votre dossier.", "Choose one method and always use the same one to access your application.")
           : "";
