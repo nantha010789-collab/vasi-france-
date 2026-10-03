@@ -23,7 +23,7 @@ async function db(path, options = {}) {
 }
 
 async function adminDb(path, options = {}) {
-  if (!serviceKey) throw new Error("Eats order service is not configured");
+  if (!serviceKey) throw new Error("Food order service is not configured");
   const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
     ...options,
     headers: {
@@ -282,7 +282,7 @@ export default async function handler(req, res) {
       group_order_id: groupOrderId,
     });
   } catch (error) {
-    const message = error?.message || "Eats service error";
+    const message = error?.message || "Food service error";
     const clientError = /invalid|choose|address|minimum|closed|unavailable|outside|route/i.test(
       message,
     );
