@@ -340,7 +340,7 @@
             : "customer";
       const surfaceRoles = {
         customer: new Set(["customer"]),
-        driver: new Set(["ride"]),
+        driver: new Set(["ride", "courier"]),
         partner: new Set(["restaurant"]),
       };
       if (!surfaceRoles[surface].has(role)) role = surface === "driver" ? "ride" : surface === "partner" ? "restaurant" : "customer";
@@ -460,7 +460,7 @@
           $(id).classList.remove("active");
           $(id).classList.toggle("hidden", !surfaceRoles[surface].has(buttonRole));
         });
-        document.querySelector(".switch").classList.add("single");
+        document.querySelector(".switch").classList.toggle("single", surface !== "driver");
         document.querySelector(".switch").classList.remove("hidden");
         $("roleHelp").classList.toggle("hidden", surface !== "driver");
         $("authBack").href = surface === "driver" ? "driver-home.html" : surface === "partner" ? "restaurant-register.html" : "app.html";
