@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
             amount,
             currency: String(order.currency || "eur").toLowerCase(),
             automatic_payment_methods: { enabled: true, allow_redirects: "never" },
-            description: `VASI Eats order ${order.id}`,
+            description: `VASI Food order ${order.id}`,
             metadata: {
               service: "eats",
               order_id: order.id,
