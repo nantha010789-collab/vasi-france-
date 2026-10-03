@@ -47,7 +47,8 @@ test("driver app exposes chauffeur and delivery without customer or restaurant r
   assert.match(register, /VasiAccountRole\.scoped\('driver'\)/);
   assert.match(register, /localStorage\.setItem\('vasi_driver_return', returnUrl\)/);
   assert.match(register, /<main class="wrap" hidden>/);
-  assert.ok(register.indexOf('await sb.auth.getSession()') < register.indexOf('startCamera();'));
+  assert.match(register, /if \(currentStep === 5\) window\.setTimeout\(startCamera,0\)/);
+  assert.ok(register.indexOf('await sb.auth.getSession()') < register.indexOf("document.querySelector('main').hidden = false"));
   assert.match(auth, /"partner-register-v2\.html"/);
   assert.ok(auth.indexOf('if \(back\) {') < auth.indexOf('if \(savedRole === "ride"\)'));
   assert.equal(manifest.shortcuts.length, 2);
@@ -55,6 +56,21 @@ test("driver app exposes chauffeur and delivery without customer or restaurant r
   assert.equal(manifest.shortcuts[1].url, "/delivery-driver.html");
   assert.match(auth, /standalone && driverRole && !document\.referrer/);
   assert.match(auth, /driver-home\.html\?source=legacy-shortcut/);
+});
+
+test("driver registration is a professional seven-step resumable wizard", () => {
+  const page = read("partner-register-v2.html");
+  assert.equal((page.match(/class="step(?: active)?" data-step="[0-6]"/g) || []).length, 7);
+  assert.match(page, /Étape 1 sur 7/);
+  assert.match(page, /id="previousButton"/);
+  assert.match(page, /id="nextButton"/);
+  assert.match(page, /Envoyer mon dossier/);
+  assert.match(page, /function validateStep\(step\)/);
+  assert.match(page, /const maxFileBytes = 10 \* 1024 \* 1024/);
+  assert.match(page, /localStorage\.setItem\(draftKey,JSON\.stringify\(draft\)\)/);
+  assert.match(page, /function renderReview\(\)/);
+  assert.match(page, /selfie de vérification/i);
+  assert.match(page, /stopCamera\(\)/);
 });
 
 test("driver registration keeps approval server-controlled and supports safe document resubmission", () => {
