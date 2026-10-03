@@ -10,6 +10,14 @@ const migration = readFileSync(
   "utf8",
 );
 
+const driverMarketplaceMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20261003170958_upgrade_driver_marketplace_dashboard.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
 test("future database functions require an explicit browser-role grant", () => {
   assert.match(
     migration,
@@ -60,4 +68,21 @@ test("all advisor-reported foreign keys receive covering indexes", () => {
   ]) {
     assert.match(migration, new RegExp(`create index if not exists ${index}`, "i"));
   }
+});
+
+test("driver marketplace RPCs are verified-driver-only and explicitly granted", () => {
+  for (const name of [
+    "vasi_driver_offer_details",
+    "vasi_driver_planned_rides",
+    "vasi_driver_claim_planned_ride",
+    "vasi_driver_release_planned_ride",
+  ]) {
+    assert.match(driverMarketplaceMigration, new RegExp(`function public\\.${name}`, "i"));
+  }
+  assert.match(driverMarketplaceMigration, /d\.verified = true[\s\S]*d\.role = 'ride'/i);
+  assert.match(driverMarketplaceMigration, /security definer[\s\S]*set search_path = ''/i);
+  assert.match(driverMarketplaceMigration, /revoke all on function public\.vasi_driver_offer_details\(\) from public, anon/i);
+  assert.match(driverMarketplaceMigration, /grant execute on function public\.vasi_driver_offer_details\(\) to authenticated/i);
+  const returnedColumns = driverMarketplaceMigration.match(/vasi_driver_offer_details\(\)[\s\S]*?returns table\(([\s\S]*?)\)\s*language/i)?.[1] || "";
+  assert.doesNotMatch(returnedColumns, /passenger_name|passenger_phone|notes/i);
 });
