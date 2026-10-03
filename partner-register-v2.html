@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
   <body>
-    <main class="wrap">
+    <main class="wrap" hidden>
       <nav class="page-nav" aria-label="Navigation">
         <button class="back-btn" type="button" onclick="goBack()"><span class="back-icon" aria-hidden="true">‹</span>Retour</button>
       </nav>
@@ -111,7 +111,8 @@
     <script src="./vasi-region.js"></script>
     <script src="./vasi-account-role.js"></script>
     <script>
-      const sb = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co', 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+      const sb = supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co', 'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT', {auth:{storageKey:'vasi-driver-auth'}});
+      const accountRole = VasiAccountRole.scoped('driver');
       const motorVehicles = new Set(['scooter', 'moto', 'car']);
       const pageParams = new URLSearchParams(location.search);
       const requestedRole = pageParams.get('role');
@@ -121,12 +122,12 @@
 
       function goBack(){ if(history.length > 1) history.back(); else location.href = driverSurface ? 'driver-home.html' : 'index.html'; }
       function setRole(next){
-        const activeRole = VasiAccountRole.active();
+        const activeRole = accountRole.active();
         if (activeRole && activeRole !== next) {
           return showError('Déconnectez-vous avant de créer un autre type de compte VASI.');
         }
         role = next;
-        history.replaceState(null, '', location.pathname + '?role=' + encodeURIComponent(role));
+        history.replaceState(null, '', location.pathname + '?role=' + encodeURIComponent(role) + (driverSurface ? '&surface=driver' : ''));
         render();
       }
       function setVehicle(next){ vehicle = next; renderVehicle(); }
@@ -165,9 +166,11 @@
         $('vehiclePhotoLabel').textContent = names[vehicle] || 'Photo du véhicule';
       }
 
-      navigator.mediaDevices?.getUserMedia({video:{facingMode:'user'},audio:false})
-        .then(stream => { $('cam').srcObject = stream; })
-        .catch(() => { $('msg').textContent = 'Autorisez la caméra pour prendre votre selfie.'; });
+      function startCamera(){
+        navigator.mediaDevices?.getUserMedia({video:{facingMode:'user'},audio:false})
+          .then(stream => { $('cam').srcObject = stream; })
+          .catch(() => { $('msg').textContent = 'Autorisez la caméra pour prendre votre selfie.'; });
+      }
 
       function snap(){
         const video = $('cam');
@@ -218,17 +221,36 @@
         if (error) throw error;
         return data.path;
       }
+      async function saveRideDocuments(userId, docs){
+        for (const [documentType,filePath] of Object.entries(docs)) {
+          const {data:existing,error:readError} = await sb.from('driver_documents')
+            .select('id,status').eq('driver_id', userId).eq('document_type', documentType).maybeSingle();
+          if (readError) throw readError;
+          if (existing) {
+            if (existing.status === 'approved') continue;
+            const {error:updateError} = await sb.from('driver_documents').update({
+              file_path:filePath,status:'pending',rejection_reason:null,updated_at:new Date().toISOString()
+            }).eq('id', existing.id);
+            if (updateError) throw updateError;
+          } else {
+            const {error:insertError} = await sb.from('driver_documents').insert({
+              driver_id:userId,document_type:documentType,file_path:filePath
+            });
+            if (insertError) throw insertError;
+          }
+        }
+      }
       async function submitApplication(){
         if (submitting) return;
         const files = requiredFiles(), problem = validate(files);
         if (problem) return showError(problem);
         const {data:{user}} = await sb.auth.getUser();
-        if (!user) { location.href = 'auth.html?role=' + role + (driverSurface ? '&surface=driver' : ''); return; }
-        const activeRole = VasiAccountRole.active();
+        if (!user) { openLogin(); return; }
+        const activeRole = accountRole.active();
         if (activeRole && activeRole !== role) return showError('Déconnectez-vous avant d’utiliser un autre compte VASI.');
         const {error: roleError} = await sb.rpc('vasi_claim_account_role', {p_role:role});
         if (roleError) return showError('Ces identifiants appartiennent à un autre type de compte VASI. Utilisez des identifiants séparés.');
-        VasiAccountRole.remember(role);
+        accountRole.remember(role);
         submitting = true; $('submitButton').disabled = true; $('submitButton').textContent = 'Envoi en cours…';
         try {
           const docs = {};
@@ -237,21 +259,37 @@
           const selfieBlob = await (await fetch(selfie)).blob();
           docs.selfie = await upload(user.id, 'selfie', new File([selfieBlob], 'selfie.jpg', {type:'image/jpeg'}));
           if (role === 'ride') {
-            const {error} = await sb.from('drivers').upsert({
-              id:user.id,user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),online:false,verified:false,rating:5,role:'ride',status:'pending'
-            }, {onConflict:'id'});
-            if (error) throw error;
-            const documentRows = Object.entries(docs)
-              .filter(([documentType]) => documentType !== 'profile_photo')
-              .map(([documentType,filePath]) => ({driver_id:user.id,document_type:documentType,file_path:filePath}));
-            const {error:documentError} = await sb.from('driver_documents').insert(documentRows);
-            if (documentError) throw documentError;
+            const {data:existingDriver,error:driverReadError} = await sb.from('drivers').select('id,status').eq('id', user.id).maybeSingle();
+            if (driverReadError) throw driverReadError;
+            if (existingDriver?.status === 'approved') throw new Error('Votre dossier est déjà validé. Ouvrez l’application Chauffeur.');
+            const driverProfile = {full_name:$('name').value.trim(),phone:$('phone').value.trim()};
+            const driverWrite = existingDriver
+              ? sb.from('drivers').update({...driverProfile,updated_at:new Date().toISOString()}).eq('id', user.id)
+              : sb.from('drivers').insert({id:user.id,user_id:user.id,...driverProfile});
+            const {error:driverWriteError} = await driverWrite;
+            if (driverWriteError) throw driverWriteError;
+            if (existingDriver?.status === 'rejected') {
+              const {error:resubmitError} = await sb.rpc('vasi_resubmit_driver_application');
+              if (resubmitError) throw resubmitError;
+            }
+            await saveRideDocuments(user.id, docs);
           } else {
-            const {error} = await sb.from('delivery_drivers').upsert({
-              user_id:user.id,full_name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),vehicle_type:vehicle,
-              online:false,verified:false,application_status:'pending',rejection_reason:null,documents:docs,accepted_policy_at:new Date().toISOString()
-            }, {onConflict:'user_id'});
-            if (error) throw error;
+            const {data:existingCourier,error:courierReadError} = await sb.from('delivery_drivers').select('id,application_status').eq('user_id', user.id).maybeSingle();
+            if (courierReadError) throw courierReadError;
+            if (existingCourier?.application_status === 'approved') throw new Error('Votre dossier est déjà validé. Ouvrez l’application Livreur.');
+            const courierProfile = {
+              full_name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),vehicle_type:vehicle,
+              documents:docs,accepted_policy_at:new Date().toISOString()
+            };
+            const courierWrite = existingCourier
+              ? sb.from('delivery_drivers').update({...courierProfile,updated_at:new Date().toISOString()}).eq('user_id', user.id)
+              : sb.from('delivery_drivers').insert({user_id:user.id,...courierProfile});
+            const {error:courierWriteError} = await courierWrite;
+            if (courierWriteError) throw courierWriteError;
+            if (existingCourier?.application_status === 'rejected') {
+              const {error:resubmitError} = await sb.rpc('vasi_resubmit_courier_application');
+              if (resubmitError) throw resubmitError;
+            }
           }
           const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending',vasi_country:$('country').value};
           await sb.auth.updateUser({data:metadata});
@@ -262,10 +300,29 @@
           submitting = false; $('submitButton').disabled = false; $('submitButton').textContent = 'Envoyer pour validation';
         }
       }
-      $('country').value = VasiRegion.getCountry();
-      $('country').addEventListener('change', renderCountry);
-      renderCountry();
-      render();
+      function openLogin(){
+        const returnUrl = 'partner-register-v2.html?role=' + encodeURIComponent(role) + '&surface=driver';
+        localStorage.setItem('vasi_driver_return', returnUrl);
+        accountRole.setIntent(role);
+        location.replace('auth.html?role=' + encodeURIComponent(role) + '&method=email&surface=driver');
+      }
+      async function startRegistration(){
+        const {data:{session},error} = await sb.auth.getSession();
+        if (error) {
+          document.querySelector('main').hidden = false;
+          showError('Connexion impossible. Revenez à l’application Driver et réessayez.');
+          return;
+        }
+        if (!session) { openLogin(); return; }
+        accountRole.setIntent(role);
+        document.querySelector('main').hidden = false;
+        $('country').value = VasiRegion.getCountry();
+        $('country').addEventListener('change', renderCountry);
+        renderCountry();
+        render();
+        startCamera();
+      }
+      startRegistration();
     </script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-navigation.js?v=4"></script>
