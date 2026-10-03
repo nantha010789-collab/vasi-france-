@@ -61,9 +61,9 @@ Deno.serve(async (req) => {
     typeof event.account === "string" ? event.account : null;
 
   try {
-    if (service === "eats" && orderId && event.type === "payment_intent.succeeded") {
+    if (service === "food" && orderId && event.type === "payment_intent.succeeded") {
       const { error } = await supabase
-        .from("eats_orders")
+        .from("food_orders")
         .update({ status: "pending", payment_status: "paid" })
         .eq("id", orderId)
         .eq("stripe_payment_intent_id", object.id)
@@ -102,12 +102,12 @@ Deno.serve(async (req) => {
     }
 
     if (
-      service === "eats" &&
+      service === "food" &&
       orderId &&
       event.type === "payment_intent.payment_failed"
     ) {
       const { error } = await supabase
-        .from("eats_orders")
+        .from("food_orders")
         .update({ payment_status: "failed" })
         .eq("id", orderId)
         .eq("stripe_payment_intent_id", object.id)
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
         event.type === "charge.refunded" || object?.status === "succeeded";
       if (paymentIntentId && refundCompleted) {
         const { error } = await supabase
-          .from("eats_orders")
+          .from("food_orders")
           .update({ payment_status: "refunded" })
           .eq("stripe_payment_intent_id", paymentIntentId);
         if (error) throw error;
