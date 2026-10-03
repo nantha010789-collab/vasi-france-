@@ -53,7 +53,7 @@ async function releaseRestaurantPayout(
 
   const accountId = String(restaurant.stripe_account_id || "");
   if (!accountId || !restaurant.stripe_payouts_enabled) {
-    await serviceClient.from("eats_orders").update({
+    await serviceClient.from("food_orders").update({
       restaurant_payout_status: "requires_onboarding",
     }).eq("id", order.id);
     return { status: "requires_onboarding", message: "Restaurant must connect and verify its RIB" };
@@ -68,7 +68,7 @@ async function releaseRestaurantPayout(
       !account.details_submitted ||
       !account.payouts_enabled
     ) {
-      await serviceClient.from("eats_orders").update({
+      await serviceClient.from("food_orders").update({
         restaurant_payout_status: "requires_onboarding",
       }).eq("id", order.id);
       return { status: "requires_onboarding", message: "Restaurant RIB verification is incomplete" };
@@ -94,15 +94,15 @@ async function releaseRestaurantPayout(
       currency: String(order.currency || "eur").toLowerCase(),
       destination: accountId,
       source_transaction: chargeId,
-      transfer_group: `VASI_EATS_${order.id}`,
+      transfer_group: `VASI_FOOD_${order.id}`,
       metadata: {
-        vasi_service: "eats",
+        vasi_service: "food",
         vasi_order_id: String(order.id),
         vasi_restaurant_id: String(restaurant.id),
       },
-    }, { idempotencyKey: `vasi-eats-restaurant-${order.id}` });
+    }, { idempotencyKey: `vasi-food-restaurant-${order.id}` });
     const paidAt = new Date().toISOString();
-    await serviceClient.from("eats_orders").update({
+    await serviceClient.from("food_orders").update({
       restaurant_payout_status: "paid",
       restaurant_transfer_id: transfer.id,
       restaurant_paid_at: paidAt,
@@ -114,7 +114,7 @@ async function releaseRestaurantPayout(
       transfer_id: transfer.id,
     };
   } catch (error) {
-    await serviceClient.from("eats_orders").update({
+    await serviceClient.from("food_orders").update({
       restaurant_payout_status: "failed",
     }).eq("id", order.id);
     return {
@@ -281,7 +281,7 @@ Deno.serve(async (req: Request) => {
         if (!completed?.ok) return json({ error: completed?.error || "Delivery could not be completed" }, 409);
         order = completed.eat;
       } else if (action === "restaurant_retry_payout") {
-        const { data, error: orderError } = await userClient.from("eats_orders")
+        const { data, error: orderError } = await userClient.from("food_orders")
           .select("id,subtotal,delivery_fee,currency,delivery_mode,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id")
           .eq("restaurant_id", restaurant.id).eq("id", String(body?.order_id || "")).maybeSingle();
         if (orderError || !data || data.status !== "delivered" || data.payment_status !== "paid")

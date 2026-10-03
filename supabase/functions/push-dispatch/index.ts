@@ -19,8 +19,8 @@ const tableConfig = {
       cancelled: ["Ride cancelled", "This VASI ride has been cancelled.", "activity.html"],
     },
   },
-  eats_orders: {
-    service: "eats",
+  food_orders: {
+    service: "food",
     statuses: {
       accepted: ["Restaurant accepted", "The restaurant accepted your order.", "activity.html"],
       preparing: ["Food is being prepared", "Your VASI Food order is in the kitchen.", "activity.html"],

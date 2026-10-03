@@ -194,7 +194,7 @@
       </section>
       <section class="card">
         <div class="toggle">
-          <button id="eatsBtn" class="btn active" onclick="setTab('eats')">
+          <button id="foodBtn" class="btn active" onclick="setTab('food')">
             🍔 Food</button
           ><button id="deliveryBtn" class="btn" onclick="setTab('delivery')">
             📦 Delivery
@@ -222,7 +222,7 @@
       const accountRole = VasiAccountRole.scoped("driver");
       const money = (value) => VasiRegion.money(value, region.code);
       let online = false,
-        tab = "eats",
+        tab = "food",
         activeJob = null,
         courierProfile = null,
         payoutReady = false;
@@ -360,7 +360,7 @@
       }
       function setTab(next) {
         tab = next;
-        $("eatsBtn").classList.toggle("active", next === "eats");
+        $("foodBtn").classList.toggle("active", next === "food");
         $("deliveryBtn").classList.toggle("active", next === "delivery");
         loadJobs();
       }
@@ -372,7 +372,7 @@
         const current = await service({ action: "get_current_jobs" });
         if (!current.error && (current.eat || current.delivery)) {
           activeJob = current.eat
-            ? { type: "eats", job: current.eat }
+            ? { type: "food", job: current.eat }
             : { type: "delivery", job: current.delivery };
           renderActiveJob();
           return;
@@ -387,16 +387,16 @@
           renderActiveJob();
           return;
         }
-        const jobs = tab === "eats" ? data.eats || [] : data.deliveries || [];
+        const jobs = tab === "food" ? data.food || [] : data.deliveries || [];
         if (!jobs.length)
           return ($("jobs").textContent =
             "No " +
-            (tab === "eats" ? "Food" : "Delivery") +
+            (tab === "food" ? "Food" : "Delivery") +
             " jobs right now.");
         $("jobs").innerHTML = jobs
           .map((job) =>
-            tab === "eats"
-              ? `<article class="job"><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">You earn €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small><div class="protect">VASI protection: minimum €4 per delivery and €20/hour based on the estimated active time. You see the guaranteed offer before accepting.</div><button class="accept" data-id="${esc(job.id)}" data-type="eats">Accept · €${Number(job.courier_offer_amount || 0).toFixed(2)}</button></article>`
+            tab === "food"
+              ? `<article class="job"><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">You earn €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small><div class="protect">VASI protection: minimum €4 per delivery and €20/hour based on the estimated active time. You see the guaranteed offer before accepting.</div><button class="accept" data-id="${esc(job.id)}" data-type="food">Accept · €${Number(job.courier_offer_amount || 0).toFixed(2)}</button></article>`
               : `<article class="job"><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><button class="accept" data-id="${esc(job.id)}" data-type="delivery">Accept Delivery</button></article>`,
           )
           .join("");
@@ -404,15 +404,15 @@
       function renderActiveJob() {
         if (!activeJob) return;
         const { type, job } = activeJob,
-          isEats = type === "eats",
+          isFood = type === "food",
           pickedUp = job.status === "picked_up";
-        $("jobs").innerHTML = isEats
-          ? `<article class="job"><span class="badge">ACTIVE FOOD · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<a class="navigate" href="${esc(mapUrl(pickedUp?job.delivery_address:job.restaurant_name))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to customer':'Navigate to restaurant'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
+        $("jobs").innerHTML = isFood
+          ? `<article class="job"><span class="badge">ACTIVE FOOD · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<a class="navigate" href="${esc(mapUrl(pickedUp?job.delivery_address:job.restaurant_name))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to customer':'Navigate to restaurant'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="food">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
           : `<article class="job"><span class="badge">ACTIVE DELIVERY · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><a class="navigate" href="${esc(mapUrl(pickedUp?job.dropoff_address:job.pickup_address))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to drop-off':'Navigate to pickup'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="delivery">${pickedUp ? "Complete delivery" : "Parcel picked up"}</button></article>`;
       }
       async function acceptJob(id, type) {
         const data = await service({
-          action: type === "eats" ? "accept_eats" : "accept_delivery",
+          action: type === "food" ? "accept_food" : "accept_delivery",
           order_id: id,
         });
         if (data.error) return ($("jobs").textContent = data.error);
@@ -422,19 +422,19 @@
         $("onlineBtn").textContent = "Go online";
         activeJob = {
           type,
-          job: type === "eats" ? data.eat : data.delivery,
+          job: type === "food" ? data.eat : data.delivery,
         };
         renderActiveJob();
       }
       async function updateJob(id, type, status) {
         let pin = null;
-        if (type === "eats" && status === "delivered") {
+        if (type === "food" && status === "delivered") {
           pin = String(prompt("Enter the customer's 4-digit Food delivery PIN") || "").trim();
           if (!pin) return;
           if (!/^\d{4}$/.test(pin)) return alert("Enter the 4-digit delivery PIN");
         }
         const data = await service({
-          action: type === "eats" ? "update_eats" : "update_delivery",
+          action: type === "food" ? "update_food" : "update_delivery",
           order_id: id,
           status,
           pin,
@@ -450,7 +450,7 @@
           loadProfile();
           return;
         }
-        activeJob.job = type === "eats" ? data.eat : data.delivery;
+        activeJob.job = type === "food" ? data.eat : data.delivery;
         renderActiveJob();
       }
       $("jobs").addEventListener("click", (event) => {

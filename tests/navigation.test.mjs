@@ -14,10 +14,10 @@ const secondaryPages = [
   "delivery-driver.html",
   "delivery.html",
   "driver.html",
-  "eats-checkout.html",
-  "eats.html",
-  "eats-orders.html",
-  "eats-orders.html",
+  "food-checkout.html",
+  "food.html",
+  "food-orders.html",
+  "food-orders.html",
   "group-order.html",
   "help.html",
   "legal.html",
@@ -105,7 +105,7 @@ test("the shared return control is valid JavaScript and has safe navigation rule
   assert.match(source, /history\.length <= 1/);
   assert.match(source, /\["admin", "publicity"\]\.includes\(lastSegment\)/);
   assert.doesNotMatch(source, /nestedIndex[^;]+segments\.length === 1/);
-  assert.match(source, /"eats-checkout\.html": "eats\.html"/);
+  assert.match(source, /"food-checkout\.html": "food\.html"/);
   assert.match(source, /"settings\.html": "account\.html"/);
   assert.match(source, /page === "admin-login\.html"/);
   assert.match(source, /parent === "admin" && page === "index\.html"/);

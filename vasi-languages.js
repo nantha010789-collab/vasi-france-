@@ -1427,7 +1427,7 @@
     "Finding pickup…": "Recherche du lieu de départ…",
     "Driver assigned": "Chauffeur attribué",
     "Searching nearby drivers": "Recherche de chauffeurs à proximité",
-    "seats": "places",
+    "sfood": "places",
     "Saving your rating…": "Enregistrement de votre note…",
     "Add an item before starting a group order.": "Ajoutez un article avant de démarrer une commande groupée.",
     "Creating your group ordering link…": "Création de votre lien de commande groupée…",

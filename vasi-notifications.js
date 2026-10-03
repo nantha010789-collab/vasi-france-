@@ -24,7 +24,7 @@
       cancelled: ["Ride cancelled", "This VASI ride has been cancelled."],
       canceled: ["Ride cancelled", "This VASI ride has been cancelled."],
     },
-    eats: {
+    food: {
       pending: ["Order placed", "Your VASI Food order was sent to the restaurant."],
       accepted: ["Restaurant accepted", "The restaurant accepted your order."],
       preparing: ["Food is being prepared", "Your VASI Food order is in the kitchen."],
@@ -73,7 +73,7 @@
     if (value.includes("call")) return "call";
     if (value.includes("restaurant")) return "restaurant";
     if (value.includes("offer") || value.includes("job")) return "jobs";
-    if (value.includes("eats")) return "eats";
+    if (value.includes("food")) return "food";
     if (value.includes("delivery")) return "delivery";
     if (value.includes("ride")) return "ride";
     if (value.includes("promotion")) return "promotions";
@@ -81,7 +81,7 @@
   }
 
   function categoryIcon(category) {
-    return { call: "📞", ride: "🚕", eats: "🍽️", delivery: "🛵", jobs: "📍", restaurant: "🧾", promotions: "🏷️", general: "🔔" }[category] || "🔔";
+    return { call: "📞", ride: "🚕", food: "🍽️", delivery: "🛵", jobs: "📍", restaurant: "🧾", promotions: "🏷️", general: "🔔" }[category] || "🔔";
   }
 
   function shouldNotify(key, value) {
@@ -360,7 +360,7 @@
   }
 
   function listenCustomer(userId, channel) {
-    [["rides", "ride"], ["eats_orders", "eats"], ["delivery_orders", "delivery"]].forEach(([table, kind]) => channel.on("postgres_changes", { event: "UPDATE", schema: "public", table, filter: `customer_id=eq.${userId}` }, (payload) => notifyStatus(kind, payload.new)));
+    [["rides", "ride"], ["food_orders", "food"], ["delivery_orders", "delivery"]].forEach(([table, kind]) => channel.on("postgres_changes", { event: "UPDATE", schema: "public", table, filter: `customer_id=eq.${userId}` }, (payload) => notifyStatus(kind, payload.new)));
   }
 
   function listenDriver(channel) {
@@ -370,7 +370,7 @@
   }
 
   function listenRestaurant(channel) {
-    channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "eats_orders" }, (payload) => {
+    channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "food_orders" }, (payload) => {
       const id = payload.new?.id || Date.now();
       if (shouldNotify(`restaurant-order:${id}`, "new")) show("New VASI Food order", "A customer placed a new food order.", "/restaurant-orders.html", `vasi-restaurant-order-${id}`);
     });
@@ -380,8 +380,8 @@
     channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "delivery_orders" }, (payload) => {
       const id = payload.new?.id || Date.now();
       if (shouldNotify(`delivery-job:${id}`, "new")) show("New delivery job", "A new parcel delivery is available.", "/delivery-driver.html", `vasi-delivery-job-${id}`);
-    }).on("postgres_changes", { event: "UPDATE", schema: "public", table: "eats_orders" }, (payload) => {
-      if (payload.new?.status === "ready_for_pickup" && shouldNotify(`eats-job:${payload.new.id}`, "ready_for_pickup")) show("Food ready for pickup", "A VASI Food order is ready for a courier.", "/delivery-driver.html", `vasi-eats-job-${payload.new.id}`);
+    }).on("postgres_changes", { event: "UPDATE", schema: "public", table: "food_orders" }, (payload) => {
+      if (payload.new?.status === "ready_for_pickup" && shouldNotify(`food-job:${payload.new.id}`, "ready_for_pickup")) show("Food ready for pickup", "A VASI Food order is ready for a courier.", "/delivery-driver.html", `vasi-food-job-${payload.new.id}`);
     });
   }
 

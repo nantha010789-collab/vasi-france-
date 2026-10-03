@@ -16,7 +16,7 @@ Monthly recovery drill:
 
 1. Record the latest successful backup timestamp.
 2. Restore it into an isolated recovery project, never over production.
-3. Verify row counts for `profiles`, `rides`, `payments`, `restaurants`, `eats_orders`, and `delivery_orders`.
+3. Verify row counts for `profiles`, `rides`, `payments`, `restaurants`, `food_orders`, and `delivery_orders`.
 4. Verify Auth users and Storage partner documents are available.
 5. Run `npm test` and one test booking against the isolated project.
 6. Record recovery time, result, and the person who approved the drill.

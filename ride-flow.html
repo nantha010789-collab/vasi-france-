@@ -1575,7 +1575,7 @@
         regularClasses = {
           go: {
             name: "Go",
-            seats: 4,
+            sfood: 4,
             emoji: "🚗",
             base: 2.5,
             km: 0.95,
@@ -1584,7 +1584,7 @@
           },
           comfort: {
             name: "Comfort",
-            seats: 4,
+            sfood: 4,
             emoji: "🚘",
             base: 3.2,
             km: 1.1,
@@ -1593,7 +1593,7 @@
           },
           xl: {
             name: "XL",
-            seats: 6,
+            sfood: 6,
             emoji: "🚙",
             base: 4.0,
             km: 1.25,
@@ -1602,7 +1602,7 @@
           },
           van: {
             name: "Van",
-            seats: 9,
+            sfood: 9,
             emoji: "🚐",
             base: 5.0,
             km: 1.4,
@@ -1613,7 +1613,7 @@
         offerClasses = {
           go: {
             name: "Go",
-            seats: 4,
+            sfood: 4,
             emoji: "🚗",
             base: 1.5,
             km: 0.68,
@@ -1622,7 +1622,7 @@
           },
           comfort: {
             name: "Comfort",
-            seats: 4,
+            sfood: 4,
             emoji: "🚘",
             base: 2.0,
             km: 0.78,
@@ -1631,7 +1631,7 @@
           },
           xl: {
             name: "XL",
-            seats: 6,
+            sfood: 6,
             emoji: "🚙",
             base: 2.8,
             km: 0.95,
@@ -1640,7 +1640,7 @@
           },
           van: {
             name: "Van",
-            seats: 9,
+            sfood: 9,
             emoji: "🚐",
             base: 3.5,
             km: 1.05,
@@ -2918,7 +2918,7 @@
         $("types").innerHTML = Object.entries(classes)
           .map(
             ([k, c]) =>
-              `<button class="type" id="type-${k}" onclick="selectType('${k}')">${vehiclePhotoHtml(k)}<strong>${c.name}</strong><span>${c.seats} seats</span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
+              `<button class="type" id="type-${k}" onclick="selectType('${k}')">${vehiclePhotoHtml(k)}<strong>${c.name}</strong><span>${c.sfood} sfood</span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
           )
           .join("");
       }
@@ -3152,8 +3152,8 @@
           (r.driver_name
             ? "Driver assigned · "
             : "Searching nearby drivers · ") +
-          c.seats +
-          " seats · " +
+          c.sfood +
+          " sfood · " +
           payLabel(pay);
         setRideStatus(r);
       }
