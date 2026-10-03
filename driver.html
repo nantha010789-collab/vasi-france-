@@ -233,86 +233,154 @@
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
+    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=1" />
   </head>
   <body data-scroll-mode="viewport" data-vasi-driver="ride">
-    <main class="wrap">
-      <header class="top">
-        <div class="logo"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
-        <div>
-          <button onclick="location.href = 'support.html'">Support</button>
-          <button onclick="logout()">Log out</button>
+    <main class="wrap driver-dashboard">
+      <header class="top driver-top">
+        <div class="driver-brand">
+          <div class="logo"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
+          <span class="driver-role">Chauffeur</span>
+        </div>
+        <div class="driver-top-actions">
+          <button class="driver-icon-button" type="button" onclick="showDriverView('messages')" aria-label="Messages">💬</button>
+          <button class="driver-icon-button" type="button" onclick="showDriverView('menu')" aria-label="Menu">☰</button>
         </div>
       </header>
       <div class="driver-scroll" data-scroll-region>
-      <section class="card">
-        <h1>Driver</h1>
-        <div id="status" class="status">
-          <span><span class="dot"></span><span id="label">Offline</span></span
-          ><span id="gps">GPS off</span>
-        </div>
-        <button id="toggle" class="btn" onclick="toggleOnline()">
-          Go online
-        </button>
-        <p class="muted">
-          Verified VASI ride drivers can go online and receive nearby ride
-          requests.
-        </p>
-        <div id="ride" class="ride"></div>
-      </section>
-      <section class="card">
-        <h2>VASI AI</h2>
-        <p class="muted">Conseils uniquement · aucune décision de paiement, remboursement, suspension ou validation n’est prise automatiquement.</p>
-        <button class="btn navbtn" type="button" onclick="askDriverAI()">Obtenir mon résumé</button>
-        <p id="driverAiAdvice" class="muted" aria-live="polite"></p>
-      </section>
-      <section class="card">
-        <h2>Driver tools</h2>
-        <div class="toolgrid">
-          <div class="toolstat"><span class="muted">This month</span><b id="monthEarnings">€0.00</b></div>
-          <div class="toolstat"><span class="muted">Trips</span><b id="monthTrips">0</b></div>
-          <div class="toolstat"><span class="muted">Documents</span><b id="documentHealth">—</b></div>
-        </div>
-        <div id="documentNotices"></div>
-        <button class="btn navbtn" onclick="downloadEarnings()">Download monthly earnings CSV</button>
-        <h3>Vehicles & passenger needs</h3>
-        <div class="capabilities">
-          <label class="capability"><input id="capWheelchair" type="checkbox"> ♿ Wheelchair-accessible</label>
-          <label class="capability"><input id="capChild" type="checkbox"> 🧒 Child seat available</label>
-          <label class="capability"><input id="capPet" type="checkbox"> 🐾 Pet-friendly</label>
-        </div>
-        <button class="btn navbtn" onclick="saveCapabilities()">Save service options</button>
-        <h3>Navigation GPS</h3>
-        <label class="navPreference" for="navigationProvider">
-          <span><b>Navigation préférée</b><span>VASI GPS reste dans l’application. Google Maps et Waze restent disponibles en option.</span></span>
-          <select id="navigationProvider" onchange="saveNavigationPreference()">
-            <option value="vasi">VASI GPS</option>
-            <option value="google">Google Maps</option>
-            <option value="waze">Waze</option>
-          </select>
-        </label>
-        <h3>Busy areas</h3>
-        <p class="muted">Demand is rounded to neighbourhood zones to protect customer privacy.</p>
-        <div id="busyZones" class="zones"><div class="muted">Checking nearby demand…</div></div>
-      </section>
-      <section class="card">
-        <h2>Bank payouts</h2>
-        <p id="payoutStatus" class="muted">
-          Card-ride earnings are paid automatically to your RIB every Monday
-          after Stripe makes the funds available.
-        </p>
-        <button id="payoutButton" class="btn" onclick="connectBankAccount()">
-          Connect bank account (RIB)
-        </button>
-        <p class="muted">
-          Cash rides are paid directly by the passenger and are not included in
-          the bank payout.
-        </p>
-        <p id="cashDebtStatus" class="muted">
-          Checking cash-ride commission balance…
-        </p>
-      </section>
+        <section class="driver-view is-active" data-driver-view="home" aria-labelledby="homeTitle">
+          <div class="home-column-main">
+            <div class="driver-view-heading">
+              <h1 id="homeTitle">Prêt à conduire&nbsp;?</h1>
+              <p>Votre position, vos courses et votre activité VASI.</p>
+            </div>
+            <article class="card dashboard-card home-map-card">
+              <div id="driverHomeMap" aria-label="Carte de disponibilité chauffeur"></div>
+              <div class="home-map-shade"></div>
+              <div id="status" class="home-status">
+                <span class="status-main"><span class="dot"></span><span><strong id="label">Hors ligne</strong><small id="onlineHint">Aucune demande reçue</small></span></span>
+                <span class="status-gps"><span aria-hidden="true">◎</span><span><strong id="gps">GPS désactivé</strong><small>Île-de-France</small></span></span>
+              </div>
+              <div class="home-map-controls">
+                <button type="button" onclick="recenterHomeMap()" aria-label="Recentrer la carte">⌖</button>
+                <button type="button" onclick="showDriverView('discover')" aria-label="Voir la demande">◉</button>
+              </div>
+              <div id="searchingStrip" class="searching-strip"><span class="searching-pulse"></span><span>Recherche de courses…</span></div>
+              <div class="online-control">
+                <button id="toggle" class="btn" onclick="toggleOnline()">Passer en ligne</button>
+              </div>
+            </article>
+            <div id="ride" class="ride" aria-live="polite"></div>
+          </div>
+          <aside class="home-column-side">
+            <div class="quick-grid" aria-label="Résumé chauffeur">
+              <div class="quick-stat"><span>Ce mois</span><b id="homeEarnings">0,00&nbsp;€</b></div>
+              <div class="quick-stat"><span>Courses</span><b id="homeTrips">0</b></div>
+              <div class="quick-stat"><span>Note</span><b id="homeRating">—</b></div>
+            </div>
+            <article class="card dashboard-card">
+              <div class="planned-head"><div><span class="muted">Prochaine étape</span><h2 style="margin:5px 0 0">Courses planifiées</h2></div><button class="driver-icon-button" type="button" onclick="showDriverView('discover')" aria-label="Ouvrir">›</button></div>
+              <p id="plannedHomeSummary" class="muted">Recherche des réservations disponibles…</p>
+            </article>
+            <article class="card dashboard-card">
+              <div class="planned-head"><div><span class="muted">Opportunités</span><h2 style="margin:5px 0 0">Demande locale</h2></div><span class="state-chip">En direct</span></div>
+              <p class="muted">Les zones sont arrondies pour protéger la vie privée des clients.</p>
+              <div id="homeDemandSummary" class="muted">Analyse de la demande…</div>
+            </article>
+          </aside>
+        </section>
+
+        <section class="driver-view" data-driver-view="discover" aria-labelledby="discoverTitle">
+          <div class="driver-view-heading"><h1 id="discoverTitle">Opportunités</h1><p>Courses planifiées, demande locale et préférences.</p></div>
+          <article class="card dashboard-card">
+            <div class="planned-head"><div><span class="muted">À réserver</span><h2 style="margin:5px 0 0">Courses planifiées</h2></div><button class="driver-icon-button" type="button" onclick="loadPlannedRides()" aria-label="Actualiser">↻</button></div>
+            <div id="plannedRides" class="planned-list"><p class="muted">Chargement des courses disponibles…</p></div>
+          </article>
+          <article class="card dashboard-card">
+            <div class="planned-head"><div><span class="muted">En direct</span><h2 style="margin:5px 0 0">Zones de forte demande</h2></div><span class="state-chip">Île-de-France</span></div>
+            <div class="demand-summary"><div class="demand-level"><i></i><b>Calme</b></div><div class="demand-level medium"><i></i><b>Active</b></div><div class="demand-level high"><i></i><b>Forte</b></div></div>
+            <div id="busyZones" class="zones"><div class="muted">Analyse de la demande à proximité…</div></div>
+            <h3>Tendance horaire</h3>
+            <div class="hour-chart" aria-label="Tendance de la demande par heure"><i style="--hour-height:26%"></i><i style="--hour-height:34%"></i><i style="--hour-height:45%"></i><i style="--hour-height:53%"></i><i style="--hour-height:71%" class="hot"></i><i style="--hour-height:86%" class="hot"></i><i style="--hour-height:68%"></i><i style="--hour-height:48%"></i><i style="--hour-height:36%"></i><i style="--hour-height:28%"></i></div>
+          </article>
+          <article class="card dashboard-card">
+            <h2>Préférences de courses</h2>
+            <p class="muted">Les options du passager ne seront proposées qu’aux chauffeurs équipés.</p>
+            <div class="capabilities">
+              <label class="capability"><input id="capWheelchair" type="checkbox"> ♿ Accessible fauteuil roulant</label>
+              <label class="capability"><input id="capChild" type="checkbox"> 🧒 Siège enfant disponible</label>
+              <label class="capability"><input id="capPet" type="checkbox"> 🐾 Animaux acceptés</label>
+            </div>
+            <button class="btn navbtn" onclick="saveCapabilities()" data-en="Save service options">Enregistrer les préférences</button>
+          </article>
+        </section>
+
+        <section class="driver-view" data-driver-view="earnings" aria-labelledby="earningsTitle">
+          <div class="driver-view-heading"><h1 id="earningsTitle">Revenus</h1><p>Suivez vos courses, paiements et versements.</p></div>
+          <article class="card dashboard-card earnings-hero">
+            <span class="muted">Revenus du mois</span>
+            <div id="monthEarnings" class="amount">0,00&nbsp;€</div>
+            <div class="quick-grid"><div class="quick-stat"><span>Courses</span><b id="monthTrips">0</b></div><div class="quick-stat"><span>En ligne</span><b id="onlineHours">—</b></div><div class="quick-stat"><span>Versement</span><b>Lundi</b></div></div>
+            <div id="earningsChart" class="earnings-chart" aria-label="Graphique des revenus"></div>
+          </article>
+          <article class="card dashboard-card">
+            <div class="planned-head"><div><span class="muted">Relevé</span><h2 style="margin:5px 0 0">Historique des revenus</h2></div><span class="state-chip">EUR</span></div>
+            <button class="btn navbtn" onclick="downloadEarnings()" data-en="Download monthly earnings CSV">Télécharger le relevé mensuel CSV</button>
+          </article>
+          <article class="card dashboard-card">
+            <h2>Versements bancaires</h2>
+            <p id="payoutStatus" class="muted" data-en="Card-ride earnings are paid automatically to your RIB every Monday after Stripe makes the funds available.">Les revenus des courses par carte sont versés automatiquement sur votre RIB chaque lundi après disponibilité des fonds Stripe.</p>
+            <button id="payoutButton" class="btn" onclick="connectBankAccount()" data-en="Connect bank account (RIB)">Connecter mon compte bancaire (RIB)</button>
+            <p class="muted">Les courses en espèces sont payées directement par le passager.</p>
+            <p id="cashDebtStatus" class="muted">Vérification du solde de commission espèces…</p>
+          </article>
+        </section>
+
+        <section class="driver-view" data-driver-view="messages" aria-labelledby="messagesTitle">
+          <div class="driver-view-heading"><h1 id="messagesTitle">Messages</h1><p>Assistance, alertes et échanges liés aux courses.</p></div>
+          <div class="message-list">
+            <a class="message-row" href="./support.html?from=driver"><span><span class="row-icon">💬</span><span class="row-copy"><b>Assistance VASI</b><small>Nouveau message ou aide concernant une course</small></span></span><span class="row-chevron">›</span></a>
+            <a class="message-row" href="mailto:contact@vasigo.eu"><span><span class="row-icon">✉️</span><span class="row-copy"><b>contact@vasigo.eu</b><small>Contacter l’équipe partenaire</small></span></span><span class="row-chevron">›</span></a>
+            <button class="message-row" type="button" onclick="showDriverToast('Vous recevrez ici les nouvelles courses, paiements et alertes de documents.')"><span><span class="row-icon">🔔</span><span class="row-copy"><b>Alertes VASI</b><small>Courses, paiements et documents</small></span></span><span class="row-chevron">›</span></button>
+          </div>
+          <article class="card dashboard-card"><h2>Centre d’informations</h2><p class="muted">Les messages du client sont disponibles uniquement pendant une course active. Votre numéro personnel reste masqué.</p></article>
+        </section>
+
+        <section class="driver-view" data-driver-view="menu" aria-labelledby="menuTitle">
+          <div class="driver-view-heading"><h1 id="menuTitle">Compte</h1><p>Profil, véhicule, sécurité et paramètres chauffeur.</p></div>
+          <article class="card dashboard-card profile-card"><div class="profile-avatar" id="driverInitial">V</div><div class="profile-copy"><b id="driverName">Chauffeur VASI</b><span id="driverVehicle">Véhicule en vérification</span></div><div class="rating-chip" id="driverRating">★ —</div></article>
+          <div class="quick-grid"><div class="quick-stat"><span>Acceptation</span><b id="acceptanceRate">—</b></div><div class="quick-stat"><span>Annulation</span><b id="cancellationRate">—</b></div><div class="quick-stat"><span>Documents</span><b id="documentHealth">—</b></div></div>
+          <div id="documentNotices"></div>
+          <div class="menu-list" style="margin-top:12px">
+            <button class="menu-row" type="button" onclick="showDriverView('earnings')"><span><span class="row-icon">€</span><span class="row-copy"><b>Revenus et paiements</b><small>Relevés, RIB et versements</small></span></span><span class="row-chevron">›</span></button>
+            <button class="menu-row" type="button" onclick="showDriverView('discover')"><span><span class="row-icon">📅</span><span class="row-copy"><b>Courses planifiées</b><small>Réservations disponibles et confirmées</small></span></span><span class="row-chevron">›</span></button>
+            <a class="menu-row" href="./activity.html?surface=driver"><span><span class="row-icon">🕘</span><span class="row-copy"><b>Historique des courses</b><small>Courses terminées et annulées</small></span></span><span class="row-chevron">›</span></a>
+            <a class="menu-row" href="./partner-register-v2.html?role=ride&surface=driver"><span><span class="row-icon">📄</span><span class="row-copy"><b>Documents chauffeur</b><small>Permis, VTC, assurance et véhicule</small></span></span><span class="row-chevron">›</span></a>
+            <a class="menu-row" href="./safety.html"><span><span class="row-icon">🛡️</span><span class="row-copy"><b>Sécurité</b><small>PIN, urgence 112 et confidentialité</small></span></span><span class="row-chevron">›</span></a>
+            <a class="menu-row" href="./delivery-driver.html"><span><span class="row-icon">🛵</span><span class="row-copy"><b>Espace livreur</b><small>VASI Eats et livraison de colis</small></span></span><span class="row-chevron">›</span></a>
+          </div>
+          <article class="card dashboard-card">
+            <h2>Navigation GPS</h2>
+            <label class="navPreference" for="navigationProvider"><span><b>Navigation préférée</b><span>VASI GPS dans l’application, Google Maps ou Waze.</span></span><select id="navigationProvider" onchange="saveNavigationPreference()"><option value="vasi">VASI GPS</option><option value="google">Google Maps</option><option value="waze">Waze</option></select></label>
+          </article>
+          <article class="card dashboard-card">
+            <h2>Assistant VASI</h2>
+            <p class="muted">Conseils uniquement · aucune décision de paiement, suspension ou validation n’est automatisée.</p>
+            <button class="btn navbtn" type="button" onclick="askDriverAI()">Obtenir mon résumé</button>
+            <p id="driverAiAdvice" class="muted" aria-live="polite"></p>
+          </article>
+          <button class="btn decline" type="button" onclick="logout()">Se déconnecter</button>
+        </section>
       </div>
     </main>
+    <nav class="driver-bottom-nav" aria-label="Navigation chauffeur">
+      <button class="driver-tab is-active" type="button" data-driver-tab="home" onclick="showDriverView('home')"><span>⌂</span><small>Accueil</small></button>
+      <button class="driver-tab" type="button" data-driver-tab="discover" onclick="showDriverView('discover')"><span>◈</span><small>Opportunités</small></button>
+      <button class="driver-tab" type="button" data-driver-tab="earnings" onclick="showDriverView('earnings')"><span>€</span><small>Revenus</small></button>
+      <button class="driver-tab" type="button" data-driver-tab="messages" onclick="showDriverView('messages')"><span>✉</span><small>Messages</small></button>
+      <button class="driver-tab" type="button" data-driver-tab="menu" onclick="showDriverView('menu')"><span>☰</span><small>Menu</small></button>
+    </nav>
+    <div id="driverToast" class="toast" role="status" aria-live="polite"></div>
     <script src="./vendor/leaflet-1.9.4.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
@@ -451,6 +519,7 @@
             "Stripe onboarding needs to be completed. Tap the button to continue.";
         }
         await Promise.all([loadActiveRide(), loadPayoutBalance(), loadPayoutAccount(), loadDriverTools()]);
+        if (typeof loadPlannedRides === "function") await loadPlannedRides();
       });
       async function askDriverAI() {
         const out = document.getElementById("driverAiAdvice");
@@ -483,7 +552,7 @@
         const monthStart = new Date();
         monthStart.setDate(1); monthStart.setHours(0,0,0,0);
         const [{ data: drivers }, { data: earnings }, { data: documents }, heat] = await Promise.all([
-          client.from("drivers").select("id,service_capabilities").limit(1),
+          client.from("drivers").select("id,service_capabilities,full_name,vehicle_make,vehicle_model,vehicle_plate,rating").limit(1),
           client.from("driver_earnings").select("ride_id,gross_fare,vasi_commission,driver_earnings,currency,status,created_at").gte("created_at", monthStart.toISOString()).order("created_at", { ascending:false }),
           client.from("driver_documents").select("document_type,status,expires_at").order("expires_at", { ascending:true }),
           client.rpc("vasi_driver_demand_heatmap"),
@@ -493,14 +562,20 @@
         document.getElementById("capChild").checked = capabilities.includes("child_seat");
         document.getElementById("capPet").checked = capabilities.includes("pet_friendly");
         monthlyEarnings = earnings || [];
-        document.getElementById("monthEarnings").textContent = money(monthlyEarnings.reduce((sum,row)=>sum+Number(row.driver_earnings||0),0));
+        const monthTotal = monthlyEarnings.reduce((sum,row)=>sum+Number(row.driver_earnings||0),0);
+        document.getElementById("monthEarnings").textContent = money(monthTotal);
         document.getElementById("monthTrips").textContent = String(monthlyEarnings.length);
+        document.getElementById("homeEarnings").textContent = money(monthTotal);
+        document.getElementById("homeTrips").textContent = String(monthlyEarnings.length);
+        if (typeof updateDriverProfile === "function") updateDriverProfile(drivers?.[0]);
+        if (typeof renderEarningsChart === "function") renderEarningsChart(monthlyEarnings);
         const expiring = (documents || []).filter((doc)=>doc.expires_at && new Date(doc.expires_at).getTime() <= Date.now()+30*86400000);
         document.getElementById("documentHealth").textContent = expiring.length ? String(expiring.length) : "✓";
         document.getElementById("documentNotices").innerHTML = expiring.map((doc)=>`<div class="notice"><b>${esc(doc.document_type)}</b> expires ${esc(new Date(doc.expires_at).toLocaleDateString())}. Upload a renewed document before it expires.</div>`).join("");
         document.getElementById("busyZones").innerHTML = heat.error || !(heat.data || []).length
-          ? '<div class="muted">No active demand zones right now.</div>'
-          : heat.data.map((zone)=>`<div class="zone"><span>📍 ${Number(zone.area_lat).toFixed(2)}, ${Number(zone.area_lng).toFixed(2)}</span><b>${zone.requests} request${Number(zone.requests)===1?'':'s'}</b></div>`).join("");
+          ? '<div class="muted">Aucune zone de demande active pour le moment.</div>'
+          : heat.data.map((zone)=>`<div class="zone"><span>📍 Zone ${Number(zone.area_lat).toFixed(2)}, ${Number(zone.area_lng).toFixed(2)}</span><b>${zone.requests} demande${Number(zone.requests)===1?'':'s'}</b></div>`).join("");
+        if (typeof updateDemandSummary === "function") updateDemandSummary(heat.data || []);
       }
       async function saveCapabilities() {
         const capabilities=[];
@@ -645,6 +720,7 @@
         navigator.geolocation.getCurrentPosition(
           async (p) => {
             lastPos = p;
+            if (typeof updateHomeMapPosition === "function") updateHomeMapPosition(p);
             try {
               await syncDriverLocation(p, true);
               if (mode === "online") online = true;
@@ -660,13 +736,14 @@
         watch = navigator.geolocation.watchPosition(
           async (pos) => {
             lastPos = pos;
-            document.getElementById("gps").textContent = "GPS live";
+            document.getElementById("gps").textContent = "GPS actif";
+            if (typeof updateHomeMapPosition === "function") updateHomeMapPosition(pos);
             try {
               await syncDriverLocation(pos);
             } catch (e) {}
             updateDriverNavigation(pos);
           },
-          () => (document.getElementById("gps").textContent = "GPS denied"),
+          () => (document.getElementById("gps").textContent = "GPS refusé"),
           { enableHighAccuracy: true, maximumAge: 3000, timeout: 12000 },
         );
       }
@@ -696,16 +773,17 @@
           .getElementById("status")
           .classList.toggle("online", online || !!activeRide);
         document.getElementById("label").textContent = activeRide
-          ? "On trip"
+          ? "Course en cours"
           : online
-            ? "Online"
-            : "Offline";
+            ? "En ligne"
+            : "Hors ligne";
         document.getElementById("toggle").textContent = online
-          ? "Go offline"
-          : "Go online";
+          ? "Arrêter les demandes"
+          : "Passer en ligne";
         document.getElementById("toggle").disabled = !!activeRide || (!online && !payoutReady);
         document.getElementById("gps").textContent =
-          watch !== null ? "GPS live" : "GPS off";
+          watch !== null ? "GPS actif" : "GPS désactivé";
+        if (typeof syncDriverDashboardState === "function") syncDriverDashboardState({ online, activeRide, watch, payoutReady });
       }
       async function startOffers() {
         if (channel) await client.removeChannel(channel);
@@ -731,14 +809,7 @@
       }
       async function loadPending() {
         if (activeRide) return;
-        const { data, error } = await client
-          .from("vasi_dispatch_offers")
-          .select("id,job_id,status,offered_at,expires_at")
-          .eq("service", "ride")
-          .eq("status", "pending")
-          .gt("expires_at", new Date().toISOString())
-          .order("offered_at", { ascending: false })
-          .limit(1);
+        const { data, error } = await client.rpc("vasi_driver_offer_details");
         if (error) return;
         if (data && data[0]) showOffer(data[0]);
       }
@@ -752,13 +823,30 @@
       }
       function showOffer(o) {
         offered = o;
-        document.getElementById("ride").innerHTML =
-          '<div class="offer"><h2>🚕 New Ride Offer</h2><p><b>VASI ride request</b></p><p class="muted">Accept before the offer expires.</p><div class="actions"><button class="btn decline" onclick="respond(false)">Decline</button><button class="btn accept" onclick="respond(true)">Accept Ride</button></div></div>';
+        const fare = money(Number(o.driver_amount || o.estimated_fare || 0));
+        const planned = o.scheduled_for
+          ? new Date(o.scheduled_for).toLocaleString("fr-FR", { weekday:"short", day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" })
+          : "Départ immédiat";
+        const payment = o.payment_method === "cash" ? "Espèces" : "Carte";
+        document.getElementById("ride").innerHTML = `
+          <article class="offer-professional">
+            <div class="offer-head"><div><span class="service-chip">${esc(o.service || "VASI Go")}</span><div class="offer-price">${esc(fare)}</div></div><div class="offer-time">Nouvelle demande<br>${esc(planned)}</div></div>
+            <div class="offer-map" aria-hidden="true"><i class="offer-map-route"></i><i class="offer-map-dot start"></i><i class="offer-map-dot end"></i></div>
+            <div class="offer-body">
+              <div class="offer-route-line"><i class="route-point"></i><div><span>Départ</span><b>${esc(o.pickup_address || "Adresse communiquée après acceptation")}</b></div></div>
+              <div class="offer-route-line"><i class="route-point end"></i><div><span>Destination</span><b>${esc(o.destination_address || "Destination à confirmer")}</b></div></div>
+              <div class="offer-meta"><span>${esc(payment)}</span><span>${Number(o.passenger_count || 1)} passager${Number(o.passenger_count || 1)>1?'s':''}</span>${Number(o.luggage_count||0)>0?`<span>${Number(o.luggage_count)} bagage${Number(o.luggage_count)>1?'s':''}</span>`:""}${o.airport_pickup?'<span>✈ Aéroport</span>':''}</div>
+              <p id="offerCountdown" class="offer-countdown">Offre limitée</p>
+              <div class="offer-actions"><button class="btn decline" onclick="respond(false)">Refuser</button><button class="btn accept" onclick="respond(true)">Accepter la course</button></div>
+            </div>
+          </article>`;
+        if (typeof startOfferCountdown === "function") startOfferCountdown(o.expires_at);
+        if (typeof showDriverView === "function") showDriverView("home");
       }
       async function respond(accept) {
         if (!offered) return;
         const { data, error } = await client.rpc("vasi_driver_respond_offer", {
-          p_offer_id: offered.id,
+          p_offer_id: offered.offer_id || offered.id,
           p_accept: accept,
         });
         if (error) {
@@ -811,9 +899,14 @@
           )
           .in("status", ["accepted", "driver_arriving", "in_progress"])
           .order("accepted_at", { ascending: false })
-          .limit(1);
-        if (!error && data && data[0]) {
-          activeRide = data[0];
+          .limit(20);
+        const activationCutoff = Date.now() + 30 * 60 * 1000;
+        const rank = { in_progress: 0, driver_arriving: 1, accepted: 2 };
+        const eligible = (data || []).filter((ride) =>
+          ride.status !== "accepted" || !ride.scheduled_for || new Date(ride.scheduled_for).getTime() <= activationCutoff
+        ).sort((a,b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+        if (!error && eligible[0]) {
+          activeRide = eligible[0];
           await loadPinRequirement(activeRide.id);
           await loadStops(activeRide.id);
           online = false;
@@ -1410,6 +1503,7 @@
       });
       VasiNotifications.start(client, { role: "driver" });
     </script>
+    <script src="./vasi-driver-dashboard.js?v=1"></script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-navigation.js?v=4"></script>
     <script src="./vasi-pwa.js"></script>
