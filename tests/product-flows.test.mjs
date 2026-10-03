@@ -1199,6 +1199,7 @@ test("customer login offers phone OTP and email magic-link choices", async () =>
   const languages = await readFile("vasi-languages.js", "utf8");
   assert.match(languages, /"Continue with email": "Continuer avec mon e-mail"/);
   assert.match(auth, /authMethod === "phone"/);
+  assert.match(auth, /href="\.\/auth\.html\?role=customer&amp;method=email"/);
   assert.match(auth, /role !== "customer"/);
   assert.match(auth, /emailRedirectTo:[\s\S]*&method=email/);
   assert.match(auth, /const PRODUCTION_ORIGIN = "https:\/\/www\.vasigo\.eu"/);
