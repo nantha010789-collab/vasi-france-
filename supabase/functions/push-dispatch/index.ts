@@ -23,11 +23,11 @@ const tableConfig = {
     service: "eats",
     statuses: {
       accepted: ["Restaurant accepted", "The restaurant accepted your order.", "activity.html"],
-      preparing: ["Food is being prepared", "Your VASI Eats order is in the kitchen.", "activity.html"],
+      preparing: ["Food is being prepared", "Your VASI Food order is in the kitchen.", "activity.html"],
       ready_for_pickup: ["Order ready", "Your food is ready for courier pickup.", "activity.html"],
       picked_up: ["Courier picked up", "Your food is on the way.", "activity.html"],
-      delivered: ["Order delivered", "Your VASI Eats order has arrived.", "activity.html"],
-      cancelled: ["Order cancelled", "Your VASI Eats order was cancelled.", "activity.html"],
+      delivered: ["Order delivered", "Your VASI Food order has arrived.", "activity.html"],
+      cancelled: ["Order cancelled", "Your VASI Food order was cancelled.", "activity.html"],
     },
   },
   delivery_orders: {
