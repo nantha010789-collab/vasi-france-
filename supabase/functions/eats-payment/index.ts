@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Valid order required" }, 400);
 
   const { data: order, error: orderError } = await userClient
-    .from("eats_orders")
+    .from("food_orders")
     .select(
       "id,customer_id,total,currency,status,payment_status,stripe_payment_intent_id,scheduled_for,group_order_id",
     )
@@ -79,15 +79,15 @@ Deno.serve(async (req: Request) => {
             automatic_payment_methods: { enabled: true, allow_redirects: "never" },
             description: `VASI Food order ${order.id}`,
             metadata: {
-              service: "eats",
+              service: "food",
               order_id: order.id,
               customer_id: user.id,
             },
           },
-          { idempotencyKey: `vasi-eats-payment-${order.id}` },
+          { idempotencyKey: `vasi-food-payment-${order.id}` },
         );
         const { error: saveError } = await serviceClient
-          .from("eats_orders")
+          .from("food_orders")
           .update({
             stripe_payment_intent_id: paymentIntent.id,
             payment_status: "requires_payment",
@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
         order.stripe_payment_intent_id,
       );
       if (
-        paymentIntent.metadata?.service !== "eats" ||
+        paymentIntent.metadata?.service !== "food" ||
         paymentIntent.metadata?.order_id !== order.id ||
         paymentIntent.metadata?.customer_id !== user.id
       ) {
@@ -124,17 +124,17 @@ Deno.serve(async (req: Request) => {
 
       const scheduled = order.scheduled_for && new Date(order.scheduled_for).getTime() > Date.now() + 20 * 60 * 1000;
       const { error: paidError } = await serviceClient
-        .from("eats_orders")
+        .from("food_orders")
         .update({ status: scheduled ? "scheduled" : "pending", payment_status: "paid" })
         .eq("id", order.id)
         .eq("customer_id", user.id)
         .in("payment_status", ["unpaid", "requires_payment"]);
       if (paidError) return json({ error: "Payment succeeded; order confirmation is pending" }, 500);
       if (order.group_order_id) {
-        await serviceClient.from("eats_group_orders").update({ status: "ordered", updated_at: new Date().toISOString() }).eq("id", order.group_order_id).eq("host_user_id", user.id);
+        await serviceClient.from("food_group_orders").update({ status: "ordered", updated_at: new Date().toISOString() }).eq("id", order.group_order_id).eq("host_user_id", user.id);
       }
       const { data: safety } = await serviceClient
-        .from("eats_order_safety")
+        .from("food_order_safety")
         .select("delivery_pin")
         .eq("order_id", order.id)
         .maybeSingle();
