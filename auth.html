@@ -185,7 +185,7 @@
         >
       </header>
       <section class="card">
-        <div class="switch">
+        <div class="switch hidden">
           <button id="customerBtn" onclick="setRole('customer')">
             Customer</button
           ><button id="rideBtn" onclick="setRole('ride')">🚕 <span>Chauffeur</span></button
@@ -340,7 +340,7 @@
             : "customer";
       const surfaceRoles = {
         customer: new Set(["customer"]),
-        driver: new Set(["ride", "courier"]),
+        driver: new Set(["ride"]),
         partner: new Set(["restaurant"]),
       };
       if (!surfaceRoles[surface].has(role)) role = surface === "driver" ? "ride" : surface === "partner" ? "restaurant" : "customer";
@@ -460,7 +460,8 @@
           $(id).classList.remove("active");
           $(id).classList.toggle("hidden", !surfaceRoles[surface].has(buttonRole));
         });
-        document.querySelector(".switch").classList.toggle("single", surface !== "driver");
+        document.querySelector(".switch").classList.add("single");
+        document.querySelector(".switch").classList.remove("hidden");
         $("roleHelp").classList.toggle("hidden", surface !== "driver");
         $("authBack").href = surface === "driver" ? "driver-home.html" : surface === "partner" ? "restaurant-register.html" : "app.html";
         $(
@@ -470,7 +471,7 @@
         $("driverPreview").classList.toggle("hidden", !(surface === "driver" && role === "ride"));
         $("register").href = role === "restaurant"
           ? "restaurant-register.html"
-          : "partner-register-v2.html?role=" + encodeURIComponent(role);
+          : "partner-register-v2.html?role=" + encodeURIComponent(role) + (surface === "driver" ? "&surface=driver" : "");
         $("register").textContent = t(role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →");
         $("identity").disabled = roleConflict || Boolean(phoneAwaitingCode);
         if (roleConflict) {
