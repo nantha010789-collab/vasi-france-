@@ -1200,6 +1200,8 @@ test("customer login offers phone OTP and email magic-link choices", async () =>
   assert.match(auth, /authMethod === "phone"/);
   assert.match(auth, /role !== "customer"/);
   assert.match(auth, /emailRedirectTo:[\s\S]*&method=email/);
+  assert.match(auth, /const PRODUCTION_ORIGIN = "https:\/\/www\.vasigo\.eu"/);
+  assert.doesNotMatch(auth, /const PRODUCTION_ORIGIN = "https:\/\/vasi-new\.vercel\.app"/);
   assert.match(auth, /service e-mail est momentanément indisponible/);
 });
 
