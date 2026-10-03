@@ -81,7 +81,8 @@
         border-radius: 16px;
         background: #0a0a0a;
       }
-      .method-switch button {
+      .method-switch button,
+      .method-switch a {
         min-height: 48px;
         padding: 11px 12px;
         border: 0;
@@ -90,8 +91,13 @@
         color: #aaa;
         font: inherit;
         font-weight: 800;
+        display: grid;
+        place-items: center;
+        text-decoration: none;
+        touch-action: manipulation;
       }
-      .method-switch button.active {
+      .method-switch button.active,
+      .method-switch a.active {
         outline: 0;
         background: #fff;
         color: #000;
@@ -198,20 +204,18 @@
         <h1 id="title">Customer login</h1>
         <p id="desc" class="muted">Quick phone sign-in for VASI customers.</p>
         <div id="methodSwitch" class="method-switch" aria-label="Customer sign-in method">
-          <button
+          <a
             id="phoneMethodBtn"
-            type="button"
-            onclick="setAuthMethod('phone')"
+            href="./auth.html?role=customer&amp;method=phone"
           >
             📱 <span>Phone</span>
-          </button>
-          <button
+          </a>
+          <a
             id="emailMethodBtn"
-            type="button"
-            onclick="setAuthMethod('email')"
+            href="./auth.html?role=customer&amp;method=email"
           >
             ✉️ E-mail
-          </button>
+          </a>
         </div>
         <input
           id="identity"
