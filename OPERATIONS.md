@@ -56,3 +56,12 @@ The app stores each signed-in device subscription in `push_subscriptions` under 
 - `VAPID_SUBJECT` should be a monitored `mailto:` address or the production HTTPS origin.
 
 Until these variables and a trusted lifecycle notification sender are configured, the existing in-app Realtime alerts continue to work but closed-app Web Push delivery is not active.
+# Email confirmation code rollout
+
+Prepared frontend: phone and email use a six-digit OTP entry screen with a 90-second resend cooldown. Pending requests are scoped by account surface and role; successful verification retains the existing session and routing rules.
+
+Before publishing the frontend to production, open Auth → Email Templates in the existing Vasi Supabase project (`vhfyvkrvysrooaqzcxsp`). Apply `supabase/templates/email-otp.html` to both **Magic Link** (returning users) and **Confirm signup** (new users), with subject `Votre code de connexion VASI`. Confirm the email OTP length is six digits. Record the previous templates for rollback and preserve SMTP, SMS, redirect, and other auth settings.
+
+Validate delivery and verification using an authorized test email for both a new account and an existing account. The app calls `signInWithOtp({ email })` and `verifyOtp({ email, token, type: "email" })`; changing the template is required because `signInWithOtp` otherwise sends a link. Run `npm test`, then deploy the frontend and verify Customer and Driver login in production. Revert the frontend and restore the previous templates together if delivery or verification fails.
+
+Reference: https://supabase.com/docs/guides/auth/auth-email-passwordless
