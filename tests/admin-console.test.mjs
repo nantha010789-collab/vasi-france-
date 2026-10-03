@@ -19,7 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
-  assert.match(html, /src="app\.js\?v=8"/);
+  assert.match(html, /src="\/admin\/app\.js\?v=8"/);
   assert.match(html, /maplibre-gl@5\.24\.0/);
   assert.match(html, /maplibre-gl-leaflet@0\.1\.4/);
   assert.match(html, /vasi-languages\.js/);
@@ -151,4 +151,19 @@ test('ride registration sends uploaded documents into the protected admin review
   assert.match(register, /from\('driver_documents'\)\.insert\(documentRows\)/);
   assert.match(register, /driver_id:user\.id,document_type:documentType,file_path:filePath/);
   assert.match(register, /documentType !== 'profile_photo'/);
+});
+
+// The /admin rewrite retains the URL without a trailing slash in the browser.
+test('admin assets resolve to existing files for every dashboard entry URL', async () => {
+  const html = await read('admin/index.html');
+  const assets = [...html.matchAll(/(?:src|href)="([^"#]+)"/g)].map(match => match[1]).filter(url => !url.startsWith('https://'));
+  for (const entry of ['/admin', '/admin/', '/admin/index.html']) {
+    for (const asset of assets) {
+      const resolved = new URL(asset, `https://www.vasigo.eu${entry}`);
+      const path = resolved.pathname === '/admin/' ? 'admin/index.html' : resolved.pathname.slice(1);
+      await read(path);
+      assert.equal(resolved.origin, 'https://www.vasigo.eu');
+    }
+  }
+  assert.match(html, /src="https:\/\/unpkg\.com\/maplibre-gl@5\.24\.0\/dist\/maplibre-gl\.js"/);
 });
