@@ -164,7 +164,7 @@
       </header>
       <div class="driver-scroll" data-scroll-region>
       <section class="card">
-        <span class="badge">🛵 COURIER · EATS + DELIVERY</span>
+        <span class="badge">🛵 COURIER · FOOD + DELIVERY</span>
         <p id="profile" class="status">Checking courier account…</p>
       </section>
       <section class="card online">
@@ -195,7 +195,7 @@
       <section class="card">
         <div class="toggle">
           <button id="eatsBtn" class="btn active" onclick="setTab('eats')">
-            🍔 Eats</button
+            🍔 Food</button
           ><button id="deliveryBtn" class="btn" onclick="setTab('delivery')">
             📦 Delivery
           </button>
@@ -293,8 +293,8 @@
           .filter((item) => item.status === "paid")
           .reduce((sum, item) => sum + Number(item.amount || 0), 0);
         $("earnings").textContent = paid
-          ? `Recent Eats earnings paid: ${money(paid)}`
-          : "Your completed Eats earnings will appear here.";
+          ? `Recent Food earnings paid: ${money(paid)}`
+          : "Your completed Food earnings will appear here.";
         await loadPayoutStatus();
         await loadJobs();
       }
@@ -391,7 +391,7 @@
         if (!jobs.length)
           return ($("jobs").textContent =
             "No " +
-            (tab === "eats" ? "Eats" : "Delivery") +
+            (tab === "eats" ? "Food" : "Delivery") +
             " jobs right now.");
         $("jobs").innerHTML = jobs
           .map((job) =>
@@ -407,7 +407,7 @@
           isEats = type === "eats",
           pickedUp = job.status === "picked_up";
         $("jobs").innerHTML = isEats
-          ? `<article class="job"><span class="badge">ACTIVE EATS · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<a class="navigate" href="${esc(mapUrl(pickedUp?job.delivery_address:job.restaurant_name))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to customer':'Navigate to restaurant'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
+          ? `<article class="job"><span class="badge">ACTIVE FOOD · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>🍔 ${esc(job.restaurant_name || "Restaurant")}</b><div class="money">Your earning €${Number(job.courier_offer_amount || 0).toFixed(2)}</div><small>Deliver to: ${esc(job.delivery_address || "—")} · ${Number(job.delivery_distance_km || 0).toFixed(1)} km · about ${Math.round(Number(job.estimated_delivery_minutes || 0))} min</small>${pickedUp ? '<small>Ask the customer for the 4-digit delivery PIN only when handing over the food.</small>' : ""}<a class="navigate" href="${esc(mapUrl(pickedUp?job.delivery_address:job.restaurant_name))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to customer':'Navigate to restaurant'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="eats">${pickedUp ? "Enter PIN · Complete delivery" : "Food picked up"}</button></article>`
           : `<article class="job"><span class="badge">ACTIVE DELIVERY · #${esc(String(job.id||'').slice(0,8).toUpperCase())}</span><b>📦 ${esc(job.item_type || "Parcel")}</b><small>${esc(job.pickup_address || "Pickup")} → ${esc(job.dropoff_address || "Drop-off")} · €${esc(job.quote ?? "—")}</small><a class="navigate" href="${esc(mapUrl(pickedUp?job.dropoff_address:job.pickup_address))}" target="_blank" rel="noopener">🧭 ${pickedUp?'Navigate to drop-off':'Navigate to pickup'}</a><button class="accept" data-job-action="${pickedUp ? "delivered" : "picked_up"}" data-id="${esc(job.id)}" data-type="delivery">${pickedUp ? "Complete delivery" : "Parcel picked up"}</button></article>`;
       }
       async function acceptJob(id, type) {
@@ -429,7 +429,7 @@
       async function updateJob(id, type, status) {
         let pin = null;
         if (type === "eats" && status === "delivered") {
-          pin = String(prompt("Enter the customer's 4-digit Eats delivery PIN") || "").trim();
+          pin = String(prompt("Enter the customer's 4-digit Food delivery PIN") || "").trim();
           if (!pin) return;
           if (!/^\d{4}$/.test(pin)) return alert("Enter the 4-digit delivery PIN");
         }

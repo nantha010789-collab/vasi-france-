@@ -25,15 +25,15 @@
       canceled: ["Ride cancelled", "This VASI ride has been cancelled."],
     },
     eats: {
-      pending: ["Order placed", "Your VASI Eats order was sent to the restaurant."],
+      pending: ["Order placed", "Your VASI Food order was sent to the restaurant."],
       accepted: ["Restaurant accepted", "The restaurant accepted your order."],
-      preparing: ["Food is being prepared", "Your VASI Eats order is in the kitchen."],
+      preparing: ["Food is being prepared", "Your VASI Food order is in the kitchen."],
       ready_for_pickup: ["Order ready", "Your food is ready for courier pickup."],
       picked_up: ["Courier picked up", "Your food is on the way."],
       on_the_way: ["Courier on the way", "Your food will arrive soon."],
-      delivered: ["Order delivered", "Your VASI Eats order has arrived."],
-      cancelled: ["Order cancelled", "Your VASI Eats order was cancelled."],
-      canceled: ["Order cancelled", "Your VASI Eats order was cancelled."],
+      delivered: ["Order delivered", "Your VASI Food order has arrived."],
+      cancelled: ["Order cancelled", "Your VASI Food order was cancelled."],
+      canceled: ["Order cancelled", "Your VASI Food order was cancelled."],
     },
     delivery: {
       pending: ["Delivery requested", "VASI is finding a courier."],
@@ -202,7 +202,7 @@
 
   function renderHistory(body) {
     const history = getHistory();
-    if (!history.length) { body.innerHTML = '<div class="vasi-empty">No updates yet.<br>Ride, Eats and Delivery alerts will appear here.</div>'; return; }
+    if (!history.length) { body.innerHTML = '<div class="vasi-empty">No updates yet.<br>Ride, Food and Delivery alerts will appear here.</div>'; return; }
     body.innerHTML = "";
     history.forEach((item) => {
       const button = document.createElement("button");
@@ -220,7 +220,7 @@
   function renderSettings(body) {
     const prefs = getPreferences();
     body.innerHTML = '<p class="vasi-settings-intro">Important trip, order and safety updates stay on. You can control optional alerts below.</p>';
-    [["🚕", "Ride updates", "Driver accepted, arriving, trip started and completed"], ["🍽️", "Eats updates", "Restaurant and courier order progress"], ["🛵", "Delivery updates", "Courier accepted, pickup and delivery progress"], ["📍", "Work requests", "New driver, courier and restaurant requests"]].forEach(([icon, title, copy]) => {
+    [["🚕", "Ride updates", "Driver accepted, arriving, trip started and completed"], ["🍽️", "Food updates", "Restaurant and courier order progress"], ["🛵", "Delivery updates", "Courier accepted, pickup and delivery progress"], ["📍", "Work requests", "New driver, courier and restaurant requests"]].forEach(([icon, title, copy]) => {
       const row = document.createElement("div");
       row.className = "vasi-setting-row";
       row.innerHTML = `<span class="vasi-notification-icon" aria-hidden="true">${icon}</span><span class="vasi-setting-copy"><strong>${title}</strong><span>${copy}</span></span><span class="vasi-setting-required">Required</span>`;
@@ -344,7 +344,7 @@
     renderCentre();
     if (Notification.permission === "granted") {
       await syncPushSubscription().catch(() => false);
-      await show("VASI alerts are on", "Ride, Eats and Delivery updates will appear here.", location.pathname, "vasi-alerts-enabled");
+      await show("VASI alerts are on", "Ride, Food and Delivery updates will appear here.", location.pathname, "vasi-alerts-enabled");
     }
     else if (ios && !standalone) alert("On iPhone, add VASI to your Home Screen first, open it there, then enable alerts.");
     return Notification.permission === "granted";
@@ -372,7 +372,7 @@
   function listenRestaurant(channel) {
     channel.on("postgres_changes", { event: "INSERT", schema: "public", table: "eats_orders" }, (payload) => {
       const id = payload.new?.id || Date.now();
-      if (shouldNotify(`restaurant-order:${id}`, "new")) show("New VASI Eats order", "A customer placed a new food order.", "/restaurant-orders.html", `vasi-restaurant-order-${id}`);
+      if (shouldNotify(`restaurant-order:${id}`, "new")) show("New VASI Food order", "A customer placed a new food order.", "/restaurant-orders.html", `vasi-restaurant-order-${id}`);
     });
   }
 
@@ -381,7 +381,7 @@
       const id = payload.new?.id || Date.now();
       if (shouldNotify(`delivery-job:${id}`, "new")) show("New delivery job", "A new parcel delivery is available.", "/delivery-driver.html", `vasi-delivery-job-${id}`);
     }).on("postgres_changes", { event: "UPDATE", schema: "public", table: "eats_orders" }, (payload) => {
-      if (payload.new?.status === "ready_for_pickup" && shouldNotify(`eats-job:${payload.new.id}`, "ready_for_pickup")) show("Food ready for pickup", "A VASI Eats order is ready for a courier.", "/delivery-driver.html", `vasi-eats-job-${payload.new.id}`);
+      if (payload.new?.status === "ready_for_pickup" && shouldNotify(`eats-job:${payload.new.id}`, "ready_for_pickup")) show("Food ready for pickup", "A VASI Food order is ready for a courier.", "/delivery-driver.html", `vasi-eats-job-${payload.new.id}`);
     });
   }
 

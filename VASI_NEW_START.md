@@ -4,7 +4,7 @@ Clean VASI app foundation.
 
 ## Product areas
 - VASI Ride
-- VASI Eats
+- VASI Food
 - VASI Delivery
 - Customer app
 - Driver app
