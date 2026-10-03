@@ -412,6 +412,7 @@
         monthlyEarnings = [],
         driverMap = null,
         driverMapRoute = null,
+        driverMapRoutePoints = [],
         driverMapCar = null,
         driverMapTarget = null,
         driverMapLastRouteAt = 0,
@@ -481,8 +482,18 @@
       }
       function followDriverOnMap(source, force = false) {
         if (!driverMap || !source || !driverMapExpanded || (!driverMapFollowing && !force)) return;
-        driverMap.setView(source, window.innerWidth < 520 ? 17 : 17.25, { animate: false });
+        driverMap.setView(source, window.innerWidth < 520 ? 17.75 : 17.5, { animate: false });
         driverMap.panBy([0, Math.round(Math.min(150, window.innerHeight * 0.13))], { animate: false, noMoveStart: true });
+      }
+      function trimDriverRouteBehind(source) {
+        if (!driverMapRoute || driverMapRoutePoints.length < 2 || !source) return;
+        let nearest = 0;
+        let best = Infinity;
+        driverMapRoutePoints.forEach((point, index) => {
+          const distance = Math.hypot(point[0] - source[0], point[1] - source[1]);
+          if (distance < best) { best = distance; nearest = index; }
+        });
+        driverMapRoute.setLatLngs([source, ...driverMapRoutePoints.slice(Math.min(driverMapRoutePoints.length, nearest + 1))]);
       }
       function recenterDriverMap() {
         driverMapFollowing = true;
@@ -983,6 +994,7 @@
         }
         driverMap = null;
         driverMapRoute = null;
+        driverMapRoutePoints = [];
         driverMapCar = null;
         driverMapTarget = null;
         driverMapLastRouteAt = 0;
@@ -1133,6 +1145,7 @@
           }).addTo(driverMap);
         else driverMapCar.setLatLng(source);
         updateDriverMapMotion(position);
+        trimDriverRouteBehind(source);
         followDriverOnMap(source);
         if (!force && Date.now() - driverMapLastRouteAt < 8000) return;
         driverMapLastRouteAt = Date.now();
@@ -1162,15 +1175,17 @@
           if (!result?.geometry)
             throw new Error(result?.error || "Route indisponible");
           if (driverMapRoute) driverMapRoute.remove();
-          driverMapRoute = L.geoJSON(result.geometry, {
-            style: {
-              color: "#1557ff",
-              weight: 7,
-              opacity: 0.96,
-              lineCap: "round",
-              lineJoin: "round",
-            },
+          driverMapRoutePoints = (result.geometry.coordinates || [])
+            .map((point) => [Number(point[1]), Number(point[0])])
+            .filter((point) => point.every(Number.isFinite));
+          driverMapRoute = L.polyline(driverMapRoutePoints, {
+            color: "#1557ff",
+            weight: 7,
+            opacity: 0.96,
+            lineCap: "round",
+            lineJoin: "round",
           }).addTo(driverMap);
+          trimDriverRouteBehind(source);
           const km = Number(result.distance_km);
           const minutes = Number(result.duration_min);
           metric.textContent =
