@@ -5,90 +5,109 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#06183f" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Aperçu · VASI Driver</title>
+    <title>Démo professionnelle · VASI Driver</title>
+    <link rel="stylesheet" href="./vendor/leaflet-1.9.4.css" />
+    <link rel="stylesheet" href="./vasi-mobile-fit.css" />
+    <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
+    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=1" />
     <style>
-      :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;background:#020611;--blue:#1557ff;--red:#ef3340;--muted:#aebbd3;--line:rgba(255,255,255,.13)}
-      *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}body{background:radial-gradient(circle at 12% 4%,rgba(21,87,255,.34),transparent 28%),radial-gradient(circle at 95% 92%,rgba(239,51,64,.18),transparent 26%),#020611}
-      button,a{font:inherit}.shell{width:min(100%,1080px);height:100vh;height:100svh;height:100dvh;margin:auto;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;overflow:hidden}
-      .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px}.brand{display:flex;align-items:center;gap:10px;min-width:0}.brand img{width:104px;max-width:28vw;height:auto}.brand b{padding-left:10px;border-left:1px solid #ffffff42;font-size:13px;letter-spacing:.13em;text-transform:uppercase}.back{display:inline-flex;align-items:center;min-height:42px;padding:9px 14px;border:1px solid #ffffff2e;border-radius:999px;background:#071633cc;color:#fff;text-decoration:none;font-weight:850}
-      .demo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border:1px solid #315da7;border-radius:15px;background:#0b214ccc;color:#dce8ff;font-size:13px;line-height:1.35}.demo b{color:#fff}.demo span:last-child{flex:0 0 auto;padding:5px 8px;border-radius:999px;background:#1557ff;color:#fff;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
-      .scroll{min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;display:grid;align-content:start;gap:10px;padding:0 1px 8px}.card{min-width:0;padding:17px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(10,27,61,.96),rgba(5,11,27,.98));box-shadow:0 16px 40px #0004}.card h1,.card h2,.card p{margin-top:0}.card h1{margin-bottom:5px;font-size:27px;letter-spacing:-.035em}.card h2{margin-bottom:12px;font-size:18px}.muted{color:var(--muted);font-size:14px;line-height:1.45}
-      .status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:15px 0 10px;padding:13px;border:1px solid #ffffff14;border-radius:15px;background:#030916}.state{display:flex;align-items:center;gap:9px;font-weight:850}.dot{width:11px;height:11px;border-radius:50%;background:#73809a;box-shadow:0 0 0 5px #73809a1c}.online .dot{background:#2bdf78;box-shadow:0 0 0 5px #2bdf7820}.gps{color:#9cabca;font-size:13px}.primary,.secondary{width:100%;min-height:48px;border-radius:14px;padding:12px;border:0;font-weight:900}.primary{background:#fff;color:#051024}.primary.onlineButton{background:#1557ff;color:#fff}.secondary{border:1px solid #ffffff26;background:#101d38;color:#fff}
-      .offer{margin-top:12px;padding:15px;border:1px solid #2f72ff;border-radius:18px;background:linear-gradient(145deg,#0d2d6a,#07152f)}.offer[hidden]{display:none}.offerHead{display:flex;justify-content:space-between;gap:12px;align-items:start}.offerHead b{font-size:18px}.fare{font-size:22px;font-weight:950}.route{position:relative;display:grid;gap:12px;margin:15px 0;padding-left:27px}.route::before{position:absolute;top:10px;bottom:10px;left:8px;width:2px;background:#4c6b9d;content:""}.point{position:relative}.point::before{position:absolute;top:4px;left:-24px;width:10px;height:10px;border:3px solid #1557ff;border-radius:50%;background:#fff;content:""}.point.destination::before{border-radius:3px;border-color:#fff;background:#ef3340}.point b,.point span{display:block}.point span{margin-top:2px;color:#afbdd6;font-size:13px}.actions{display:grid;grid-template-columns:1fr 1.45fr;gap:8px}.accept{background:#fff;color:#051024}.decline{border:1px solid #ffffff24;background:#17223a;color:#fff}
-      .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.stat{min-width:0;padding:12px 7px;border-radius:15px;background:#07132b;text-align:center}.stat span,.stat b{display:block}.stat span{color:#9facbf;font-size:12px}.stat b{margin-top:5px;font-size:18px;overflow-wrap:anywhere}.zone{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-top:1px solid #ffffff16}.zone:first-of-type{border-top:0}.zone b{font-size:13px}.demand{padding:5px 8px;border-radius:999px;background:#1557ff24;color:#91b1ff;font-size:11px;font-weight:850}.payout{display:flex;align-items:flex-start;gap:11px}.tick{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:12px;background:#1557ff;color:#fff;font-weight:950}
-      .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px;border:1px solid #ffffff14;border-radius:20px;background:#050c1bcc}.nav button{min-width:0;min-height:52px;border:0;border-radius:15px;background:transparent;color:#9eabc2;font-size:11px;font-weight:750}.nav button.active{background:#142344;color:#fff}.nav b{display:block;margin-bottom:3px;font-size:18px}
-      @media(min-width:760px){.scroll{grid-template-columns:1.1fr .9fr;align-items:start}.card:first-child{grid-row:span 2}.nav{max-width:620px;width:100%;margin:auto}}
-      @media(max-width:380px){.card{padding:14px}.stats{gap:5px}.stat b{font-size:16px}.demo{font-size:12px}.back{padding-inline:11px}}
+      .demo-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0 3px;padding:10px 13px;border:1px solid #315da7;border-radius:15px;background:#0b214ccc;color:#dce8ff;font-size:12px}.demo-banner b{color:#fff}.demo-badge{padding:5px 8px;border-radius:999px;background:#1557ff;color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.demo-back{display:inline-flex;align-items:center;min-height:42px;padding:9px 13px;border:1px solid #ffffff2e;border-radius:14px;background:#ffffff09;color:#fff;text-decoration:none;font-size:12px;font-weight:850}.demo-hidden{display:none!important}.demo-map-label{position:absolute;z-index:6;left:14px;bottom:121px;padding:8px 11px;border:1px solid #ffffff22;border-radius:999px;background:#07142bdc;color:#fff;font-size:11px;font-weight:850}.demo-note{padding:12px;border:1px solid #1557ff55;border-radius:16px;background:#1557ff12;color:#cfe0ff;font-size:12px;line-height:1.45}.demo-message{margin:0;color:#dce5f3}.driver-top{margin-bottom:0}.driver-scroll{padding-top:0!important}
     </style>
   </head>
-  <body>
-    <main class="shell">
-      <header class="top">
-        <div class="brand"><img src="./assets/vasi-logo.png" alt="VASI" /><b>Driver</b></div>
-        <a class="back" href="driver-home.html">← Retour</a>
+  <body data-scroll-mode="viewport" data-vasi-driver="ride">
+    <main class="wrap driver-dashboard">
+      <header class="top driver-top">
+        <div class="driver-brand"><div class="logo"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div><span class="driver-role">Chauffeur</span></div>
+        <a class="demo-back" href="driver-home.html">← Retour</a>
       </header>
-      <div class="demo"><span><b>Aperçu chauffeur</b> · aucune donnée ou action réelle</span><span>Démo</span></div>
-      <section class="scroll" aria-label="Aperçu du tableau de bord chauffeur">
-        <article class="card">
-          <h1>Bonjour, Chauffeur</h1>
-          <p class="muted">Voici l’espace utilisé pour recevoir et gérer les courses VASI.</p>
-          <div id="status" class="status">
-            <span class="state"><span class="dot"></span><span id="statusLabel">Hors ligne</span></span>
-            <span id="gpsLabel" class="gps">GPS inactif</span>
-          </div>
-          <button id="onlineButton" class="primary" type="button" onclick="toggleDemo()">Voir le mode en ligne</button>
-          <div id="offer" class="offer" hidden>
-            <div class="offerHead"><div><b>Nouvelle course</b><div class="muted">11,6 km · environ 15 min</div></div><div class="fare">11,48 €</div></div>
-            <div class="route">
-              <div class="point"><b>Départ</b><span>4 Rue Pierre Leroux, Savigny-le-Temple</span></div>
-              <div class="point destination"><b>Destination</b><span>2 Avenue de Quincy, Combs-la-Ville</span></div>
+      <div class="demo-banner"><span><b>Aperçu chauffeur</b> · aucune donnée ou action réelle</span><span class="demo-badge">Démo</span></div>
+
+      <div class="driver-scroll" data-scroll-region>
+        <section class="driver-view is-active" data-driver-view="home" aria-labelledby="homeTitle">
+          <div class="home-column-main">
+            <div class="driver-view-heading"><h1 id="homeTitle">Bonjour, Chauffeur</h1><p>Découvrez le nouvel espace VASI Driver.</p></div>
+            <article class="card dashboard-card home-map-card">
+              <div id="driverHomeMap" aria-label="Carte simulée chauffeur"></div><div class="home-map-shade"></div>
+              <div id="status" class="home-status"><span class="status-main"><span class="dot"></span><span><strong id="label">Hors ligne</strong><small id="onlineHint">Aucune demande reçue</small></span></span><span class="status-gps"><span>◎</span><span><strong id="gps">GPS simulé</strong><small>Île-de-France</small></span></span></div>
+              <div class="home-map-controls"><button type="button" onclick="recenterHomeMap()" aria-label="Recentrer la carte">⌖</button><button type="button" onclick="showDriverView('discover')" aria-label="Voir la demande">◉</button></div>
+              <span class="demo-map-label">📍 Paris · position simulée</span>
+              <div id="searchingStrip" class="searching-strip"><span class="searching-pulse"></span><span>Recherche de courses…</span></div>
+              <div class="online-control"><button id="toggle" class="btn" type="button" onclick="toggleDemo()">Voir le mode en ligne</button></div>
+            </article>
+            <div id="ride" class="ride demo-hidden" aria-live="polite">
+              <article class="offer-professional">
+                <div class="offer-head"><div><span class="service-chip">VASI Go</span><div class="offer-price">14,75 €</div></div><div class="offer-time">Nouvelle demande<br>Départ immédiat</div></div>
+                <div class="offer-map" aria-hidden="true"><i class="offer-map-route"></i><i class="offer-map-dot start"></i><i class="offer-map-dot end"></i></div>
+                <div class="offer-body">
+                  <div class="offer-route-line"><i class="route-point"></i><div><span>Départ</span><b>Gare de Lyon, Paris</b></div></div>
+                  <div class="offer-route-line"><i class="route-point end"></i><div><span>Destination</span><b>Aéroport Paris-Orly</b></div></div>
+                  <div class="offer-meta"><span>Carte</span><span>1 passager</span><span>1 bagage</span><span>15,2 km · 21 min</span></div>
+                  <p class="offer-countdown">Offre de démonstration</p>
+                  <div class="offer-actions"><button class="btn decline" type="button" onclick="dismissOffer()">Refuser</button><button class="btn accept" type="button" onclick="acceptOffer()">Accepter la démo</button></div>
+                </div>
+              </article>
             </div>
-            <div class="actions"><button class="primary decline" type="button" onclick="dismissOffer()">Refuser</button><button class="primary accept" type="button" onclick="acceptOffer()">Accepter la démo</button></div>
           </div>
-        </article>
-        <article class="card">
-          <h2>Votre activité</h2>
-          <div class="stats">
-            <div class="stat"><span>Ce mois</span><b>342,80 €</b></div>
-            <div class="stat"><span>Courses</span><b>28</b></div>
-            <div class="stat"><span>Documents</span><b>✓</b></div>
-          </div>
-        </article>
-        <article class="card">
-          <h2>Zones actives</h2>
-          <div class="zone"><span>📍 Savigny-le-Temple</span><b class="demand">Forte demande</b></div>
-          <div class="zone"><span>📍 Combs-la-Ville</span><b class="demand">Demande moyenne</b></div>
-        </article>
-        <article class="card">
-          <h2>Versements</h2>
-          <div class="payout"><span class="tick">✓</span><div><b>RIB vérifié</b><p class="muted">Les revenus des courses par carte sont versés automatiquement chaque lundi.</p></div></div>
-        </article>
-      </section>
-      <nav class="nav" aria-label="Navigation de démonstration">
-        <button class="active" type="button"><b>⌂</b>Accueil</button>
-        <button type="button"><b>🚘</b>Courses</button>
-        <button type="button"><b>€</b>Revenus</button>
-        <button type="button"><b>◯</b>Compte</button>
-      </nav>
+          <aside class="home-column-side">
+            <div class="quick-grid"><div class="quick-stat"><span>Ce mois</span><b>342,80 €</b></div><div class="quick-stat"><span>Courses</span><b>28</b></div><div class="quick-stat"><span>Note</span><b>4,94</b></div></div>
+            <article class="card dashboard-card"><div class="planned-head"><div><span class="muted">Prochaine étape</span><h2 style="margin:5px 0 0">Course planifiée</h2></div><button class="driver-icon-button" type="button" onclick="showDriverView('discover')">›</button></div><p class="muted">Demain · 08:30 · Paris → Orly</p></article>
+            <article class="card dashboard-card"><div class="planned-head"><div><span class="muted">Opportunités</span><h2 style="margin:5px 0 0">Demande locale</h2></div><span class="state-chip">En direct</span></div><p class="muted">10 demandes simulées dans les zones proches.</p></article>
+          </aside>
+        </section>
+
+        <section class="driver-view" data-driver-view="discover" aria-labelledby="discoverTitle">
+          <div class="driver-view-heading"><h1 id="discoverTitle">Opportunités</h1><p>Courses planifiées, demande locale et préférences.</p></div>
+          <article class="card dashboard-card"><div class="planned-head"><div><span class="muted">À réserver</span><h2 style="margin:5px 0 0">Courses planifiées</h2></div><span class="state-chip">Démo</span></div><div id="plannedRides" class="planned-list">
+            <article class="planned-card confirmed"><div class="planned-head"><div><span class="state-chip">Confirmée</span><strong style="display:block;margin-top:9px">Demain · 08:30</strong></div><strong>24,80 €</strong></div><div class="planned-route"><span>● Gare de Lyon, Paris</span><span>■ Aéroport Paris-Orly</span></div><div class="offer-meta"><span>VASI Comfort</span><span>Carte</span><span>✈ Aéroport</span></div></article>
+            <article class="planned-card"><div class="planned-head"><div><span class="state-chip">Disponible</span><strong style="display:block;margin-top:9px">Samedi · 18:15</strong></div><strong>18,40 €</strong></div><div class="planned-route"><span>● Savigny-le-Temple</span><span>■ Gare de Lyon, Paris</span></div><div class="offer-meta"><span>VASI Go</span><span>Carte</span></div><div class="planned-actions"><button class="btn accept" type="button" onclick="demoToast('Course simulée réservée.')">Réserver la démo</button></div></article>
+          </div></article>
+          <article class="card dashboard-card"><div class="planned-head"><div><span class="muted">En direct</span><h2 style="margin:5px 0 0">Zones de forte demande</h2></div><span class="state-chip">Île-de-France</span></div><div class="demand-summary"><div class="demand-level"><i></i><b>Calme</b></div><div class="demand-level medium"><i></i><b>Active</b></div><div class="demand-level high"><i></i><b>Forte</b></div></div><div class="zones"><div class="zone"><span>📍 Paris Centre</span><b>7 demandes</b></div><div class="zone"><span>📍 Orly</span><b>3 demandes</b></div></div><h3>Tendance horaire</h3><div class="hour-chart"><i style="--hour-height:28%"></i><i style="--hour-height:42%"></i><i style="--hour-height:55%"></i><i style="--hour-height:78%" class="hot"></i><i style="--hour-height:92%" class="hot"></i><i style="--hour-height:66%"></i></div></article>
+          <article class="card dashboard-card"><h2>Préférences de courses</h2><div class="capabilities"><label class="capability"><input type="checkbox"> ♿ Accessible fauteuil roulant</label><label class="capability"><input type="checkbox" checked> 🧒 Siège enfant disponible</label><label class="capability"><input type="checkbox"> 🐾 Animaux acceptés</label></div><button class="btn navbtn" type="button" onclick="demoToast('Préférences de démonstration enregistrées.')">Enregistrer les préférences</button></article>
+        </section>
+
+        <section class="driver-view" data-driver-view="earnings" aria-labelledby="earningsTitle">
+          <div class="driver-view-heading"><h1 id="earningsTitle">Revenus</h1><p>Suivez vos courses, paiements et versements.</p></div>
+          <article class="card dashboard-card earnings-hero"><span class="muted">Revenus du mois</span><div class="amount">342,80 €</div><div class="quick-grid"><div class="quick-stat"><span>Courses</span><b>28</b></div><div class="quick-stat"><span>En ligne</span><b>19 h</b></div><div class="quick-stat"><span>Versement</span><b>Lundi</b></div></div><div class="earnings-chart"><i class="earnings-bar" style="--bar-height:30%"><span>Lu</span></i><i class="earnings-bar" style="--bar-height:72%"><span>Ma</span></i><i class="earnings-bar" style="--bar-height:48%"><span>Me</span></i><i class="earnings-bar" style="--bar-height:94%"><span>Je</span></i><i class="earnings-bar" style="--bar-height:65%"><span>Ve</span></i><i class="earnings-bar" style="--bar-height:82%"><span>Sa</span></i><i class="earnings-bar" style="--bar-height:40%"><span>Di</span></i></div></article>
+          <article class="card dashboard-card"><h2>Versements bancaires</h2><div class="demo-note"><b>✓ RIB vérifié</b><br>Les revenus des courses par carte sont versés automatiquement chaque lundi.</div><button class="btn navbtn" type="button" onclick="demoToast('Relevé mensuel simulé.')">Voir le relevé mensuel</button></article>
+        </section>
+
+        <section class="driver-view" data-driver-view="messages" aria-labelledby="messagesTitle">
+          <div class="driver-view-heading"><h1 id="messagesTitle">Messages</h1><p>Assistance et alertes liées aux courses.</p></div>
+          <div class="message-list"><button class="message-row" type="button" onclick="demoToast('Conversation de démonstration ouverte.')"><span><span class="row-icon">💬</span><span class="row-copy"><b>Assistance VASI</b><small>Comment pouvons-nous vous aider ?</small></span></span><span class="row-chevron">›</span></button><button class="message-row" type="button" onclick="demoToast('Alerte de démonstration consultée.')"><span><span class="row-icon">🔔</span><span class="row-copy"><b>Versement effectué</b><small>Votre relevé hebdomadaire est disponible</small></span></span><span class="row-chevron">›</span></button></div>
+          <article class="card dashboard-card"><p class="demo-message">Les messages du client apparaissent uniquement pendant une course active. Le numéro personnel reste masqué.</p></article>
+        </section>
+
+        <section class="driver-view" data-driver-view="menu" aria-labelledby="menuTitle">
+          <div class="driver-view-heading"><h1 id="menuTitle">Compte</h1><p>Profil, véhicule, sécurité et paramètres.</p></div>
+          <article class="card dashboard-card profile-card"><div class="profile-avatar">N</div><div class="profile-copy"><b>Chauffeur VASI</b><span>Toyota Corolla · AB-123-CD</span></div><div class="rating-chip">★ 4,94</div></article>
+          <div class="quick-grid"><div class="quick-stat"><span>Acceptation</span><b>96 %</b></div><div class="quick-stat"><span>Annulation</span><b>1 %</b></div><div class="quick-stat"><span>Documents</span><b>✓</b></div></div>
+          <div class="menu-list" style="margin-top:12px"><button class="menu-row" type="button" onclick="showDriverView('earnings')"><span><span class="row-icon">€</span><span class="row-copy"><b>Revenus et paiements</b><small>Relevés, RIB et versements</small></span></span><span class="row-chevron">›</span></button><button class="menu-row" type="button" onclick="showDriverView('discover')"><span><span class="row-icon">📅</span><span class="row-copy"><b>Courses planifiées</b><small>Réservations disponibles</small></span></span><span class="row-chevron">›</span></button><button class="menu-row" type="button" onclick="demoToast('Documents vérifiés · démonstration.')"><span><span class="row-icon">📄</span><span class="row-copy"><b>Documents chauffeur</b><small>Permis, VTC et assurance</small></span></span><span class="row-chevron">›</span></button><button class="menu-row" type="button" onclick="demoToast('Centre de sécurité · démonstration.')"><span><span class="row-icon">🛡️</span><span class="row-copy"><b>Sécurité</b><small>PIN, urgence et confidentialité</small></span></span><span class="row-chevron">›</span></button></div>
+          <article class="card dashboard-card"><h2>Application réelle</h2><p class="muted">Connectez-vous avec un compte chauffeur approuvé pour recevoir de vraies courses.</p><a class="btn" href="auth.html?role=ride&surface=driver" style="display:block;text-align:center;text-decoration:none">Connexion chauffeur</a></article>
+        </section>
+      </div>
     </main>
+
+    <nav class="driver-bottom-nav" aria-label="Navigation de démonstration"><button class="driver-tab is-active" type="button" data-driver-tab="home" onclick="showDriverView('home')"><span>⌂</span><small>Accueil</small></button><button class="driver-tab" type="button" data-driver-tab="discover" onclick="showDriverView('discover')"><span>◈</span><small>Opportunités</small></button><button class="driver-tab" type="button" data-driver-tab="earnings" onclick="showDriverView('earnings')"><span>€</span><small>Revenus</small></button><button class="driver-tab" type="button" data-driver-tab="messages" onclick="showDriverView('messages')"><span>✉</span><small>Messages</small></button><button class="driver-tab" type="button" data-driver-tab="menu" onclick="showDriverView('menu')"><span>☰</span><small>Menu</small></button></nav>
+    <div id="driverToast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="./vendor/leaflet-1.9.4.js"></script>
+    <script src="./vasi-driver-dashboard.js?v=1"></script>
     <script>
       let demoOnline = false;
+      window.lastPos = { coords: { latitude: 48.8566, longitude: 2.3522, heading: 35 } };
       function toggleDemo() {
         demoOnline = !demoOnline;
         document.getElementById("status").classList.toggle("online", demoOnline);
-        document.getElementById("statusLabel").textContent = demoOnline ? "En ligne · démo" : "Hors ligne";
-        document.getElementById("gpsLabel").textContent = demoOnline ? "GPS simulé" : "GPS inactif";
-        document.getElementById("onlineButton").textContent = demoOnline ? "Quitter le mode en ligne" : "Voir le mode en ligne";
-        document.getElementById("onlineButton").classList.toggle("onlineButton", demoOnline);
-        document.getElementById("offer").hidden = !demoOnline;
+        document.getElementById("label").textContent = demoOnline ? "En ligne · démo" : "Hors ligne";
+        document.getElementById("toggle").textContent = demoOnline ? "Quitter le mode en ligne" : "Voir le mode en ligne";
+        document.getElementById("ride").classList.toggle("demo-hidden", !demoOnline);
+        syncDriverDashboardState({ online: demoOnline, activeRide: false });
+        if (demoOnline) updateHomeMapPosition(window.lastPos);
       }
-      function dismissOffer() {
-        document.getElementById("offer").hidden = true;
-        document.getElementById("onlineButton").textContent = "Afficher une nouvelle course de démo";
-      }
-      function acceptOffer() {
-        location.href = "ride-live-demo.html";
-      }
+      function dismissOffer() { document.getElementById("ride").classList.add("demo-hidden"); demoToast("Offre de démonstration refusée."); }
+      function acceptOffer() { location.href = "ride-live-demo.html"; }
+      function demoToast(message) { showDriverToast(message); }
+      window.addEventListener("load", () => setTimeout(() => updateHomeMapPosition(window.lastPos), 120));
     </script>
   </body>
 </html>
