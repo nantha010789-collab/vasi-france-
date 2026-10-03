@@ -2,7 +2,7 @@
   "id": "/driver-app",
   "name": "VASI Driver",
   "short_name": "VASI Driver",
-  "description": "Application VASI réservée aux chauffeurs partenaires.",
+  "description": "Application VASI pour les chauffeurs et livreurs partenaires.",
   "lang": "fr",
   "start_url": "/driver-home.html?source=pwa",
   "scope": "/",
@@ -31,6 +31,11 @@
       "name": "Espace chauffeur",
       "short_name": "Chauffeur",
       "url": "/driver.html"
+    },
+    {
+      "name": "Espace livreur",
+      "short_name": "Livreur",
+      "url": "/delivery-driver.html"
     }
   ]
 }
