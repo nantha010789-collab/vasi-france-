@@ -1185,7 +1185,8 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
     /localStorage\.setItem\('vasi_role','customer'\).*auth\.html\?role=customer/,
   );
   assert.match(auth, /savedRole === "restaurant"/);
-  assert.match(auth, /back === "restaurant-register\.html"/);
+  assert.match(auth, /"restaurant-register\.html"/);
+  assert.match(auth, /if \(back\) \{/);
   assert.match(auth, /return "restaurant-dashboard\.html"/);
 });
 
