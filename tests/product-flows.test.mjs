@@ -1200,6 +1200,9 @@ test("customer login offers phone OTP and email magic-link choices", async () =>
   assert.match(languages, /"Continue with email": "Continuer avec mon e-mail"/);
   assert.match(auth, /authMethod === "phone"/);
   assert.match(auth, /href="\.\/auth\.html\?role=customer&amp;method=email"/);
+  assert.match(auth, /New customer\? Create a VASI account/);
+  assert.match(auth, /auth\.html\?role=customer&method=email&mode=register/);
+  assert.match(auth, /Create my account by email/);
   assert.match(auth, /role !== "customer"/);
   assert.match(auth, /emailRedirectTo:[\s\S]*&method=email/);
   assert.match(auth, /const PRODUCTION_ORIGIN = "https:\/\/www\.vasigo\.eu"/);
