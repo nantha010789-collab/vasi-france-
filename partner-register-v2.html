@@ -3,21 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <title>Inscription partenaire VASI</title>
+    <meta name="theme-color" content="#061127" />
+    <title>Inscription partenaire · VASI Driver</title>
     <style>
-      :root{color-scheme:dark;--bg:#050505;--surface:#111;--surface-2:#181818;--line:#303030;--muted:#a1a1aa;--green:#55db8b;--green-bg:#0d2b1a;--red:#ffb4b4}
-      *{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}body{margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-      button,input{font:inherit}.wrap{width:100%;max-width:680px;margin:auto;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(32px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-      .page-nav{display:flex;align-items:center;min-height:48px;margin-bottom:14px}
-      .back-btn{min-width:44px;min-height:44px;padding:0 14px 0 10px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;background:#151515;color:#fff;font-weight:750;cursor:pointer}.back-icon{font-size:28px;line-height:0;transform:translateY(-1px)}
-      h1{margin:12px 0 8px;font-size:clamp(29px,8vw,42px);line-height:1.04;letter-spacing:-.04em}h2{font-size:20px;margin:0 0 14px}.intro{margin:0 0 20px;color:var(--muted);font-size:16px;line-height:1.55}
-      .card{background:var(--surface);border:1px solid #292929;border-radius:22px;padding:18px;margin:12px 0}.roles,.vehicles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-      .btn{width:100%;min-height:52px;padding:13px 10px;border-radius:14px;border:1px solid #353535;background:var(--surface-2);color:#fff;font-weight:800;cursor:pointer;touch-action:manipulation}.btn.active{background:#fff;color:#050505;border-color:#fff}.btn small{display:block;margin-top:3px;font-size:12px;font-weight:650;color:inherit;opacity:.72}.btn:focus-visible,.input:focus-visible,.file:focus-visible{outline:3px solid #3994ff;outline-offset:2px}
-      .field{display:block;margin-top:12px}.label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 6px;color:#ddd;font-size:14px;font-weight:720}.optional{color:#8f8f96;font-size:12px;font-weight:600}.input,.file{display:block;width:100%;min-height:50px;padding:13px;border-radius:13px;border:1px solid #363636;background:var(--surface-2);color:#fff}.file{font-size:14px}.file::file-selector-button{margin-right:10px;border:0;border-radius:9px;padding:8px 10px;background:#fff;color:#050505;font-weight:750}
-      .docs{display:grid;gap:9px;margin-top:12px}.doc{padding:13px;border:1px solid #2d2d2d;border-radius:15px;background:#141414}.doc .label{margin-bottom:8px}.doc-help{display:block;margin:7px 2px 0;color:#8f8f96;font-size:12px;line-height:1.45}
-      .rule{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:12px 13px;border:1px solid #24693f;border-radius:14px;background:var(--green-bg);color:#caffdd;font-size:14px;line-height:1.45}.rule strong{display:block;color:var(--green)}
-      .hidden{display:none!important}.muted{color:var(--muted);font-size:13px;line-height:1.5}.ok{color:#9ff0b5}.err{color:var(--red)}video{display:block;width:100%;max-height:360px;object-fit:cover;border-radius:18px;background:#090909;border:1px solid #282828}.preview{width:140px;height:140px;object-fit:cover;border-radius:18px;margin-top:10px;border:1px solid #333}.consent{display:flex;align-items:flex-start;gap:10px;margin-top:14px;color:#c5c5c5;font-size:13px;line-height:1.5}.consent input{width:20px;height:20px;flex:0 0 auto}.submit{margin-top:14px;background:#fff;color:#050505;border-color:#fff}.status{min-height:22px;margin:12px 2px 0}.required-note{margin:12px 0 0;color:#8f8f96;font-size:12px}
-      @media(max-width:420px){.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.card{padding:14px}.roles,.vehicles{gap:7px}.btn{padding:12px 7px}.doc{padding:11px}}
+      :root{color-scheme:dark;--bg:#030817;--surface:#0b162b;--surface-2:#101f39;--line:#243653;--muted:#9eabc0;--blue:#2364ff;--green:#52e28b;--green-bg:#0b2b1c;--red:#ffb4b4;--warning:#ffc967;--shadow:0 24px 70px rgba(0,0,0,.35)}
+      *{box-sizing:border-box}html,body{max-width:100%;min-height:100%;overflow-x:hidden}body{margin:0;background:radial-gradient(circle at 12% -10%,#103f9a 0,transparent 32%),linear-gradient(180deg,#061127 0,#030817 46%,#02040b 100%);color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+      button,input,select{font:inherit}.wrap{width:100%;max-width:720px;margin:auto;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(118px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+      .page-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin-bottom:18px}.back-btn,.save-state{min-height:44px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;background:rgba(9,20,39,.84);color:#fff}.back-btn{padding:0 14px 0 10px;font-weight:800;cursor:pointer}.back-icon{font-size:28px;line-height:0;transform:translateY(-1px)}.save-state{padding:0 13px;color:#b9c7da;font-size:12px;font-weight:750}.save-state.saved{color:#bff9d1;border-color:#266b43}
+      .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 18px}.brand img{display:block;width:124px;max-width:34vw;height:auto}.brand-divider{width:1px;height:30px;background:#52627a}.brand-product{font-size:13px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:#d6dfed}
+      .progress-shell{padding:16px;border:1px solid var(--line);border-radius:22px;background:rgba(8,21,44,.84);box-shadow:var(--shadow);backdrop-filter:blur(18px)}.progress-row{display:flex;justify-content:space-between;align-items:center;gap:12px}.eyebrow{color:#a9c5ff;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.step-count{color:#d5deeb;font-size:13px;font-weight:800}.progress-track{height:7px;margin-top:12px;border-radius:999px;background:#1a2943;overflow:hidden}.progress-fill{width:14.285%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),#60a5fa);transition:width .28s ease}
+      h1{margin:24px 0 9px;font-size:clamp(31px,8.5vw,48px);line-height:1.02;letter-spacing:-.045em}h2{font-size:21px;margin:0 0 8px;letter-spacing:-.02em}.intro{margin:0 0 20px;color:#aebbd0;font-size:16px;line-height:1.55}.step{display:none;animation:step-in .24s ease}.step.active{display:block}@keyframes step-in{from{opacity:.2;transform:translateY(8px)}to{opacity:1;transform:none}}
+      .card{background:linear-gradient(180deg,rgba(15,31,58,.97),rgba(8,19,38,.98));border:1px solid var(--line);border-radius:24px;padding:18px;margin:12px 0;box-shadow:0 18px 48px rgba(0,0,0,.22)}.card-lead{margin:0 0 16px;color:var(--muted);line-height:1.5}.roles,.vehicles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.role-card,.vehicle-card{position:relative;width:100%;min-height:116px;padding:17px;border-radius:18px;border:1px solid #334763;background:#101f39;color:#fff;text-align:left;font-weight:850;cursor:pointer;touch-action:manipulation}.role-card.active,.vehicle-card.active{border-color:#6f9bff;background:linear-gradient(145deg,#173f91,#11284e);box-shadow:inset 0 0 0 1px #6f9bff,0 13px 32px rgba(35,100,255,.18)}.role-card .icon,.vehicle-card .icon{display:block;font-size:28px;margin-bottom:13px}.role-card small,.vehicle-card small{display:block;margin-top:5px;color:#b8c5d8;font-size:12px;font-weight:650;line-height:1.35}.role-card.active small,.vehicle-card.active small{color:#dce8ff}.selected-check{position:absolute;top:12px;right:12px;width:23px;height:23px;border:1px solid #59708f;border-radius:50%;display:grid;place-items:center;color:transparent;background:#0b172b}.active .selected-check{color:#07152d;background:#fff;border-color:#fff}
+      .field{display:block;margin-top:14px}.label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 7px;color:#e6edf7;font-size:14px;font-weight:780}.optional{color:#8f9cb0;font-size:12px;font-weight:650}.input,.file{display:block;width:100%;min-height:54px;padding:14px;border-radius:14px;border:1px solid #344864;background:#0c192e;color:#fff}.input::placeholder{color:#77859a}.input:focus,.file:focus{border-color:#6391ff}.file{font-size:13px}.file::file-selector-button{margin-right:10px;border:0;border-radius:9px;padding:9px 11px;background:#edf3ff;color:#061127;font-weight:800}.input.invalid,.file.invalid{border-color:#ff7373;background:#261317}.field-error{display:none;margin:6px 2px 0;color:#ffb4b4;font-size:12px;font-weight:650}.field-error.visible{display:block}
+      .docs{display:grid;gap:11px;margin-top:12px}.doc{padding:14px;border:1px solid #2b405e;border-radius:17px;background:#0b192e}.doc-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:9px}.doc-title{font-size:14px;font-weight:820}.doc-badge{flex:0 0 auto;padding:5px 8px;border:1px solid #3b4d67;border-radius:999px;color:#9eabc0;font-size:10px;font-weight:850;text-transform:uppercase}.doc-badge.ready{border-color:#34734b;background:#0c2b1b;color:#9ff0b5}.doc-help{display:block;margin:8px 2px 0;color:#8f9cb0;font-size:12px;line-height:1.45}.file-state{display:block;margin-top:8px;color:#8f9cb0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.file-state.ready{color:#9ff0b5}
+      .rule{display:flex;gap:11px;align-items:flex-start;margin-top:13px;padding:13px 14px;border:1px solid #286f45;border-radius:15px;background:var(--green-bg);color:#caffdd;font-size:13px;line-height:1.48}.rule.warning{border-color:#745b28;background:#2d2514;color:#ffe6ae}.rule strong{display:block;color:var(--green);margin-bottom:2px}.rule.warning strong{color:var(--warning)}
+      .hidden{display:none!important}.muted{color:var(--muted);font-size:13px;line-height:1.5}.ok{color:#9ff0b5}.err{color:var(--red)}.status-banner{display:none;margin:14px 0;padding:14px;border-radius:16px;border:1px solid #335077;background:#0c203d;color:#d9e6fa;font-size:13px;line-height:1.45}.status-banner.visible{display:block}.status-banner.approved{border-color:#34734b;background:#0b2b1c;color:#caffdd}.status-banner.rejected{border-color:#754248;background:#321719;color:#ffd1d1}
+      .camera-shell{position:relative;overflow:hidden;border:1px solid #2f4260;border-radius:20px;background:#030711;min-height:240px}.camera-shell video{display:block;width:100%;height:300px;object-fit:cover;background:#04070e}.camera-guide{position:absolute;inset:9% 22%;border:2px dashed rgba(255,255,255,.7);border-radius:48%;pointer-events:none}.camera-actions{display:grid;gap:9px;margin-top:11px}.preview{display:block;width:150px;height:150px;object-fit:cover;border-radius:50%;margin:14px auto 0;border:4px solid #fff;box-shadow:0 12px 30px rgba(0,0,0,.32)}.capture-file{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+      .consent{display:flex;align-items:flex-start;gap:11px;margin-top:15px;padding:14px;border:1px solid #2c405d;border-radius:15px;background:#0b192e;color:#cbd6e7;font-size:13px;line-height:1.5}.consent input{width:21px;height:21px;flex:0 0 auto;accent-color:var(--blue)}
+      .review-list{display:grid;gap:10px}.review-item{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:13px 0;border-bottom:1px solid #213450}.review-item:last-child{border-bottom:0}.review-label{color:#93a2b8;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.review-value{text-align:right;color:#fff;font-size:14px;font-weight:760;max-width:62%;overflow-wrap:anywhere}.review-docs{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:7px}.review-docs li{display:flex;align-items:center;gap:8px;color:#cfd9e8;font-size:13px}.review-docs li::before{content:'✓';width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#123d27;color:#83f0aa;font-size:11px;font-weight:900}
+      .payout-card{margin-top:14px;padding:15px;border:1px solid #315078;border-radius:17px;background:linear-gradient(145deg,#0d2850,#0c1b34);color:#d9e8ff;font-size:13px;line-height:1.5}.payout-card strong{display:block;margin-bottom:3px;color:#fff;font-size:14px}.required-note{margin:12px 0 0;color:#8f9cb0;font-size:12px}.status{min-height:22px;margin:12px 2px 0;font-size:13px;line-height:1.45}.submit-progress{display:none;margin-top:13px}.submit-progress.visible{display:block}.submit-progress .progress-track{height:8px}.submit-progress .progress-fill{width:0}
+      .action-bar{position:fixed;z-index:50;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:linear-gradient(180deg,rgba(3,8,23,0),rgba(3,8,23,.96) 24%,#030817 100%)}.action-inner{width:100%;max-width:688px;margin:auto;display:grid;grid-template-columns:minmax(110px,.42fr) minmax(0,1fr);gap:10px;padding:10px;border:1px solid #2c4161;border-radius:22px;background:rgba(10,24,46,.95);box-shadow:0 18px 50px rgba(0,0,0,.5);backdrop-filter:blur(20px)}.action-btn{min-height:56px;border-radius:16px;border:1px solid #354a69;color:#fff;background:#12213a;font-weight:900;cursor:pointer}.action-btn.primary{border-color:var(--blue);background:linear-gradient(135deg,var(--blue),#315cff);box-shadow:0 10px 26px rgba(35,100,255,.28)}.action-btn:disabled{cursor:not-allowed;opacity:.5;box-shadow:none}
+      .success{display:none;text-align:center;padding:32px 20px}.success.visible{display:block}.success-icon{width:74px;height:74px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;background:#103d27;color:#75f0a2;font-size:35px;font-weight:900}.success h2{font-size:30px}.success p{color:#b7c4d7;line-height:1.6}.success .action-btn{width:100%;margin-top:10px}
+      @media(max-width:460px){.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.card{padding:15px}.roles,.vehicles{gap:8px}.role-card,.vehicle-card{padding:14px;min-height:108px}.action-bar{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}.action-inner{grid-template-columns:106px minmax(0,1fr)}.save-state{max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
@@ -25,87 +32,81 @@
     <main class="wrap" hidden>
       <nav class="page-nav" aria-label="Navigation">
         <button class="back-btn" type="button" onclick="goBack()"><span class="back-icon" aria-hidden="true">‹</span>Retour</button>
+        <span id="saveState" class="save-state" aria-live="polite">Brouillon sécurisé</span>
       </nav>
+      <div class="brand" aria-label="VASI Driver"><img src="./assets/vasi-logo.png" alt="VASI" /><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Driver</span></div>
 
-      <h1 id="pageTitle">Devenir partenaire VASI</h1>
-      <p id="pageIntro" class="intro">Créez un compte séparé pour votre activité de chauffeur ou de livreur.</p>
+      <section id="wizard">
+        <div class="progress-shell" aria-label="Progression de l’inscription"><div class="progress-row"><span id="stepLabel" class="eyebrow">Votre activité</span><span id="stepCount" class="step-count">Étape 1 sur 7</span></div><div class="progress-track"><div id="progressFill" class="progress-fill"></div></div></div>
+        <div id="applicationStatus" class="status-banner" role="status"></div>
+        <h1 id="pageTitle">Choisissez votre activité</h1>
+        <p id="pageIntro" class="intro">Un seul compte VASI Driver, avec un parcours adapté à votre activité.</p>
 
-      <section class="card" id="activitySelector" aria-labelledby="activity-title">
-        <h2 id="activity-title">Choisissez votre activité</h2>
-        <div class="roles">
-          <button id="ride" class="btn active" type="button" onclick="setRole('ride')">🚕 Chauffeur VTC<small>Transport de passagers</small></button>
-          <button id="courier" class="btn" type="button" onclick="setRole('courier')">🛵 Livreur<small>VASI Food + Livraison</small></button>
-        </div>
-      </section>
+        <section class="step active" data-step="0" aria-labelledby="activity-title"><div class="card">
+          <h2 id="activity-title">Comment souhaitez-vous travailler ?</h2><p class="card-lead">Vous pourrez compléter uniquement les documents nécessaires à votre activité.</p>
+          <div class="roles"><button id="ride" class="role-card active" type="button" onclick="setRole('ride')"><span class="selected-check">✓</span><span class="icon">🚕</span>Chauffeur VTC<small>Transport de passagers</small></button><button id="courier" class="role-card" type="button" onclick="setRole('courier')"><span class="selected-check">✓</span><span class="icon">🛵</span>Livreur<small>VASI Food + colis</small></button></div>
+          <div class="rule" role="status"><span aria-hidden="true">✓</span><span><strong>Créez un compte séparé</strong>Vos données chauffeur ou livreur restent séparées de votre compte client VASI.</span></div>
+        </div></section>
 
-      <section class="card" aria-labelledby="identity-title">
-        <h2 id="identity-title">Identité</h2>
-        <label class="field"><span class="label">Nom complet</span><input id="name" class="input" autocomplete="name" placeholder="Votre nom complet" /></label>
-        <label class="field"><span class="label">Pays d’activité</span><select id="country" class="input" aria-label="Pays d’activité VASI"><option value="FR">🇫🇷 France</option></select></label>
-        <label class="field"><span class="label">Téléphone</span><input id="phone" class="input" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" /></label>
-        <label class="field"><span class="label">Adresse</span><input id="address" class="input" autocomplete="street-address" placeholder="Votre adresse complète" /></label>
-        <label class="field"><span class="label">Pièce d’identité <span>Obligatoire</span></span><input id="identity" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-        <label class="field"><span class="label">Photo de profil <span class="optional">Facultatif</span></span><input id="profile_photo" class="file" type="file" accept="image/jpeg,image/png" /></label>
-      </section>
+        <section class="step" data-step="1" aria-labelledby="identity-title"><div class="card">
+          <h2 id="identity-title">Vos informations</h2><p class="card-lead">Utilisez exactement les informations indiquées sur vos documents officiels.</p>
+          <label class="field"><span class="label">Nom complet</span><input id="name" class="input" autocomplete="name" maxlength="120" placeholder="Votre nom complet" /><span id="nameError" class="field-error">Saisissez votre nom complet.</span></label>
+          <label class="field"><span class="label">Pays d’activité</span><select id="country" class="input" aria-label="Pays d’activité VASI"><option value="FR">🇫🇷 France</option></select></label>
+          <label class="field"><span class="label">Téléphone</span><input id="phone" class="input" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="06 12 34 56 78" /><span id="phoneError" class="field-error">Saisissez un numéro français valide.</span></label>
+          <label class="field"><span class="label">Adresse complète</span><input id="address" class="input" autocomplete="street-address" maxlength="220" placeholder="Numéro, rue, code postal et ville" /><span id="addressError" class="field-error">Saisissez votre adresse complète.</span></label>
+        </div></section>
 
-      <section class="card" aria-labelledby="vehicle-title">
-        <h2 id="vehicle-title">Véhicule et documents</h2>
-        <div id="vehicles" class="vehicles hidden">
-          <button class="btn active" type="button" data-vehicle="bike" onclick="setVehicle('bike')">🚲 Vélo</button>
-          <button class="btn" type="button" data-vehicle="ebike" onclick="setVehicle('ebike')">⚡ VAE · 25 km/h max.</button>
-          <button class="btn" type="button" data-vehicle="scooter" onclick="setVehicle('scooter')">🛵 Scooter</button>
-          <button class="btn" type="button" data-vehicle="moto" onclick="setVehicle('moto')">🏍️ Moto</button>
-          <button class="btn" type="button" data-vehicle="car" onclick="setVehicle('car')">🚗 Voiture</button>
-        </div>
-
-        <div id="bikeRule" class="rule hidden" role="status">
-          <span aria-hidden="true">✓</span><span><strong>Aucun permis de conduire requis</strong>Pour un vélo ou un VAE conforme (assistance jusqu’à 25 km/h) : pas de permis, carte grise ou assurance véhicule à télécharger. Un cycle motorisé plus rapide doit être inscrit en scooter/moto.</span>
-        </div>
-        <div id="motorRule" class="rule hidden" role="status">
-          <span aria-hidden="true">!</span><span><strong>Véhicule motorisé</strong>Le permis, l’assurance, la carte grise et les justificatifs de transport sont obligatoires.</span>
-        </div>
-
-        <div id="rideDocs" class="docs">
-          <label class="doc"><span id="ridePermitLabel" class="label">Carte professionnelle VTC</span><input id="vtc" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span id="rideLicenceLabel" class="label">Permis de conduire</span><input id="ride_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span id="rideBusinessLabel" class="label">SIREN / KBIS / RNE</span><input id="ride_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span id="rideInsuranceLabel" class="label">Assurance professionnelle</span><input id="ride_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-          <label class="doc"><span id="rideRegistrationLabel" class="label">Carte grise</span><input id="ride_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-        </div>
-
-        <div id="courierDocs" class="docs hidden">
-          <label class="doc"><span id="courierBusinessLabel" class="label">SIREN / KBIS / RNE</span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span id="courierBusinessHelp" class="doc-help">Preuve de votre activité indépendante en France.</span></label>
-          <label class="doc"><span class="label">Photo du sac isotherme</span><input id="bag" class="file" type="file" accept="image/jpeg,image/png" /></label>
-          <label class="doc"><span class="label" id="vehiclePhotoLabel">Photo du vélo</span><input id="vehicle_photo" class="file" type="file" accept="image/jpeg,image/png" /></label>
-          <div id="motorDocs" class="docs hidden">
-            <label class="doc"><span class="label">Permis de conduire</span><input id="courier_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-            <label class="doc"><span class="label">Assurance du véhicule</span><input id="courier_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-            <label class="doc"><span id="courierRegistrationLabel" class="label">Carte grise</span><input id="courier_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
-            <label id="transportLicenceDoc" class="doc"><span class="label">Capacité / licence de transport léger</span><input id="transport_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /></label>
+        <section class="step" data-step="2" aria-labelledby="personal-docs-title"><div class="card">
+          <h2 id="personal-docs-title">Identité</h2><p class="card-lead">Les photos doivent être nettes, complètes et non expirées.</p>
+          <div class="docs">
+            <label class="doc"><span class="doc-top"><span class="doc-title">Pièce d’identité</span><span class="doc-badge" data-file-badge="identity">Obligatoire</span></span><input id="identity" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Carte d’identité ou passeport. Image JPG/PNG ou PDF, 10 Mo maximum.</span><span class="file-state" data-file-state="identity">Aucun fichier ajouté</span></label>
+            <label class="doc"><span class="doc-top"><span class="doc-title">Photo de profil <span class="optional">Facultatif</span></span><span class="doc-badge" data-file-badge="profile_photo">Optionnel</span></span><input id="profile_photo" class="file" type="file" accept="image/jpeg,image/png" /><span class="doc-help">Une photo récente, visage visible, sans filtre.</span><span class="file-state" data-file-state="profile_photo">Aucun fichier ajouté</span></label>
           </div>
-        </div>
+          <div class="rule warning"><span aria-hidden="true">🔒</span><span><strong>Documents protégés</strong>Ils sont envoyés dans un espace privé et consultés uniquement pour la vérification de votre dossier.</span></div>
+        </div></section>
+
+        <section class="step" data-step="3" aria-labelledby="professional-title"><div class="card">
+          <h2 id="professional-title">Documents professionnels</h2><p id="professionalIntro" class="card-lead">Ajoutez les justificatifs nécessaires à l’activité VTC.</p>
+          <div id="rideProfessionalDocs" class="docs">
+            <label class="doc"><span class="doc-top"><span id="ridePermitLabel" class="doc-title">Carte professionnelle VTC</span><span class="doc-badge" data-file-badge="vtc">Obligatoire</span></span><input id="vtc" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="vtc">Aucun fichier ajouté</span></label>
+            <label class="doc"><span class="doc-top"><span id="rideLicenceLabel" class="doc-title">Permis de conduire</span><span class="doc-badge" data-file-badge="ride_licence">Obligatoire</span></span><input id="ride_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="ride_licence">Aucun fichier ajouté</span></label>
+            <label class="doc"><span class="doc-top"><span id="rideBusinessLabel" class="doc-title">SIREN / KBIS / RNE</span><span class="doc-badge" data-file-badge="ride_business">Obligatoire</span></span><input id="ride_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="doc-help">Justificatif récent de votre activité professionnelle.</span><span class="file-state" data-file-state="ride_business">Aucun fichier ajouté</span></label>
+          </div>
+          <div id="vehicles" class="vehicles hidden">
+            <button class="vehicle-card active" type="button" data-vehicle="bike" onclick="setVehicle('bike')"><span class="selected-check">✓</span><span class="icon">🚲</span>Vélo<small>Sans moteur</small></button><button class="vehicle-card" type="button" data-vehicle="ebike" onclick="setVehicle('ebike')"><span class="selected-check">✓</span><span class="icon">⚡</span>VAE<small>25 km/h maximum</small></button><button class="vehicle-card" type="button" data-vehicle="scooter" onclick="setVehicle('scooter')"><span class="selected-check">✓</span><span class="icon">🛵</span>Scooter<small>Documents moteur requis</small></button><button class="vehicle-card" type="button" data-vehicle="moto" onclick="setVehicle('moto')"><span class="selected-check">✓</span><span class="icon">🏍️</span>Moto<small>Documents moteur requis</small></button><button class="vehicle-card" type="button" data-vehicle="car" onclick="setVehicle('car')"><span class="selected-check">✓</span><span class="icon">🚗</span>Voiture<small>Documents moteur requis</small></button>
+          </div>
+          <div id="bikeRule" class="rule hidden" role="status"><span aria-hidden="true">✓</span><span><strong>Aucun permis de conduire requis</strong>Pour un vélo ou un VAE conforme (assistance jusqu’à 25 km/h) : pas de permis, carte grise ou assurance véhicule à télécharger. Un cycle motorisé plus rapide doit être inscrit en scooter/moto.</span></div>
+          <div id="motorRule" class="rule warning hidden" role="status"><span aria-hidden="true">!</span><span><strong>Véhicule motorisé</strong>Le permis, l’assurance, la carte grise et les justificatifs de transport sont obligatoires.</span></div>
+        </div></section>
+
+        <section class="step" data-step="4" aria-labelledby="vehicle-docs-title"><div class="card">
+          <h2 id="vehicle-docs-title">Véhicule et activité</h2><p id="vehicleDocsIntro" class="card-lead">Ajoutez l’assurance professionnelle et les documents du véhicule.</p>
+          <div id="rideDocs" class="docs"><label class="doc"><span class="doc-top"><span id="rideInsuranceLabel" class="doc-title">Assurance professionnelle</span><span class="doc-badge" data-file-badge="ride_insurance">Obligatoire</span></span><input id="ride_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="ride_insurance">Aucun fichier ajouté</span></label><label class="doc"><span class="doc-top"><span id="rideRegistrationLabel" class="doc-title">Carte grise</span><span class="doc-badge" data-file-badge="ride_carte_grise">Obligatoire</span></span><input id="ride_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="ride_carte_grise">Aucun fichier ajouté</span></label></div>
+          <div id="courierDocs" class="docs hidden">
+            <label class="doc"><span class="doc-top"><span id="courierBusinessLabel" class="doc-title">SIREN / KBIS / RNE</span><span class="doc-badge" data-file-badge="courier_business">Obligatoire</span></span><input id="courier_business" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span id="courierBusinessHelp" class="doc-help">Preuve de votre activité indépendante en France.</span><span class="file-state" data-file-state="courier_business">Aucun fichier ajouté</span></label>
+            <label class="doc"><span class="doc-top"><span class="doc-title">Photo du sac isotherme</span><span class="doc-badge" data-file-badge="bag">Obligatoire</span></span><input id="bag" class="file" type="file" accept="image/jpeg,image/png" /><span class="file-state" data-file-state="bag">Aucun fichier ajouté</span></label>
+            <label class="doc"><span class="doc-top"><span class="doc-title" id="vehiclePhotoLabel">Photo du vélo</span><span class="doc-badge" data-file-badge="vehicle_photo">Obligatoire</span></span><input id="vehicle_photo" class="file" type="file" accept="image/jpeg,image/png" /><span class="file-state" data-file-state="vehicle_photo">Aucun fichier ajouté</span></label>
+            <div id="motorDocs" class="docs hidden"><label class="doc"><span class="doc-top"><span class="doc-title">Permis de conduire</span><span class="doc-badge" data-file-badge="courier_licence">Obligatoire</span></span><input id="courier_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="courier_licence">Aucun fichier ajouté</span></label><label class="doc"><span class="doc-top"><span class="doc-title">Assurance du véhicule</span><span class="doc-badge" data-file-badge="courier_insurance">Obligatoire</span></span><input id="courier_insurance" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="courier_insurance">Aucun fichier ajouté</span></label><label class="doc"><span class="doc-top"><span id="courierRegistrationLabel" class="doc-title">Carte grise</span><span class="doc-badge" data-file-badge="courier_carte_grise">Obligatoire</span></span><input id="courier_carte_grise" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="courier_carte_grise">Aucun fichier ajouté</span></label><label id="transportLicenceDoc" class="doc"><span class="doc-top"><span class="doc-title">Capacité / licence de transport léger</span><span class="doc-badge" data-file-badge="transport_licence">Obligatoire</span></span><input id="transport_licence" class="file" type="file" accept="image/jpeg,image/png,application/pdf" /><span class="file-state" data-file-state="transport_licence">Aucun fichier ajouté</span></label></div>
+          </div>
+        </div></section>
+
+        <section class="step" data-step="5" aria-labelledby="selfie-title"><div class="card">
+          <h2 id="selfie-title">Vérification en direct</h2><p class="card-lead">Regardez l’objectif, retirez lunettes de soleil et couvre-chef, puis prenez une photo nette.</p>
+          <div class="camera-shell"><video id="cam" autoplay playsinline muted></video><span class="camera-guide" aria-hidden="true"></span></div>
+          <div class="camera-actions"><button class="action-btn primary" type="button" onclick="snap()">Prendre le selfie</button><label class="action-btn" style="display:grid;place-items:center" for="selfie_file">Ouvrir la caméra du téléphone</label><input id="selfie_file" class="capture-file" type="file" accept="image/jpeg,image/png" capture="user" /></div>
+          <img id="preview" class="preview hidden" alt="Aperçu du selfie" /><label class="consent"><input id="consent" type="checkbox" /><span>J’accepte la vérification d’identité et le traitement sécurisé de mes documents par VASI.</span></label><p class="required-note">Votre dossier doit être validé par un administrateur VASI avant l’accès aux courses réelles.</p>
+        </div></section>
+
+        <section class="step" data-step="6" aria-labelledby="review-title"><div class="card">
+          <h2 id="review-title">Vérifiez votre dossier</h2><p class="card-lead">Relisez les informations avant l’envoi. Vous pourrez corriger un document si l’équipe VASI vous le demande.</p><div id="reviewList" class="review-list"></div><ul id="reviewDocs" class="review-docs"></ul>
+          <div class="payout-card"><strong>Vous ajoutez vous-même votre RIB</strong><span id="payoutCopy">Après validation, connectez votre compte bancaire via la page Stripe sécurisée. VASI ne stocke pas votre IBAN complet.</span></div>
+          <div id="submitProgress" class="submit-progress" aria-live="polite"><div class="progress-track"><div id="submitProgressFill" class="progress-fill"></div></div><p id="submitProgressText" class="muted">Préparation du dossier…</p></div><p id="msg" class="status muted" aria-live="polite"></p>
+        </div></section>
       </section>
 
-      <section class="card" aria-labelledby="payout-title">
-        <h2 id="payout-title">Compte bancaire et versements</h2>
-        <div class="rule" role="status">
-          <span id="payoutIcon" aria-hidden="true">€</span>
-          <span id="payoutCopy"><strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.</span>
-        </div>
-      </section>
-
-      <section class="card" aria-labelledby="selfie-title">
-        <h2 id="selfie-title">Vérification en direct</h2>
-        <p class="muted">Prenez un selfie en direct pour confirmer que le compte vous appartient.</p>
-        <video id="cam" autoplay playsinline muted></video>
-        <button class="btn" type="button" style="margin-top:10px" onclick="snap()">Prendre le selfie</button>
-        <img id="preview" class="preview hidden" alt="Aperçu du selfie" />
-        <label class="consent"><input id="consent" type="checkbox" /><span>J’accepte la vérification d’identité et le traitement sécurisé de mes documents par VASI.</span></label>
-        <p class="required-note">Les documents obligatoires doivent être validés par un administrateur VASI avant la mise en ligne.</p>
-        <button id="submitButton" class="btn submit" type="button" onclick="submitApplication()">Envoyer pour validation</button>
-        <p id="msg" class="status muted" aria-live="polite"></p>
-      </section>
+      <section id="success" class="card success" aria-live="polite"><div class="success-icon">✓</div><h2>Dossier envoyé</h2><p>Votre demande est maintenant en cours de vérification. VASI vous informera dès qu’une décision sera disponible.</p><button class="action-btn primary" type="button" onclick="location.href=role==='ride'?'driver.html':'delivery-driver.html'">Ouvrir VASI Driver</button></section>
     </main>
+    <footer id="actionBar" class="action-bar"><div class="action-inner"><button id="previousButton" class="action-btn" type="button" onclick="previousStep()">Retour</button><button id="nextButton" class="action-btn primary" type="button" onclick="nextStep()">Continuer</button></div></footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-region.js"></script>
@@ -117,214 +118,75 @@
       const pageParams = new URLSearchParams(location.search);
       const requestedRole = pageParams.get('role');
       const driverSurface = pageParams.get('surface') === 'driver';
-      let role = ['ride','courier'].includes(requestedRole) ? requestedRole : 'ride', vehicle = 'bike', selfie = null, submitting = false;
+      const draftKey = 'vasi_partner_onboarding_draft_v3';
+      const maxFileBytes = 10 * 1024 * 1024;
+      const allowedTypes = new Set(['image/jpeg','image/png','application/pdf']);
+      const stepMeta = [['Votre activité','Choisissez votre activité','Un seul compte VASI Driver, avec un parcours adapté à votre activité.'],['Votre profil','Parlez-nous de vous','Vos informations doivent correspondre à vos documents officiels.'],['Identité','Confirmez votre identité','Ajoutez une pièce d’identité lisible et valide.'],['Activité professionnelle','Complétez votre activité','Nous affichons uniquement les éléments nécessaires à votre rôle.'],['Documents','Ajoutez vos justificatifs','Chaque document sera contrôlé avant votre activation.'],['Vérification','Prenez votre selfie','Cette étape protège votre compte et les utilisateurs VASI.'],['Vérification finale','Vérifiez votre dossier','Relisez vos informations avant de les envoyer.']];
+      let role = ['ride','courier'].includes(requestedRole) ? requestedRole : 'ride', vehicle = 'bike', selfie = null, selfieFile = null, submitting = false, currentStep = 0, cameraStarted = false, cameraStream = null, saveTimer = null;
       const $ = id => document.getElementById(id);
 
-      function goBack(){ if(history.length > 1) history.back(); else location.href = driverSurface ? 'driver-home.html' : 'index.html'; }
-      function setRole(next){
-        const activeRole = accountRole.active();
-        if (activeRole && activeRole !== next) {
-          return showError('Déconnectez-vous avant de créer un autre type de compte VASI.');
-        }
-        role = next;
-        history.replaceState(null, '', location.pathname + '?role=' + encodeURIComponent(role) + (driverSurface ? '&surface=driver' : ''));
-        render();
-      }
-      function setVehicle(next){ vehicle = next; renderVehicle(); }
-      function renderCountry(){
-        const region = VasiRegion.getRegion('FR');
-        VasiRegion.setCountry('FR');
-        $('phone').placeholder = region.phonePlaceholder;
-        $('ridePermitLabel').textContent = 'Carte professionnelle VTC';
-        $('rideLicenceLabel').textContent = 'Permis de conduire';
-        $('rideBusinessLabel').textContent = 'SIREN / KBIS / RNE';
-        $('rideInsuranceLabel').textContent = 'Assurance professionnelle';
-        $('rideRegistrationLabel').textContent = 'Carte grise';
-        $('courierBusinessLabel').textContent = 'SIREN / KBIS / RNE';
-        $('courierBusinessHelp').textContent = 'Preuve de votre activité indépendante en France.';
-        $('courierRegistrationLabel').textContent = 'Carte grise';
-        $('transportLicenceDoc').classList.remove('hidden');
-        $('payoutIcon').textContent = region.currencySymbol;
-        $('payoutCopy').innerHTML = '<strong>Vous ajoutez vous-même votre RIB</strong>Après validation de vos documents par VASI, ouvrez l’application Chauffeur ou Livreur et touchez « Connecter mon compte bancaire (RIB) ». Vous saisirez votre IBAN sur la page sécurisée de Stripe. VASI ne stocke pas votre IBAN complet.';
-      }
-      function render(){
-        $('ride').classList.toggle('active', role === 'ride');
-        $('courier').classList.toggle('active', role === 'courier');
-        $('rideDocs').classList.toggle('hidden', role !== 'ride');
-        $('courierDocs').classList.toggle('hidden', role !== 'courier');
-        $('vehicles').classList.toggle('hidden', role !== 'courier');
-        renderVehicle();
-      }
-      function renderVehicle(){
-        document.querySelectorAll('[data-vehicle]').forEach(button => button.classList.toggle('active', button.dataset.vehicle === vehicle));
-        const motor = role === 'courier' && motorVehicles.has(vehicle);
-        const cycle = role === 'courier' && !motor;
-        $('bikeRule').classList.toggle('hidden', !cycle);
-        $('motorRule').classList.toggle('hidden', !motor);
-        $('motorDocs').classList.toggle('hidden', !motor);
-        const names = {bike:'Photo du vélo', ebike:'Photo du vélo électrique', scooter:'Photo du scooter', moto:'Photo de la moto', car:'Photo de la voiture'};
-        $('vehiclePhotoLabel').textContent = names[vehicle] || 'Photo du véhicule';
-      }
+      function goBack(){ if (currentStep > 0) return previousStep(); if (history.length > 1) history.back(); else location.href = driverSurface ? 'driver-home.html' : 'index.html'; }
+      function setRole(next){ const activeRole = accountRole.active(); if (activeRole && activeRole !== next) return showError('Déconnectez-vous avant de créer un autre type de compte VASI.'); role = next; history.replaceState(null, '', location.pathname + '?role=' + encodeURIComponent(role) + (driverSurface ? '&surface=driver' : '')); render(); saveDraft(); }
+      function setVehicle(next){ vehicle = next; renderVehicle(); saveDraft(); }
+      function renderCountry(){ const region = VasiRegion.getRegion('FR'); VasiRegion.setCountry('FR'); $('phone').placeholder = region.phonePlaceholder; $('ridePermitLabel').textContent = 'Carte professionnelle VTC'; $('rideLicenceLabel').textContent = 'Permis de conduire'; $('rideBusinessLabel').textContent = 'SIREN / KBIS / RNE'; $('rideInsuranceLabel').textContent = 'Assurance professionnelle'; $('rideRegistrationLabel').textContent = 'Carte grise'; $('courierBusinessLabel').textContent = 'SIREN / KBIS / RNE'; $('courierBusinessHelp').textContent = 'Preuve de votre activité indépendante en France.'; $('courierRegistrationLabel').textContent = 'Carte grise'; $('transportLicenceDoc').classList.remove('hidden'); }
+      function render(){ $('ride').classList.toggle('active', role === 'ride'); $('courier').classList.toggle('active', role === 'courier'); $('rideProfessionalDocs').classList.toggle('hidden', role !== 'ride'); $('vehicles').classList.toggle('hidden', role !== 'courier'); $('rideDocs').classList.toggle('hidden', role !== 'ride'); $('courierDocs').classList.toggle('hidden', role !== 'courier'); $('professionalIntro').textContent = role === 'ride' ? 'Ajoutez les justificatifs nécessaires à l’activité VTC.' : 'Choisissez le véhicule que vous utiliserez pour vos livraisons.'; $('vehicleDocsIntro').textContent = role === 'ride' ? 'Ajoutez l’assurance professionnelle et les documents du véhicule.' : 'Ajoutez vos justificatifs d’activité et l’équipement de livraison.'; renderVehicle(); renderStep(); }
+      function renderVehicle(){ document.querySelectorAll('[data-vehicle]').forEach(button => button.classList.toggle('active', button.dataset.vehicle === vehicle)); const motor = role === 'courier' && motorVehicles.has(vehicle); const cycle = role === 'courier' && !motor; $('bikeRule').classList.toggle('hidden', !cycle); $('motorRule').classList.toggle('hidden', !motor); $('motorDocs').classList.toggle('hidden', !motor); const names = {bike:'Photo du vélo',ebike:'Photo du vélo électrique',scooter:'Photo du scooter',moto:'Photo de la moto',car:'Photo de la voiture'}; $('vehiclePhotoLabel').textContent = names[vehicle] || 'Photo du véhicule'; }
+      function renderStep(){ document.querySelectorAll('.step').forEach(step => step.classList.toggle('active', Number(step.dataset.step) === currentStep)); const [label,title,intro] = stepMeta[currentStep]; $('stepLabel').textContent = label; $('stepCount').textContent = `Étape ${currentStep + 1} sur ${stepMeta.length}`; $('progressFill').style.width = `${((currentStep + 1) / stepMeta.length) * 100}%`; $('pageTitle').textContent = title; $('pageIntro').textContent = intro; $('previousButton').textContent = currentStep === 0 ? 'Quitter' : 'Retour'; $('nextButton').textContent = currentStep === stepMeta.length - 1 ? 'Envoyer mon dossier' : 'Continuer'; $('nextButton').disabled = submitting; if (currentStep === 5) window.setTimeout(startCamera,0); else stopCamera(); if (currentStep === 6) renderReview(); window.scrollTo({top:0,behavior:'smooth'}); saveDraft(); }
+      function nextStep(){ if (submitting) return; if (currentStep === stepMeta.length - 1) return submitApplication(); const problem = validateStep(currentStep); if (problem) return showStepError(problem); clearStepError(); currentStep += 1; renderStep(); }
+      function previousStep(){ if (submitting) return; if (currentStep === 0) { if (history.length > 1) history.back(); else location.href = driverSurface ? 'driver-home.html' : 'index.html'; return; } clearStepError(); currentStep -= 1; renderStep(); }
+      function showStepError(message){ const target = document.querySelector(`.step[data-step="${currentStep}"] .card`); let error = target.querySelector('.step-error'); if (!error) { error = document.createElement('p'); error.className = 'status err step-error'; error.setAttribute('role','alert'); target.appendChild(error); } error.textContent = message; error.scrollIntoView({block:'nearest'}); }
+      function clearStepError(){ document.querySelectorAll('.step-error').forEach(error => error.remove()); }
+      function markInvalid(id,invalid){ $(id)?.classList.toggle('invalid',invalid); $(`${id}Error`)?.classList.toggle('visible',invalid); }
+      function validPhone(){ return Boolean(VasiRegion.normalizePhone($('phone').value.trim())); }
+      function validateStep(step){ if (step === 1) { const nameInvalid = $('name').value.trim().length < 2, phoneInvalid = !validPhone(), addressInvalid = $('address').value.trim().length < 8; markInvalid('name',nameInvalid); markInvalid('phone',phoneInvalid); markInvalid('address',addressInvalid); if (nameInvalid || phoneInvalid || addressInvalid) return 'Complétez correctement les informations indiquées.'; } if (step === 2 && !selected('identity')) return 'Ajoutez votre pièce d’identité pour continuer.'; if (step === 3 && role === 'ride' && ![selected('vtc'),selected('ride_licence'),selected('ride_business')].every(Boolean)) return 'Ajoutez la carte VTC, le permis et le justificatif d’entreprise.'; if (step === 4 && Object.values(requiredFiles()).some(file => !file)) return 'Ajoutez tous les documents obligatoires de cette étape.'; if (step === 5) { if (!selfie) return 'Prenez votre selfie en direct pour continuer.'; if (!$('consent').checked) return 'Acceptez la vérification d’identité pour continuer.'; } return ''; }
 
-      function startCamera(){
-        navigator.mediaDevices?.getUserMedia({video:{facingMode:'user'},audio:false})
-          .then(stream => { $('cam').srcObject = stream; })
-          .catch(() => { $('msg').textContent = 'Autorisez la caméra pour prendre votre selfie.'; });
-      }
+      function startCamera(){ if (cameraStarted || !navigator.mediaDevices?.getUserMedia) return; cameraStarted = true; navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720}},audio:false}).then(stream => { cameraStream = stream; $('cam').srcObject = stream; }).catch(() => { cameraStarted = false; showStepError('Autorisez la caméra ou utilisez « Ouvrir la caméra du téléphone ».'); }); }
+      function stopCamera(){ if (!cameraStream) return; cameraStream.getTracks().forEach(track => track.stop()); cameraStream = null; cameraStarted = false; $('cam').srcObject = null; }
+      function snap(){ const video = $('cam'); if (!video.videoWidth) return showStepError('La caméra n’est pas encore prête. Réessayez dans un instant.'); const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video,0,0); selfie = canvas.toDataURL('image/jpeg',.86); selfieFile = null; $('preview').src = selfie; $('preview').classList.remove('hidden'); clearStepError(); }
+      function handleSelfieFile(){ const file = selected('selfie_file'); if (!file) return; if (!['image/jpeg','image/png'].includes(file.type) || file.size > maxFileBytes) { $('selfie_file').value = ''; return showStepError('Utilisez une image JPG/PNG de moins de 10 Mo.'); } selfieFile = file; const reader = new FileReader(); reader.onload = () => { selfie = reader.result; $('preview').src = selfie; $('preview').classList.remove('hidden'); clearStepError(); }; reader.readAsDataURL(file); }
+      function showError(message){ if (currentStep !== 6) { currentStep = 6; renderStep(); } $('msg').innerHTML = '<span class="err">' + escapeHtml(message) + '</span>'; }
+      function selected(id){ return $(id)?.files && $(id).files[0]; }
+      function requiredFiles(){ if (role === 'ride') { const files = {identity:selected('identity'),vtc:selected('vtc'),licence:selected('ride_licence'),business:selected('ride_business'),insurance:selected('ride_insurance'),carte_grise:selected('ride_carte_grise')}; return files; } const files = {identity:selected('identity'), business:selected('courier_business'), bag:selected('bag'), vehicle_photo:selected('vehicle_photo')}; if (motorVehicles.has(vehicle)) { Object.assign(files,{licence:selected('courier_licence'),insurance:selected('courier_insurance'),carte_grise:selected('courier_carte_grise')}); if ($('country').value === 'FR') files.transport_licence = selected('transport_licence'); } return files; }
+      function validate(files){ for (let step = 0; step < 6; step += 1) { const problem = validateStep(step); if (problem) { currentStep = step; renderStep(); return problem; } } const tooLarge = [...Object.values(files),selected('profile_photo')].filter(Boolean).find(file => file.size > maxFileBytes); if (tooLarge) return 'Chaque fichier doit faire moins de 10 Mo.'; return ''; }
+      function validateFileInput(input){ const file = input.files?.[0]; if (!file) return true; const acceptsPdf = input.accept.includes('application/pdf'), validType = allowedTypes.has(file.type) && (acceptsPdf || file.type !== 'application/pdf'); if (!validType || file.size > maxFileBytes) { input.value = ''; updateFileState(input); showStepError(!validType ? 'Format non accepté. Utilisez JPG, PNG' + (acceptsPdf ? ' ou PDF.' : '.') : 'Le fichier doit faire moins de 10 Mo.'); return false; } clearStepError(); updateFileState(input); return true; }
+      function updateFileState(input){ const file = input.files?.[0], state = document.querySelector(`[data-file-state="${input.id}"]`), badge = document.querySelector(`[data-file-badge="${input.id}"]`); if (state) { state.textContent = file ? `✓ ${file.name}` : 'Aucun fichier ajouté'; state.classList.toggle('ready',Boolean(file)); } if (badge) { badge.textContent = file ? 'Ajouté' : input.id === 'profile_photo' ? 'Optionnel' : 'Obligatoire'; badge.classList.toggle('ready',Boolean(file)); } }
+      function bindInputs(){ document.querySelectorAll('input.file').forEach(input => input.addEventListener('change',() => validateFileInput(input))); $('selfie_file').addEventListener('change',handleSelfieFile); ['name','phone','address'].forEach(id => $(id).addEventListener('input',() => { markInvalid(id,false); scheduleDraftSave(); })); $('consent').addEventListener('change',saveDraft); }
 
-      function snap(){
-        const video = $('cam');
-        if (!video.videoWidth) return showError('La caméra n’est pas encore prête. Réessayez.');
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        selfie = canvas.toDataURL('image/jpeg', .86);
-        $('preview').src = selfie; $('preview').classList.remove('hidden');
-        $('msg').innerHTML = '<span class="ok">✓ Selfie enregistré.</span>';
-      }
-      function showError(message){ $('msg').innerHTML = '<span class="err">' + message + '</span>'; }
-      function selected(id){ return $(id).files && $(id).files[0]; }
-      function requiredFiles(){
-        if (role === 'ride') {
-          const files = {
-          identity:selected('identity'), vtc:selected('vtc'), licence:selected('ride_licence'), business:selected('ride_business'),
-          insurance:selected('ride_insurance'), carte_grise:selected('ride_carte_grise')
-          };
-          return files;
-        }
-        const files = {
-          identity:selected('identity'), business:selected('courier_business'), bag:selected('bag'), vehicle_photo:selected('vehicle_photo')
-        };
-        if (motorVehicles.has(vehicle)) {
-          Object.assign(files, {
-            licence:selected('courier_licence'), insurance:selected('courier_insurance'), carte_grise:selected('courier_carte_grise')
-          });
-          if ($('country').value === 'FR') files.transport_licence = selected('transport_licence');
-        }
-        return files;
-      }
-      function validate(files){
-        if (!$('name').value.trim()) return 'Saisissez votre nom complet.';
-        if (!$('phone').value.trim()) return 'Saisissez votre numéro de téléphone.';
-        if (!$('address').value.trim()) return 'Saisissez votre adresse.';
-        if (Object.values(files).some(file => !file)) return 'Ajoutez tous les documents obligatoires.';
-        const tooLarge = [...Object.values(files), selected('profile_photo')].filter(Boolean).find(file => file.size > 10 * 1024 * 1024);
-        if (tooLarge) return 'Chaque fichier doit faire moins de 10 Mo.';
-        if (!selfie) return 'Prenez votre selfie en direct.';
-        if (!$('consent').checked) return 'Acceptez la vérification pour continuer.';
-        return '';
-      }
-      async function upload(userId, key, file){
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(-90);
-        const path = userId + '/' + Date.now() + '-' + key + '-' + safeName;
-        const {data,error} = await sb.storage.from('partner-documents').upload(path, file, {cacheControl:'3600',upsert:false});
-        if (error) throw error;
-        return data.path;
-      }
-      async function saveRideDocuments(userId, docs){
-        for (const [documentType,filePath] of Object.entries(docs)) {
-          const {data:existing,error:readError} = await sb.from('driver_documents')
-            .select('id,status').eq('driver_id', userId).eq('document_type', documentType).maybeSingle();
-          if (readError) throw readError;
-          if (existing) {
-            if (existing.status === 'approved') continue;
-            const {error:updateError} = await sb.from('driver_documents').update({
-              file_path:filePath,status:'pending',rejection_reason:null,updated_at:new Date().toISOString()
-            }).eq('id', existing.id);
-            if (updateError) throw updateError;
-          } else {
-            const {error:insertError} = await sb.from('driver_documents').insert({
-              driver_id:userId,document_type:documentType,file_path:filePath
-            });
-            if (insertError) throw insertError;
-          }
-        }
-      }
+      function saveDraft(){ try { const draft = {role,vehicle,name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),country:$('country').value,step:Math.min(currentStep,2),updatedAt:new Date().toISOString()}; localStorage.setItem(draftKey,JSON.stringify(draft)); $('saveState').textContent = '✓ Brouillon enregistré'; $('saveState').classList.add('saved'); } catch (_) { $('saveState').textContent = 'Brouillon local indisponible'; } }
+      function scheduleDraftSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft,300); }
+      function restoreDraft(){ try { const draft = JSON.parse(localStorage.getItem(draftKey) || 'null'); if (!draft) return; if (!requestedRole && ['ride','courier'].includes(draft.role)) role = draft.role; if (['bike','ebike','scooter','moto','car'].includes(draft.vehicle)) vehicle = draft.vehicle; $('name').value = String(draft.name || '').slice(0,120); $('phone').value = String(draft.phone || '').slice(0,24); $('address').value = String(draft.address || '').slice(0,220); currentStep = Math.max(0,Math.min(2,Number(draft.step)||0)); $('saveState').textContent = '✓ Brouillon restauré'; $('saveState').classList.add('saved'); } catch (_) { localStorage.removeItem(draftKey); } }
+      function clearDraft(){ try { localStorage.removeItem(draftKey); } catch (_) {} }
+      function escapeHtml(value){ return String(value ?? '').replace(/[&<>'"]/g,char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
+      function renderReview(){ const values = [['Activité',role === 'ride' ? 'Chauffeur VTC' : 'Livreur'],['Nom',$('name').value.trim()],['Téléphone',$('phone').value.trim()],['Adresse',$('address').value.trim()],...(role === 'courier' ? [['Véhicule',{bike:'Vélo',ebike:'VAE',scooter:'Scooter',moto:'Moto',car:'Voiture'}[vehicle]]] : [])]; $('reviewList').innerHTML = values.map(([label,value]) => `<div class="review-item"><span class="review-label">${escapeHtml(label)}</span><span class="review-value">${escapeHtml(value)}</span></div>`).join(''); const docs = Object.values(requiredFiles()).filter(Boolean).map(file => file.name); if (selected('profile_photo')) docs.push(selected('profile_photo').name); docs.push('Selfie de vérification'); $('reviewDocs').innerHTML = docs.map(name => `<li>${escapeHtml(name)}</li>`).join(''); }
+
+      async function upload(userId,key,file){ const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'-').slice(-90); const path = userId + '/' + Date.now() + '-' + key + '-' + safeName; const {data,error} = await sb.storage.from('partner-documents').upload(path,file,{cacheControl:'3600',upsert:false}); if (error) throw error; return data.path; }
+      async function saveRideDocuments(userId,docs){ for (const [documentType,filePath] of Object.entries(docs)) { const {data:existing,error:readError} = await sb.from('driver_documents').select('id,status').eq('driver_id',userId).eq('document_type',documentType).maybeSingle(); if (readError) throw readError; if (existing) { if (existing.status === 'approved') continue; const {error:updateError} = await sb.from('driver_documents').update({file_path:filePath,status:'pending',rejection_reason:null,updated_at:new Date().toISOString()}).eq('id',existing.id); if (updateError) throw updateError; } else { const {error:insertError} = await sb.from('driver_documents').insert({driver_id:userId,document_type:documentType,file_path:filePath}); if (insertError) throw insertError; } } }
+      function updateSubmitProgress(done,total,label){ $('submitProgress').classList.add('visible'); $('submitProgressFill').style.width = `${Math.max(4,(done/total)*100)}%`; $('submitProgressText').textContent = label; }
       async function submitApplication(){
-        if (submitting) return;
-        const files = requiredFiles(), problem = validate(files);
-        if (problem) return showError(problem);
-        const {data:{user}} = await sb.auth.getUser();
-        if (!user) { openLogin(); return; }
-        const activeRole = accountRole.active();
-        if (activeRole && activeRole !== role) return showError('Déconnectez-vous avant d’utiliser un autre compte VASI.');
-        const {error: roleError} = await sb.rpc('vasi_claim_account_role', {p_role:role});
-        if (roleError) return showError('Ces identifiants appartiennent à un autre type de compte VASI. Utilisez des identifiants séparés.');
-        accountRole.remember(role);
-        submitting = true; $('submitButton').disabled = true; $('submitButton').textContent = 'Envoi en cours…';
+        if (submitting) return; const files = requiredFiles(), problem = validate(files); if (problem) return showStepError(problem);
+        const {data:{user}} = await sb.auth.getUser(); if (!user) { openLogin(); return; }
+        const activeRole = accountRole.active(); if (activeRole && activeRole !== role) return showError('Déconnectez-vous avant d’utiliser un autre compte VASI.');
+        const {error:roleError} = await sb.rpc('vasi_claim_account_role',{p_role:role}); if (roleError) return showError('Ces identifiants appartiennent à un autre type de compte VASI. Utilisez des identifiants séparés.');
+        accountRole.remember(role); submitting = true; $('nextButton').disabled = true; $('nextButton').textContent = 'Envoi en cours…';
         try {
-          const docs = {};
-          for (const [key,file] of Object.entries(files)) docs[key] = await upload(user.id, key, file);
-          if (selected('profile_photo')) docs.profile_photo = await upload(user.id, 'profile_photo', selected('profile_photo'));
-          const selfieBlob = await (await fetch(selfie)).blob();
-          docs.selfie = await upload(user.id, 'selfie', new File([selfieBlob], 'selfie.jpg', {type:'image/jpeg'}));
+          const uploadEntries = Object.entries(files); if (selected('profile_photo')) uploadEntries.push(['profile_photo',selected('profile_photo')]); const selfieUpload = selfieFile || new File([await (await fetch(selfie)).blob()],'selfie.jpg',{type:'image/jpeg'}); uploadEntries.push(['selfie',selfieUpload]); const docs = {};
+          for (let index = 0; index < uploadEntries.length; index += 1) { const [key,file] = uploadEntries[index]; updateSubmitProgress(index,uploadEntries.length + 2,`Envoi du document ${index + 1} sur ${uploadEntries.length}…`); docs[key] = await upload(user.id,key,file); }
+          updateSubmitProgress(uploadEntries.length,uploadEntries.length + 2,'Enregistrement sécurisé du dossier…');
           if (role === 'ride') {
-            const {data:existingDriver,error:driverReadError} = await sb.from('drivers').select('id,status').eq('id', user.id).maybeSingle();
-            if (driverReadError) throw driverReadError;
-            if (existingDriver?.status === 'approved') throw new Error('Votre dossier est déjà validé. Ouvrez l’application Chauffeur.');
-            const driverProfile = {full_name:$('name').value.trim(),phone:$('phone').value.trim()};
-            const driverWrite = existingDriver
-              ? sb.from('drivers').update({...driverProfile,updated_at:new Date().toISOString()}).eq('id', user.id)
-              : sb.from('drivers').insert({id:user.id,user_id:user.id,...driverProfile});
-            const {error:driverWriteError} = await driverWrite;
-            if (driverWriteError) throw driverWriteError;
-            if (existingDriver?.status === 'rejected') {
-              const {error:resubmitError} = await sb.rpc('vasi_resubmit_driver_application');
-              if (resubmitError) throw resubmitError;
-            }
-            await saveRideDocuments(user.id, docs);
+            const {data:existingDriver,error:driverReadError} = await sb.from('drivers').select('id,status').eq('id',user.id).maybeSingle(); if (driverReadError) throw driverReadError; if (existingDriver?.status === 'approved') throw new Error('Votre dossier est déjà validé. Ouvrez l’application Chauffeur.'); const driverProfile = {full_name:$('name').value.trim(),phone:$('phone').value.trim()}; const driverWrite = existingDriver ? sb.from('drivers').update({...driverProfile,updated_at:new Date().toISOString()}).eq('id',user.id) : sb.from('drivers').insert({id:user.id,user_id:user.id,...driverProfile}); const {error:driverWriteError} = await driverWrite; if (driverWriteError) throw driverWriteError; if (existingDriver?.status === 'rejected') { const {error:resubmitError} = await sb.rpc('vasi_resubmit_driver_application'); if (resubmitError) throw resubmitError; } await saveRideDocuments(user.id, docs);
           } else {
-            const {data:existingCourier,error:courierReadError} = await sb.from('delivery_drivers').select('id,application_status').eq('user_id', user.id).maybeSingle();
-            if (courierReadError) throw courierReadError;
-            if (existingCourier?.application_status === 'approved') throw new Error('Votre dossier est déjà validé. Ouvrez l’application Livreur.');
-            const courierProfile = {
-              full_name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),vehicle_type:vehicle,
-              documents:docs,accepted_policy_at:new Date().toISOString()
-            };
-            const courierWrite = existingCourier
-              ? sb.from('delivery_drivers').update({...courierProfile,updated_at:new Date().toISOString()}).eq('user_id', user.id)
-              : sb.from('delivery_drivers').insert({user_id:user.id,...courierProfile});
-            const {error:courierWriteError} = await courierWrite;
-            if (courierWriteError) throw courierWriteError;
-            if (existingCourier?.application_status === 'rejected') {
-              const {error:resubmitError} = await sb.rpc('vasi_resubmit_courier_application');
-              if (resubmitError) throw resubmitError;
-            }
+            const {data:existingCourier,error:courierReadError} = await sb.from('delivery_drivers').select('id,application_status').eq('user_id',user.id).maybeSingle(); if (courierReadError) throw courierReadError; if (existingCourier?.application_status === 'approved') throw new Error('Votre dossier est déjà validé. Ouvrez l’application Livreur.'); const courierProfile = {full_name:$('name').value.trim(),phone:$('phone').value.trim(),address:$('address').value.trim(),vehicle_type:vehicle,documents:docs,accepted_policy_at:new Date().toISOString()}; const courierWrite = existingCourier ? sb.from('delivery_drivers').update({...courierProfile,updated_at:new Date().toISOString()}).eq('user_id',user.id) : sb.from('delivery_drivers').insert({user_id:user.id,...courierProfile}); const {error:courierWriteError} = await courierWrite; if (courierWriteError) throw courierWriteError; if (existingCourier?.application_status === 'rejected') { const {error:resubmitError} = await sb.rpc('vasi_resubmit_courier_application'); if (resubmitError) throw resubmitError; }
           }
-          const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending',vasi_country:$('country').value};
-          await sb.auth.updateUser({data:metadata});
-          $('msg').innerHTML = '<span class="ok">✓ Dossier envoyé. Après validation, connectez vous-même votre compte bancaire (RIB) dans l’application VASI.</span>';
-          $('submitButton').textContent = 'Dossier envoyé';
-        } catch (error) {
-          showError('Envoi impossible : ' + (error.message || 'réessayez.'));
-          submitting = false; $('submitButton').disabled = false; $('submitButton').textContent = 'Envoyer pour validation';
-        }
+          updateSubmitProgress(uploadEntries.length + 1,uploadEntries.length + 2,'Finalisation de votre demande…'); const metadata = {vasi_partner_role:role,vasi_partner_name:$('name').value.trim(),vasi_partner_status:'pending',vasi_country:$('country').value}; const {error:metadataError} = await sb.auth.updateUser({data:metadata}); if (metadataError) throw metadataError; updateSubmitProgress(uploadEntries.length + 2,uploadEntries.length + 2,'Dossier envoyé.'); clearDraft(); stopCamera(); $('wizard').classList.add('hidden'); $('actionBar').classList.add('hidden'); $('success').classList.add('visible');
+        } catch (error) { showError('Envoi impossible : ' + (error.message || 'réessayez.')); submitting = false; $('nextButton').disabled = false; $('nextButton').textContent = 'Envoyer mon dossier'; }
       }
-      function openLogin(){
-        const returnUrl = 'partner-register-v2.html?role=' + encodeURIComponent(role) + '&surface=driver';
-        localStorage.setItem('vasi_driver_return', returnUrl);
-        accountRole.setIntent(role);
-        location.replace('auth.html?role=' + encodeURIComponent(role) + '&method=email&surface=driver');
-      }
-      async function startRegistration(){
-        const {data:{session},error} = await sb.auth.getSession();
-        if (error) {
-          document.querySelector('main').hidden = false;
-          showError('Connexion impossible. Revenez à l’application Driver et réessayez.');
-          return;
-        }
-        if (!session) { openLogin(); return; }
-        accountRole.setIntent(role);
-        document.querySelector('main').hidden = false;
-        $('country').value = VasiRegion.getCountry();
-        $('country').addEventListener('change', renderCountry);
-        renderCountry();
-        render();
-        startCamera();
-      }
-      startRegistration();
+      function openLogin(){ const returnUrl = 'partner-register-v2.html?role=' + encodeURIComponent(role) + '&surface=driver'; localStorage.setItem('vasi_driver_return', returnUrl); accountRole.setIntent(role); location.replace('auth.html?role=' + encodeURIComponent(role) + '&method=email&surface=driver&mode=register'); }
+      async function loadExistingApplication(user){ try { if (role === 'ride') { const {data} = await sb.from('drivers').select('full_name,phone,status').eq('id',user.id).maybeSingle(); if (!data) return; if (!$('name').value) $('name').value = data.full_name || ''; if (!$('phone').value) $('phone').value = data.phone || ''; showApplicationStatus(data.status,'chauffeur'); } else { const {data} = await sb.from('delivery_drivers').select('full_name,phone,address,vehicle_type,application_status').eq('user_id',user.id).maybeSingle(); if (!data) return; if (!$('name').value) $('name').value = data.full_name || ''; if (!$('phone').value) $('phone').value = data.phone || ''; if (!$('address').value) $('address').value = data.address || ''; if (['bike','ebike','scooter','moto','car'].includes(data.vehicle_type)) vehicle = data.vehicle_type; showApplicationStatus(data.application_status,'livreur'); } } catch (_) {} }
+      function showApplicationStatus(status,label){ const banner = $('applicationStatus'); banner.className = 'status-banner visible'; if (status === 'approved') { banner.classList.add('approved'); banner.textContent = `✓ Votre compte ${label} est déjà validé. Vous pouvez ouvrir VASI Driver.`; } else if (status === 'rejected') { banner.classList.add('rejected'); banner.textContent = 'Action requise : corrigez les documents demandés puis renvoyez votre dossier.'; } else banner.textContent = 'Votre dossier existe déjà et reste en cours de vérification. Toute correction sera enregistrée avant un nouvel envoi.'; }
+      async function startRegistration(){ const {data:{session},error} = await sb.auth.getSession(); if (error) { document.querySelector('main').hidden = false; $('actionBar').classList.add('hidden'); showError('Connexion impossible. Revenez à l’application Driver et réessayez.'); return; } if (!session) { openLogin(); return; } accountRole.setIntent(role); document.querySelector('main').hidden = false; $('country').value = 'FR'; restoreDraft(); bindInputs(); renderCountry(); await loadExistingApplication(session.user); render(); }
+      window.addEventListener('beforeunload',stopCamera); startRegistration();
     </script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-navigation.js?v=4"></script>
-</body>
+  </body>
 </html>
