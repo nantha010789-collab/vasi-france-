@@ -26,22 +26,25 @@ test("customer home contains no provider login or registration entry", () => {
   }
 });
 
-test("driver app exposes only the chauffeur role", () => {
+test("driver app exposes chauffeur and delivery without customer or restaurant roles", () => {
   const home = read("driver-home.html");
   const auth = read("auth.html");
   const register = read("partner-register-v2.html");
   const manifest = JSON.parse(read("driver-manifest.webmanifest"));
   assert.match(home, /role=ride&amp;surface=driver/);
-  assert.doesNotMatch(home, /role=courier|id="courierChoice"|Espace coursier/);
+  assert.match(home, /role=courier&amp;surface=driver/);
+  assert.match(home, /id="courierChoice"/);
+  assert.match(home, /Espace livreur/);
   assert.doesNotMatch(home, /role=restaurant/);
-  assert.match(auth, /driver: new Set\(\["ride"\]\)/);
+  assert.match(auth, /driver: new Set\(\["ride", "courier"\]\)/);
   assert.match(auth, /customer: new Set\(\["customer"\]\)/);
   assert.match(auth, /partner: new Set\(\["restaurant"\]\)/);
   assert.match(auth, /&surface=driver/);
-  assert.match(register, /const driverOnly = pageParams\.get\('surface'\) === 'driver'/);
-  assert.match(register, /driverOnly \? 'ride'/);
-  assert.equal(manifest.shortcuts.length, 1);
+  assert.match(register, /const driverSurface = pageParams\.get\('surface'\) === 'driver'/);
+  assert.match(register, /\['ride','courier'\]\.includes\(requestedRole\)/);
+  assert.equal(manifest.shortcuts.length, 2);
   assert.equal(manifest.shortcuts[0].url, "/driver.html");
+  assert.equal(manifest.shortcuts[1].url, "/delivery-driver.html");
   assert.match(auth, /standalone && driverRole && !document\.referrer/);
   assert.match(auth, /driver-home\.html\?source=legacy-shortcut/);
 });
@@ -119,7 +122,7 @@ test("driver entry stays in one branded viewport on phones and tablets", () => {
   assert.match(home, /--blue:#1557ff/);
   assert.match(home, /--red:#ef3340/);
   assert.match(home, /assets\/vehicles\/go\.webp/);
-  assert.doesNotMatch(home, /assets\/delivery-service\.webp/);
+  assert.match(home, /assets\/delivery-service\.webp/);
   assert.doesNotMatch(home, /--green|#72e394|#173522|#183a25/);
   assert.equal(manifest.theme_color, "#06183f");
 });
