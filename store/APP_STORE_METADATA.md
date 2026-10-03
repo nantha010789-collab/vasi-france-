@@ -29,7 +29,7 @@
 - Review notes: provide an approved reviewer restaurant account with a sample menu.
 
 ## Screenshots to prepare
-- Customer: Home, Ride map, Vehicle choice, Safety Centre, Eats, Order tracking
+- Customer: Home, Ride map, Vehicle choice, Safety Centre, Food, Order tracking
 - Driver: Driver home, Online state, Ride offer, Navigation, Earnings
 - Partner: Orders, Menu, Opening status, Payout status
 
