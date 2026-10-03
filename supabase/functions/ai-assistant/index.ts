@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   if (error || !user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const { task, input } = await req.json().catch(() => ({ task: null, input: {} }));
-  const allowed = new Set(["driver_matching", "eta_prediction", "customer_support", "eats_recommendation"]);
+  const allowed = new Set(["driver_matching", "eta_prediction", "customer_support", "food_recommendation"]);
   if (!allowed.has(task)) return Response.json({ error: "Unsupported AI task" }, { status: 400 });
 
   // Provider-neutral boundary: connect the chosen AI provider here using server-only secrets.
