@@ -45,7 +45,7 @@ async function configureWeeklyMondayPayout(accountId: string) {
   return data;
 }
 
-async function releaseEatsCourierPayout(
+async function releaseFoodCourierPayout(
   serviceClient: ReturnType<typeof createClient>,
   courier: Record<string, unknown>,
   orderId: string,
@@ -54,7 +54,7 @@ async function releaseEatsCourierPayout(
   if (!stripeKey) return { status: "pending", message: "Payout is queued" };
 
   const { data: order, error: orderError } = await serviceClient
-    .from("eats_orders")
+    .from("food_orders")
     .select(
       "id,currency,courier_offer_amount,courier_payout_status,courier_transfer_id,stripe_payment_intent_id,delivery_driver_id",
     )
@@ -68,11 +68,11 @@ async function releaseEatsCourierPayout(
   const accountId = String(courier.stripe_account_id || "");
   if (!accountId) {
     await serviceClient
-      .from("eats_orders")
+      .from("food_orders")
       .update({ courier_payout_status: "requires_onboarding" })
       .eq("id", orderId);
     await serviceClient
-      .from("courier_eats_earnings")
+      .from("courier_food_earnings")
       .update({ status: "requires_onboarding", updated_at: new Date().toISOString() })
       .eq("order_id", orderId);
     return { status: "requires_onboarding", message: "Connect your RIB to receive this earning" };
@@ -87,11 +87,11 @@ async function releaseEatsCourierPayout(
       !account.payouts_enabled
     ) {
       await serviceClient
-        .from("eats_orders")
+        .from("food_orders")
         .update({ courier_payout_status: "requires_onboarding" })
         .eq("id", orderId);
       await serviceClient
-        .from("courier_eats_earnings")
+        .from("courier_food_earnings")
         .update({ status: "requires_onboarding", updated_at: new Date().toISOString() })
         .eq("order_id", orderId);
       return { status: "requires_onboarding", message: "Finish RIB verification to receive this earning" };
@@ -114,18 +114,18 @@ async function releaseEatsCourierPayout(
         currency: String(order.currency || "eur").toLowerCase(),
         destination: accountId,
         source_transaction: chargeId,
-        transfer_group: `VASI_EATS_${orderId}`,
+        transfer_group: `VASI_FOOD_${orderId}`,
         metadata: {
-          vasi_service: "eats",
+          vasi_service: "food",
           vasi_order_id: orderId,
           vasi_courier_id: String(courier.id),
         },
       },
-      { idempotencyKey: `vasi-eats-courier-${orderId}` },
+      { idempotencyKey: `vasi-food-courier-${orderId}` },
     );
     const paidAt = new Date().toISOString();
     await serviceClient
-      .from("eats_orders")
+      .from("food_orders")
       .update({
         courier_payout_status: "paid",
         courier_transfer_id: transfer.id,
@@ -133,7 +133,7 @@ async function releaseEatsCourierPayout(
       })
       .eq("id", orderId);
     await serviceClient
-      .from("courier_eats_earnings")
+      .from("courier_food_earnings")
       .update({
         status: "paid",
         stripe_transfer_id: transfer.id,
@@ -145,18 +145,18 @@ async function releaseEatsCourierPayout(
   } catch (error) {
     const message = error instanceof Error ? error.message : "Payout could not be released";
     await serviceClient
-      .from("eats_orders")
+      .from("food_orders")
       .update({ courier_payout_status: "failed" })
       .eq("id", orderId);
     await serviceClient
-      .from("courier_eats_earnings")
+      .from("courier_food_earnings")
       .update({ status: "failed", failure_reason: message, updated_at: new Date().toISOString() })
       .eq("order_id", orderId);
     return { status: "failed", message: "Delivery is complete; payout needs review" };
   }
 }
 
-async function releaseEatsRestaurantPayout(
+async function releaseFoodRestaurantPayout(
   serviceClient: ReturnType<typeof createClient>,
   orderId: string,
 ) {
@@ -164,7 +164,7 @@ async function releaseEatsRestaurantPayout(
   if (!stripeKey) return { status: "pending", message: "Restaurant payout is queued" };
 
   const { data: order, error: orderError } = await serviceClient
-    .from("eats_orders")
+    .from("food_orders")
     .select(
       "id,restaurant_id,restaurant_net,delivery_fee,delivery_mode,currency,restaurant_payout_status,restaurant_transfer_id,stripe_payment_intent_id,payment_status,status",
     )
@@ -187,7 +187,7 @@ async function releaseEatsRestaurantPayout(
   const accountId = String(restaurant.stripe_account_id || "");
   if (!accountId || !restaurant.stripe_payouts_enabled) {
     await serviceClient
-      .from("eats_orders")
+      .from("food_orders")
       .update({ restaurant_payout_status: "requires_onboarding" })
       .eq("id", orderId);
     return {
@@ -206,7 +206,7 @@ async function releaseEatsRestaurantPayout(
       !account.payouts_enabled
     ) {
       await serviceClient
-        .from("eats_orders")
+        .from("food_orders")
         .update({ restaurant_payout_status: "requires_onboarding" })
         .eq("id", orderId);
       return {
@@ -235,18 +235,18 @@ async function releaseEatsRestaurantPayout(
         currency: String(order.currency || "eur").toLowerCase(),
         destination: accountId,
         source_transaction: chargeId,
-        transfer_group: `VASI_EATS_${orderId}`,
+        transfer_group: `VASI_FOOD_${orderId}`,
         metadata: {
-          vasi_service: "eats",
+          vasi_service: "food",
           vasi_order_id: orderId,
           vasi_restaurant_id: String(restaurant.id),
         },
       },
-      { idempotencyKey: `vasi-eats-restaurant-${orderId}` },
+      { idempotencyKey: `vasi-food-restaurant-${orderId}` },
     );
     const paidAt = new Date().toISOString();
     await serviceClient
-      .from("eats_orders")
+      .from("food_orders")
       .update({
         restaurant_payout_status: "paid",
         restaurant_transfer_id: transfer.id,
@@ -261,7 +261,7 @@ async function releaseEatsRestaurantPayout(
     };
   } catch (error) {
     await serviceClient
-      .from("eats_orders")
+      .from("food_orders")
       .update({ restaurant_payout_status: "failed" })
       .eq("id", orderId);
     return {
@@ -312,9 +312,9 @@ Deno.serve(async (req: Request) => {
     return id && id.length <= 128 ? id : "";
   };
   const currentJobs = async () => {
-    const [eats, delivery] = await Promise.all([
+    const [food, delivery] = await Promise.all([
       serviceClient
-        .from("eats_orders")
+        .from("food_orders")
         .select("*")
         .eq("delivery_driver_id", courier.id)
         .in("status", ["accepted", "picked_up"])
@@ -330,14 +330,14 @@ Deno.serve(async (req: Request) => {
         .limit(1)
         .maybeSingle(),
     ]);
-    if (eats.error) throw eats.error;
+    if (food.error) throw food.error;
     if (delivery.error) throw delivery.error;
-    return { eat: eats.data ?? null, delivery: delivery.data ?? null };
+    return { eat: food.data ?? null, delivery: delivery.data ?? null };
   };
 
   if (action === "get_profile") {
     const { data: earnings } = await sb
-      .from("courier_eats_earnings")
+      .from("courier_food_earnings")
       .select("amount,currency,status,created_at")
       .order("created_at", { ascending: false })
       .limit(50);
@@ -501,10 +501,10 @@ Deno.serve(async (req: Request) => {
       const jobs = await currentJobs();
       if (jobs.eat || jobs.delivery)
         return json({
-          eats: [],
+          food: [],
           deliveries: [],
           active_job: jobs.eat
-            ? { type: "eats", job: jobs.eat }
+            ? { type: "food", job: jobs.eat }
             : { type: "delivery", job: jobs.delivery },
         });
     } catch (error) {
@@ -513,9 +513,9 @@ Deno.serve(async (req: Request) => {
         400,
       );
     }
-    const [eats, deliveries] = await Promise.all([
+    const [food, deliveries] = await Promise.all([
       serviceClient
-        .from("eats_orders")
+        .from("food_orders")
         .select(
           "id,restaurant_name,delivery_address,courier_offer_amount,delivery_distance_km,estimated_delivery_minutes,currency,created_at,status,payment_status",
         )
@@ -535,12 +535,12 @@ Deno.serve(async (req: Request) => {
         .order("created_at", { ascending: false })
         .limit(20),
     ]);
-    if (eats.error) return json({ error: eats.error.message }, 400);
+    if (food.error) return json({ error: food.error.message }, 400);
     if (deliveries.error) return json({ error: deliveries.error.message }, 400);
-    return json({ eats: eats.data ?? [], deliveries: deliveries.data ?? [] });
+    return json({ food: food.data ?? [], deliveries: deliveries.data ?? [] });
   }
 
-  if (action === "accept_eats" || action === "accept_delivery") {
+  if (action === "accept_food" || action === "accept_delivery") {
     if (!courier.online)
       return json({ error: "Go online before accepting a courier job" }, 403);
     const id = orderId();
@@ -556,9 +556,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (action === "accept_eats") {
+    if (action === "accept_food") {
       const { data, error } = await serviceClient
-        .from("eats_orders")
+        .from("food_orders")
         .update({ delivery_driver_id: courier.id, status: "accepted", accepted_at: now })
         .eq("id", id)
         .eq("status", "pending")
@@ -593,33 +593,33 @@ Deno.serve(async (req: Request) => {
     return json({ delivery: data });
   }
 
-  if (action === "update_eats" || action === "update_delivery") {
+  if (action === "update_food" || action === "update_delivery") {
     const id = orderId();
     if (!id) return json({ error: "Valid order_id required" }, 400);
     const status = String(body.status || "");
     if (!["picked_up", "delivered"].includes(status))
       return json(
-        { error: action === "update_eats" ? "Invalid food order status" : "Invalid delivery status" },
+        { error: action === "update_food" ? "Invalid food order status" : "Invalid delivery status" },
         400,
       );
 
-    if (action === "update_eats" && status === "delivered") {
-      const { data, error } = await sb.rpc("vasi_courier_complete_eats_order", {
+    if (action === "update_food" && status === "delivered") {
+      const { data, error } = await sb.rpc("vasi_courier_complete_food_order", {
         p_order_id: id,
         p_pin: String(body.pin || ""),
       });
       if (error) return json({ error: error.message }, 400);
       if (!data?.ok) return json({ error: data?.error || "Delivery PIN could not be verified" }, 409);
-      const payout = await releaseEatsCourierPayout(serviceClient, courier, id);
-      const restaurantPayout = await releaseEatsRestaurantPayout(serviceClient, id);
+      const payout = await releaseFoodCourierPayout(serviceClient, courier, id);
+      const restaurantPayout = await releaseFoodRestaurantPayout(serviceClient, id);
       return json({ eat: data.eat, payout, restaurant_payout: restaurantPayout });
     }
 
     const patch: Record<string, unknown> = { status };
     if (status === "picked_up") patch.picked_up_at = now;
     if (status === "delivered") patch.delivered_at = now;
-    const table = action === "update_eats" ? "eats_orders" : "delivery_orders";
-    const orderClient = action === "update_eats" ? serviceClient : sb;
+    const table = action === "update_food" ? "food_orders" : "delivery_orders";
+    const orderClient = action === "update_food" ? serviceClient : sb;
     const { data, error } = await orderClient
       .from(table)
       .update(patch)
@@ -635,7 +635,7 @@ Deno.serve(async (req: Request) => {
         .from("delivery_drivers")
         .update({ online: false, updated_at: now })
         .eq("id", courier.id);
-    return json(action === "update_eats" ? { eat: data } : { delivery: data });
+    return json(action === "update_food" ? { eat: data } : { delivery: data });
   }
 
   return json({ error: "Unknown action" }, 400);

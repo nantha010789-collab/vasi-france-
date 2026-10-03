@@ -410,14 +410,14 @@ test("all paid provider roles require a verified RIB and restaurants receive ide
   assert.match(migration, /delivery_pin/);
   assert.match(dashboard, /\/api\/restaurant-stripe-onboarding/);
   assert.match(dashboard, /Complete delivery · enter PIN/);
-  assert.match(partnerApi, /idempotencyKey: `vasi-eats-restaurant-/);
+  assert.match(partnerApi, /idempotencyKey: `vasi-food-restaurant-/);
   assert.match(partnerApi, /source_transaction/);
   assert.match(partnerApi, /provider-payout-service/);
-  assert.match(courierService, /releaseEatsRestaurantPayout/);
+  assert.match(courierService, /releaseFoodRestaurantPayout/);
   assert.match(providerPayout, /driver_onboarding/);
   assert.match(providerPayout, /restaurant_onboarding/);
   assert.match(providerPayout, /restaurant_complete_own_delivery/);
-  assert.match(providerPayout, /idempotencyKey: `vasi-eats-restaurant-/);
+  assert.match(providerPayout, /idempotencyKey: `vasi-food-restaurant-/);
   assert.match(providerPayout, /source_transaction/);
   assert.match(webhook, /vasi_restaurant_id/);
   assert.match(driverOnboarding, /provider-payout-service/);
@@ -468,20 +468,20 @@ test("VASI Food prices a paid order and protects the courier earning", async () 
     if (value.endsWith("/auth/v1/user")) return response({ id: "customer-1" });
     if (value.includes("nominatim.openstreetmap.org")) return response([{ display_name: "1 Rue de Paris, 60100 Creil", lat: "49.2583", lon: "2.4829" }]);
     if (value.includes("router.project-osrm.org")) return response({ routes: [{ distance: 3_000, duration: 600 }] });
-    if (value.endsWith("/rest/v1/eats_orders") && options.method === "POST") {
+    if (value.endsWith("/rest/v1/food_orders") && options.method === "POST") {
       insertedOrder = JSON.parse(options.body);
       return response([{ id: "order-123" }], 201);
     }
     throw new Error(`Unexpected request: ${value}`);
   };
-  const { default: eatsOrder } = await import(`../api/eats-order.js?test=${Date.now()}`);
+  const { default: foodOrder } = await import(`../api/food-order.js?test=${Date.now()}`);
   const req = {
     method: "POST",
     headers: { authorization: "Bearer customer-token" },
     body: { action: "book", restaurant_id: "restaurant-1", items: [{ id: "item-1", quantity: 2 }], delivery_address: "1 Rue de Paris, Creil" },
   };
   const res = mockRes();
-  await eatsOrder(req, res);
+  await foodOrder(req, res);
   assert.equal(res.statusCode, 201);
   assert.equal(res.body.order_id, "order-123");
   assert.equal(res.body.payment_required, true);
@@ -497,22 +497,23 @@ test("VASI Food prices a paid order and protects the courier earning", async () 
 });
 
 test("Food courier pricing is always at least €4 and €20 per estimated active hour", async () => {
-  const { calculateEatsPricing } = await import(`../api/eats-pricing.js?test=${Date.now()}`);
-  const shortJob = calculateEatsPricing({ subtotal: 10, distanceKm: 0.5, routeMinutes: 2 });
+  const { calculateFoodPricing } = await import(`../api/food-pricing.js?test=${Date.now()}`);
+  const shortJob = calculateFoodPricing({ subtotal: 10, distanceKm: 0.5, routeMinutes: 2 });
   assert.equal(shortJob.courierOfferAmount, 4);
-  const longJob = calculateEatsPricing({ subtotal: 30, distanceKm: 1, routeMinutes: 52 });
+  const longJob = calculateFoodPricing({ subtotal: 30, distanceKm: 1, routeMinutes: 52 });
   assert.ok(longJob.courierOfferAmount >= 20);
 });
 
 test("Food checkout and courier app enforce payment then PIN-gated RIB payout", async () => {
-  const [checkout, courier, service, migration] = await Promise.all([
-    readFile("eats-checkout.html", "utf8"),
+  const [checkout, courier, service, migration, foodMigration] = await Promise.all([
+    readFile("food-checkout.html", "utf8"),
     readFile("delivery-driver.html", "utf8"),
     readFile("supabase/functions/delivery-driver-service/index.ts", "utf8"),
     readFile("supabase/migrations/20260905000000_add_eats_courier_payouts.sql", "utf8"),
+    readFile("supabase/migrations/20261003192500_rename_eats_internals_to_food.sql", "utf8"),
   ]);
   assert.match(checkout, /js\.stripe\.com\/v3/);
-  assert.match(checkout, /eats-payment/);
+  assert.match(checkout, /food-payment/);
   assert.match(checkout, /Continue to secure payment/);
   assert.match(courier, /Connect bank account \(RIB\)/);
   assert.match(courier, /create_payout_onboarding/);
@@ -522,20 +523,23 @@ test("Food checkout and courier app enforce payment then PIN-gated RIB payout", 
   assert.match(service, /weekly_payout_days/);
   assert.match(service, /"monday"/);
   assert.match(service, /source_transaction/);
-  assert.match(service, /idempotencyKey: `vasi-eats-courier-/);
-  assert.match(service, /vasi_courier_complete_eats_order/);
+  assert.match(service, /idempotencyKey: `vasi-food-courier-/);
+  assert.match(service, /vasi_courier_complete_food_order/);
   assert.match(migration, /payment_status text/);
   assert.match(migration, /courier_eats_earnings/);
+  assert.match(foodMigration, /courier_food_earnings/);
+  assert.match(foodMigration, /vasi_courier_complete_food_order/);
 });
 
 test("restaurant commission is a permanent 10% for every delivery mode", async () => {
-  const [register, dashboard, classicAdmin, adminApp, migration, enforcement] = await Promise.all([
+  const [register, dashboard, classicAdmin, adminApp, migration, enforcement, foodMigration] = await Promise.all([
     readFile("restaurant-register-form.html", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("restaurant-admin.html", "utf8"),
     readFile("admin/app.js", "utf8"),
     readFile("supabase/migrations/20260904231000_set_restaurant_commission_to_ten_percent.sql", "utf8"),
     readFile("supabase/migrations/20260904231500_enforce_eats_commission_math.sql", "utf8"),
+    readFile("supabase/migrations/20261003192500_rename_eats_internals_to_food.sql", "utf8"),
   ]);
   assert.match(register, /Commission restaurant simple · 10 %/);
   assert.match(register, /Ma propre équipe · 10 %/);
@@ -548,20 +552,21 @@ test("restaurant commission is a permanent 10% for every delivery mode", async (
   assert.match(enforcement, /before insert or update of subtotal/);
   assert.match(enforcement, /security invoker/);
   assert.match(enforcement, /new\.restaurant_commission := round\(new\.subtotal \* 0\.10, 2\)/);
+  assert.match(foodMigration, /vasi_set_food_order_commission/);
 });
 
 test("Food surfaces expose competitor-grade ordering, tracking and operations essentials", async () => {
-  const [eats, customerOrders, restaurant, courier] = await Promise.all([
-    readFile("eats.html", "utf8"),
-    readFile("eats-orders.html", "utf8"),
+  const [food, customerOrders, restaurant, courier] = await Promise.all([
+    readFile("food.html", "utf8"),
+    readFile("food-orders.html", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
     readFile("delivery-driver.html", "utf8"),
   ]);
 
-  assert.match(eats, /Cuisine filters/);
-  assert.match(eats, /t\('Allergens'\)/);
-  assert.match(eats, /View basket/);
-  assert.match(eats, /eats-orders\.html/);
+  assert.match(food, /Cuisine filters/);
+  assert.match(food, /t\('Allergens'\)/);
+  assert.match(food, /View basket/);
+  assert.match(food, /food-orders\.html/);
   assert.match(customerOrders, /Order progress/);
   assert.match(customerOrders, /Courier is on the way/);
   assert.doesNotMatch(customerOrders, /restaurant-register|restaurant-dashboard|Join VASI|Partner dashboard/);
@@ -593,7 +598,7 @@ test("restaurant owner workspace supports professional menu, profile and live or
   assert.match(partner, /vasi_restaurant_delete_item/);
   assert.match(partner, /vasi_restaurant_update_profile/);
   assert.match(partner, /vasi_restaurant_accept_order/);
-  assert.match(partner, /vasi-eats-restaurant-reject-/);
+  assert.match(partner, /vasi-food-restaurant-reject-/);
   assert.match(partner, /payment_status: "refunded"/);
   assert.match(migration, /security definer/);
   assert.match(migration, /restaurant\.owner_id = auth\.uid\(\)/);
@@ -601,21 +606,21 @@ test("restaurant owner workspace supports professional menu, profile and live or
 });
 
 test("public surfaces distinguish an empty catalog and ship consistent localization and browser protections", async () => {
-  const [eats, delivery, auth, languages, vercel] = await Promise.all([
-    readFile("eats.html", "utf8"),
+  const [food, delivery, auth, languages, vercel] = await Promise.all([
+    readFile("food.html", "utf8"),
     readFile("delivery.html", "utf8"),
     readFile("auth.html", "utf8"),
     readFile("vasi-languages.js", "utf8"),
     readFile("vercel.json", "utf8"),
   ]);
 
-  assert.match(eats, /catalog\.length/);
-  assert.match(eats, /No restaurants are available yet\./);
-  assert.match(eats, /Approved partners will appear here/);
-  assert.match(eats, /class="top-actions"><button[^>]+>Orders<\/button><\/div>/);
-  assert.doesNotMatch(eats, /location\.href='index\.html'">Home<\/button>/);
-  assert.doesNotMatch(eats, /<aside class="join"|restaurant-register|restaurant-dashboard|Own a restaurant/);
-  assert.match(eats, /empty-icon/);
+  assert.match(food, /catalog\.length/);
+  assert.match(food, /No restaurants are available yet\./);
+  assert.match(food, /Approved partners will appear here/);
+  assert.match(food, /class="top-actions"><button[^>]+>Orders<\/button><\/div>/);
+  assert.doesNotMatch(food, /location\.href='index\.html'">Home<\/button>/);
+  assert.doesNotMatch(food, /<aside class="join"|restaurant-register|restaurant-dashboard|Own a restaurant/);
+  assert.match(food, /empty-icon/);
   assert.match(delivery, /Get a new quote for the parcel\./);
   assert.match(auth, /t\(customer \? "Customer login"/);
   assert.doesNotMatch(auth, /\$\("title"\)\.textContent = customer \? "Connexion client"/);
@@ -1626,19 +1631,20 @@ test("ride checkout accepts Google Pay through Stripe wallets", async () => {
 });
 
 test("European mobility growth features are connected end to end", async () => {
-  const [rideFlow, createRide, driver, eatsCheckout, eatsOrder, groupPage, groupApi, businessPage, account, restaurant, payment, migration, flightApi, worker] = await Promise.all([
+  const [rideFlow, createRide, driver, foodCheckout, foodOrder, groupPage, groupApi, businessPage, account, restaurant, payment, migration, foodMigration, flightApi, worker] = await Promise.all([
     readFile("ride-flow.html", "utf8"),
     readFile("api/create-ride.js", "utf8"),
     readFile("driver.html", "utf8"),
-    readFile("eats-checkout.html", "utf8"),
-    readFile("api/eats-order.js", "utf8"),
+    readFile("food-checkout.html", "utf8"),
+    readFile("api/food-order.js", "utf8"),
     readFile("group-order.html", "utf8"),
     readFile("api/group-order.js", "utf8"),
     readFile("business-account.html", "utf8"),
     readFile("account.html", "utf8"),
     readFile("restaurant-dashboard.html", "utf8"),
-    readFile("supabase/functions/eats-payment/index.ts", "utf8"),
+    readFile("supabase/functions/food-payment/index.ts", "utf8"),
     readFile("supabase/migrations/20260907143000_add_mobility_growth_features.sql", "utf8"),
+    readFile("supabase/migrations/20261003192500_rename_eats_internals_to_food.sql", "utf8"),
     readFile("api/flight-status.js", "utf8"),
     readFile("sw.js", "utf8"),
   ]);
@@ -1651,17 +1657,18 @@ test("European mobility growth features are connected end to end", async () => {
   assert.match(driver, /vasi_driver_cancel_and_reassign/);
   assert.match(driver, /Download monthly earnings CSV/);
   assert.match(driver, /expires_at/);
-  assert.match(eatsCheckout, /id="deliveryTiming"/);
-  assert.match(eatsCheckout, /id="unavailablePreference"/);
-  assert.match(eatsOrder, /scheduled_for: scheduledFor/);
+  assert.match(foodCheckout, /id="deliveryTiming"/);
+  assert.match(foodCheckout, /id="unavailablePreference"/);
+  assert.match(foodOrder, /scheduled_for: scheduledFor/);
   assert.match(groupPage, /Close group & checkout/);
-  assert.match(groupApi, /eats_group_order_members/);
+  assert.match(groupApi, /food_group_order_members/);
   assert.match(businessPage, /vasi_generate_business_invoice/);
   assert.match(account, /business-account\.html/);
   assert.match(restaurant, /Unavailable item:/);
   assert.match(payment, /scheduled \? "scheduled" : "pending"/);
   assert.match(migration, /r\.service_options <@ d\.service_capabilities/);
   assert.match(migration, /release-vasi-scheduled-eats/);
+  assert.match(foodMigration, /release-vasi-scheduled-food/);
   assert.match(migration, /private\.is_business_member/);
   assert.match(flightApi, /AVIATIONSTACK_API_KEY/);
   assert.match(worker, /vasi-app-v\d+/);
@@ -1829,12 +1836,12 @@ test("airport passenger ready signal is authenticated and sent to the ride RPC",
 });
 
 test("customer, driver, courier and restaurant sessions stay separated", async () => {
-  const [auth, roleGuard, customer, customerEats, driver, courier, restaurantGate, restaurantForm, restaurantDashboard, partner, migration] =
+  const [auth, roleGuard, customer, customerFood, driver, courier, restaurantGate, restaurantForm, restaurantDashboard, partner, migration] =
     await Promise.all([
       readFile("auth.html", "utf8"),
       readFile("vasi-account-role.js", "utf8"),
       readFile("account.html", "utf8"),
-      readFile("eats-orders.html", "utf8"),
+      readFile("food-orders.html", "utf8"),
       readFile("driver.html", "utf8"),
       readFile("delivery-driver.html", "utf8"),
       readFile("restaurant-register.html", "utf8"),
@@ -1849,7 +1856,7 @@ test("customer, driver, courier and restaurant sessions stay separated", async (
   assert.match(roleGuard, /vasi_session_role/);
   assert.match(roleGuard, /signedInRole !== requiredRole/);
   assert.match(customer, /VasiAccountRole\.require\("customer"/);
-  assert.match(customerEats, /VasiAccountRole\.require\('customer'/);
+  assert.match(customerFood, /VasiAccountRole\.require\('customer'/);
   assert.match(driver, /accountRole\.require\("ride"/);
   assert.match(driver, /storageKey: "vasi-driver-auth"/);
   assert.match(courier, /accountRole\.require\("courier"/);

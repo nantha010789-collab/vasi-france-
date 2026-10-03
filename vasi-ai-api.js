@@ -19,6 +19,6 @@ window.VASI_AI = (() => {
     matchDriver: input => request('driver_matching', input),
     estimateEta: input => request('eta_prediction', input),
     support: input => request('customer_support', input),
-    recommendEats: input => request('eats_recommendation', input)
+    recommendFood: input => request('food_recommendation', input)
   };
 })();

@@ -97,7 +97,7 @@ async function stripeRequest(path, { method = "GET", params, idempotencyKey } = 
 }
 
 async function setRestaurantPayoutStatus(orderId, patch) {
-  await serviceDb(`eats_orders?id=eq.${encodeURIComponent(orderId)}`, {
+  await serviceDb(`food_orders?id=eq.${encodeURIComponent(orderId)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify(patch),
@@ -168,14 +168,14 @@ async function releaseRestaurantPayout(restaurant, order) {
     params.set("currency", String(order.currency || "eur").toLowerCase());
     params.set("destination", accountId);
     params.set("source_transaction", chargeId);
-    params.set("transfer_group", `VASI_EATS_${order.id}`);
-    params.set("metadata[vasi_service]", "eats");
+    params.set("transfer_group", `VASI_FOOD_${order.id}`);
+    params.set("metadata[vasi_service]", "food");
     params.set("metadata[vasi_order_id]", order.id);
     params.set("metadata[vasi_restaurant_id]", restaurant.id);
     const transfer = await stripeRequest("/v1/transfers", {
       method: "POST",
       params,
-      idempotencyKey: `vasi-eats-restaurant-${order.id}`,
+      idempotencyKey: `vasi-food-restaurant-${order.id}`,
     });
     const paidAt = new Date().toISOString();
     await setRestaurantPayoutStatus(order.id, {
@@ -203,7 +203,7 @@ async function releaseRestaurantPayout(restaurant, order) {
 async function rejectRestaurantOrder(restaurant, orderId, authHeader) {
   const order = (
     await db(
-      `eats_orders?select=id,status,payment_status,stripe_payment_intent_id&restaurant_id=eq.${restaurant.id}&id=eq.${encodeURIComponent(orderId)}&limit=1`,
+      `food_orders?select=id,status,payment_status,stripe_payment_intent_id&restaurant_id=eq.${restaurant.id}&id=eq.${encodeURIComponent(orderId)}&limit=1`,
       {},
       authHeader,
     )
@@ -216,18 +216,18 @@ async function rejectRestaurantOrder(restaurant, orderId, authHeader) {
   const params = new URLSearchParams();
   params.set("payment_intent", order.stripe_payment_intent_id);
   params.set("reason", "requested_by_customer");
-  params.set("metadata[vasi_service]", "eats");
+  params.set("metadata[vasi_service]", "food");
   params.set("metadata[vasi_order_id]", order.id);
   await stripeRequest("/v1/refunds", {
     method: "POST",
     params,
-    idempotencyKey: `vasi-eats-restaurant-reject-${order.id}`,
+    idempotencyKey: `vasi-food-restaurant-reject-${order.id}`,
   });
   const cancelled = await rpc("vasi_restaurant_order_status", {
     p_order_id: order.id,
     p_status: "cancelled",
   }, authHeader);
-  await serviceDb(`eats_orders?id=eq.${encodeURIComponent(order.id)}`, {
+  await serviceDb(`food_orders?id=eq.${encodeURIComponent(order.id)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({ payment_status: "refunded" }),
@@ -508,7 +508,7 @@ export default async function handler(req, res) {
           {}, authHeader,
         ),
         db(
-          `eats_orders?select=id,created_at,items,subtotal,delivery_fee,total,currency,delivery_mode,commission_rate,restaurant_commission,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,delivery_address,scheduled_for,unavailable_item_preference,group_order_id,restaurant_preparation_minutes&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
+          `food_orders?select=id,created_at,items,subtotal,delivery_fee,total,currency,delivery_mode,commission_rate,restaurant_commission,restaurant_net,status,payment_status,stripe_payment_intent_id,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,delivery_address,scheduled_for,unavailable_item_preference,group_order_id,restaurant_preparation_minutes&restaurant_id=eq.${restaurant.id}&order=created_at.desc&limit=50`,
           {}, authHeader,
         ),
       ]);

@@ -383,16 +383,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'list_orders') {
-      const [{ data: eats, error: eatsError }, { data: deliveries, error: deliveryError }] = await Promise.all([
-        db.from('eats_orders')
+      const [{ data: food, error: foodError }, { data: deliveries, error: deliveryError }] = await Promise.all([
+        db.from('food_orders')
           .select('id,restaurant_id,restaurant_name,delivery_address,total,subtotal,delivery_fee,service_fee,currency,status,payment_status,delivery_mode,delivery_driver_id,driver_id,courier_offer_amount,courier_payout_status,courier_transfer_id,courier_paid_at,restaurant_commission,restaurant_net,restaurant_payout_status,restaurant_transfer_id,restaurant_paid_at,created_at,picked_up_at,delivered_at')
           .order('created_at', { ascending: false }).limit(150),
         db.from('delivery_orders')
           .select('id,pickup_address,dropoff_address,item_type,quote,currency,status,driver_id,delivery_driver_id,created_at,picked_up_at,delivered_at')
           .order('created_at', { ascending: false }).limit(150),
       ]);
-      if (eatsError || deliveryError) throw eatsError || deliveryError;
-      return json({ ok: true, eats_orders: eats || [], delivery_orders: deliveries || [] });
+      if (foodError || deliveryError) throw foodError || deliveryError;
+      return json({ ok: true, food_orders: food || [], delivery_orders: deliveries || [] });
     }
 
     if (action === 'list_finance') {
@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
         db.from('restaurants').select('id,name,email,status,active,is_open,commission_rate,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
         db.from('driver_cash_commission_debts').select('driver_id,remaining_amount,currency,settled_at').is('settled_at', null),
         db.from('driver_payouts').select('id,driver_id,amount,currency,status,failure_reason,requested_at,processed_at').order('created_at', { ascending: false }).limit(100),
-        db.from('courier_eats_earnings').select('id,courier_id,order_id,final_amount,currency,status,failure_reason,stripe_transfer_id,paid_at,created_at').order('created_at', { ascending: false }).limit(100),
+        db.from('courier_food_earnings').select('id,courier_id,order_id,final_amount,currency,status,failure_reason,stripe_transfer_id,paid_at,created_at').order('created_at', { ascending: false }).limit(100),
       ]);
       const failure = [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult].find(result => result.error)?.error;
       if (failure) throw failure;
