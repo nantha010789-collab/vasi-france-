@@ -45,14 +45,14 @@ export default async function handler(req, res) {
 
     if (action === "create") {
       if (!validUuid(body.restaurant_id)) return res.status(400).json({ error: "Choose a restaurant first" });
-      const rows = await request("eats_group_orders", {
+      const rows = await request("food_group_orders", {
         method: "POST", headers: { "Content-Type": "application/json", Prefer: "return=representation" },
         body: JSON.stringify({ host_user_id: user.id, restaurant_id: body.restaurant_id }),
       }, true);
       const group = rows?.[0];
       if (!group) throw new Error("Group order was not created");
       const items = cleanItems(body.items || []);
-      if (items.length) await request("eats_group_order_members", {
+      if (items.length) await request("food_group_order_members", {
         method: "POST", headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify({ group_order_id: group.id, user_id: user.id, display_name: String(body.display_name || "Host").trim().slice(0, 80) || "Host", items }),
       }, true);
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     }
 
     if (!validUuid(token)) return res.status(400).json({ error: "Valid group invitation required" });
-    const groups = await request(`eats_group_orders?invite_token=eq.${encodeURIComponent(token)}&select=id,host_user_id,restaurant_id,status,expires_at`, {}, true);
+    const groups = await request(`food_group_orders?invite_token=eq.${encodeURIComponent(token)}&select=id,host_user_id,restaurant_id,status,expires_at`, {}, true);
     const group = groups?.[0];
     if (!group || group.status === "expired" || new Date(group.expires_at).getTime() <= Date.now()) return res.status(404).json({ error: "This group order invitation has expired" });
 
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       if (group.status !== "open") return res.status(409).json({ error: "This group basket is already closed" });
       const items = cleanItems(body.items || []);
       if (!items.length) return res.status(400).json({ error: "Add at least one item" });
-      await request("eats_group_order_members?on_conflict=group_order_id,user_id", {
+      await request("food_group_order_members?on_conflict=group_order_id,user_id", {
         method: "POST", headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify({ group_order_id: group.id, user_id: user.id, display_name: String(body.display_name || "Guest").trim().slice(0, 80) || "Guest", items, updated_at: new Date().toISOString() }),
       }, true);
@@ -77,11 +77,11 @@ export default async function handler(req, res) {
     if (action === "close") {
       if (group.host_user_id !== user.id) return res.status(403).json({ error: "Only the group host can close checkout" });
       if (group.status !== "open") return res.status(409).json({ error: "Group basket is already closed" });
-      await request(`eats_group_orders?id=eq.${group.id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ status: "closed", updated_at: new Date().toISOString() }) }, true);
+      await request(`food_group_orders?id=eq.${group.id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ status: "closed", updated_at: new Date().toISOString() }) }, true);
       group.status = "closed";
     }
 
-    const members = await request(`eats_group_order_members?group_order_id=eq.${group.id}&select=display_name,items,updated_at&order=updated_at.asc`, {}, true);
+    const members = await request(`food_group_order_members?group_order_id=eq.${group.id}&select=display_name,items,updated_at&order=updated_at.asc`, {}, true);
     const totals = new Map();
     for (const member of members || []) for (const item of member.items || []) totals.set(item.id, (totals.get(item.id) || 0) + Number(item.quantity || 0));
     return res.status(200).json({
