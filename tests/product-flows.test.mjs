@@ -1195,12 +1195,12 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(auth, /return "restaurant-dashboard\.html"/);
 });
 
-test("customer login offers phone OTP and email magic-link choices", async () => {
+test("customer login offers phone and email confirmation-code choices", async () => {
   const auth = await readFile("auth.html", "utf8");
   assert.match(auth, /id="methodSwitch"/);
   assert.match(auth, /id="phoneMethodBtn"/);
   assert.match(auth, /id="emailMethodBtn"/);
-  assert.match(auth, /Continue with email/);
+  assert.match(auth, /Send email code/);
   const languages = await readFile("vasi-languages.js", "utf8");
   assert.match(languages, /"Continue with email": "Continuer avec mon e-mail"/);
   assert.match(auth, /authMethod === "phone"/);
@@ -1208,22 +1208,24 @@ test("customer login offers phone OTP and email magic-link choices", async () =>
   assert.match(auth, /onclick="setAuthMethod\('email'\)"/);
   assert.match(auth, /New customer\? Create a VASI account/);
   assert.match(auth, /auth\.html\?role=customer&method=email&mode=register/);
-  assert.match(auth, /Create my account by email/);
+  assert.match(auth, /Un code sécurisé à 6 chiffres créera votre compte/);
   assert.match(auth, /\["customer", "driver"\]\.includes\(surface\)/);
-  assert.match(auth, /emailRedirectTo:[\s\S]*&method=email/);
-  assert.match(auth, /const PRODUCTION_ORIGIN = "https:\/\/www\.vasigo\.eu"/);
-  assert.doesNotMatch(auth, /const PRODUCTION_ORIGIN = "https:\/\/vasi-new\.vercel\.app"/);
+  assert.match(auth, /client\.auth\.verifyOtp\(\{[\s\S]*email: emailAwaitingCode,[\s\S]*type: "email"/);
+  assert.match(auth, /client\.auth\.signInWithOtp\(\{[\s\S]*email,[\s\S]*shouldCreateUser: true/);
+  assert.doesNotMatch(auth, /emailRedirectTo/);
+  assert.doesNotMatch(auth, /secure (?:sign-in )?link/i);
   assert.match(auth, /service e-mail est momentanément indisponible/);
 });
 
-test("driver and courier registration offer phone SMS OTP or email magic link", async () => {
+test("driver and courier registration offer phone or email confirmation codes", async () => {
   const auth = await readFile("auth.html", "utf8");
   assert.match(auth, /const methodChoice = customer \|\| surface === "driver"/);
   assert.match(auth, /Saisissez votre numéro\. Nous vous enverrons un code SMS à 6 chiffres/);
-  assert.match(auth, /Continuer avec l’e-mail/);
+  assert.match(auth, /Envoyer le code e-mail/);
   assert.match(auth, /Envoyer le code SMS/);
   assert.match(auth, /client\.auth\.signInWithOtp\(\{ phone \}\)/);
   assert.match(auth, /client\.auth\.verifyOtp\(\{[\s\S]*phone: phoneAwaitingCode,[\s\S]*type: "sms"/);
+  assert.match(auth, /client\.auth\.verifyOtp\(\{[\s\S]*email: emailAwaitingCode,[\s\S]*type: "email"/);
   assert.match(auth, /function rememberDriverRegistrationReturn\(\)/);
   assert.equal((auth.match(/rememberDriverRegistrationReturn\(\);/g) || []).length, 2);
   assert.match(auth, /"vasi_driver_return",[\s\S]*"partner-register-v2\.html\?role="/);

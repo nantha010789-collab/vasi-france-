@@ -238,19 +238,19 @@
             placeholder="6-digit SMS code"
             autocomplete="one-time-code"
           />
-          <button class="btn" type="button" onclick="changePhone()">
+          <button id="changeIdentityBtn" class="btn" type="button" onclick="changeIdentity()">
             Change phone number
           </button>
           <button
             id="resendBtn"
             class="btn resend"
             type="button"
-            onclick="resendPhoneCode()"
+            onclick="resendCode()"
             disabled
           >
             Resend code in 90s
           </button>
-          <p class="muted delivery-note">
+          <p id="deliveryNote" class="muted delivery-note">
             SMS delivery can take up to 2 minutes on some mobile networks.
             Resending cancels every earlier code, so after a resend use only
             the code from the newest SMS.
@@ -284,7 +284,6 @@
     <script>
       const SUPABASE_URL = "https://vhfyvkrvysrooaqzcxsp.supabase.co";
       const SUPABASE_KEY = "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
-      const PRODUCTION_ORIGIN = "https://www.vasigo.eu";
       const searchParams = new URLSearchParams(location.search);
       const requestedRole = searchParams.get("role");
       const requestedMethod = searchParams.get("method");
@@ -311,9 +310,10 @@
       const t = (value) => window.VasiLanguage?.translate?.(value) || value;
       const authCopy = (fr, en) => window.VasiLanguage?.getLanguage?.() === "fr" ? fr : en;
       let phoneAwaitingCode = "";
+      let emailAwaitingCode = "";
       let resendTimer = null;
       let resendSeconds = 0;
-      let sendingPhoneCode = false;
+      let sendingCode = false;
       let routingSession = false;
       let currentSession = null;
       let roleConflict = false;
@@ -370,33 +370,49 @@
           ? "phone"
           : "email";
       const usesPhone = () => authMethod === "phone";
-      function savePendingPhone(phone, readyAt) {
+      const awaitingCode = () => usesPhone() ? phoneAwaitingCode : emailAwaitingCode;
+      function pendingOtpKey() {
+        return "vasi_pending_otp_" + surface + "_" + role;
+      }
+      function savePendingOtp(identity, readyAt) {
         try {
-          sessionStorage.setItem("vasi_pending_phone", JSON.stringify({ phone, readyAt, createdAt: Date.now() }));
+          sessionStorage.setItem(pendingOtpKey(), JSON.stringify({ method: authMethod, identity, readyAt, createdAt: Date.now() }));
         } catch (_) {}
       }
-      function clearPendingPhone() {
-        try { sessionStorage.removeItem("vasi_pending_phone"); } catch (_) {}
-      }
-      function restorePendingPhone() {
+      function clearPendingOtp() {
         try {
-          const pending = JSON.parse(sessionStorage.getItem("vasi_pending_phone") || "null");
-          if (!pending?.phone || Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) {
-            clearPendingPhone();
+          sessionStorage.removeItem(pendingOtpKey());
+          sessionStorage.removeItem("vasi_pending_phone");
+        } catch (_) {}
+      }
+      function restorePendingOtp() {
+        try {
+          const pending = JSON.parse(sessionStorage.getItem(pendingOtpKey()) || "null");
+          if (!pending?.identity || pending.method !== authMethod || Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) {
+            clearPendingOtp();
             return;
           }
-          phoneAwaitingCode = normalizePhone(pending.phone);
-          if (!phoneAwaitingCode) return clearPendingPhone();
-          $("identity").value = phoneAwaitingCode;
+          if (usesPhone()) {
+            phoneAwaitingCode = normalizePhone(pending.identity);
+            if (!phoneAwaitingCode) return clearPendingOtp();
+          } else {
+            emailAwaitingCode = String(pending.identity).trim().toLowerCase();
+            if (!emailAwaitingCode) return clearPendingOtp();
+          }
+          $("identity").value = awaitingCode();
           $("identity").disabled = true;
           render();
           const seconds = Math.max(0, Math.ceil((Number(pending.readyAt || 0) - Date.now()) / 1000));
           startResendCountdown(seconds);
           $("otp").focus();
-          show("Wait for the newest SMS and enter only its 6-digit code. Earlier codes stop working after a resend.");
-        } catch (_) { clearPendingPhone(); }
+          show(usesPhone()
+            ? authCopy("Attendez le SMS le plus récent et saisissez uniquement son code à 6 chiffres.", "Wait for the newest SMS and enter only its 6-digit code.")
+            : authCopy("Consultez votre e-mail et saisissez le code VASI à 6 chiffres.", "Check your email and enter the 6-digit VASI code."));
+        } catch (_) { clearPendingOtp(); }
       }
       function setRole(next) {
+        if (sendingCode) return;
+        clearPendingOtp();
         if (!surfaceRoles[surface].has(next)) return;
         role = next;
         if (next === "customer") authMethod = "phone";
@@ -410,6 +426,7 @@
         render();
       }
       function setAuthMethod(next) {
+        if (sendingCode) return;
         if (!["customer", "driver"].includes(surface) || !["phone", "email"].includes(next) || next === authMethod) return;
         authMethod = next;
         resetAuthForm();
@@ -422,7 +439,8 @@
       }
       function resetAuthForm() {
         phoneAwaitingCode = "";
-        clearPendingPhone();
+        emailAwaitingCode = "";
+        clearPendingOtp();
         clearResendCountdown();
         $("codeStep").classList.add("hidden");
         $("identity").disabled = false;
@@ -447,14 +465,14 @@
           ? registerMode
             ? phone
               ? authCopy("Saisissez votre numéro. Le code SMS sécurisé créera votre compte client VASI.", "Enter your number. The secure SMS code will create your VASI customer account.")
-              : authCopy("Saisissez votre e-mail. Le lien sécurisé créera votre compte client VASI.", "Enter your email. Your secure link will create your VASI customer account.")
+              : authCopy("Saisissez votre e-mail. Un code sécurisé à 6 chiffres créera votre compte client VASI.", "Enter your email. A secure 6-digit code will create your VASI customer account.")
             : phone
             ? "Enter your mobile number. We will send a 6-digit SMS code."
-            : "Enter your email. We will send you a secure sign-in link."
+            : authCopy("Saisissez votre e-mail. Nous vous enverrons un code sécurisé à 6 chiffres.", "Enter your email. We will send you a secure 6-digit code.")
           : driverRegistration
             ? phone
               ? authCopy("Saisissez votre numéro. Nous vous enverrons un code SMS à 6 chiffres pour commencer votre dossier.", "Enter your number. We will send a 6-digit SMS code to start your application.")
-              : authCopy("Saisissez votre e-mail. Le lien sécurisé vous permettra de commencer votre dossier étape par étape.", "Enter your email. The secure link will let you start your application step by step.")
+              : authCopy("Saisissez votre e-mail. Nous vous enverrons un code à 6 chiffres pour commencer votre dossier étape par étape.", "Enter your email. We will send a 6-digit code to start your application step by step.")
             : role === "ride"
               ? phone ? authCopy("Connexion chauffeur par code SMS.", "Driver login with SMS code.") : "VTC passenger driver account."
               : role === "courier"
@@ -479,14 +497,21 @@
         $("identity").placeholder = phone
           ? VasiRegion.getRegion().phonePlaceholder
           : "you@example.com";
-        $("continueBtn").textContent = t(phone
-          ? phoneAwaitingCode
-            ? authCopy("Vérifier et continuer", "Verify & continue")
-            : authCopy("Envoyer le code SMS", "Send SMS code")
-          : registerMode && (customer || surface === "driver")
-            ? authCopy(surface === "driver" ? "Continuer avec l’e-mail" : "Créer mon compte par e-mail", surface === "driver" ? "Continue with email" : "Create my account by email")
-            : authCopy("Continuer avec l’e-mail", "Continue with email"));
-        $("codeStep").classList.toggle("hidden", !phone || !phoneAwaitingCode);
+        $("otp").placeholder = phone
+          ? authCopy("Code SMS à 6 chiffres", "6-digit SMS code")
+          : authCopy("Code e-mail à 6 chiffres", "6-digit email code");
+        $("changeIdentityBtn").textContent = phone
+          ? authCopy("Modifier le numéro", "Change phone number")
+          : authCopy("Modifier l’e-mail", "Change email address");
+        $("deliveryNote").textContent = phone
+          ? authCopy("La réception du SMS peut prendre jusqu’à 2 minutes. Après un renvoi, utilisez uniquement le code du SMS le plus récent.", "SMS delivery can take up to 2 minutes. After a resend, use only the code from the newest SMS.")
+          : authCopy("La réception de l’e-mail peut prendre quelques minutes. Vérifiez aussi les courriers indésirables et utilisez uniquement le code le plus récent.", "Email delivery can take a few minutes. Check spam too and use only the newest code.");
+        $("continueBtn").textContent = t(awaitingCode()
+          ? authCopy("Vérifier et continuer", "Verify & continue")
+          : phone
+            ? authCopy("Envoyer le code SMS", "Send SMS code")
+            : authCopy("Envoyer le code e-mail", "Send email code"));
+        $("codeStep").classList.toggle("hidden", !awaitingCode());
         const roleButtons = { customerBtn: "customer", rideBtn: "ride", courierBtn: "courier", restaurantBtn: "restaurant" };
         Object.entries(roleButtons).forEach(([id, buttonRole]) => {
           $(id).classList.remove("active");
@@ -519,7 +544,7 @@
               ? authCopy("Déjà partenaire ? Se connecter →", "Already a partner? Sign in →")
               : authCopy("Nouveau partenaire ? Créer mon compte VASI →", "New partner? Create my VASI account →");
         if (customer && registerMode) $("register").href = "auth.html?role=customer&method=email";
-        $("identity").disabled = roleConflict || Boolean(phoneAwaitingCode);
+        $("identity").disabled = roleConflict || Boolean(awaitingCode());
         if (roleConflict) {
           $("methodSwitch").classList.add("hidden");
           $("codeStep").classList.add("hidden");
@@ -536,7 +561,7 @@
       async function submitAuth() {
         if (roleConflict) return logoutForDifferentAccount();
         if (usesPhone()) return phoneAwaitingCode ? verifyPhoneCode() : sendPhoneCode();
-        return sendEmailLink();
+        return emailAwaitingCode ? verifyEmailCode() : sendEmailCode();
       }
       async function logoutForDifferentAccount() {
         $("continueBtn").disabled = true;
@@ -566,7 +591,7 @@
         );
       }
       async function sendPhoneCode() {
-        if (sendingPhoneCode) return;
+        if (sendingCode || resendSeconds > 0) return;
         const phone = normalizePhone($("identity").value.trim());
         if (!phone)
           return show(
@@ -574,19 +599,19 @@
               " mobile number, for example " +
               VasiRegion.getRegion().phonePlaceholder + ".",
           );
-        sendingPhoneCode = true;
+        sendingCode = true;
         $("continueBtn").disabled = true;
         show("Sending your SMS code…");
         accountRole.setIntent(role);
         rememberDriverRegistrationReturn();
-        const { error } = await client.auth.signInWithOtp({ phone });
-        sendingPhoneCode = false;
+        const { error } = await client.auth.signInWithOtp({ phone }).catch(error => ({ error }));
+        sendingCode = false;
         $("continueBtn").disabled = false;
         if (error) {
           return showSmsError(error);
         }
         phoneAwaitingCode = phone;
-        savePendingPhone(phone, Date.now() + RESEND_WAIT_SECONDS * 1000);
+        savePendingOtp(phone, Date.now() + RESEND_WAIT_SECONDS * 1000);
         $("identity").disabled = true;
         $("codeStep").classList.remove("hidden");
         $("continueBtn").textContent = "Verify & continue";
@@ -594,37 +619,41 @@
         $("otp").focus();
         show("SMS sent. Please wait up to 2 minutes and do not resend while it is arriving.");
       }
-      async function resendPhoneCode() {
-        if (!phoneAwaitingCode || resendSeconds > 0 || sendingPhoneCode) return;
-        sendingPhoneCode = true;
+      async function resendCode() {
+        if (!awaitingCode() || resendSeconds > 0 || sendingCode) return;
+        sendingCode = true;
+        $("continueBtn").disabled = true;
         $("resendBtn").disabled = true;
-        $("resendBtn").textContent = "Requesting new code…";
-        show("Requesting a new SMS code…");
-        const { error } = await client.auth.resend({
-          type: "sms",
-          phone: phoneAwaitingCode,
-        });
-        sendingPhoneCode = false;
+        $("resendBtn").textContent = authCopy("Demande d’un nouveau code…", "Requesting new code…");
+        show(usesPhone() ? authCopy("Demande d’un nouveau code SMS…", "Requesting a new SMS code…") : authCopy("Demande d’un nouveau code e-mail…", "Requesting a new email code…"));
+        const { error } = usesPhone()
+          ? await client.auth.resend({ type: "sms", phone: phoneAwaitingCode }).catch(error => ({ error }))
+          : await client.auth.signInWithOtp({ email: emailAwaitingCode, options: { shouldCreateUser: true } }).catch(error => ({ error }));
+        sendingCode = false;
+        $("continueBtn").disabled = false;
         if (error) {
           $("resendBtn").disabled = false;
-          $("resendBtn").textContent = "Resend SMS code";
-          return showSmsError(error);
+          $("resendBtn").textContent = usesPhone() ? authCopy("Renvoyer le code SMS", "Resend SMS code") : authCopy("Renvoyer le code e-mail", "Resend email code");
+          return usesPhone() ? showSmsError(error) : showEmailError(error);
         }
         $("otp").value = "";
-        savePendingPhone(phoneAwaitingCode, Date.now() + RESEND_WAIT_SECONDS * 1000);
+        savePendingOtp(awaitingCode(), Date.now() + RESEND_WAIT_SECONDS * 1000);
         startResendCountdown();
         $("otp").focus();
-        show("New SMS requested. Every earlier code is now invalid. Wait for the newest SMS and enter only that code.");
+        show(usesPhone()
+          ? "New SMS requested. Every earlier code is now invalid. Wait for the newest SMS and enter only that code."
+          : authCopy("Nouveau code e-mail demandé. Vérifiez votre boîte de réception et les courriers indésirables, puis saisissez uniquement le dernier code.", "New email requested. Check your inbox and spam, then enter only the newest code."));
       }
       function startResendCountdown(seconds = RESEND_WAIT_SECONDS) {
         clearResendCountdown();
         const readyAt = Date.now() + seconds * 1000;
         const update = () => {
           resendSeconds = Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
-          $("resendBtn").disabled = resendSeconds > 0;
+          $("resendBtn").disabled = resendSeconds > 0 || sendingCode;
+          $("continueBtn").disabled = sendingCode || (!awaitingCode() && resendSeconds > 0);
           $("resendBtn").textContent = resendSeconds > 0
-            ? `Resend code in ${resendSeconds}s`
-            : "Resend SMS code";
+            ? authCopy(`Renvoyer le code dans ${resendSeconds} s`, `Resend code in ${resendSeconds}s`)
+            : usesPhone() ? authCopy("Renvoyer le code SMS", "Resend SMS code") : authCopy("Renvoyer le code e-mail", "Resend email code");
           if (resendSeconds === 0 && resendTimer) {
             clearInterval(resendTimer);
             resendTimer = null;
@@ -639,7 +668,7 @@
         resendSeconds = 0;
         if ($("resendBtn")) {
           $("resendBtn").disabled = true;
-          $("resendBtn").textContent = `Resend code in ${RESEND_WAIT_SECONDS}s`;
+          $("resendBtn").textContent = authCopy(`Renvoyer le code dans ${RESEND_WAIT_SECONDS} s`, `Resend code in ${RESEND_WAIT_SECONDS}s`);
         }
       }
       function showSmsError(error) {
@@ -655,69 +684,112 @@
         return show(message || "The SMS could not be requested. Please try again.");
       }
       async function verifyPhoneCode() {
+        if (sendingCode) return;
         const token = $("otp").value.replace(/\D/g, "");
         if (token.length !== 6) return show("Enter the 6-digit SMS code.");
         show("Checking your code…");
+        sendingCode = true;
         $("continueBtn").disabled = true;
         const { data, error } = await client.auth.verifyOtp({
           phone: phoneAwaitingCode,
           token,
           type: "sms",
-        });
+        }).catch(error => ({ data: {}, error }));
+        sendingCode = false;
         $("continueBtn").disabled = false;
         if (error) return showOtpError(error);
-        clearPendingPhone();
+        clearPendingOtp();
         show("Signed in. Opening VASI…");
         if (data.session) await routeSession(data.session);
       }
-      function showOtpError(error) {
+      function showOtpError(error, channel = "sms") {
         const message = String(error?.message || "");
         const code = String(error?.code || "");
+        const emailCode = channel === "email";
         $("otp").value = "";
         $("otp").focus();
         if (code === "otp_expired" || /expired|token.*invalid|invalid.*token/i.test(message)) {
           startResendCountdown(0);
-          return show("This code is expired or belongs to an earlier SMS. If you tapped Resend, wait for the newest SMS and use only that code.");
+          return show(emailCode
+            ? authCopy("Ce code est expiré ou ancien. Demandez un nouveau code et utilisez uniquement le dernier e-mail VASI.", "This code is expired or old. Request a new code and use only the newest VASI email.")
+            : "This code is expired or belongs to an earlier SMS. If you tapped Resend, wait for the newest SMS and use only that code.");
         }
         if (/too many|rate limit/i.test(message)) {
           startResendCountdown();
-          return show(`Too many attempts. Wait ${RESEND_WAIT_SECONDS} seconds, request one new code, and enter only the newest SMS code.`);
+          return show(emailCode
+            ? authCopy(`Trop de tentatives. Attendez ${RESEND_WAIT_SECONDS} secondes avant de demander un nouveau code.`, `Too many attempts. Wait ${RESEND_WAIT_SECONDS} seconds before requesting a new code.`)
+            : `Too many attempts. Wait ${RESEND_WAIT_SECONDS} seconds, request one new code, and enter only the newest SMS code.`);
         }
-        return show("The SMS code is incorrect. Check the newest message and try again.");
+        return show(emailCode
+          ? authCopy("Le code e-mail est incorrect. Vérifiez le dernier message VASI et réessayez.", "The email code is incorrect. Check the newest VASI message and try again.")
+          : "The SMS code is incorrect. Check the newest message and try again.");
       }
-      function changePhone() {
+      function changeIdentity() {
+        if (sendingCode) return;
         phoneAwaitingCode = "";
-        clearPendingPhone();
+        emailAwaitingCode = "";
+        clearPendingOtp();
         clearResendCountdown();
         $("identity").disabled = false;
         $("codeStep").classList.add("hidden");
-        $("continueBtn").textContent = "Send SMS code";
+        render();
         $("otp").value = "";
         $("identity").focus();
         show("");
       }
-      async function sendEmailLink() {
-        const email = $("identity").value.trim();
-        if (!email) return show("Enter your email address.");
-        show("Sending secure login link…");
+      function showEmailError(error) {
+        const message = String(error?.message || "");
+        if (/rate limit|security purposes.*seconds/i.test(message)) {
+          startResendCountdown();
+          return show(authCopy(`Attendez ${RESEND_WAIT_SECONDS} secondes avant de demander un nouveau code e-mail.`, `Please wait ${RESEND_WAIT_SECONDS} seconds before requesting another email code.`));
+        }
+        return show(role === "customer"
+          ? authCopy("Le service e-mail est momentanément indisponible. Utilisez votre numéro de téléphone pour continuer.", "Email is temporarily unavailable. Use your phone number to continue.")
+          : authCopy("Le service e-mail est momentanément indisponible. Réessayez plus tard.", "Email is temporarily unavailable. Try again later."));
+      }
+      async function sendEmailCode() {
+        if (sendingCode || resendSeconds > 0) return;
+        const email = $("identity").value.trim().toLowerCase();
+        if (!email) return show(authCopy("Saisissez votre adresse e-mail.", "Enter your email address."));
+        if (!$("identity").checkValidity()) return show(authCopy("Saisissez une adresse e-mail valide.", "Enter a valid email address."));
+        sendingCode = true;
+        $("continueBtn").disabled = true;
+        show(authCopy("Envoi de votre code e-mail…", "Sending your email code…"));
         accountRole.setIntent(role);
         rememberDriverRegistrationReturn();
         const { error } = await client.auth.signInWithOtp({
           email,
-          options: {
-            emailRedirectTo:
-              PRODUCTION_ORIGIN + "/auth.html?role=" + encodeURIComponent(role) + "&method=email&surface=" + encodeURIComponent(surface),
-            shouldCreateUser: true,
-          },
-        });
-        if (error) {
-          return show(
-            role === "customer"
-              ? "Le service e-mail est momentanément indisponible. Utilisez votre numéro de téléphone pour continuer."
-              : "Le service e-mail est momentanément indisponible. Réessayez plus tard.",
-          );
-        }
-        show("Consultez votre e-mail pour ouvrir le lien de connexion VASI.");
+          options: { shouldCreateUser: true },
+        }).catch(error => ({ error }));
+        sendingCode = false;
+        $("continueBtn").disabled = false;
+        if (error) return showEmailError(error);
+        emailAwaitingCode = email;
+        savePendingOtp(email, Date.now() + RESEND_WAIT_SECONDS * 1000);
+        $("identity").disabled = true;
+        render();
+        startResendCountdown();
+        $("otp").focus();
+        show(authCopy("Code envoyé. Consultez votre e-mail et saisissez le code VASI à 6 chiffres.", "Code sent. Check your email and enter the 6-digit VASI code."));
+      }
+      async function verifyEmailCode() {
+        if (sendingCode) return;
+        const token = $("otp").value.replace(/\D/g, "");
+        if (token.length !== 6) return show(authCopy("Saisissez le code e-mail à 6 chiffres.", "Enter the 6-digit email code."));
+        show(authCopy("Vérification du code…", "Checking your code…"));
+        sendingCode = true;
+        $("continueBtn").disabled = true;
+        const { data, error } = await client.auth.verifyOtp({
+          email: emailAwaitingCode,
+          token,
+          type: "email",
+        }).catch(error => ({ data: {}, error }));
+        sendingCode = false;
+        $("continueBtn").disabled = false;
+        if (error) return showOtpError(error, "email");
+        clearPendingOtp();
+        show(authCopy("Connexion réussie. Ouverture de VASI…", "Signed in. Opening VASI…"));
+        if (data.session) await routeSession(data.session);
       }
       function $(id) {
         return document.getElementById(id);
@@ -752,7 +824,7 @@
       }
       async function routeSession(session) {
         if (!session || routingSession) return;
-        clearPendingPhone();
+        clearPendingOtp();
         currentSession = session;
         const signedInRole = accountRole.active() || roleAtPageOpen;
         if (signedInRole && signedInRole !== role) {
@@ -827,7 +899,7 @@
         await routeSession(data.session);
       }
       render();
-      if (usesPhone()) restorePendingPhone();
+      restorePendingOtp();
       $("identity").addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitAuth();
       });
