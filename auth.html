@@ -463,6 +463,9 @@
         });
         document.querySelector(".switch").classList.toggle("single", surface !== "driver");
         document.querySelector(".switch").classList.remove("hidden");
+        $("roleHelp").textContent = t("Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.")
+          .replace(/\s*Restaurant\s*=.*$/, "")
+          .trim();
         $("roleHelp").classList.toggle("hidden", surface !== "driver");
         $("authBack").href = surface === "driver" ? "driver-home.html" : surface === "partner" ? "restaurant-register.html" : "app.html";
         $(

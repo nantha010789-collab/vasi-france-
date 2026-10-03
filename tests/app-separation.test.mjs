@@ -40,6 +40,7 @@ test("driver app exposes chauffeur and delivery without customer or restaurant r
   assert.match(auth, /customer: new Set\(\["customer"\]\)/);
   assert.match(auth, /partner: new Set\(\["restaurant"\]\)/);
   assert.match(auth, /&surface=driver/);
+  assert.match(auth, /\.replace\(\/\\s\*Restaurant\\s\*=\.\*\$\//);
   assert.match(register, /const driverSurface = pageParams\.get\('surface'\) === 'driver'/);
   assert.match(register, /\['ride','courier'\]\.includes\(requestedRole\)/);
   assert.match(register, /storageKey:'vasi-driver-auth'/);
