@@ -29,7 +29,7 @@ Never commit database passwords, service-role keys, Stripe secrets, TURN credent
 2. Preserve Vercel and Supabase logs before changing production.
 3. Roll back the Vercel deployment to the last READY commit.
 4. Restore the database only after confirming the exact recovery timestamp and business impact.
-5. Validate login, booking, dispatch, trip completion, payment, receipt, Eats, Delivery, chat, and voice-call signalling before reopening.
+5. Validate login, booking, dispatch, trip completion, payment, receipt, Food, Delivery, chat, and voice-call signalling before reopening.
 
 ## Voice-call networking
 
