@@ -286,6 +286,7 @@
       const requestedRole = searchParams.get("role");
       const requestedMethod = searchParams.get("method");
       const requestedSurface = searchParams.get("surface");
+      const registerMode = searchParams.get("mode") === "register";
       const partnerSurface =
         requestedSurface === "partner" || requestedRole === "restaurant";
       const driverSurface =
@@ -305,6 +306,7 @@
       });
       const RESEND_WAIT_SECONDS = 90;
       const t = (value) => window.VasiLanguage?.translate?.(value) || value;
+      const authCopy = (fr, en) => window.VasiLanguage?.getLanguage?.() === "fr" ? fr : en;
       let phoneAwaitingCode = "";
       let resendTimer = null;
       let resendSeconds = 0;
@@ -431,9 +433,11 @@
         roleConflict = Boolean(
           currentSession && signedInRole && signedInRole !== role,
         );
-        $("title").textContent = t(customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login");
+        $("title").textContent = customer && registerMode ? authCopy("Créer votre compte VASI", "Create your VASI account") : t(customer ? "Customer login" : role === "ride" ? "Ride Driver login" : role === "courier" ? "Courier login" : "Restaurant owner login");
         $("desc").textContent = t(customer
-          ? phone
+          ? registerMode
+            ? authCopy("Saisissez votre e-mail. Le lien sécurisé créera votre compte client VASI.", "Enter your email. Your secure link will create your VASI customer account.")
+            : phone
             ? "Enter your mobile number. We will send a 6-digit SMS code."
             : "Enter your email. We will send you a secure sign-in link."
           : role === "ride"
@@ -454,7 +458,9 @@
         $("identity").placeholder = phone
           ? VasiRegion.getRegion().phonePlaceholder
           : "you@example.com";
-        $("continueBtn").textContent = t(phone
+        $("continueBtn").textContent = t(registerMode && customer
+          ? authCopy("Créer mon compte par e-mail", "Create my account by email")
+          : phone
           ? phoneAwaitingCode
             ? "Verify & continue"
             : "Send SMS code"
@@ -475,12 +481,17 @@
         $(
           customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
         ).classList.add("active");
-        $("register").classList.toggle("hidden", customer);
+        $("register").classList.toggle("hidden", false);
         $("driverPreview").classList.toggle("hidden", !(surface === "driver" && role === "ride"));
-        $("register").href = role === "restaurant"
+        $("register").href = customer
+          ? "auth.html?role=customer&method=email&mode=register"
+          : role === "restaurant"
           ? "restaurant-register.html"
           : "partner-register-v2.html?role=" + encodeURIComponent(role) + (surface === "driver" ? "&surface=driver" : "");
-        $("register").textContent = t(role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →");
+        $("register").textContent = customer
+          ? registerMode ? authCopy("Déjà inscrit ? Se connecter →", "Already registered? Sign in →") : authCopy("Nouveau client ? Créer un compte VASI →", "New customer? Create a VASI account →")
+          : t(role === "restaurant" ? "New restaurant? Join VASI →" : "New partner? Register with VASI →");
+        if (customer && registerMode) $("register").href = "auth.html?role=customer&method=email";
         $("identity").disabled = roleConflict || Boolean(phoneAwaitingCode);
         if (roleConflict) {
           $("methodSwitch").classList.add("hidden");
