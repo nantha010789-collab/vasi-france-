@@ -77,6 +77,6 @@ export default function handler(req, res) {
     return res.status(200).json({ ok: true, pricing });
   } catch (error) {
     console.error("eats-pricing failed", error);
-    return res.status(500).json({ ok: false, error: "Unable to calculate Eats pricing" });
+    return res.status(500).json({ ok: false, error: "Unable to calculate Food pricing" });
   }
 }

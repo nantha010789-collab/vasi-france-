@@ -455,7 +455,7 @@ test("only the Stripe-signed webhook finalizes or releases cash debt offsets", a
   assert.match(webhook, /release_ride_cash_commission_offset/);
 });
 
-test("VASI Eats prices a paid order and protects the courier earning", async () => {
+test("VASI Food prices a paid order and protects the courier earning", async () => {
   let insertedOrder = null;
   global.fetch = async (url, options = {}) => {
     const value = String(url);
@@ -496,7 +496,7 @@ test("VASI Eats prices a paid order and protects the courier earning", async () 
   assert.equal(insertedOrder.courier_offer_amount, 7.35);
 });
 
-test("Eats courier pricing is always at least €4 and €20 per estimated active hour", async () => {
+test("Food courier pricing is always at least €4 and €20 per estimated active hour", async () => {
   const { calculateEatsPricing } = await import(`../api/eats-pricing.js?test=${Date.now()}`);
   const shortJob = calculateEatsPricing({ subtotal: 10, distanceKm: 0.5, routeMinutes: 2 });
   assert.equal(shortJob.courierOfferAmount, 4);
@@ -504,7 +504,7 @@ test("Eats courier pricing is always at least €4 and €20 per estimated activ
   assert.ok(longJob.courierOfferAmount >= 20);
 });
 
-test("Eats checkout and courier app enforce payment then PIN-gated RIB payout", async () => {
+test("Food checkout and courier app enforce payment then PIN-gated RIB payout", async () => {
   const [checkout, courier, service, migration] = await Promise.all([
     readFile("eats-checkout.html", "utf8"),
     readFile("delivery-driver.html", "utf8"),
@@ -550,7 +550,7 @@ test("restaurant commission is a permanent 10% for every delivery mode", async (
   assert.match(enforcement, /new\.restaurant_commission := round\(new\.subtotal \* 0\.10, 2\)/);
 });
 
-test("Eats surfaces expose competitor-grade ordering, tracking and operations essentials", async () => {
+test("Food surfaces expose competitor-grade ordering, tracking and operations essentials", async () => {
   const [eats, customerOrders, restaurant, courier] = await Promise.all([
     readFile("eats.html", "utf8"),
     readFile("eats-orders.html", "utf8"),
@@ -1338,12 +1338,12 @@ test("shared language runtime translates English and French source pages both wa
   assert.equal(french.translate("Book a ride"), "Commander un trajet");
   assert.equal(french.translate("🚗 Ride"), "🚗 Trajet");
   assert.equal(french.translate("Fast city trips"), "Trajets en ville");
-  assert.equal(french.translate("Eats"), "Eats");
+  assert.equal(french.translate("Food"), "Food");
   assert.equal(french.translate("Food delivery"), "Livraison de plats");
-  assert.equal(french.translate("Food, your way."), "Eats, à votre façon.");
+  assert.equal(french.translate("Food, your way."), "Food, à votre façon.");
   assert.equal(
     french.translate("One VASI app for rides, food and delivery."),
-    "VASI pour vos trajets, Eats et livraisons."
+    "VASI pour vos trajets, Food et livraisons."
   );
   assert.equal(french.translate("Send anything"), "Envoyez un colis");
   assert.equal(french.translate("Legal & Privacy"), "Juridique & confidentialité");

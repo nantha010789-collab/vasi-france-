@@ -130,9 +130,9 @@ test("every HTML page declares its document language", () => {
   assert.deepEqual(failures, []);
 });
 
-test("public French branding consistently uses Eats", () => {
+test("public French branding consistently uses Food", () => {
   const outdatedBranding = [
-    /["']Eats["']\s*:\s*["']Repas["']/i,
+    /["']Food["']\s*:\s*["']Repas["']/i,
     /VASI pour vos trajets,\s*repas et livraisons/i,
     /<strong>\s*Repas\s*<\/strong>/i,
   ];
