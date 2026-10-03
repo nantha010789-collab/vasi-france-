@@ -191,7 +191,8 @@ test("ride acceptance has a safe sign-in-free live GPS demo", () => {
   assert.match(demo, /function startTrip\(\)/);
   assert.match(demo, /function completeTrip\(\)/);
   assert.match(demo, /function followDriver\(position,force=false\)/);
-  assert.match(demo, /navigationZoom=window\.innerWidth<520\?17:17\.5/);
+  assert.match(demo, /navigationZoom=window\.innerWidth<520\?18:17\.75/);
+  assert.match(demo, /function showRemainingRoute\(/);
   assert.match(demo, /map\.panTo\(position/);
   assert.match(demo, /zIndexOffset:1200/);
   assert.match(demo, /\.map\{position:absolute;inset:0;background:/);
