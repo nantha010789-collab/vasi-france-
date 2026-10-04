@@ -24,7 +24,7 @@ const server=createServer(async(req,res)=>{
 await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
 const base="http://127.0.0.1:"+server.address().port;
 const browser=await chromium.launch({headless:true});
-const docs=["identity","vtc","licence","business","insurance","carte_grise","selfie"].map(document_type=>({document_type,file_path:"test-only/"+document_type,status:"approved"}));
+const docs=["identity","identity_back","vtc","licence","business","insurance","carte_grise","selfie"].map(document_type=>({document_type,file_path:"test-only/"+document_type,status:"approved"}));
 try {
   for(const scenario of ["incomplete","pending","rejected","approved","error"]) {
     const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});
@@ -61,7 +61,7 @@ try {
       const titles={incomplete:"Complétez votre inscription",pending:"Votre dossier est en cours de vérification",rejected:"Votre dossier nécessite une correction",error:"Impossible de vérifier votre dossier"};
       await page.waitForFunction(text=>document.getElementById('heading')?.textContent===text,titles[scenario]);
       assert.equal(await page.locator("#workspaceLink").isVisible(),false);
-      if(scenario==='incomplete') assert.match(await page.locator("#progress").innerText(),/0\/7/);
+      if(scenario==='incomplete') assert.match(await page.locator("#progress").innerText(),/0\/8/);
       if(scenario==='pending') assert.equal(await page.locator("#registrationLink").isVisible(),false);
       if(scenario==='incomplete') await page.screenshot({path:"/tmp/vasi-driver-incomplete.png",fullPage:true});
       if(scenario==='pending') await page.screenshot({path:"/tmp/vasi-driver-pending.png",fullPage:true});
