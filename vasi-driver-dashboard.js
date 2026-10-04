@@ -176,6 +176,7 @@
   }
 
   window.loadPlannedRides = async function loadPlannedRides() {
+    if (typeof providerApproved === "undefined" || !providerApproved) return;
     const target = byId("plannedRides");
     if (!target || typeof client === "undefined") return;
     target.innerHTML = '<p class="muted">Actualisation des courses planifiées…</p>';
