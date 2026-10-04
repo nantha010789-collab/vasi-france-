@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <style>html:not([data-provider-approved]) body > main{display:none!important}#providerLoading{padding:48px 24px;text-align:center;color:#becbe3;font:16px system-ui}</style>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
@@ -206,10 +207,12 @@
       </section>
       </div>
     </main>
+    <div id="providerLoading" role="status">Vérification de votre dossier professionnel…</div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
     <script src="./vasi-account-role.js"></script>
+    <script src="./vasi-provider-access.js"></script>
     <script>
       const client = supabase.createClient(
           "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -222,6 +225,7 @@
       const accountRole = VasiAccountRole.scoped("driver");
       const money = (value) => VasiRegion.money(value, region.code);
       let online = false,
+        providerApproved = false,
         tab = "food",
         activeJob = null,
         courierProfile = null,
@@ -346,6 +350,7 @@
         if (data.url) location.href = data.url;
       }
       async function toggleOnline() {
+        if (!providerApproved) return location.replace(VasiProviderAccess.statusUrl("courier"));
         if (!payoutReady && !online)
           return ($("jobs").textContent =
             "Connect and verify your bank account (RIB) before going online.");
@@ -369,6 +374,7 @@
           encodeURIComponent(String(destination || ""));
       }
       async function loadJobs() {
+        if (!providerApproved) return;
         const current = await service({ action: "get_current_jobs" });
         if (!current.error && (current.eat || current.delivery)) {
           activeJob = current.eat
@@ -470,16 +476,22 @@
         accountRole.clear();
         location.href = "driver-home.html";
       }
-      client.auth.getSession().then(({ data: { session } }) => {
+      client.auth.getSession().then(async ({ data: { session } }) => {
         if (!session) {
           accountRole.setIntent("courier");
           location.href = "auth.html?role=courier&surface=driver";
           return;
         }
-        if (accountRole.require("courier", session)) loadProfile();
-      });
-      setInterval(loadJobs, 10000);
-      VasiNotifications.start(client, { role: "courier" });
+        if (!accountRole.require("courier", session)) return;
+        const access = await VasiProviderAccess.requireApproval(client, "courier", session);
+        if (!access) return;
+        providerApproved = true;
+        document.documentElement.setAttribute("data-provider-approved", "true");
+        document.getElementById("providerLoading")?.remove();
+        await loadProfile();
+        setInterval(loadJobs, 10000);
+        VasiNotifications.start(client, { role: "courier" });
+      }).catch(() => location.replace(VasiProviderAccess.statusUrl("courier")));
     </script>
   <script src="./vasi-languages.js?v=4"></script>  <script src="./vasi-navigation.js?v=4"></script>
   <script src="./vasi-pwa.js"></script>

@@ -284,29 +284,25 @@ export default async function handler(req, res) {
       { lat: destinationLat, lng: destinationLng },
     ];
     const metrics = await routeMetrics(points);
-    const preOfferFare = globalThis.VasiRideFareGuard(
+    const protectedFare = globalThis.VasiRideFareGuard(
       fareFor(service, metrics.km, metrics.mins, pricing), pricing.commissionPercent, metrics.km,
     );
     const smartOffer =
       pricing.mode === "percentage" ? null : await customerOffer(auth);
-    let discountAmount = smartOffer
-      ? (preOfferFare * Number(smartOffer.discount_percent)) / 100
-      : 0;
-    if (smartOffer?.max_discount_eur != null)
-      discountAmount = Math.min(
-        discountAmount,
-        Number(smartOffer.max_discount_eur),
-      );
-    const authoritativeFare = globalThis.VasiRideFareGuard(
-      preOfferFare - discountAmount, pricing.commissionPercent, metrics.km,
+    const quote = globalThis.VasiFundedRideQuote(
+      protectedFare,
+      pricing.commissionPercent,
+      metrics.km,
+      smartOffer ? Number(smartOffer.discount_percent) : 0,
+      smartOffer?.max_discount_eur == null
+        ? null
+        : Number(smartOffer.max_discount_eur),
     );
-    discountAmount = Math.max(0, preOfferFare - authoritativeFare);
-    const vasiCommission = Number(
-      ((authoritativeFare * pricing.commissionPercent) / 100).toFixed(2),
-    );
-    const driverAmount = Number(
-      Math.max(0, authoritativeFare - vasiCommission).toFixed(2),
-    );
+    const authoritativeFare = quote.customer_fare;
+    const preOfferFare = quote.settlement_fare;
+    const discountAmount = quote.customer_discount;
+    const vasiCommission = quote.vasi_commission;
+    const driverAmount = quote.driver_amount;
     const headers = {
       apikey: anonKey,
       Authorization: auth,
@@ -331,6 +327,10 @@ export default async function handler(req, res) {
           p_customer_discount: Number(discountAmount.toFixed(2)),
           p_driver_amount: driverAmount,
           p_vasi_commission: vasiCommission,
+          p_fare_model: "vasi_funded_v1",
+          p_platform_funded_discount: quote.platform_funded_discount,
+          p_estimated_distance_km: Number(metrics.km.toFixed(3)),
+          p_estimated_duration_minutes: metrics.mins,
           p_currency: currency,
           p_scheduled_for: scheduledFor,
           p_passenger_name: b.passenger_name || null,
@@ -433,6 +433,9 @@ export default async function handler(req, res) {
         customer_discount: Number(discountAmount.toFixed(2)),
         driver_amount: driverAmount,
         vasi_commission: vasiCommission,
+        gross_vasi_commission: quote.gross_vasi_commission,
+        platform_funded_discount: quote.platform_funded_discount,
+        offer_funded_by: "VASI",
         commission_percent: pricing.commissionPercent,
         smart_offer: smartOffer,
         currency,

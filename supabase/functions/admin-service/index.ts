@@ -53,7 +53,7 @@ function pricingShape(row: Record<string, unknown>) {
     discount_percent: Number(row.discount_percent || 0),
     max_discount_eur: row.max_discount_eur == null ? null : Number(row.max_discount_eur),
     minimum_regular_fare: row.minimum_regular_fare == null ? null : Number(row.minimum_regular_fare),
-    ride_commission_percent: Number(row.ride_commission_percent ?? 15),
+    ride_commission_percent: Number(row.ride_commission_percent ?? 12),
     classes,
   };
 }
@@ -396,15 +396,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'list_finance') {
-      const [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult] = await Promise.all([
+      const [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult, guaranteesResult] = await Promise.all([
         db.from('drivers').select('id,full_name,phone,verified,status,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
         db.from('delivery_drivers').select('id,full_name,phone,verified,application_status,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
         db.from('restaurants').select('id,name,email,status,active,is_open,commission_rate,stripe_details_submitted,stripe_payouts_enabled,created_at').order('created_at', { ascending: false }).limit(200),
         db.from('driver_cash_commission_debts').select('driver_id,remaining_amount,currency,settled_at').is('settled_at', null),
         db.from('driver_payouts').select('id,driver_id,amount,currency,status,failure_reason,requested_at,processed_at').order('created_at', { ascending: false }).limit(100),
         db.from('courier_food_earnings').select('id,courier_id,order_id,final_amount,currency,status,failure_reason,stripe_transfer_id,paid_at,created_at').order('created_at', { ascending: false }).limit(100),
+        db.from('driver_activity_guarantees').select('id,driver_id,period_start,period_end,ride_count,review_ride_count,activity_seconds,qualifying_income,required_income,top_up_amount,currency,status,stripe_transfer_id,failure_reason,calculated_at,paid_at').order('period_start', { ascending: false }).limit(200),
       ]);
-      const failure = [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult].find(result => result.error)?.error;
+      const failure = [driversResult, couriersResult, restaurantsResult, debtsResult, payoutsResult, earningsResult, guaranteesResult].find(result => result.error)?.error;
       if (failure) throw failure;
       const debtByDriver: Record<string, number> = {};
       for (const debt of debtsResult.data || []) debtByDriver[debt.driver_id] = (debtByDriver[debt.driver_id] || 0) + Number(debt.remaining_amount || 0);
@@ -413,7 +414,70 @@ Deno.serve(async (req) => {
         drivers: (driversResult.data || []).map((driver: any) => ({ ...driver, cash_commission_debt: debtByDriver[driver.id] || 0 })),
         couriers: couriersResult.data || [], restaurants: restaurantsResult.data || [],
         driver_payouts: payoutsResult.data || [], courier_earnings: earningsResult.data || [],
+        driver_activity_guarantees: guaranteesResult.data || [],
       });
+    }
+
+    if (action === 'pay_driver_activity_guarantee') {
+      const guaranteeId = text(body.guarantee_id, 80);
+      if (!guaranteeId) return json({ error: 'Guarantee id required' }, 400);
+      const { data: guarantee, error: guaranteeError } = await db.from('driver_activity_guarantees')
+        .select('id,driver_id,period_start,period_end,top_up_amount,currency,status,stripe_transfer_id')
+        .eq('id', guaranteeId).maybeSingle();
+      if (guaranteeError) throw guaranteeError;
+      if (!guarantee) return json({ error: 'Guarantee not found' }, 404);
+      if (guarantee.status === 'paid') return json({ ok: true, guarantee, already_paid: true });
+      if (!['pending', 'failed'].includes(guarantee.status) || Number(guarantee.top_up_amount) <= 0) {
+        return json({ error: 'Guarantee is not ready for payment' }, 409);
+      }
+      const { data: driver, error: driverError } = await db.from('drivers')
+        .select('id,stripe_account_id,stripe_details_submitted,stripe_payouts_enabled')
+        .eq('id', guarantee.driver_id).maybeSingle();
+      if (driverError) throw driverError;
+      if (!driver?.stripe_account_id || !driver.stripe_details_submitted || !driver.stripe_payouts_enabled) {
+        return json({ error: 'Driver Stripe payout account is not ready' }, 409);
+      }
+      const stripeKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
+      if (!stripeKey) return json({ error: 'Stripe payout service is not configured' }, 503);
+      const { data: reserved, error: reserveError } = await db.from('driver_activity_guarantees')
+        .update({ status: 'processing', failure_reason: null, updated_at: new Date().toISOString() })
+        .eq('id', guaranteeId).in('status', ['pending', 'failed']).select().maybeSingle();
+      if (reserveError) throw reserveError;
+      if (!reserved) return json({ error: 'Guarantee payment is already being processed' }, 409);
+      const amount = Math.round(Number(guarantee.top_up_amount) * 100);
+      const params = new URLSearchParams({
+        amount: String(amount),
+        currency: String(guarantee.currency || 'EUR').toLowerCase(),
+        destination: driver.stripe_account_id,
+        description: `VASI driver activity guarantee ${guarantee.period_start} to ${guarantee.period_end}`,
+        'metadata[guarantee_id]': guarantee.id,
+        'metadata[driver_id]': guarantee.driver_id,
+        'metadata[service]': 'driver_activity_guarantee',
+      });
+      const stripeResponse = await fetch('https://api.stripe.com/v1/transfers', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${stripeKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Idempotency-Key': `vasi-driver-guarantee-${guarantee.id}`,
+        },
+        body: params,
+      });
+      const transfer = await stripeResponse.json();
+      if (!stripeResponse.ok) {
+        const reason = text(transfer?.error?.message || 'Stripe transfer failed', 500);
+        await db.from('driver_activity_guarantees').update({ status: 'failed', failure_reason: reason, updated_at: new Date().toISOString() }).eq('id', guaranteeId);
+        return json({ error: reason }, stripeResponse.status);
+      }
+      const { data: paid, error: paidError } = await db.from('driver_activity_guarantees').update({
+        status: 'paid', stripe_transfer_id: transfer.id, failure_reason: null,
+        paid_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      }).eq('id', guaranteeId).select().single();
+      if (paidError) throw paidError;
+      await audit('driver_activity_guarantee_paid', 'driver_activity_guarantee', guaranteeId, {
+        driver_id: guarantee.driver_id, amount: Number(guarantee.top_up_amount), transfer_id: transfer.id,
+      });
+      return json({ ok: true, guarantee: paid });
     }
 
     if (action === 'list_audit') {

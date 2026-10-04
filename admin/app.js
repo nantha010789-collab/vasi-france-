@@ -46,7 +46,34 @@
     });
   }
   async function endAdminSession(){await db.auth.signOut({scope:'local'});adminRole?.clear();location.replace('../admin-login.html')}
-  async function api(path,options={}){const {data}=await db.auth.getSession();accessToken=data.session?.access_token||'';if(!accessToken){await endAdminSession();throw new Error('Session administrateur expirée.')}const response=await fetch(path,{...options,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});const result=await response.json().catch(()=>({}));if(response.status===401||response.status===403){await endAdminSession();throw new Error('Session administrateur expirée.')}if(!response.ok)throw new Error(result.error||`Erreur ${response.status}`);return result}
+  let renderVersion = 0;
+  const pendingRequests = new Set();
+  function staleRequest(){const error=new Error('Navigation changed');error.stale=true;return error}
+  async function api(path,options={}){
+    const version=renderVersion,controller=new AbortController();
+    pendingRequests.add(controller);
+    let expired=false;
+    const timer=setTimeout(()=>{expired=true;controller.abort()},12000);
+    try{
+      const {data}=await Promise.race([
+        db.auth.getSession(),
+        new Promise((_,reject)=>controller.signal.addEventListener('abort',()=>reject(new Error('Request cancelled')),{once:true}))
+      ]);
+      if(version!==renderVersion)throw staleRequest();
+      accessToken=data.session?.access_token||'';
+      if(!accessToken){await endAdminSession();throw new Error('Session administrateur expirée.')}
+      const response=await fetch(path,{...options,signal:controller.signal,headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json',...(options.headers||{})}});
+      const result=await response.json();
+      if(version!==renderVersion)throw staleRequest();
+      if(response.status===401){await endAdminSession();throw new Error('Session administrateur expirée.')}
+      if(!response.ok)throw new Error(result.error||`Erreur ${response.status}`);
+      return result;
+    }catch(error){
+      if(version!==renderVersion)throw staleRequest();
+      if(expired)throw new Error('Le chargement a pris trop de temps. Vérifiez votre connexion et réessayez.');
+      throw error;
+    }finally{clearTimeout(timer);pendingRequests.delete(controller)}
+  }
   function syncMapSize(){
     if(!map)return;
     requestAnimationFrame(()=>{
@@ -84,8 +111,8 @@
     if(map){map.remove();map=null}
     mapTiles=null;mapLoadFailures=0;markers={};gpsFitted=false;
   }
-  function shell(name,content,actions=''){title.textContent=name;app.setAttribute('aria-busy','false');app.innerHTML=`${actions}<div id="content">${content}</div>`}
-  function errorView(error){setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}</div>`}
+  function shell(name,content,actions=''){if(content===null)return;title.textContent=name;app.setAttribute('aria-busy','false');app.innerHTML=`${actions}<div id="content">${content}</div>`}
+  function errorView(error){if(error.stale)return null;setConnected(false);return `<div class="error"><strong>Données indisponibles.</strong><br>${esc(error.message)}<br><button class="button" data-refresh>Réessayer</button></div>`}
   function gotoButton(label,target,kind=''){return `<button class="button ${kind}" data-goto="${esc(target)}">${esc(label)}</button>`}
   function alertCard(level,title,value,note,target){return `<article class="ops-alert ${level}"><div><span class="ops-kicker">${level==='critical'?'Priorité':level==='warn'?'À traiter':'OK'}</span><h3>${esc(title)}</h3><strong>${esc(value)}</strong><p>${esc(note)}</p></div>${target?gotoButton('Ouvrir',target):''}</article>`}
   async function askAdminAI(){
@@ -195,12 +222,28 @@
     }catch(e){shell('Restaurants',errorView(e))}
   }
   async function orders(){try{const data=await api('/api/admin-orders');const food=table(['Commande','Restaurant','Client','Total','Paiement','Livraison','Versements'],(data.food_orders||[]).map(o=>`<tr data-status="${esc(o.status)}"><td><div class="cell-main mono">#${esc(o.id.slice(0,8).toUpperCase())}</div><div class="cell-sub">${fmt(o.created_at)}</div></td><td>${esc(o.restaurant_name||'Restaurant')}</td><td><div class="cell-sub">${esc(o.delivery_address||'—')}</div></td><td>${money(o.total)}</td><td>${badge(o.payment_status)}</td><td>${badge(o.status)}</td><td><div>Restaurant: ${badge(o.restaurant_payout_status||'pending')}</div><div class="cell-sub">Coursier: ${esc(o.courier_payout_status||'pending')}</div></td></tr>`));const deliveries=table(['Livraison','Trajet','Prix','Statut','Coursier'],(data.delivery_orders||[]).map(o=>`<tr data-status="${esc(o.status)}"><td><div class="cell-main">${esc(o.item_type||'Colis')}</div><div class="cell-sub mono">#${esc(o.id.slice(0,8).toUpperCase())} · ${fmt(o.created_at)}</div></td><td><div class="cell-main">${esc(o.pickup_address||'—')}</div><div class="cell-sub">→ ${esc(o.dropoff_address||'—')}</div></td><td>${money(o.quote)}</td><td>${badge(o.status)}</td><td>${o.delivery_driver_id||o.driver_id?'Affecté':'Non affecté'}</td></tr>`));shell('Commandes',`<section class="panel"><div class="panel-head"><h2>Commandes VASI Food</h2><button class="button" data-refresh>Actualiser</button></div>${filters(['pending','accepted','preparing','ready','picked_up','delivered','cancelled'])}${food}</section><section class="panel"><div class="panel-head"><h2>Livraisons de colis</h2></div>${deliveries}</section>`);bindFilter()}catch(e){shell('Commandes',errorView(e))}}
-  async function finance(){try{const data=await api('/api/admin-finance');const providers=[...(data.drivers||[]).map(x=>({...x,kind:'Chauffeur',name:x.full_name,state:x.status})),...(data.couriers||[]).map(x=>({...x,kind:'Coursier',name:x.full_name,state:x.application_status})),...(data.restaurants||[]).map(x=>({...x,kind:'Restaurant',state:x.status}))];const providerTable=table(['Partenaire','Type','Approbation','RIB / Stripe','Dette espèces'],providers.map(p=>`<tr data-status="${p.stripe_payouts_enabled?'ready':'blocked'}"><td><div class="cell-main">${esc(p.name||'Sans nom')}</div><div class="cell-sub">${esc(p.phone||p.email||'')}</div></td><td>${esc(p.kind)}</td><td>${badge(p.state)}</td><td>${payout(p)}</td><td>${p.kind==='Chauffeur'?money(p.cash_commission_debt||0):'—'}</td></tr>`));const payoutRows=table(['Versement','Chauffeur','Montant','Statut','Erreur','Date'],(data.driver_payouts||[]).map(p=>`<tr data-status="${esc(p.status)}"><td class="mono">#${esc(p.id.slice(0,8).toUpperCase())}</td><td class="mono">${esc(String(p.driver_id).slice(0,8))}</td><td>${money(p.amount)}</td><td>${badge(p.status)}</td><td><div class="cell-sub">${esc(p.failure_reason||'—')}</div></td><td>${fmt(p.processed_at||p.requested_at)}</td></tr>`));shell('Paiements',`<div class="summary-grid">${metric('Partenaires',providers.length)}${metric('RIB prêts',providers.filter(p=>p.stripe_payouts_enabled).length)}${metric('RIB à connecter',providers.filter(p=>!p.stripe_payouts_enabled).length)}${metric('Dette commission espèces',money((data.drivers||[]).reduce((n,d)=>n+Number(d.cash_commission_debt||0),0)))}</div><section class="panel"><div class="panel-head"><div><h2>Préparation des versements</h2><p class="muted">Le partenaire connecte son propre RIB. VASI ne stocke jamais l’IBAN complet.</p></div><button class="button" data-refresh>Actualiser</button></div>${providerTable}</section><section class="panel"><div class="panel-head"><h2>Historique des versements chauffeurs</h2></div>${payoutRows}</section>`)}catch(e){shell('Paiements',errorView(e))}}
+  async function finance(){
+    try{
+      const data=await api('/api/admin-finance');
+      const providers=[...(data.drivers||[]).map(x=>({...x,kind:'Chauffeur',name:x.full_name,state:x.status})),...(data.couriers||[]).map(x=>({...x,kind:'Coursier',name:x.full_name,state:x.application_status})),...(data.restaurants||[]).map(x=>({...x,kind:'Restaurant',state:x.status}))];
+      const providerTable=table(['Partenaire','Type','Approbation','RIB / Stripe','Dette espèces'],providers.map(p=>`<tr data-status="${p.stripe_payouts_enabled?'ready':'blocked'}"><td><div class="cell-main">${esc(p.name||'Sans nom')}</div><div class="cell-sub">${esc(p.phone||p.email||'')}</div></td><td>${esc(p.kind)}</td><td>${badge(p.state)}</td><td>${payout(p)}</td><td>${p.kind==='Chauffeur'?money(p.cash_commission_debt||0):'—'}</td></tr>`));
+      const payoutRows=table(['Versement','Chauffeur','Montant','Statut','Erreur','Date'],(data.driver_payouts||[]).map(p=>`<tr data-status="${esc(p.status)}"><td class="mono">#${esc(p.id.slice(0,8).toUpperCase())}</td><td class="mono">${esc(String(p.driver_id).slice(0,8))}</td><td>${money(p.amount)}</td><td>${badge(p.status)}</td><td><div class="cell-sub">${esc(p.failure_reason||'—')}</div></td><td>${fmt(p.processed_at||p.requested_at)}</td></tr>`));
+      const guarantees=data.driver_activity_guarantees||[];
+      const guaranteeRows=table(['Période','Chauffeur','Courses / activité','Revenu','Garantie','Complément','Statut','Action'],guarantees.map(g=>`<tr data-status="${esc(g.status)}"><td>${esc(g.period_start)} → ${esc(g.period_end)}</td><td class="mono">${esc(String(g.driver_id).slice(0,8))}</td><td>${Number(g.ride_count)||0}<div class="cell-sub">${(Number(g.activity_seconds||0)/3600).toFixed(2)} h${Number(g.review_ride_count)>0?` · ${Number(g.review_ride_count)} à contrôler`:''}</div></td><td>${money(g.qualifying_income)}</td><td>${money(g.required_income)}</td><td>${money(g.top_up_amount)}</td><td>${badge(g.status)}</td><td>${['pending','failed'].includes(g.status)&&Number(g.top_up_amount)>0?`<button class="button primary" data-guarantee="${esc(g.id)}">Verser</button>`:'—'}</td></tr>`));
+      shell('Paiements',`<div class="summary-grid">${metric('Partenaires',providers.length)}${metric('RIB prêts',providers.filter(p=>p.stripe_payouts_enabled).length)}${metric('Compléments activité',money(guarantees.filter(g=>['pending','failed'].includes(g.status)).reduce((n,g)=>n+Number(g.top_up_amount||0),0)))}${metric('Dette commission espèces',money((data.drivers||[]).reduce((n,d)=>n+Number(d.cash_commission_debt||0),0)))}</div><section class="panel"><div class="panel-head"><div><h2>Garantie chauffeur 30 €/heure d’activité</h2><p class="muted">Calcul mensuel. Les lignes à contrôler ne sont jamais versées automatiquement.</p></div><button class="button" data-refresh>Actualiser</button></div>${guaranteeRows}</section><section class="panel"><div class="panel-head"><div><h2>Préparation des versements</h2><p class="muted">Le partenaire connecte son propre RIB. VASI ne stocke jamais l’IBAN complet.</p></div></div>${providerTable}</section><section class="panel"><div class="panel-head"><h2>Historique des versements chauffeurs</h2></div>${payoutRows}</section>`);
+      document.querySelectorAll('[data-guarantee]').forEach(btn=>btn.addEventListener('click',async()=>{
+        if(!confirm('Confirmer le versement Stripe de ce complément chauffeur ?'))return;
+        btn.disabled=true;
+        try{await api('/api/admin-finance',{method:'POST',body:JSON.stringify({guarantee_id:btn.dataset.guarantee})});notify('Complément chauffeur versé');finance()}catch(error){notify(error.message);btn.disabled=false}
+      }));
+    }catch(e){shell('Paiements',errorView(e))}
+  }
   async function audit(){try{const data=await api('/api/admin-audit');const html=table(['Date','Action','Cible','Administrateur','Détails'],(data.events||[]).map(e=>`<tr><td>${fmt(e.created_at)}</td><td>${badge(e.action)}</td><td>${esc(e.target_type||'—')}<div class="cell-sub mono">${esc(e.target_id||'')}</div></td><td class="mono">${esc(String(e.admin_id||'').slice(0,8))}</td><td><div class="cell-sub mono">${esc(JSON.stringify(e.details||{}))}</div></td></tr>`));shell('Journal',`<section class="panel"><div class="panel-head"><div><h2>Journal d’administration</h2><p class="muted">Traçabilité des validations, refus et changements sensibles.</p></div><button class="button" data-refresh>Actualiser</button></div>${html}</section>`)}catch(e){shell('Journal',errorView(e))}}
   async function pricing(){try{const p=await api('/api/pricing');const cards=Object.entries(p.classes||{}).map(([name,v])=>metric(name.toUpperCase(),`${money(v.base)} + ${money(v.km)}/km`,`Minimum ${money(v.minFare)} · ${money(v.min)}/min`)).join('');shell('Tarifs & offres',`<div class="summary-grid">${cards}</div><section class="panel"><div class="panel-head"><div><h2>${esc(p.offer_name||'Offre VASI')}</h2><p class="muted">${p.offer_active?'Offre active':'Offre inactive'} · remise ${esc(p.discount_percent||0)} %</p></div><div class="actions"><a class="button" href="../admin-discounts.html">Gérer les codes promo</a><a class="button primary" href="../pricing-admin.html">Modifier les tarifs</a></div></div></section>`)}catch(e){shell('Tarifs & offres',errorView(e))}}
   async function support(){try{const data=await api('/api/support?admin=1'),rows=data.tickets||[];const html=table(['Ticket','Compte','Message','Priorité','Statut','Action'],rows.map(t=>`<tr data-status="${esc(t.status)}"><td><div class="cell-main">${esc(t.subject||t.category||'Support')}</div><div class="cell-sub">${fmt(t.created_at)}</div></td><td>${esc(t.user_role||'client')}</td><td><div class="cell-sub">${esc(t.description||'')}</div></td><td>${badge(t.priority)}</td><td>${badge(t.status)}</td><td><button class="button" data-ticket="${esc(t.id)}">Répondre</button></td></tr>`));shell('Support',`<section class="panel"><div class="panel-head"><h2>Tickets clients et partenaires</h2></div>${filters(['open','waiting_human','in_progress','resolved','closed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-ticket]').forEach(btn=>btn.addEventListener('click',async()=>{const reply=prompt('Réponse VASI :');if(!reply?.trim())return;await api('/api/support',{method:'PATCH',body:JSON.stringify({id:btn.dataset.ticket,status:'resolved',human_reply:reply.trim()})});notify('Réponse enregistrée');support()}))}catch(e){shell('Support',errorView(e))}}
   async function deletions(){try{const data=await api('/api/admin-deletions'),rows=data.requests||[];const html=table(['Demande','Compte','Motif','Échéance','Statut','Actions'],rows.map(r=>`<tr data-status="${esc(r.status)}"><td><div class="cell-main mono">#${esc(r.id.slice(0,8).toUpperCase())}</div><div class="cell-sub">${fmt(r.requested_at)}</div></td><td class="mono">${esc(String(r.user_id).slice(0,8))}</td><td><div class="cell-sub">${esc(r.reason||'Aucun motif')}</div></td><td>${fmt(r.scheduled_for)}</td><td>${badge(r.status)}</td><td>${['requested','processing'].includes(r.status)?`<div class="actions"><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="processing">Traiter</button><button class="button danger" data-deletion="${esc(r.id)}" data-deletion-status="rejected">Refuser</button><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="cancelled">Annuler</button></div>`:'—'}</td></tr>`));shell('Suppressions',`<section class="panel"><div class="panel-head"><div><h2>Demandes de suppression</h2><p class="muted">Vérifiez les courses, paiements et obligations légales avant toute suppression. La clôture définitive exige la procédure serveur sécurisée.</p></div><button class="button" data-refresh>Actualiser</button></div>${filters(['requested','processing','cancelled','rejected','completed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-deletion]').forEach(btn=>btn.addEventListener('click',async()=>{const note=prompt('Note interne :','Vérification administrateur')||'';if(!confirm('Confirmer la mise à jour de cette demande ?'))return;await api('/api/admin-deletions',{method:'PATCH',body:JSON.stringify({id:btn.dataset.deletion,status:btn.dataset.deletionStatus,admin_note:note})});notify('Demande mise à jour');deletions()}))}catch(e){shell('Suppressions',errorView(e))}}
   async function gps(){
+    const version=renderVersion;
     if(!map){
       shell('Live GPS',`<section class="panel gps-panel"><div class="panel-head"><div><h2>Live drivers</h2><p id="gpsStatus" class="muted" role="status">Loading driver positions…</p></div><button class="button" data-refresh>Refresh</button></div><div class="gps-map-shell"><div id="gpsMap" class="gps-map" aria-label="Interactive live driver map"></div><div id="gpsMapLoading" class="gps-map-loading" role="status"><span class="gps-spinner" aria-hidden="true"></span>Loading map…</div><div id="gpsMapNotice" class="gps-map-notice" role="status" hidden></div><div class="gps-map-legend" aria-label="Map legend"><span><i class="gps-dot live"></i>Recent position</span><span><i class="gps-dot stale"></i>Refresh needed</span></div></div></section>`);
       if(!window.L||!window.maplibregl||typeof window.L.maplibreGL!=='function'){shell('Live GPS',errorView(new Error('The map could not be loaded. Check your internet connection.')));return}
@@ -238,15 +281,28 @@
       syncMapSize();
       if(status){const updated=new Intl.DateTimeFormat(isFrench()?'fr-FR':'en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(data.updated_at||Date.now()));status.textContent=bounds.length?(isFrench()?`${bounds.length} chauffeur${bounds.length>1?'s':''} en ligne · Actualisé à ${updated}`:`${bounds.length} driver${bounds.length>1?'s':''} online · Updated at ${updated}`):'No verified driver is online. The map is ready and positions will appear automatically.'}
     }catch(e){
+      if(e.stale)return;
       setConnected(false);
       if(status)status.textContent='Positions temporarily unavailable. Retrying automatically…';
     }finally{
-      if(gpsTimer)clearTimeout(gpsTimer);
-      gpsTimer=setTimeout(()=>active==='gps'&&gps(),15000);
+      if(version===renderVersion){
+        if(gpsTimer)clearTimeout(gpsTimer);
+        if(active==='gps')gpsTimer=setTimeout(()=>active==='gps'&&gps(),15000);
+      }
     }
   }
   const loaders={overview,control,bookings,gps,drivers,documents,couriers,restaurants,orders,finance,reports,pricing,support,deletions,audit};
-  async function render(id){stopGps();active=id;document.querySelectorAll('.nav-button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));app.setAttribute('aria-busy','true');app.innerHTML='<div class="loading">Chargement…</div>';await loaders[id]();document.querySelectorAll('[data-refresh]').forEach(btn=>btn.addEventListener('click',()=>active==='gps'?gps():render(active)));document.querySelectorAll('[data-goto]').forEach(btn=>btn.addEventListener('click',()=>render(btn.dataset.goto)))}
+  async function render(id){
+    const version=++renderVersion;
+    pendingRequests.forEach(controller=>controller.abort());
+    stopGps();active=id;title.textContent=sections.find(([key])=>key===id)?.[1]||id;
+    document.querySelectorAll('.nav-button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
+    app.setAttribute('aria-busy','true');app.innerHTML='<div class="loading">Chargement…</div>';
+    try{await loaders[id]()}catch(error){if(version===renderVersion)shell(title.textContent,errorView(error))}
+    if(version!==renderVersion)return;
+    document.querySelectorAll('[data-refresh]').forEach(btn=>btn.addEventListener('click',()=>active==='gps'?gps():render(active)));
+    document.querySelectorAll('[data-goto]').forEach(btn=>btn.addEventListener('click',()=>render(btn.dataset.goto)));
+  }
   sections.forEach(([id,label])=>{const button=document.createElement('button');button.type='button';button.className='nav-button';button.dataset.section=id;button.innerHTML=`<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${sectionIcons[id]}</svg><span>${label}</span>`;button.addEventListener('click',()=>render(id));nav.appendChild(button)});
   document.getElementById('logout').addEventListener('click',endAdminSession);
   const language=document.getElementById('adminLanguage');language.value=['fr','en'].includes(window.VasiLanguage?.getLanguage?.())?window.VasiLanguage.getLanguage():'fr';language.addEventListener('change',()=>{window.VasiLanguage?.setLanguage(language.value);render(active)});

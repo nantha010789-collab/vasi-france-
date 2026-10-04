@@ -816,8 +816,8 @@
           if (consumeReturn) localStorage.removeItem(returnStorageKey);
           return back;
         }
-        if (savedRole === "ride") return "driver.html";
-        if (savedRole === "courier") return "delivery-driver.html";
+        if (savedRole === "ride") return "driver-status.html?role=ride";
+        if (savedRole === "courier") return "driver-status.html?role=courier";
         if (savedRole === "restaurant") return "restaurant-dashboard.html";
         if (consumeReturn) localStorage.removeItem(returnStorageKey);
         return "index.html";

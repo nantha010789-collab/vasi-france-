@@ -14,7 +14,7 @@ function commissionPercent(ride) {
   const fare = Number(ride.estimated_fare || 0);
   const fee = Number(ride.vasi_commission || 0);
   if (fare > 0 && fee >= 0) return Math.min(50, (fee / fare) * 100);
-  return 15;
+  return 12;
 }
 
 async function sb(path, auth, options = {}) {

@@ -148,6 +148,58 @@ test("completed card ride captures the frozen 15% VASI commission", async () => 
   assert.equal(res.body.bank_payout_credit, 15.64);
 });
 
+test("VASI-funded card offer preserves the protected driver payout", async () => {
+  let captureBody = "";
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.includes("/rest/v1/rides?")) {
+      return response([{
+        id: "ride-funded",
+        customer_id: "customer-1",
+        driver_id: "driver-1",
+        status: "completed",
+        fare_model: "vasi_funded_v1",
+        estimated_fare: 9,
+        final_fare: 9,
+        regular_fare: 10.23,
+        platform_funded_discount: 1.23,
+        commission_percent: 12,
+        gross_vasi_commission: 1.23,
+        vasi_commission: 0,
+        driver_amount: 9,
+        payment_method: "card",
+      }]);
+    }
+    if (value.endsWith("/auth/v1/user")) return response({ id: "driver-user" });
+    if (value.includes("/rest/v1/drivers?")) return response([{ id: "driver-1" }]);
+    if (value.includes("/rest/v1/payments?") && options.method !== "PATCH") {
+      return response([{ id: "payment-funded", provider_payment_id: "pi_funded", amount: 9 }]);
+    }
+    if (value.endsWith("/payment_intents/pi_funded")) {
+      return response({ id: "pi_funded", status: "requires_capture", amount: 900 });
+    }
+    if (value.includes("/rpc/reserve_ride_cash_commission_offset")) {
+      return response({ ok: true, amount: 0, currency: "EUR", status: "none" });
+    }
+    if (value.endsWith("/payment_intents/pi_funded/capture")) {
+      captureBody = String(options.body);
+      return response({ id: "pi_funded", status: "succeeded" });
+    }
+    if (value.includes("/rest/v1/payments?id=eq.payment-funded")) return response(null, 204);
+    throw new Error(`Unexpected request: ${value}`);
+  };
+  const { default: capturePayment } = await import(`../api/capture-payment.js?test=${Date.now()}`);
+  const req = { method: "POST", headers: { authorization: "Bearer driver-token" }, body: { ride_id: "ride-funded" } };
+  const res = mockRes();
+  await capturePayment(req, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(new URLSearchParams(captureBody).get("amount_to_capture"), "900");
+  assert.equal(new URLSearchParams(captureBody).get("application_fee_amount"), null);
+  assert.equal(res.body.vasi_commission, 0);
+  assert.equal(res.body.driver_amount, 9);
+  assert.equal(res.body.bank_payout_credit, 9);
+});
+
 test("cash commission debt is withheld automatically from the next card ride", async () => {
   let captureBody = "";
   let captureHeaders = {};
@@ -215,24 +267,29 @@ test("cash commission debt is withheld automatically from the next card ride", a
   assert.equal(res.body.cash_commission_status, "pending_stripe_confirmation");
 });
 
-test("ride commission defaults to 15% and remains admin-adjustable", async () => {
-  const [pricingAdmin, pricingApi, adminService, createPayment, migration] = await Promise.all([
+test("ride commission defaults to 12% and remains admin-adjustable", async () => {
+  const [pricingAdmin, pricingApi, adminService, createPayment, migration, fundedMigration] = await Promise.all([
     readFile("pricing-admin.html", "utf8"),
     readFile("api/pricing.js", "utf8"),
     readFile("supabase/functions/admin-service/index.ts", "utf8"),
     readFile("api/create-payment-intent.js", "utf8"),
     readFile("supabase/migrations/20260905124034_add_admin_ride_commission.sql", "utf8"),
+    readFile("supabase/migrations/20261004090000_add_vasi_funded_ride_offers_and_activity_guarantee.sql", "utf8"),
   ]);
   assert.match(pricingAdmin, /id="ride_commission_percent"/);
-  assert.match(pricingAdmin, /value="15"/);
+  assert.match(pricingAdmin, /value="12"/);
   assert.match(pricingApi, /ride_commission_percent: 12/);
   assert.match(adminService, /Ride commission must be between 0% and 50%/);
   assert.doesNotMatch(createPayment, /PROMO_END|VASI_COMMISSION_PERCENT/);
-  assert.match(createPayment, /return 15/);
+  assert.match(createPayment, /return 12/);
   assert.match(migration, /ride_commission_percent numeric not null default 15/);
   assert.match(migration, /security invoker/);
   assert.match(migration, /new\.commission_percent := old\.commission_percent/);
   assert.match(migration, /before insert or update of/);
+  assert.match(fundedMigration, /fare_model = 'vasi_funded_v1'/);
+  assert.match(fundedMigration, /driver_activity_guarantees/);
+  assert.match(fundedMigration, /activity_seconds \/ 3600 \* 30/);
+  assert.match(fundedMigration, /vasi-monthly-driver-guarantee/);
 });
 
 test("ride drivers onboard their RIB with weekly Monday automatic payouts", async () => {
@@ -1559,7 +1616,8 @@ test("public account surfaces expose bilingual legal and privacy information", a
   assert.match(legal, /Legal & Privacy/);
   assert.match(legal, /Politique de confidentialité/);
   assert.match(legal, /contact@vasigo\.eu/);
-  assert.match(legal, /defaults to 15%/);
+  assert.match(legal, /defaults to 12%/);
+  assert.match(legal, /VASI-funded customer offer/);
   for (const surface of [index, account, settings]) assert.match(surface, /legal\.html/);
   assert.match(migration, /alter table public\.spatial_ref_sys enable row level security/i);
   assert.match(migration, /revoke execute on function public\.st_estimatedextent/i);
