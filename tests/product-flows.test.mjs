@@ -1537,7 +1537,7 @@ test("bicycle couriers are not asked for motor-vehicle licence documents", async
   assert.match(registration, /const motorVehicles = new Set\(\['scooter', 'moto', 'car'\]\)/);
   assert.match(registration, /const cycle = role === 'courier' && !motor/);
   assert.match(registration, /\$\('motorDocs'\)\.classList\.toggle\('hidden', !motor\)/);
-  assert.match(registration, /identity:selected\('identity'\), business:selected\('courier_business'\), bag:selected\('bag'\), vehicle_photo:selected\('vehicle_photo'\)/);
+  assert.match(registration, /identity:selected\('identity'\), identity_back:selected\('identity_back'\), business:selected\('courier_business'\), bag:selected\('bag'\), vehicle_photo:selected\('vehicle_photo'\)/);
   assert.doesNotMatch(registration, /id="rib"/);
   assert.match(registration, /Vous ajoutez vous-même votre RIB/);
   assert.match(registration, /VASI ne stocke pas votre IBAN complet/);

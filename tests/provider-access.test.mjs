@@ -10,7 +10,7 @@ function harness(extra = {}) {
   return { access: context.window.VasiProviderAccess, redirects };
 }
 const profile = {id:"applicant", status:"approved", verified:true};
-const documents = ["identity", "vtc", "licence", "business", "insurance", "carte_grise", "selfie"].map(document_type => ({document_type, file_path:"applicant/"+document_type, status:"approved"}));
+const documents = ["identity", "identity_back", "vtc", "licence", "business", "insurance", "carte_grise", "selfie"].map(document_type => ({document_type, file_path:"applicant/"+document_type, status:"approved"}));
 function clientMock(driver, docs = documents, error = null) {
   const filters=[];
   return {
@@ -28,7 +28,7 @@ test("a login with no application or documents remains incomplete", () => {
   assert.equal(result.state,"incomplete");
   assert.equal(result.present.length,0);
   assert.equal(result.approved.length,0);
-  assert.equal(result.required.length,7);
+  assert.equal(result.required.length,8);
 });
 test("submitted complete documents require BOTH server approval and verification", () => {
   const {access}=harness();

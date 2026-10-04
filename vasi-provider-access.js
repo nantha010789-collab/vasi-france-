@@ -1,11 +1,11 @@
 (function () {
   "use strict";
-  const rideDocuments = ["identity", "vtc", "licence", "business", "insurance", "carte_grise", "selfie"];
+  const rideDocuments = ["identity", "identity_back", "vtc", "licence", "business", "insurance", "carte_grise", "selfie"];
   const motorVehicles = new Set(["scooter", "moto", "car"]);
 
   function requiredDocuments(role, profile) {
     if (role === "ride") return [...rideDocuments];
-    const required = ["identity", "business", "bag", "vehicle_photo", "selfie"];
+    const required = ["identity", "identity_back", "business", "bag", "vehicle_photo", "selfie"];
     if (motorVehicles.has(profile?.vehicle_type)) required.push("licence", "insurance", "carte_grise", "transport_licence");
     return required;
   }
