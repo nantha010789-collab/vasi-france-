@@ -18,6 +18,20 @@ const driverMarketplaceMigration = readFileSync(
   "utf8",
 );
 
+const packageJson = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+);
+
+const testWorkflow = readFileSync(
+  new URL("../.github/workflows/test.yml", import.meta.url),
+  "utf8",
+);
+
+test("production uses the same stable Node runtime as product-flow CI", () => {
+  assert.equal(packageJson.engines?.node, "22.x");
+  assert.match(testWorkflow, /node-version:\s*22\b/);
+});
+
 test("future database functions require an explicit browser-role grant", () => {
   assert.match(
     migration,
