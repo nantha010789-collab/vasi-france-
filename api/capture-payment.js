@@ -45,7 +45,7 @@ function rideCommissionPercent(ride) {
   const storedFee = Number(ride.vasi_commission || 0);
   if (estimatedFare > 0 && storedFee >= 0)
     return Math.min(50, (storedFee / estimatedFare) * 100);
-  return 15;
+  return 12;
 }
 
 export default async function handler(req, res) {
@@ -161,13 +161,17 @@ export default async function handler(req, res) {
       });
 
     const commissionPercent = rideCommissionPercent(ride);
-    const rideCommission = Math.max(
-      0,
-      Math.min(
-        captureAmount,
-        Math.round((captureAmount * commissionPercent) / 100),
-      ),
-    );
+    const fundedOffer = ride.fare_model === "vasi_funded_v1" && kind === "ride";
+    const protectedDriverAmount = Math.round(Number(ride.driver_amount || 0) * 100);
+    const rideCommission = fundedOffer
+      ? Math.max(0, Math.min(captureAmount, captureAmount - protectedDriverAmount))
+      : Math.max(
+          0,
+          Math.min(
+            captureAmount,
+            Math.round((captureAmount * commissionPercent) / 100),
+          ),
+        );
     const reservedOffset = await reserveCashCommissionOffset(id, auth);
     const cashDebtOffset = Math.max(
       0,
@@ -217,7 +221,9 @@ export default async function handler(req, res) {
       kind,
       commission_percent: commissionPercent,
       vasi_commission: rideCommission / 100,
-      driver_amount: (captureAmount - rideCommission) / 100,
+      driver_amount: fundedOffer
+        ? protectedDriverAmount / 100
+        : (captureAmount - rideCommission) / 100,
       cash_commission_debt_deducted: cashDebtOffset / 100,
       bank_payout_credit: (captureAmount - applicationFee) / 100,
       cash_commission_status: "pending_stripe_confirmation",

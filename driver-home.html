@@ -60,6 +60,7 @@
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-account-role.js"></script>
+    <script src="./vasi-provider-access.js"></script>
     <script src="./vasi-pwa.js"></script>
     <script>
       const client = supabase.createClient(
@@ -69,16 +70,31 @@
       );
       const accountRole = VasiAccountRole.scoped("driver");
       const destinations = { ride: "driver.html", courier: "delivery-driver.html" };
-      client.auth.getSession().then(({ data: { session } }) => {
+      client.auth.getSession().then(async ({ data: { session } }) => {
         const role = accountRole.active();
         if (!session || !destinations[role]) return;
         const label = role === "ride" ? "chauffeur" : "livreur";
-        document.getElementById("sessionTitle").textContent = "Compte " + label + " connecté";
-        document.getElementById("sessionCopy").textContent = "Continuez dans votre espace professionnel. Pour utiliser une autre activité, déconnectez d’abord ce compte.";
-        document.getElementById("continueLink").href = destinations[role];
-        document.getElementById("continueLink").textContent = "Continuer comme " + label + " →";
+        document.getElementById("sessionTitle").textContent = "Connexion réussie — vérification du dossier";
+        document.getElementById("sessionCopy").textContent = "La connexion ne signifie pas que VASI a approuvé votre dossier.";
+        document.getElementById("continueLink").href = VasiProviderAccess.statusUrl(role);
+        document.getElementById("continueLink").textContent = "Voir mon dossier →";
         document.querySelector(".choices").hidden = true;
         document.getElementById("sessionCard").hidden = false;
+        try {
+          const access = await VasiProviderAccess.read(client, role, session.user.id);
+          const copies = {
+            incomplete:["Connexion réussie — inscription " + label + " incomplète","Complétez et envoyez votre dossier avant la vérification par VASI."],
+            pending:["Dossier " + label + " en cours de vérification","L’espace professionnel reste bloqué jusqu’à l’approbation de VASI."],
+            rejected:["Dossier " + label + " à corriger","Consultez le motif et renvoyez les documents demandés."],
+            approved:["Compte " + label + " validé","Votre dossier professionnel a été approuvé par VASI."]
+          };
+          document.getElementById("sessionTitle").textContent = copies[access.state][0];
+          document.getElementById("sessionCopy").textContent = copies[access.state][1];
+          if (access.state === "approved") {
+            document.getElementById("continueLink").href = destinations[role];
+            document.getElementById("continueLink").textContent = "Ouvrir mon espace " + label + " →";
+          }
+        } catch (_) { document.getElementById("sessionCopy").textContent = "Statut indisponible. Réessayez depuis la page de votre dossier."; }
       });
       document.getElementById("changeAccount").addEventListener("click", async () => {
         await client.auth.signOut({ scope: "local" });

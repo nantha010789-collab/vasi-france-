@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import '../assets/ride-fare-guard.js';
 const guard = globalThis.VasiRideFareGuard;
+const fundedQuote = globalThis.VasiFundedRideQuote;
 
 test('12% commission protects €9 without changing a sufficient old tariff', () => {
   assert.equal(guard(7.5, 12, 1), 10.23);
@@ -19,6 +20,31 @@ test('offers cannot erode ride or estimated-distance driver floors', () => {
       assert.ok(driver >= Math.max(900, Math.ceil(km * 101)));
     }
   }
+});
+
+test('VASI funds customer offers without reducing driver pay', () => {
+  const welcome = fundedQuote(7.5, 12, 1, 15, 6);
+  assert.deepEqual(welcome, {
+    settlement_fare: 10.23,
+    customer_fare: 9,
+    customer_discount: 1.23,
+    platform_funded_discount: 1.23,
+    gross_vasi_commission: 1.23,
+    vasi_commission: 0,
+    driver_amount: 9,
+  });
+  const loyalty = fundedQuote(7.5, 12, 1, 10, 6);
+  assert.equal(loyalty.customer_fare, 9.21);
+  assert.equal(loyalty.driver_amount, 9);
+  assert.equal(loyalty.vasi_commission, 0.21);
+  assert.equal(loyalty.customer_fare, loyalty.driver_amount + loyalty.vasi_commission);
+});
+
+test('funded offer never exceeds VASI gross commission', () => {
+  const quote = fundedQuote(25, 12, 10, 50, 100);
+  assert.equal(quote.customer_discount, quote.gross_vasi_commission);
+  assert.equal(quote.vasi_commission, 0);
+  assert.equal(quote.customer_fare, quote.driver_amount);
 });
 
 // Synthetic scenarios: short/long rides and traffic, not competitor quotes.
@@ -42,6 +68,10 @@ test('same shared guard runs in browser and server', () => {
   const browser = {};
   runInNewContext(code, browser);
   assert.equal(browser.VasiRideFareGuard(6, 12, 1), guard(6, 12, 1));
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(browser.VasiFundedRideQuote(7.5, 12, 1, 15, 6))),
+    fundedQuote(7.5, 12, 1, 15, 6),
+  );
   const ui = readFileSync(new URL('../ride-flow.html', import.meta.url), 'utf8');
   assert.match(ui, /assets\/ride-fare-guard\.js/);
   assert.match(ui, /VasiRideFareGuard\(unprotectedPriceFor/);

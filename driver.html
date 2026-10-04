@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="fr">
   <head>
+    <style>html:not([data-provider-approved]) body > main,html:not([data-provider-approved]) .driver-bottom-nav{display:none!important}#providerLoading{padding:48px 24px;text-align:center;color:#becbe3;font:16px system-ui}</style>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
@@ -381,6 +382,7 @@
       <button class="driver-tab" type="button" data-driver-tab="menu" onclick="showDriverView('menu')"><span>☰</span><small>Menu</small></button>
     </nav>
     <div id="driverToast" class="toast" role="status" aria-live="polite"></div>
+    <div id="providerLoading" role="status">Vérification de votre dossier professionnel…</div>
     <script src="./vendor/leaflet-1.9.4.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
@@ -389,6 +391,7 @@
     <script src="./vasi-region.js"></script>
     <script src="./vasi-network.js?v=1"></script>
     <script src="./vasi-account-role.js"></script>
+    <script src="./vasi-provider-access.js"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -401,6 +404,7 @@
       const NAVIGATION_PREFERENCE_KEY = "vasi_driver_navigation_provider";
       const NAVIGATION_VOICE_KEY = "vasi_driver_navigation_voice";
       let online = false,
+        providerApproved = false,
         payoutReady = false,
         watch = null,
         channel = null,
@@ -521,6 +525,12 @@
           return (location.href = "auth.html?role=ride&surface=driver");
         }
         if (!accountRole.require("ride", data.session)) return;
+        const access = await VasiProviderAccess.requireApproval(client, "ride", data.session);
+        if (!access) return;
+        providerApproved = true;
+        document.documentElement.setAttribute("data-provider-approved", "true");
+        document.getElementById("providerLoading")?.remove();
+        VasiNotifications.start(client, { role: "driver" });
         const stripeReturn = new URLSearchParams(location.search).get("stripe");
         if (stripeReturn === "complete") {
           document.getElementById("payoutStatus").textContent =
@@ -531,7 +541,7 @@
         }
         await Promise.all([loadActiveRide(), loadPayoutBalance(), loadPayoutAccount(), loadDriverTools()]);
         if (typeof loadPlannedRides === "function") await loadPlannedRides();
-      });
+      }).catch(() => location.replace(VasiProviderAccess.statusUrl("ride")));
       async function askDriverAI() {
         const out = document.getElementById("driverAiAdvice");
         out.textContent = "Analyse en cours…";
@@ -559,13 +569,15 @@
           out.textContent = error.message || "VASI AI indisponible";
         }
       }
-            async function loadDriverTools() {
+      async function loadDriverTools() {
+        const userId = (await client.auth.getSession()).data.session?.user.id;
+        if (!userId) return;
         const monthStart = new Date();
         monthStart.setDate(1); monthStart.setHours(0,0,0,0);
         const [{ data: drivers }, { data: earnings }, { data: documents }, heat] = await Promise.all([
-          client.from("drivers").select("id,service_capabilities,full_name,vehicle_make,vehicle_model,vehicle_plate,rating").limit(1),
+          client.from("drivers").select("id,service_capabilities,full_name,vehicle_make,vehicle_model,vehicle_plate,rating").eq("user_id", userId).limit(1),
           client.from("driver_earnings").select("ride_id,gross_fare,vasi_commission,driver_earnings,currency,status,created_at").gte("created_at", monthStart.toISOString()).order("created_at", { ascending:false }),
-          client.from("driver_documents").select("document_type,status,expires_at").order("expires_at", { ascending:true }),
+          client.from("driver_documents").select("document_type,status,file_path,expires_at").eq("driver_id", userId).order("expires_at", { ascending:true }),
           client.rpc("vasi_driver_demand_heatmap"),
         ]);
         const capabilities = drivers?.[0]?.service_capabilities || [];
@@ -581,7 +593,8 @@
         if (typeof updateDriverProfile === "function") updateDriverProfile(drivers?.[0]);
         if (typeof renderEarningsChart === "function") renderEarningsChart(monthlyEarnings);
         const expiring = (documents || []).filter((doc)=>doc.expires_at && new Date(doc.expires_at).getTime() <= Date.now()+30*86400000);
-        document.getElementById("documentHealth").textContent = expiring.length ? String(expiring.length) : "✓";
+        const documentState = VasiProviderAccess.classify("ride", {status:"approved",verified:providerApproved}, documents);
+        document.getElementById("documentHealth").textContent = documentState.state === "approved" && !expiring.length ? "✓" : documentState.approved.length + "/" + documentState.required.length;
         document.getElementById("documentNotices").innerHTML = expiring.map((doc)=>`<div class="notice"><b>${esc(doc.document_type)}</b> expires ${esc(new Date(doc.expires_at).toLocaleDateString())}. Upload a renewed document before it expires.</div>`).join("");
         document.getElementById("busyZones").innerHTML = heat.error || !(heat.data || []).length
           ? '<div class="muted">Aucune zone de demande active pour le moment.</div>'
@@ -759,6 +772,7 @@
         );
       }
       async function toggleOnline() {
+        if (!providerApproved) return location.replace(VasiProviderAccess.statusUrl("ride"));
         if (activeRide) {
           alert("Finish your active ride before going online again.");
           return;
@@ -791,7 +805,7 @@
         document.getElementById("toggle").textContent = online
           ? "Arrêter les demandes"
           : "Passer en ligne";
-        document.getElementById("toggle").disabled = !!activeRide || (!online && !payoutReady);
+        document.getElementById("toggle").disabled = !providerApproved || !!activeRide || (!online && !payoutReady);
         document.getElementById("gps").textContent =
           watch !== null ? "GPS actif" : "GPS désactivé";
         if (typeof syncDriverDashboardState === "function") syncDriverDashboardState({ online, activeRide, watch, payoutReady });
@@ -1516,7 +1530,6 @@
       window.addEventListener("beforeunload", () => {
         if (watch !== null) navigator.geolocation.clearWatch(watch);
       });
-      VasiNotifications.start(client, { role: "driver" });
     </script>
     <script src="./vasi-driver-dashboard.js?v=1"></script>
     <script src="./vasi-languages.js?v=4"></script>

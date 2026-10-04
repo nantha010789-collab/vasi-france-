@@ -59,7 +59,8 @@ test('admin live GPS keeps one responsive map and refreshes markers in place', a
   assert.match(app, /active==='gps'\?gps\(\):render\(active\)/);
   assert.match(app, /Loading driver positions…/);
   assert.match(app, /No verified driver is online/);
-  assert.match(app, /db\.auth\.getSession\(\);accessToken=data\.session\?\.access_token/);
+  assert.match(app, /db\.auth\.getSession\(\)/);
+  assert.match(app, /accessToken=data\.session\?\.access_token/);
   assert.match(app, /<svg class="nav-icon"/);
   assert.doesNotMatch(app, /🚕|📍|🚗|📄|🛵|🍽|🧾|💬|🛡/);
 });
