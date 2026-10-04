@@ -1838,7 +1838,7 @@
             return;
           smartOffer = offer;
           $("promo").textContent =
-            `${offer.label} · ${offer.discount_percent}% off · up to €${Number(offer.max_discount_eur).toFixed(2)}`;
+            `${offer.label} · up to ${offer.discount_percent}% off · up to €${Number(offer.max_discount_eur).toFixed(2)}`;
           $("promo").classList.remove("hidden");
         } catch (error) {}
       }
