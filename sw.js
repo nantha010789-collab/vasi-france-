@@ -1,8 +1,9 @@
-const CACHE = "vasi-app-v115";
+const CACHE = "vasi-app-v116";
 const MAP_CACHE = "vasi-map-runtime-v2";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
 const CORE = [
+  appUrl("assets/ride-fare-guard.js"),
   appUrl("app.html"),appUrl("index.html"),appUrl("ride-flow.html"),appUrl("vasi-network.js"),appUrl("vendor/leaflet-1.9.4.js"),appUrl("vendor/leaflet-1.9.4.css"),appUrl("assets/vasi-logo.png"),appUrl("driver-home.html"),appUrl("driver-preview.html"),appUrl("ride-live-demo.html"),appUrl("driver.html"),appUrl("delivery-driver.html"),appUrl("vasi-driver-shell.css"),appUrl("vasi-driver-dashboard.css"),appUrl("vasi-driver-dashboard.js"),appUrl("partner.html"),appUrl("restaurant-register.html"),appUrl("restaurant-register-form.html"),appUrl("assets/ride-service.webp"),appUrl("assets/eats-service.webp"),appUrl("assets/delivery-service.webp"),appUrl("assets/vehicles/go.webp"),appUrl("assets/vasi-logo.png"),appUrl("assets/vasi-mark.png"),appUrl("manifest.webmanifest"),appUrl("driver-manifest.webmanifest"),appUrl("partner-manifest.webmanifest"),appUrl("admin-manifest.webmanifest"),appUrl("admin-login.html"),appUrl("admin-install.js"),appUrl("vasi-pwa.js"),appUrl("vasi-mobile-fit.css"),appUrl("vasi-word-icon-192.png"),appUrl("vasi-word-icon-512.png"),appUrl("vasi-notifications.js"),appUrl("vasi-languages.js"),appUrl("vasi-navigation.js"),appUrl("vasi-region.js"),appUrl("vasi-airports.js"),appUrl("vasi-call.js"),appUrl("vasi-account-role.js"),appUrl("delete-account.html"),appUrl("business-account.html"),appUrl("group-order.html"),appUrl("food-checkout.html"),appUrl("safety.html"),appUrl("share-ride.html"),appUrl("support.html"),appUrl("food-orders.html"),appUrl("restaurant-dashboard.html"),appUrl("restaurant-orders.html")
 ];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE.map(url=>new Request(url, { cache: "reload" })))).then(()=>self.skipWaiting())));
