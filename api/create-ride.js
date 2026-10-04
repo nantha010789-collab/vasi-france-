@@ -1,3 +1,5 @@
+import '../assets/ride-fare-guard.js';
+
 const supabaseUrl =
   process.env.VASI_SUPABASE_URL ||
   process.env.SUPABASE_URL ||
@@ -25,7 +27,7 @@ const RIDE_OPTIONS = new Set([
   "child_seat",
   "pet_friendly",
 ]);
-const DEFAULT_RIDE_COMMISSION_PERCENT = 15;
+const DEFAULT_RIDE_COMMISSION_PERCENT = 12;
 
 function rideCommissionPercent(value) {
   const percent = Number(value);
@@ -282,7 +284,9 @@ export default async function handler(req, res) {
       { lat: destinationLat, lng: destinationLng },
     ];
     const metrics = await routeMetrics(points);
-    const preOfferFare = fareFor(service, metrics.km, metrics.mins, pricing);
+    const preOfferFare = globalThis.VasiRideFareGuard(
+      fareFor(service, metrics.km, metrics.mins, pricing), pricing.commissionPercent, metrics.km,
+    );
     const smartOffer =
       pricing.mode === "percentage" ? null : await customerOffer(auth);
     let discountAmount = smartOffer
@@ -293,9 +297,10 @@ export default async function handler(req, res) {
         discountAmount,
         Number(smartOffer.max_discount_eur),
       );
-    const authoritativeFare = Number(
-      (preOfferFare - discountAmount).toFixed(2),
+    const authoritativeFare = globalThis.VasiRideFareGuard(
+      preOfferFare - discountAmount, pricing.commissionPercent, metrics.km,
     );
+    discountAmount = Math.max(0, preOfferFare - authoritativeFare);
     const vasiCommission = Number(
       ((authoritativeFare * pricing.commissionPercent) / 100).toFixed(2),
     );
