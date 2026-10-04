@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from '@supabase/supabase-js';
+import { reviewIssue, inspectFiles, expiringDocuments } from './document-review.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -12,9 +13,9 @@ const json = (body: unknown, status = 200) =>
 const text = (value: unknown, max = 500) => String(value ?? '').trim().slice(0, max);
 
 const motorCourierVehicles = new Set(['scooter', 'moto', 'car']);
-const requiredDriverDocuments = ['identity', 'vtc', 'licence', 'business', 'insurance', 'carte_grise', 'selfie'];
+const requiredDriverDocuments = ['identity', 'identity_back', 'vtc', 'licence', 'business', 'insurance', 'carte_grise', 'selfie'];
 function courierRequiredDocuments(vehicleType: string) {
-  const required = ['identity', 'business', 'bag', 'vehicle_photo', 'selfie'];
+  const required = ['identity', 'identity_back', 'business', 'bag', 'vehicle_photo', 'selfie'];
   if (motorCourierVehicles.has(vehicleType)) {
     required.push('licence', 'insurance', 'carte_grise', 'transport_licence');
   }
@@ -184,9 +185,9 @@ Deno.serve(async (req) => {
       if (typeof body.verified === 'boolean') {
         if (body.verified) {
           const { data: documents, error: documentError } = await db.from('driver_documents')
-            .select('document_type,status').eq('driver_id', id).in('document_type', requiredDriverDocuments);
+            .select('document_type,status,file_path,expires_at,review_checks,review_note,file_sha256').eq('driver_id', id).in('document_type', requiredDriverDocuments);
           if (documentError) throw documentError;
-          const approved = new Set((documents || []).filter(document => document.status === 'approved').map(document => document.document_type));
+          const approved = new Set((documents || []).filter(document => document.status === 'approved' && !reviewIssue(document.review_checks, document.review_note) && (!expiringDocuments.includes(document.document_type) || (document.expires_at && document.expires_at > new Date().toISOString().slice(0,10)))).map(document => document.document_type));
           const missing = requiredDriverDocuments.filter(documentType => !approved.has(documentType));
           if (missing.length) return json({ error: `Required driver documents are not approved: ${missing.join(', ')}` }, 409);
         }
@@ -254,7 +255,7 @@ Deno.serve(async (req) => {
       const status = ['approved', 'rejected'].includes(body.status) ? body.status : '';
       if (!id || !status) return json({ error: 'Partner and decision required' }, 400);
       const { data: partner, error: findError } = await db.from('delivery_drivers')
-        .select('id,user_id,vehicle_type,documents,application_status').eq('id', id).maybeSingle();
+        .select('id,user_id,full_name,vehicle_type,documents,application_status,updated_at').eq('id', id).maybeSingle();
       if (findError) throw findError;
       if (!partner) return json({ error: 'Courier not found' }, 404);
       const required = courierRequiredDocuments(text(partner.vehicle_type, 20));
@@ -262,7 +263,18 @@ Deno.serve(async (req) => {
       if (status === 'approved' && missing.length) {
         return json({ error: `Missing required documents: ${missing.join(', ')}` }, 400);
       }
+      let identityReview = null;
+      if (status === 'approved') {
+        const issue = reviewIssue(body.checks, body.review_note);
+        if (issue) return json({ error: issue }, 400);
+        if (body.expected_full_name !== partner.full_name || body.expected_updated_at !== partner.updated_at) return json({error:'Applicant identity changed; reopen the dossier'},409);
+        if (partner.application_status !== 'pending') return json({ error: 'Pending courier required' }, 409);
+        if (required.some(key => partner.documents[key] !== body.expected_documents?.[key])) return json({ error: 'Documents changed; reopen the dossier before approving' }, 409);
+        const hashes = await inspectFiles(db, partner.user_id, Object.fromEntries(required.map(key => [key,partner.documents[key]])));
+        identityReview = { reviewed_name: partner.full_name, checks: body.checks, note: text(body.review_note,1000), file_hashes: hashes, document_paths: partner.documents, reviewed_by: user.id, reviewed_at: new Date().toISOString() };
+      }
       const patch = {
+        identity_review: identityReview,
         verified: status === 'approved',
         application_status: status,
         online: false,
@@ -271,15 +283,16 @@ Deno.serve(async (req) => {
         reviewed_by: user.id,
         updated_at: new Date().toISOString(),
       };
-      const { data, error } = await db.from('delivery_drivers').update(patch).eq('id', id).select().maybeSingle();
+      const { data, error } = await db.from('delivery_drivers').update(patch).eq('id', id).eq('updated_at', partner.updated_at).eq('full_name',partner.full_name).select().maybeSingle();
       if (error) throw error;
-      await audit('courier_review', 'delivery_driver', id, { status, reason: patch.rejection_reason, required_documents: required });
+      if (!data) return json({ error: 'Courier dossier changed; refresh and review again' },409);
+      await audit('courier_review', 'delivery_driver', id, { identity_review: identityReview, status, reason: patch.rejection_reason, required_documents: required });
       return json({ ok: true, partner: data });
     }
 
     if (action === 'list_documents') {
       const { data, error } = await db.from('driver_documents')
-        .select('id,driver_id,document_type,file_path,status,rejection_reason,expires_at,reviewed_at,created_at')
+        .select('id,driver_id,document_type,file_path,status,rejection_reason,expires_at,reviewed_at,created_at,updated_at,review_checks,review_note')
         .order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       const driverIds = [...new Set((data || []).map((document: any) => document.driver_id).filter(Boolean))];
@@ -297,7 +310,13 @@ Deno.serve(async (req) => {
           const { data: signed } = await db.storage.from('partner-documents').createSignedUrl(path, 600);
           fileUrl = signed?.signedUrl || null;
         }
-        return { ...document, file_path: undefined, file_url: fileUrl, driver_name: driverNames.get(document.driver_id) || null };
+        const comparison_links: Record<string,string> = {};
+        for (const related of (data || []).filter((row: any) => row.driver_id === document.driver_id && requiredDriverDocuments.includes(row.document_type))) {
+          if (!related.file_path?.startsWith(`${document.driver_id}/`)) continue;
+          const {data: link} = await db.storage.from('partner-documents').createSignedUrl(related.file_path,600);
+          if (link?.signedUrl) comparison_links[related.document_type] = link.signedUrl;
+        }
+        return { ...document, comparison_links, file_path: undefined, file_url: fileUrl, driver_name: driverNames.get(document.driver_id) || null };
       }));
       return json({ ok: true, documents });
     }
@@ -305,14 +324,35 @@ Deno.serve(async (req) => {
       const id = text(body.id, 80);
       const status = ['approved', 'rejected'].includes(body.status) ? body.status : '';
       if (!id || !status) return json({ error: 'Document id and decision required' }, 400);
+      const {data: document, error: readError} = await db.from('driver_documents').select('id,driver_id,document_type,file_path,status,updated_at').eq('id',id).maybeSingle();
+      if (readError) throw readError;
+      if (!document || document.status !== 'pending') return json({ error: 'Pending document not found' },404);
+      if (body.expected_updated_at !== document.updated_at) return json({error:'Document changed; open the latest file before reviewing'},409);
+      let hash = null, reviewedName = null;
+      if (status === 'approved') {
+        const {data: driver,error: driverError} = await db.from('drivers').select('full_name').eq('id',document.driver_id).maybeSingle();
+        if (driverError) throw driverError;
+        if (!driver || body.expected_driver_name !== driver.full_name) return json({error:'Applicant identity changed; reopen the dossier'},409);
+        reviewedName = driver.full_name;
+        const issue = reviewIssue(body.checks,body.review_note);
+        if (issue) return json({error:issue},400);
+        if (expiringDocuments.includes(document.document_type) && (!/^\d{4}-\d{2}-\d{2}$/.test(body.expires_at || '') || body.expires_at <= new Date().toISOString().slice(0,10))) return json({error:'Enter a valid future expiry date from the original document'},400);
+        const {data: related,error: relatedError} = await db.from('driver_documents').select('document_type,file_path').eq('driver_id',document.driver_id).in('document_type',requiredDriverDocuments);
+        if (relatedError) throw relatedError;
+        if (requiredDriverDocuments.some(key => !(related || []).some(row => row.document_type === key && row.file_path))) return json({error:'Complete dossier including both ID sides and selfie required'},409);
+        const hashes = await inspectFiles(db,document.driver_id,Object.fromEntries((related || []).map(row => [row.document_type,row.file_path])));
+        hash = hashes[document.document_type] || (await inspectFiles(db,document.driver_id,{[document.document_type]:document.file_path}))[document.document_type];
+      }
       const patch = {
+        review_checks: status === 'approved' ? body.checks : {}, review_note: status === 'approved' ? text(body.review_note,1000) : null,
+        reviewed_name: reviewedName, file_sha256: hash, expires_at: status === 'approved' && expiringDocuments.includes(document.document_type) ? body.expires_at : null,
         status, reviewed_by: user.id, reviewed_at: new Date().toISOString(),
         rejection_reason: status === 'rejected' ? text(body.reason || body.rejection_reason || 'Refus administrateur') : null,
       };
-      const { data, error } = await db.from('driver_documents').update(patch).eq('id', id).eq('status', 'pending').select().maybeSingle();
+      const { data, error } = await db.from('driver_documents').update(patch).eq('id', id).eq('status', 'pending').eq('file_path',document.file_path).eq('updated_at',document.updated_at).select().maybeSingle();
       if (error) throw error;
       if (!data) return json({ error: 'Pending document not found' }, 404);
-      await audit('document_review', 'driver_document', id, { status, reason: patch.rejection_reason });
+      await audit('document_review', 'driver_document', id, { checks: patch.review_checks, note: patch.review_note, file_sha256: hash, status, reason: patch.rejection_reason });
       return json({ ok: true, document: data });
     }
 

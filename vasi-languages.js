@@ -17,6 +17,23 @@
 
   const translations = {
     fr: {
+      "Identity document — front": "Pièce d’identité — recto",
+      "Identity document — back": "Pièce d’identité — verso",
+      "Clear photo of the original: card front or passport identity page. JPG/PNG, 10 MB maximum.": "Photo nette de l’original : recto de la carte ou page d’identité du passeport. JPG/PNG, 10 Mo maximum.",
+      "Back of the same card or facing passport page. Two different photos, all edges visible, no edits.": "Verso de la même carte ou page en regard du passeport. Deux photos différentes, tous les bords visibles, sans retouche.",
+      "Files selected, not approved. A filename proves neither its content nor authenticity. VASI will check the documents and consistency with your identity before activation.": "Fichiers sélectionnés, non validés. Le nom du fichier ne prouve ni son contenu ni son authenticité. VASI vérifiera les pièces et leur cohérence avec votre identité avant toute activation.",
+      "Selected · not approved": "Sélectionné · non validé",
+      "To be checked": "À vérifier",
+      "Review and approve": "Contrôler et approuver",
+      "The name alone is insufficient. Check originals, both sides, holder details and the selfie. Secure links expire automatically.": "Le nom seul ne suffit pas. Vérifiez les originaux, les deux faces, les détails du titulaire et le selfie. Les liens sécurisés expirent automatiquement.",
+      "Add both photos of your identity document: front and back.": "Ajoutez les deux photos de votre pièce d’identité : recto et verso.",
+      "Complete every manual document review check; a matching name alone is insufficient.": "Complétez tous les contrôles manuels ; un nom identique ne suffit pas.",
+      "Record a review note (20–1000 characters), including the evidence/source checked.": "Enregistrez une note de contrôle (20–1000 caractères), avec la preuve/source vérifiée.",
+      "Document changed; open the latest file before reviewing": "Le document a changé ; ouvrez la dernière version avant de le contrôler",
+      "Applicant identity changed; reopen the dossier": "L’identité du demandeur a changé ; rouvrez le dossier",
+      "Complete dossier including both ID sides and selfie required": "Dossier complet avec recto, verso et selfie obligatoire",
+      "Enter a valid future expiry date from the original document": "Saisissez une date d’expiration future valide, lue sur l’original",
+      "Documents changed; reopen the dossier before approving": "Les documents ont changé ; rouvrez le dossier avant l’approbation",
       "Check your application status": "Actualiser le statut",
       "Complete my registration": "Compléter mon inscription",
       "Correct and resubmit my application": "Corriger et renvoyer mon dossier",

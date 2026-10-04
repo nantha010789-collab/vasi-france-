@@ -37,7 +37,7 @@
     const requested = new URLSearchParams(location.search).get("role");
     const role = requested === "courier" ? "courier" : "ride";
     const $ = id => document.getElementById(id);
-    const names = {identity:"Pièce d’identité",vtc:"Carte VTC",licence:"Permis de conduire",business:"Justificatif d’entreprise",insurance:"Assurance professionnelle",carte_grise:"Carte grise",selfie:"Selfie de vérification",bag:"Sac de livraison",vehicle_photo:"Photo du véhicule",transport_licence:"Licence de transport"};
+    const names = {identity:"Pièce d’identité — recto",identity_back:"Pièce d’identité — verso",vtc:"Carte VTC",licence:"Permis de conduire",business:"Justificatif d’entreprise",insurance:"Assurance professionnelle",carte_grise:"Carte grise",selfie:"Selfie de vérification",bag:"Sac de livraison",vehicle_photo:"Photo du véhicule",transport_licence:"Licence de transport"};
     $("registrationLink").href = "partner-register-v2.html?role=" + role + "&surface=driver";
     $("workspaceLink").href = role === "ride" ? "driver.html" : "delivery-driver.html";
     let loading = false;
