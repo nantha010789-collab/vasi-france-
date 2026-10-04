@@ -1513,6 +1513,7 @@
         </div>
       </div>
     </main>
+    <script src="./assets/ride-fare-guard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vendor/leaflet-1.9.4.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
@@ -1789,7 +1790,11 @@
         $("pickupPinConfirm").classList.add("hidden");
         focusPickup();
       }
+      let rideCommissionPercent = 12;
       function priceFor(km, mins, key) {
+        return VasiRideFareGuard(unprotectedPriceFor(km, mins, key), rideCommissionPercent, km);
+      }
+      function unprotectedPriceFor(km, mins, key) {
         let fare;
         if (pricingOffer.active && pricingOffer.mode === "percentage") {
           const regular = regularClasses[key],
@@ -2152,6 +2157,9 @@
           const r = await fetch("/api/pricing", { cache: "no-store" });
           const d = await r.json();
           if (!r.ok) throw Error();
+          const commission = Number(d.ride_commission_percent);
+          if (!Number.isFinite(commission) || commission < 0 || commission > 50) throw Error();
+          rideCommissionPercent = commission;
           if (d.offer_active) {
             for (const key of Object.keys(offerClasses))
               Object.assign(offerClasses[key], d.classes[key]);
