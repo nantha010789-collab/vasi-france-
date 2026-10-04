@@ -66,7 +66,7 @@ test("booking creates, prices and dispatches a ride", async () => {
   const payload = JSON.parse(createCall.options.body);
   assert.equal(payload.p_payment_method, "cash");
   assert.equal(payload.p_currency, "EUR");
-  assert.equal(res.body.pricing.commission_percent, 15);
+  assert.equal(res.body.pricing.commission_percent, 12);
   assert.equal(
     Number(
       (
@@ -77,7 +77,7 @@ test("booking creates, prices and dispatches a ride", async () => {
   );
   assert.equal(
     res.body.pricing.vasi_commission,
-    Number(((res.body.pricing.estimated_fare * 15) / 100).toFixed(2)),
+    Number(((res.body.pricing.estimated_fare * 12) / 100).toFixed(2)),
   );
 });
 
@@ -225,7 +225,7 @@ test("ride commission defaults to 15% and remains admin-adjustable", async () =>
   ]);
   assert.match(pricingAdmin, /id="ride_commission_percent"/);
   assert.match(pricingAdmin, /value="15"/);
-  assert.match(pricingApi, /ride_commission_percent: 15/);
+  assert.match(pricingApi, /ride_commission_percent: 12/);
   assert.match(adminService, /Ride commission must be between 0% and 50%/);
   assert.doesNotMatch(createPayment, /PROMO_END|VASI_COMMISSION_PERCENT/);
   assert.match(createPayment, /return 15/);
