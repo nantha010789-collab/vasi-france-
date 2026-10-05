@@ -379,7 +379,7 @@ body[data-vasi-driver="ride"] .dashboard-card {
   bottom: max(8px, env(safe-area-inset-bottom));
   left: max(10px, env(safe-area-inset-left));
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 3px;
   max-width: 680px;
   min-height: 64px;
