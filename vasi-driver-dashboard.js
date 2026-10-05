@@ -8,6 +8,8 @@
 
   const defaultCenter = [48.8566, 2.3522];
   const byId = (id) => document.getElementById(id);
+  const localText = (fr, en) => window.VasiLanguage?.getLanguage?.() === "en" ? en : fr;
+  const dayKey = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
   const safe = (value) =>
     typeof esc === "function"
       ? esc(value)
@@ -90,6 +92,8 @@
     });
     document.querySelectorAll("[data-driver-tab]").forEach((element) => {
       element.classList.toggle("is-active", element.dataset.driverTab === name);
+      if (element.dataset.driverTab === name) element.setAttribute("aria-current", "page");
+      else element.removeAttribute("aria-current");
     });
     try { sessionStorage.setItem("vasi_driver_view", name); } catch (_) {}
     document.querySelector("[data-scroll-region]")?.scrollTo({ top: 0, behavior: "smooth" });
@@ -113,7 +117,16 @@
     byId("searchingStrip")?.classList.toggle("is-visible", isOnline && !hasRide);
     byId("toggle")?.classList.toggle("is-online", isOnline);
     const hint = byId("onlineHint");
-    if (hint) hint.textContent = hasRide ? "Navigation de la course active" : isOnline ? "Demandes en temps réel activées" : "Aucune demande reçue";
+    if (hint) hint.textContent = hasRide ? localText("Navigation de la course active", "Active ride navigation") : isOnline ? localText("Demandes en temps réel activées", "Live ride requests enabled") : localText("Passez en ligne pour recevoir des courses", "Go online to receive rides");
+    const blocker = byId("onlineBlocker"), action = byId("onlineBlockerAction");
+    const needsBank = !hasRide && !isOnline && state?.payoutReady === false;
+    if (blocker) blocker.hidden = !hasRide && !needsBank;
+    if (action) action.hidden = !needsBank;
+    const explanation = byId("onlineBlockerText");
+    if (explanation) explanation.textContent = hasRide
+      ? localText("Terminez votre course avant de changer votre disponibilité.", "Finish your ride before changing your availability.")
+      : needsBank ? localText("Votre RIB doit être vérifié avant de passer en ligne.", "Your bank account must be verified before going online.") : "";
+    if (action) action.textContent = localText("Connecter mon RIB", "Connect bank account");
   };
 
   window.updateDriverProfile = function updateDriverProfile(profile) {
@@ -136,16 +149,25 @@
       const date = new Date();
       date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - (6 - index));
-      return { key: date.toISOString().slice(0, 10), label: date.toLocaleDateString("fr-FR", { weekday: "short" }).slice(0, 2), value: 0 };
+      return { key: dayKey(date), label: date.toLocaleDateString(localText("fr-FR", "en-GB"), { weekday: "short" }).slice(0, 2), value: 0 };
     });
     for (const row of rows || []) {
-      const key = new Date(row.created_at).toISOString().slice(0, 10);
+      const date = new Date(row.created_at);
+      if (!Number.isFinite(date.getTime())) continue;
+      const key = dayKey(date);
       const day = days.find((entry) => entry.key === key);
-      if (day) day.value += Number(row.driver_earnings || 0);
+      const amount = Number(row.driver_earnings || 0);
+      if (day && Number.isFinite(amount)) day.value += amount;
     }
+    if (!days.some((day) => day.value > 0)) {
+      chart.classList.add("is-empty");
+      chart.innerHTML = '<p class="muted" data-en="No earnings recorded in the last 7 days.">Aucun revenu enregistré sur les 7 derniers jours.</p>';
+      return;
+    }
+    chart.classList.remove("is-empty");
     const max = Math.max(1, ...days.map((day) => day.value));
     chart.innerHTML = days.map((day) =>
-      '<i class="earnings-bar" style="--bar-height:' + Math.max(7, (day.value / max) * 100).toFixed(1) + '%" title="' + safe(day.value.toFixed(2) + " €") + '"><span>' + safe(day.label) + "</span></i>"
+      '<i class="earnings-bar" style="--bar-height:' + Math.max(0, (day.value / max) * 100).toFixed(1) + '%" title="' + safe(day.value.toFixed(2) + " €") + '"><span>' + safe(day.label) + "</span></i>"
     ).join("");
   };
 
@@ -236,5 +258,6 @@
     window.showDriverView(saved);
   });
   window.addEventListener("online", () => homeMap?.invalidateSize({ animate: false }));
+  window.addEventListener("resize", () => homeMap?.invalidateSize({ animate: false }));
   window.addEventListener("pageshow", () => setTimeout(() => homeMap?.invalidateSize({ animate: false }), 80));
 })();

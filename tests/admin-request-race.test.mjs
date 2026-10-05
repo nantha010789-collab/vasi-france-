@@ -6,10 +6,10 @@ import vm from "node:vm";
 function harness({timeout=false,hungSession=false}={}) {
   const elements=new Map(), requests=[];
   function element(id) {
-    if(!elements.has(id)) elements.set(id,{innerHTML:"",textContent:"",className:"",value:"",dataset:{},classList:{toggle(){}},setAttribute(){},addEventListener(){},appendChild(){}});
+    if(!elements.has(id)) elements.set(id,{innerHTML:"",textContent:"",className:"",value:"",dataset:{},classList:{toggle(){}},setAttribute(){},addEventListener(){},appendChild(){},closest:()=>element('sidebar')});
     return elements.get(id);
   }
-  const document={getElementById:element,querySelectorAll:()=>[],createElement:()=>element(Math.random())};
+  const document={getElementById:element,querySelectorAll:()=>[],createElement:()=>element(Math.random()),addEventListener(){}};
   const db={auth:{getSession:()=>hungSession?new Promise(()=>{}):Promise.resolve({data:{session:{access_token:"TEST_ONLY"}}}),signOut:async()=>{}}};
   const window={supabase:{createClient:()=>db},removeEventListener(){},addEventListener(){}};
   const context=vm.createContext({window,document,AbortController,Intl,location:{replace(){}},setTimeout:(cb,ms)=>setTimeout(cb,timeout&&ms===12000?10:ms),clearTimeout,fetch:(path,{signal})=>new Promise((resolve,reject)=>{
