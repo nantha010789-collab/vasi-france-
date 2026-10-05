@@ -216,6 +216,10 @@ body[data-vasi-driver="ride"] .dashboard-card {
 }
 
 .online-control .btn {
+  width: 100%;
+  border: 0;
+  font-family: inherit;
+  font-weight: 800;
   min-height: 58px;
   margin: 0;
   border-radius: 18px;
