@@ -83,7 +83,7 @@ const checks = [
   expectPage(production, "/driver.html", ["Passenger is ready at the pickup point", "customer_ready_at"]),
   expectPage(production, "/auth.html", ["vasi_pending_phone", "otp_expired"]),
   expectPage(production, "/settings.html", ["testNotification", "VASI test successful"]),
-  expectPage(production, "/vasi-languages.js", ["fr:", "ta:", "de:", "ar:", "hi:"]),
+  expectPage(production, "/vasi-languages.js", ['const SUPPORTED = ["fr", "en"]', "fr:"]),
   expectPage(production, "/manifest.webmanifest", ["vasi-word-icon-192.png", "vasi-word-icon-512.png"]),
   expectPage(production, "/legal.html", ["Legal & Privacy", "Politique de confidentialité", "contact@vasigo.eu"]),
   (async () => {
