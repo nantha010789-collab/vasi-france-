@@ -18,6 +18,7 @@
     "app-easy.html",
     "app-fixed.html",
     "partner-register.html",
+    "partner-register-v2.html",
     "partner.html",
     "vasi-admin.html",
     "vasi-app.html",
