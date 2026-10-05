@@ -1463,13 +1463,25 @@ test("French is applied once as the app default and later language choices persi
   assert.equal(nextWindow.VasiLanguage.getLanguage(), "en");
 });
 
-test("production language controls only expose complete French and English locales", async () => {
-  const runtime = await readFile("vasi-languages.js", "utf8");
-  assert.match(runtime, /const SUPPORTED = \["fr", "en"\]/);
-  for (const page of ["app.html", "index.html", "settings.html"]) {
-    const source = await readFile(page, "utf8");
-    assert.doesNotMatch(source, /data-language="(?:ta|de|ar|hi)"|<option value="(?:ta|de|ar|hi)"/, page);
+test("customer language choices are restored without extending partner language controls", async () => {
+  const source = await readFile("vasi-languages.js", "utf8");
+  for (const path of ["/app.html", "/settings", "/ride-flow.html", "/driver.html", "/admin/index.html"]) {
+    const window = { location: { pathname: path }, dispatchEvent() {} };
+    runInNewContext(source, {
+      window, document: { readyState: "loading", addEventListener() {} },
+      localStorage: { getItem: (key) => key === "vasi_language_default_policy" ? "fr-en-complete-v2" : "ta", setItem() {} },
+      CustomEvent: class {},
+    });
+    const customer = !path.includes("driver") && !path.includes("admin");
+    assert.deepEqual(Array.from(window.VasiLanguage.supported), customer ? ["fr", "en", "ta", "de", "ar", "hi"] : ["fr", "en"]);
+    assert.equal(window.VasiLanguage.getLanguage(), customer ? "ta" : "fr");
+    if (customer) assert.equal(window.VasiLanguage.translate("Home"), "முகப்பு");
   }
+  for (const page of ["app.html", "settings.html"]) {
+    const html = await readFile(page, "utf8");
+    for (const code of ["ta", "de", "ar", "hi"]) assert.ok(html.includes(`value="${code}"`) || html.includes(`data-language="${code}"`));
+  }
+  assert.doesNotMatch(await readFile("index.html", "utf8"), /data-language="(?:ta|de|ar|hi)"/);
 });
 
 test("VASI region runtime keeps the France-only launch configuration", async () => {
