@@ -19,7 +19,7 @@ test('professional admin console is accessible and session protected', async () 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(html, /adminLanguage/);
-  assert.match(html, /src="\/admin\/app\.js\?v=8"/);
+  assert.match(html, /src="\/admin\/app\.js\?v=9"/);
   assert.match(html, /maplibre-gl@5\.24\.0/);
   assert.match(html, /maplibre-gl-leaflet@0\.1\.4/);
   assert.match(html, /vasi-languages\.js/);
