@@ -98,8 +98,8 @@ test('compact admin navigation exposes all sections through an accessible menu',
 test('public preview shares dashboard styles and remains explicitly simulated',()=>{
   const html=read('driver-preview.html');
   assert.match(html,/aucune donnée ou action réelle/);
-  assert.ok(html.includes('vasi-driver-dashboard.css?v=3'));
-  assert.ok(html.includes('vasi-driver-dashboard.js?v=3'));
+  assert.ok(html.includes('vasi-driver-dashboard.css?v=4'));
+  assert.ok(html.includes('vasi-driver-dashboard.js?v=4'));
   assert.match(html,/viewport-fit=cover/);
 });
 test('driver bottom navigation keeps four primary destinations and moves opportunities into Menu',()=>{
@@ -113,4 +113,11 @@ test('driver bottom navigation keeps four primary destinations and moves opportu
   }
   assert.match(read('vasi-driver-dashboard.css'),/grid-template-columns:\s*repeat\(4,/);
   assert.match(read('vasi-driver-dashboard.js'),/name === "discover" \? "menu" : name/);
+});
+test('mobile driver home raises the map and hides partial cards below it',()=>{
+  const css=read('vasi-driver-dashboard.css');
+  const preview=read('driver-preview.html');
+  assert.match(css,/\[data-driver-view="home"\] \.driver-view-heading \{ margin: 0 2px 6px; \}/);
+  assert.match(css,/data-driver-view="home"\]\s+\.home-column-side \{ display: none; \}/);
+  assert.match(preview,/\.driver-view-heading\{margin:0 2px 6px\}/);
 });
