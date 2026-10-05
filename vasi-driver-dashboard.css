@@ -530,6 +530,7 @@ body[data-vasi-driver="ride"] :is(button, a, summary):focus-visible { outline: 3
   .driver-role { font-size: 10px; padding-left: 8px; letter-spacing: .06em; }
   .driver-top-actions { flex: 0 0 auto; }
   .driver-view-heading { margin: 4px 2px 12px; }
+  [data-driver-view="home"] .driver-view-heading { margin: 0 2px 6px; }
   .driver-view-heading h1 { font-size: 28px; }
   [data-driver-view="home"] .driver-view-heading h1 { font-size: 22px; }
   [data-driver-view="home"] .driver-view-heading p { display: none; }
@@ -539,6 +540,7 @@ body[data-vasi-driver="ride"] :is(button, a, summary):focus-visible { outline: 3
     margin-top: 0 !important;
     border-radius: 20px !important;
   }
+  body[data-vasi-driver="ride"] .driver-view.is-active[data-driver-view="home"] .home-column-side { display: none; }
   .home-status { top: 10px; left: 10px; right: 10px; padding: 10px; gap: 8px; }
   .status-main { flex: 1 1 55%; }
   .status-gps { flex: 0 1 40%; }
