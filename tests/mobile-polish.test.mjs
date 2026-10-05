@@ -127,3 +127,20 @@ test('mobile driver home raises the map and hides partial cards below it',()=>{
   assert.match(css,/data-driver-view="home"\]\s+\.home-column-side \{ display: none; \}/);
   assert.match(preview,/\.driver-view-heading\{margin:0 2px 6px\}/);
 });
+
+test('role-based tutorial centre is reachable without adding another bottom tab',()=>{
+  const tutorials=read('tutorials.html');
+  assert.match(tutorials,/data-role="customer"/);
+  assert.match(tutorials,/data-role="driver"/);
+  assert.match(tutorials,/data-role="courier"/);
+  assert.match(tutorials,/data-role="restaurant"/);
+  assert.match(tutorials,/data-role="admin"/);
+  assert.match(tutorials,/const guides=/);
+  assert.match(read('settings.html'),/href="tutorials\.html"/);
+  assert.match(read('driver.html'),/href="\.\/tutorials\.html"/);
+  assert.match(read('delivery-driver.html'),/href="\.\/tutorials\.html"/);
+  assert.match(read('restaurant-dashboard.html'),/location\.href='tutorials\.html'/);
+  const admin=read('admin/app.js');
+  assert.match(admin,/\['guides','Guides'\]/);
+  assert.match(admin,/async function guides\(\)/);
+});

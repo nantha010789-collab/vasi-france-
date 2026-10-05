@@ -1405,7 +1405,7 @@ test("shared language runtime translates English and French source pages both wa
       window,
       document: { readyState: "loading", addEventListener() {} },
       localStorage: {
-        getItem: (key) => key === "vasi_language_default_policy" ? "fr-first-v1" : selectedLanguage,
+        getItem: (key) => key === "vasi_language_default_policy" ? "fr-en-complete-v2" : selectedLanguage,
         setItem() {},
       },
       CustomEvent: class {},
@@ -1451,7 +1451,7 @@ test("French is applied once as the app default and later language choices persi
     CustomEvent: class {},
   });
   assert.equal(window.VasiLanguage.getLanguage(), "fr");
-  assert.equal(storage.get("vasi_language_default_policy"), "fr-first-v1");
+  assert.equal(storage.get("vasi_language_default_policy"), "fr-en-complete-v2");
   storage.set("vasi_language", "en");
   const nextWindow = { dispatchEvent() {} };
   runInNewContext(source, {
@@ -1461,6 +1461,15 @@ test("French is applied once as the app default and later language choices persi
     CustomEvent: class {},
   });
   assert.equal(nextWindow.VasiLanguage.getLanguage(), "en");
+});
+
+test("production language controls only expose complete French and English locales", async () => {
+  const runtime = await readFile("vasi-languages.js", "utf8");
+  assert.match(runtime, /const SUPPORTED = \["fr", "en"\]/);
+  for (const page of ["app.html", "index.html", "settings.html"]) {
+    const source = await readFile(page, "utf8");
+    assert.doesNotMatch(source, /data-language="(?:ta|de|ar|hi)"|<option value="(?:ta|de|ar|hi)"/, page);
+  }
 });
 
 test("VASI region runtime keeps the France-only launch configuration", async () => {

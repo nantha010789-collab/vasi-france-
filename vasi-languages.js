@@ -4,15 +4,14 @@
   const STORAGE_KEY = "vasi_language";
   const DEFAULT_LANGUAGE = "fr";
   const DEFAULT_POLICY_KEY = "vasi_language_default_policy";
-  const DEFAULT_POLICY_VERSION = "fr-first-v1";
-  const SUPPORTED = ["fr", "en", "ta", "de", "ar", "hi"];
+  const DEFAULT_POLICY_VERSION = "fr-en-complete-v2";
+  // Only expose languages that are complete across every production surface.
+  // Additional locales can remain in the catalogue while they are finished,
+  // but users must never be offered a mixed-language experience.
+  const SUPPORTED = ["fr", "en"];
   const LABELS = {
     fr: "Français",
     en: "English",
-    ta: "தமிழ்",
-    de: "Deutsch",
-    ar: "العربية",
-    hi: "हिन्दी",
   };
 
   const translations = {
@@ -550,6 +549,9 @@
     "Your full name": "Votre nom complet",
     "Account destinations": "Destinations du compte",
     "Settings · VASI": "Paramètres · VASI",
+    "Guides & tutorials": "Guides et tutoriels",
+    "Learn VASI step by step": "Apprendre VASI étape par étape",
+    "Guides and tutorials": "Guides et tutoriels",
     "During a live trip:": "Pendant un trajet en cours :",
     "SOS, Share Trip and ride details remain available on the active ride screen.": "Le SOS, le partage du trajet et les détails restent disponibles sur l’écran du trajet en cours.",
     "Offers and marketing": "Offres et marketing",
