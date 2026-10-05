@@ -72,6 +72,24 @@ test('registration exposes one clear back control instead of duplicate buttons',
   assert.match(html,/function previousStep\(\)/);
   assert.match(html,/function nextStep\(\)/);
 });
+test('mobile authentication stays in one viewport with focused OTP controls',()=>{
+  const html=read('auth.html');
+  assert.match(html,/<body data-scroll-mode="viewport">/);
+  assert.match(html,/class="card" data-scroll-region/);
+  assert.match(html,/height:\s*100dvh/);
+  assert.match(html,/grid-template-rows:\s*auto minmax\(0, 1fr\)/);
+  assert.match(html,/const codePending = Boolean\(awaitingCode\(\)\)/);
+  assert.match(html,/codePending \|\| !\(surface === "driver" && role === "ride"\)/);
+  assert.match(html,/class="small auth-support"/);
+});
+test('core customer and provider workspaces use stable mobile viewport shells',()=>{
+  for(const file of ['ride-flow.html','ride-chat.html','driver.html','delivery-driver.html','driver-preview.html']){
+    assert.match(read(file),/data-scroll-mode="viewport"/,file);
+  }
+  for(const file of ['app.html','index.html']) assert.match(read(file),/height:\s*100dvh/,file);
+  assert.match(read('driver-home.html'),/height:\s*100dvh/);
+  assert.match(read('partner-register-v2.html'),/class="action-bar"/);
+});
 test('compact admin navigation exposes all sections through an accessible menu',()=>{
   assert.match(read('admin/index.html'),/id="adminNavToggle"[^>]*aria-expanded="false"[^>]*aria-controls="nav"/);
   assert.match(read('admin/app.js'),/dataset.mobilePrimary/);

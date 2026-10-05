@@ -179,10 +179,95 @@
         margin-top: 14px;
         color: #aaa;
       }
+      @media (max-width: 760px) {
+        .wrap {
+          height: 100vh;
+          height: 100svh;
+          height: 100dvh;
+          min-height: 0;
+          padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+          display: grid;
+          grid-template-rows: auto minmax(0, 1fr);
+          gap: 10px;
+          overflow: hidden;
+        }
+        .top {
+          min-height: 48px;
+          margin: 0;
+        }
+        .back {
+          min-height: 44px;
+          padding: 9px 13px;
+          display: inline-flex;
+          align-items: center;
+        }
+        .card {
+          min-height: 0;
+          padding: 15px;
+          border-radius: 20px;
+          overflow-x: hidden;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+        }
+        .switch {
+          gap: 6px;
+          margin-bottom: 11px;
+        }
+        .switch button,
+        .btn,
+        .method-switch button,
+        .method-switch a {
+          min-height: 46px;
+          padding: 10px;
+        }
+        h1 {
+          margin: 0 0 5px;
+          font-size: clamp(27px, 8vw, 34px);
+          line-height: 1.08;
+        }
+        #desc { margin: 0; }
+        .method-switch {
+          margin: 11px 0 7px;
+          padding: 3px;
+          border-radius: 14px;
+        }
+        #methodHint { margin: 7px 0; }
+        .input {
+          min-height: 48px;
+          margin: 7px 0;
+          padding: 12px 13px;
+        }
+        .btn.primary { margin-top: 8px; }
+        .demo-link {
+          min-height: 46px;
+          margin-top: 8px;
+          padding: 11px;
+        }
+        .link { margin-top: 10px; }
+        #roleHelp { display: none; }
+        .auth-support {
+          margin: 10px 0 0;
+          text-align: center;
+        }
+        .auth-support .link {
+          display: inline;
+          margin: 0;
+        }
+        #msg { min-height: 18px; margin: 8px 0 0; }
+      }
+      @media (max-height: 700px) and (max-width: 760px) {
+        .wrap { gap: 7px; padding-top: max(7px, env(safe-area-inset-top)); padding-bottom: max(7px, env(safe-area-inset-bottom)); }
+        .top { min-height: 44px; }
+        .card { padding: 12px; border-radius: 17px; }
+        .switch { margin-bottom: 8px; }
+        .method-switch { margin-top: 8px; }
+        #methodHint { font-size: 12px; line-height: 1.35; }
+      }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
   </head>
-  <body>
+  <body data-scroll-mode="viewport">
     <main class="wrap">
       <header class="top">
         <div class="logo"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;width:112px;max-width:28vw;height:auto;max-height:46px;object-fit:contain" /></div>
@@ -190,7 +275,7 @@
           >← <span>Back</span></a
         >
       </header>
-      <section class="card">
+      <section class="card" data-scroll-region>
         <div class="switch hidden">
           <button id="customerBtn" onclick="setRole('customer')">
             Customer</button
@@ -266,12 +351,11 @@
         <p id="roleHelp" class="small">
           Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.
         </p>
-        <p class="small">
-          Login help:
+        <p class="small auth-support">
           <a
             class="link"
             href="mailto:contact@vasigo.eu?subject=VASI%20login%20help"
-            >contact@vasigo.eu</a
+            >Aide · contact@vasigo.eu</a
           >
         </p>
         <p id="msg"></p>
@@ -451,6 +535,11 @@
       function render() {
         const customer = role === "customer";
         const phone = usesPhone();
+        const codePending = Boolean(awaitingCode());
+        if (document.body?.dataset) {
+          document.body.dataset.authSurface = surface;
+          document.body.dataset.authStage = codePending ? "code" : "identity";
+        }
         const signedInRole = accountRole.active() || roleAtPageOpen;
         roleConflict = Boolean(
           currentSession && signedInRole && signedInRole !== role,
@@ -481,7 +570,7 @@
                 ? "Enter your mobile number. We will send a 6-digit SMS code."
                 : "Manage your restaurant, menu and VASI Food orders.");
         const methodChoice = customer || surface === "driver";
-        $("methodSwitch").classList.toggle("hidden", !methodChoice);
+        $("methodSwitch").classList.toggle("hidden", !methodChoice || codePending);
         $("phoneMethodBtn").classList.toggle("active", methodChoice && phone);
         $("emailMethodBtn").classList.toggle("active", methodChoice && !phone);
         $("phoneMethodBtn").setAttribute("aria-pressed", String(methodChoice && phone));
@@ -490,7 +579,7 @@
         $("methodHint").textContent = surface === "driver"
           ? authCopy("Choisissez une méthode et utilisez toujours la même pour retrouver votre dossier.", "Choose one method and always use the same one to access your application.")
           : "";
-        $("methodHint").classList.toggle("hidden", surface !== "driver");
+        $("methodHint").classList.toggle("hidden", surface !== "driver" || codePending);
         $("identity").type = phone ? "tel" : "email";
         $("identity").inputMode = phone ? "tel" : "email";
         $("identity").autocomplete = phone ? "tel" : "email";
@@ -522,13 +611,13 @@
         $("roleHelp").textContent = t("Chauffeur = passenger transport. Courier = delivery. Restaurant = food partner.")
           .replace(/\s*Restaurant\s*=.*$/, "")
           .trim();
-        $("roleHelp").classList.toggle("hidden", surface !== "driver");
+        $("roleHelp").classList.toggle("hidden", surface !== "driver" || codePending);
         $("authBack").href = surface === "driver" ? "driver-home.html" : surface === "partner" ? "restaurant-register.html" : "app.html";
         $(
           customer ? "customerBtn" : role === "ride" ? "rideBtn" : role === "courier" ? "courierBtn" : "restaurantBtn",
         ).classList.add("active");
-        $("register").classList.toggle("hidden", false);
-        $("driverPreview").classList.toggle("hidden", !(surface === "driver" && role === "ride"));
+        $("register").classList.toggle("hidden", codePending);
+        $("driverPreview").classList.toggle("hidden", codePending || !(surface === "driver" && role === "ride"));
         $("register").href = customer
           ? "auth.html?role=customer&method=email&mode=register"
           : role === "restaurant"
