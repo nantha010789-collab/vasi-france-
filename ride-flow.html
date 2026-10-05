@@ -1792,7 +1792,11 @@
       }
       let rideCommissionPercent = 12;
       function priceFor(km, mins, key) {
-        return VasiRideFareGuard(unprotectedPriceFor(km, mins, key), rideCommissionPercent, km);
+        return VasiFundedRideQuote(
+          unprotectedPriceFor(km, mins, key), rideCommissionPercent, km,
+          smartOffer ? Number(smartOffer.discount_percent) : 0,
+          smartOffer?.max_discount_eur == null ? null : Number(smartOffer.max_discount_eur),
+        ).customer_fare;
       }
       function unprotectedPriceFor(km, mins, key) {
         let fare;
@@ -1814,12 +1818,6 @@
         }
         const c = classes[key];
         fare = Math.max(c.minFare, c.base + km * c.km + mins * c.min);
-        if (smartOffer) {
-          let discount = (fare * Number(smartOffer.discount_percent)) / 100;
-          if (smartOffer.max_discount_eur != null)
-            discount = Math.min(discount, Number(smartOffer.max_discount_eur));
-          fare -= discount;
-        }
         return fare;
       }
       async function loadCustomerOffer() {
@@ -1833,7 +1831,7 @@
           const offer = await response.json();
           if (
             !response.ok ||
-            ![10, 15].includes(Number(offer.discount_percent))
+            offer.active !== true || Number(offer.discount_percent) !== 5 || Number(offer.max_discount_eur) !== 1
           )
             return;
           smartOffer = offer;

@@ -131,7 +131,7 @@ async function customerOffer(auth) {
       headers: { Authorization: auth },
     });
     const offer = await r.json();
-    return r.ok && [10, 15].includes(Number(offer.discount_percent))
+    return r.ok && offer.active === true && Number(offer.discount_percent) === 5 && Number(offer.max_discount_eur) === 1
       ? offer
       : null;
   } catch {

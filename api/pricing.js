@@ -11,7 +11,7 @@ const publishableKey =
 
 const fallback = {
   offer_active: true, offer_name: 'VASI offer price', starts_at: null, ends_at: null,
-  offer_mode: 'fixed', discount_percent: 10, max_discount_eur: null,
+  offer_mode: 'fixed', discount_percent: 5, max_discount_eur: 1,
   ride_commission_percent: 12,
   minimum_regular_fare: null, go_base: 1.5, go_per_km: 0.68,
   go_per_minute: 0.14, go_minimum: 7.5, comfort_base: 2,
