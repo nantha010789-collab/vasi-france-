@@ -234,7 +234,7 @@
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
-    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=2" />
+    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=3" />
   </head>
   <body data-scroll-mode="viewport" data-vasi-driver="ride">
     <main class="wrap driver-dashboard">
@@ -356,7 +356,7 @@
           <div id="documentNotices"></div>
           <div class="menu-list" style="margin-top:12px">
             <button class="menu-row" type="button" onclick="showDriverView('earnings')"><span><span class="row-icon">€</span><span class="row-copy"><b>Revenus et paiements</b><small>Relevés, RIB et versements</small></span></span><span class="row-chevron">›</span></button>
-            <button class="menu-row" type="button" onclick="showDriverView('discover')"><span><span class="row-icon">📅</span><span class="row-copy"><b>Courses planifiées</b><small>Réservations disponibles et confirmées</small></span></span><span class="row-chevron">›</span></button>
+            <button class="menu-row" type="button" onclick="showDriverView('discover')"><span><span class="row-icon">◈</span><span class="row-copy"><b>Opportunités</b><small>Courses planifiées, demande locale et préférences</small></span></span><span class="row-chevron">›</span></button>
             <a class="menu-row" href="./activity.html?surface=driver"><span><span class="row-icon">🕘</span><span class="row-copy"><b>Historique des courses</b><small>Courses terminées et annulées</small></span></span><span class="row-chevron">›</span></a>
             <a class="menu-row" href="./partner-register-v2.html?role=ride&surface=driver"><span><span class="row-icon">📄</span><span class="row-copy"><b>Documents chauffeur</b><small>Permis, VTC, assurance et véhicule</small></span></span><span class="row-chevron">›</span></a>
             <a class="menu-row" href="./safety.html"><span><span class="row-icon">🛡️</span><span class="row-copy"><b>Sécurité</b><small>PIN, urgence 112 et confidentialité</small></span></span><span class="row-chevron">›</span></a>
@@ -378,7 +378,6 @@
     </main>
     <nav class="driver-bottom-nav" aria-label="Navigation chauffeur">
       <button class="driver-tab is-active" type="button" data-driver-tab="home" onclick="showDriverView('home')"><span>⌂</span><small>Accueil</small></button>
-      <button class="driver-tab" type="button" data-driver-tab="discover" onclick="showDriverView('discover')"><span>◈</span><small>Opportunités</small></button>
       <button class="driver-tab" type="button" data-driver-tab="earnings" onclick="showDriverView('earnings')"><span>€</span><small>Revenus</small></button>
       <button class="driver-tab" type="button" data-driver-tab="messages" onclick="showDriverView('messages')"><span>✉</span><small>Messages</small></button>
       <button class="driver-tab" type="button" data-driver-tab="menu" onclick="showDriverView('menu')"><span>☰</span><small>Menu</small></button>
@@ -1533,7 +1532,7 @@
         if (watch !== null) navigator.geolocation.clearWatch(watch);
       });
     </script>
-    <script src="./vasi-driver-dashboard.js?v=2"></script>
+    <script src="./vasi-driver-dashboard.js?v=3"></script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-navigation.js?v=4"></script>
     <script src="./vasi-pwa.js"></script>
