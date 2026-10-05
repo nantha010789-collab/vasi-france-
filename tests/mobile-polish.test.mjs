@@ -67,9 +67,10 @@ test('compact admin navigation exposes all sections through an accessible menu',
   assert.match(read('admin/app.js'),/dataset.mobilePrimary/);
   assert.match(read('admin/navigation.css'),/\.sidebar.is-nav-expanded nav/);
 });
-test('responsive preview is clearly simulated and includes phone and tablet widths',()=>{
-  const html=read('driver-mobile-preview.html');
-  assert.match(html,/données simulées/);
-  for(const width of [320,390,430,768])assert.match(html,new RegExp(`data-width="${width}"`));
-  assert.match(html,/src="\.\/driver-preview.html"/);
+test('public preview shares dashboard styles and remains explicitly simulated',()=>{
+  const html=read('driver-preview.html');
+  assert.match(html,/aucune donnée ou action réelle/);
+  assert.ok(html.includes('vasi-driver-dashboard.css?v=2'));
+  assert.ok(html.includes('vasi-driver-dashboard.js?v=2'));
+  assert.match(html,/viewport-fit=cover/);
 });
