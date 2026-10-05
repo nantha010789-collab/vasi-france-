@@ -9,7 +9,7 @@
       :root{color-scheme:dark;--bg:#030817;--surface:#0b162b;--surface-2:#101f39;--line:#243653;--muted:#9eabc0;--blue:#2364ff;--green:#52e28b;--green-bg:#0b2b1c;--red:#ffb4b4;--warning:#ffc967;--shadow:0 24px 70px rgba(0,0,0,.35)}
       *{box-sizing:border-box}html,body{max-width:100%;min-height:100%;overflow-x:hidden}body{margin:0;background:radial-gradient(circle at 12% -10%,#103f9a 0,transparent 32%),linear-gradient(180deg,#061127 0,#030817 46%,#02040b 100%);color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
       button,input,select{font:inherit}.wrap{width:100%;max-width:720px;margin:auto;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(118px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
-      .page-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin-bottom:18px}.back-btn,.save-state{min-height:44px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;background:rgba(9,20,39,.84);color:#fff}.back-btn{padding:0 14px 0 10px;font-weight:800;cursor:pointer}.back-icon{font-size:28px;line-height:0;transform:translateY(-1px)}.save-state{padding:0 13px;color:#b9c7da;font-size:12px;font-weight:750}.save-state.saved{color:#bff9d1;border-color:#266b43}
+      .page-nav{display:flex;align-items:center;justify-content:flex-end;gap:12px;min-height:48px;margin-bottom:18px}.save-state{min-height:44px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:rgba(9,20,39,.84);color:#b9c7da;font-size:12px;font-weight:750}.save-state.saved{color:#bff9d1;border-color:#266b43}
       .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 18px}.brand img{display:block;width:124px;max-width:34vw;height:auto}.brand-divider{width:1px;height:30px;background:#52627a}.brand-product{font-size:13px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:#d6dfed}
       .progress-shell{padding:16px;border:1px solid var(--line);border-radius:22px;background:rgba(8,21,44,.84);box-shadow:var(--shadow);backdrop-filter:blur(18px)}.progress-row{display:flex;justify-content:space-between;align-items:center;gap:12px}.eyebrow{color:#a9c5ff;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.step-count{color:#d5deeb;font-size:13px;font-weight:800}.progress-track{height:7px;margin-top:12px;border-radius:999px;background:#1a2943;overflow:hidden}.progress-fill{width:14.285%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),#60a5fa);transition:width .28s ease}
       h1{margin:24px 0 9px;font-size:clamp(31px,8.5vw,48px);line-height:1.02;letter-spacing:-.045em}h2{font-size:21px;margin:0 0 8px;letter-spacing:-.02em}.intro{margin:0 0 20px;color:#aebbd0;font-size:16px;line-height:1.55}.step{display:none;animation:step-in .24s ease}.step.active{display:block}@keyframes step-in{from{opacity:.2;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -31,10 +31,9 @@
   </head>
   <body>
     <main class="wrap" hidden>
-      <nav class="page-nav" aria-label="Navigation">
-        <button class="back-btn" type="button" onclick="goBack()"><span class="back-icon" aria-hidden="true">‹</span>Retour</button>
+      <div class="page-nav">
         <span id="saveState" class="save-state" aria-live="polite">Brouillon sécurisé</span>
-      </nav>
+      </div>
       <div class="brand" aria-label="VASI Driver"><img src="./assets/vasi-logo.png" alt="VASI" /><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Driver</span></div>
 
       <section id="wizard">
@@ -128,7 +127,6 @@
       let role = ['ride','courier'].includes(requestedRole) ? requestedRole : 'ride', vehicle = 'bike', selfie = null, selfieFile = null, submitting = false, currentStep = 0, cameraStarted = false, cameraStream = null, saveTimer = null;
       const $ = id => document.getElementById(id);
 
-      function goBack(){ if (currentStep > 0) return previousStep(); if (history.length > 1) history.back(); else location.href = driverSurface ? 'driver-home.html' : 'index.html'; }
       function setRole(next){ const activeRole = accountRole.active(); if (activeRole && activeRole !== next) return showError('Déconnectez-vous avant de créer un autre type de compte VASI.'); role = next; history.replaceState(null, '', location.pathname + '?role=' + encodeURIComponent(role) + (driverSurface ? '&surface=driver' : '')); render(); saveDraft(); }
       function setVehicle(next){ vehicle = next; renderVehicle(); saveDraft(); }
       function renderCountry(){ const region = VasiRegion.getRegion('FR'); VasiRegion.setCountry('FR'); $('phone').placeholder = region.phonePlaceholder; $('ridePermitLabel').textContent = 'Carte professionnelle VTC'; $('rideLicenceLabel').textContent = 'Permis de conduire'; $('rideBusinessLabel').textContent = 'SIREN / KBIS / RNE'; $('rideInsuranceLabel').textContent = 'Assurance professionnelle'; $('rideRegistrationLabel').textContent = 'Carte grise'; $('courierBusinessLabel').textContent = 'SIREN / KBIS / RNE'; $('courierBusinessHelp').textContent = 'Preuve de votre activité indépendante en France.'; $('courierRegistrationLabel').textContent = 'Carte grise'; $('transportLicenceDoc').classList.remove('hidden'); }
