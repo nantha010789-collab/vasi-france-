@@ -98,7 +98,19 @@ test('compact admin navigation exposes all sections through an accessible menu',
 test('public preview shares dashboard styles and remains explicitly simulated',()=>{
   const html=read('driver-preview.html');
   assert.match(html,/aucune donnée ou action réelle/);
-  assert.ok(html.includes('vasi-driver-dashboard.css?v=2'));
-  assert.ok(html.includes('vasi-driver-dashboard.js?v=2'));
+  assert.ok(html.includes('vasi-driver-dashboard.css?v=3'));
+  assert.ok(html.includes('vasi-driver-dashboard.js?v=3'));
   assert.match(html,/viewport-fit=cover/);
+});
+test('driver bottom navigation keeps four primary destinations and moves opportunities into Menu',()=>{
+  for(const file of ['driver.html','driver-preview.html']){
+    const html=read(file);
+    const bottomNav=html.match(/<nav class="driver-bottom-nav"[\s\S]*?<\/nav>/)?.[0] || '';
+    assert.equal((bottomNav.match(/data-driver-tab=/g)||[]).length,4,file);
+    assert.doesNotMatch(bottomNav,/data-driver-tab="discover"/,file);
+    assert.match(bottomNav,/Accueil[\s\S]*Revenus[\s\S]*Messages[\s\S]*Menu/,file);
+    assert.match(html,/onclick="showDriverView\('discover'\)"[\s\S]*?<b>Opportunités<\/b>/,file);
+  }
+  assert.match(read('vasi-driver-dashboard.css'),/grid-template-columns:\s*repeat\(4,/);
+  assert.match(read('vasi-driver-dashboard.js'),/name === "discover" \? "menu" : name/);
 });

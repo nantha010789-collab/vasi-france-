@@ -87,12 +87,13 @@
   window.showDriverView = function showDriverView(name) {
     const view = document.querySelector('[data-driver-view="' + name + '"]');
     if (!view) return;
+    const activeTab = name === "discover" ? "menu" : name;
     document.querySelectorAll("[data-driver-view]").forEach((element) => {
       element.classList.toggle("is-active", element === view);
     });
     document.querySelectorAll("[data-driver-tab]").forEach((element) => {
-      element.classList.toggle("is-active", element.dataset.driverTab === name);
-      if (element.dataset.driverTab === name) element.setAttribute("aria-current", "page");
+      element.classList.toggle("is-active", element.dataset.driverTab === activeTab);
+      if (element.dataset.driverTab === activeTab) element.setAttribute("aria-current", "page");
       else element.removeAttribute("aria-current");
     });
     try { sessionStorage.setItem("vasi_driver_view", name); } catch (_) {}
