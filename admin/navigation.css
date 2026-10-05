@@ -6,6 +6,54 @@
   font-size: 0;
 }
 
+.admin-nav-toggle { display: none; }
+
+@media (max-width: 760px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  main, #app, .panel, .panel-head, .topbar > * { min-width: 0; }
+  main { padding-inline: max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-right)); }
+  .topbar { flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  .topbar h1 { font-size: 27px; line-height: 1.15; overflow-wrap: anywhere; }
+  .top-actions { margin-left: auto; }
+  .icon-button, .button, .field { min-height: 44px; }
+  input.field, select.field, textarea.field { font-size: 16px; }
+  .sidebar {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) 60px;
+    gap: 4px;
+    padding-inline: max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right));
+    box-shadow: 0 -8px 32px #10182820;
+  }
+  .sidebar nav { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 2px; overflow: visible; }
+  .sidebar:not(.is-nav-expanded) .nav-button[data-mobile-primary="false"] { display: none; }
+  .sidebar .nav-button { width: 100%; min-width: 0; min-height: 58px; padding: 7px 3px; font-size: 11px; line-height: 1.2; }
+  .sidebar .nav-button span { max-width: 100%; overflow-wrap: anywhere; }
+  .admin-nav-toggle {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 4px;
+    min-height: 58px;
+    padding: 7px 3px;
+    border: 0;
+    border-radius: 10px;
+    background: #273142;
+    color: #fff;
+    font: 700 11px/1.2 system-ui;
+    cursor: pointer;
+  }
+  .admin-nav-toggle > span:first-child { font-size: 21px; }
+  .admin-nav-toggle:focus-visible { outline: 3px solid #84adff; outline-offset: 2px; }
+  .sidebar.is-nav-expanded { grid-template-columns: 1fr; }
+  .sidebar.is-nav-expanded nav { grid-template-columns: repeat(3,minmax(0,1fr)); max-height: 64dvh; overflow-y: auto; }
+  .sidebar.is-nav-expanded .nav-button { min-height: 68px; padding: 10px 6px; font-size: 13px; }
+  .sidebar.is-nav-expanded .admin-nav-toggle { display: flex; justify-content: center; min-height: 44px; gap: 8px; }
+  .table-wrap { max-width: 100%; -webkit-overflow-scrolling: touch; }
+  .panel-head { flex-wrap: wrap; }
+  .panel-head .actions { gap: 8px; }
+  .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
+
 @media (max-width: 760px) {
   .sidebar nav {
     scroll-snap-type: x proximity;

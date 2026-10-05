@@ -5,6 +5,13 @@
   const adminRole = window.VasiAccountRole?.scoped?.('admin') || window.VasiAccountRole;
   const app = document.getElementById('app'), nav = document.getElementById('nav'), title = document.getElementById('title');
   const connection = document.getElementById('connection');
+  const adminNavToggle = document.getElementById('adminNavToggle');
+  function setAdminNavExpanded(expanded){
+    nav.closest('.sidebar')?.classList.toggle('is-nav-expanded',expanded);
+    adminNavToggle?.setAttribute('aria-expanded',String(expanded));
+  }
+  adminNavToggle?.addEventListener('click',()=>setAdminNavExpanded(adminNavToggle.getAttribute('aria-expanded')!=='true'));
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&adminNavToggle?.getAttribute('aria-expanded')==='true'){setAdminNavExpanded(false);adminNavToggle.focus()}});
   const sections = [
     ['overview','Vue d’ensemble'],['control','Centre de contrôle'],['bookings','Courses'],['gps','GPS en direct'],
     ['drivers','Chauffeurs'],['documents','Documents'],['couriers','Coursiers'],['restaurants','Restaurants'],
@@ -339,14 +346,15 @@
     const version=++renderVersion;
     pendingRequests.forEach(controller=>controller.abort());
     stopGps();active=id;title.textContent=sections.find(([key])=>key===id)?.[1]||id;
-    document.querySelectorAll('.nav-button').forEach(x=>x.classList.toggle('active',x.dataset.section===id));
+    setAdminNavExpanded(false);
+    document.querySelectorAll('.nav-button').forEach(x=>{x.classList.toggle('active',x.dataset.section===id);if(x.dataset.section===id)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current')});
     app.setAttribute('aria-busy','true');app.innerHTML='<div class="loading">Chargement…</div>';
     try{await loaders[id]()}catch(error){if(version===renderVersion)shell(title.textContent,errorView(error))}
     if(version!==renderVersion)return;
     document.querySelectorAll('[data-refresh]').forEach(btn=>btn.addEventListener('click',()=>active==='gps'?gps():render(active)));
     document.querySelectorAll('[data-goto]').forEach(btn=>btn.addEventListener('click',()=>render(btn.dataset.goto)));
   }
-  sections.forEach(([id,label])=>{const button=document.createElement('button');button.type='button';button.className='nav-button';button.dataset.section=id;button.innerHTML=`<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${sectionIcons[id]}</svg><span>${label}</span>`;button.addEventListener('click',()=>render(id));nav.appendChild(button)});
+  sections.forEach(([id,label])=>{const button=document.createElement('button');button.type='button';button.className='nav-button';button.dataset.section=id;button.dataset.mobilePrimary=String(['overview','bookings','gps','drivers'].includes(id));button.innerHTML=`<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${sectionIcons[id]}</svg><span>${label}</span>`;button.addEventListener('click',()=>render(id));nav.appendChild(button)});
   document.getElementById('logout').addEventListener('click',endAdminSession);
   const language=document.getElementById('adminLanguage');language.value=['fr','en'].includes(window.VasiLanguage?.getLanguage?.())?window.VasiLanguage.getLanguage():'fr';language.addEventListener('change',()=>{window.VasiLanguage?.setLanguage(language.value);render(active)});
   async function start(){const {data}=await db.auth.getSession();if(!data.session){adminRole?.clear();return location.replace('../admin-login.html')}const activeRole=adminRole?.active();if(activeRole&&activeRole!=='admin')return endAdminSession();accessToken=data.session.access_token;try{const response=await fetch(`${config.supabaseUrl}/functions/v1/admin-service`,{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({action:'check_access'})});if(!response.ok)throw new Error('Accès refusé');adminRole?.remember('admin');setConnected(true);render('overview')}catch{await endAdminSession()}}

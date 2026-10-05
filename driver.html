@@ -234,7 +234,7 @@
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
-    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=1" />
+    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=2" />
   </head>
   <body data-scroll-mode="viewport" data-vasi-driver="ride">
     <main class="wrap driver-dashboard">
@@ -244,8 +244,7 @@
           <span class="driver-role">Chauffeur</span>
         </div>
         <div class="driver-top-actions">
-          <button class="driver-icon-button" type="button" onclick="showDriverView('messages')" aria-label="Messages">💬</button>
-          <button class="driver-icon-button" type="button" onclick="showDriverView('menu')" aria-label="Menu">☰</button>
+          <a class="driver-icon-button" href="./support.html?from=driver" aria-label="Assistance VASI">?</a>
         </div>
       </header>
       <div class="driver-scroll" data-scroll-region>
@@ -268,6 +267,7 @@
               </div>
               <div id="searchingStrip" class="searching-strip"><span class="searching-pulse"></span><span>Recherche de courses…</span></div>
               <div class="online-control">
+                <div id="onlineBlocker" class="online-blocker" role="status" hidden><span id="onlineBlockerText"></span><button id="onlineBlockerAction" type="button" onclick="showDriverView('earnings')" hidden>Connecter mon RIB</button></div>
                 <button id="toggle" class="btn" onclick="toggleOnline()">Passer en ligne</button>
               </div>
             </article>
@@ -279,6 +279,7 @@
               <div class="quick-stat"><span>Courses</span><b id="homeTrips">0</b></div>
               <div class="quick-stat"><span>Note</span><b id="homeRating">—</b></div>
             </div>
+            <details class="home-secondary-details"><summary data-en="Scheduled rides and local demand">Courses planifiées et demande locale</summary>
             <article class="card dashboard-card">
               <div class="planned-head"><div><span class="muted">Prochaine étape</span><h2 style="margin:5px 0 0">Courses planifiées</h2></div><button class="driver-icon-button" type="button" onclick="showDriverView('discover')" aria-label="Ouvrir">›</button></div>
               <p id="plannedHomeSummary" class="muted">Recherche des réservations disponibles…</p>
@@ -288,6 +289,7 @@
               <p class="muted">Les zones sont arrondies pour protéger la vie privée des clients.</p>
               <div id="homeDemandSummary" class="muted">Analyse de la demande…</div>
             </article>
+            </details>
           </aside>
         </section>
 
@@ -302,7 +304,7 @@
             <div class="demand-summary"><div class="demand-level"><i></i><b>Calme</b></div><div class="demand-level medium"><i></i><b>Active</b></div><div class="demand-level high"><i></i><b>Forte</b></div></div>
             <div id="busyZones" class="zones"><div class="muted">Analyse de la demande à proximité…</div></div>
             <h3>Tendance horaire</h3>
-            <div class="hour-chart" aria-label="Tendance de la demande par heure"><i style="--hour-height:26%"></i><i style="--hour-height:34%"></i><i style="--hour-height:45%"></i><i style="--hour-height:53%"></i><i style="--hour-height:71%" class="hot"></i><i style="--hour-height:86%" class="hot"></i><i style="--hour-height:68%"></i><i style="--hour-height:48%"></i><i style="--hour-height:36%"></i><i style="--hour-height:28%"></i></div>
+            <p class="empty-state" data-en="Not enough historical data to show an hourly trend.">Données historiques insuffisantes pour afficher une tendance horaire.</p>
           </article>
           <article class="card dashboard-card">
             <h2>Préférences de courses</h2>
@@ -808,7 +810,7 @@
         document.getElementById("toggle").disabled = !providerApproved || !!activeRide || (!online && !payoutReady);
         document.getElementById("gps").textContent =
           watch !== null ? "GPS actif" : "GPS désactivé";
-        if (typeof syncDriverDashboardState === "function") syncDriverDashboardState({ online, activeRide, watch, payoutReady });
+        if (typeof syncDriverDashboardState === "function") syncDriverDashboardState({ online, activeRide, watch, payoutReady, providerApproved });
       }
       async function startOffers() {
         if (channel) await client.removeChannel(channel);
@@ -1531,7 +1533,7 @@
         if (watch !== null) navigator.geolocation.clearWatch(watch);
       });
     </script>
-    <script src="./vasi-driver-dashboard.js?v=1"></script>
+    <script src="./vasi-driver-dashboard.js?v=2"></script>
     <script src="./vasi-languages.js?v=4"></script>
     <script src="./vasi-navigation.js?v=4"></script>
     <script src="./vasi-pwa.js"></script>

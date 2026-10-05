@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="./vendor/leaflet-1.9.4.css" />
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
-    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=1" />
+    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=2" />
     <style>
       html,body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
       body[data-vasi-driver="ride"]>.wrap.driver-dashboard{grid-template-rows:auto auto minmax(0,1fr)!important;gap:8px}
@@ -23,16 +23,16 @@
         body[data-vasi-driver="ride"]>.wrap.driver-dashboard{padding-top:max(8px,env(safe-area-inset-top))!important;gap:7px}
         .driver-top{min-height:58px!important;padding:7px 9px!important;border-radius:16px}
         .driver-brand{gap:7px}.driver-role{padding-left:7px;letter-spacing:.12em}
-        .demo-back{min-height:38px;padding:7px 10px;font-size:11px}
-        .demo-banner{margin:0;padding:7px 10px;border-radius:13px;font-size:10px;line-height:1.25}
+        .demo-back{min-height:44px;padding:7px 10px;font-size:12px}
+        .demo-banner{margin:0;padding:7px 10px;border-radius:13px;font-size:12px;line-height:1.3}
         .demo-badge{padding:4px 7px;font-size:9px}
         .driver-view-heading{margin:8px 2px 10px}.driver-view-heading h1{font-size:28px}.driver-view-heading p{margin-top:5px;font-size:13px}
-        .home-map-card{height:min(46dvh,390px);min-height:300px}
+        .home-map-card{height:clamp(300px,calc(100dvh - 270px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),650px);min-height:300px}
         .home-status{top:10px;left:10px;right:10px;gap:7px;padding:10px;border-radius:14px}
-        .status-main,.status-gps{gap:6px}.status-main strong,.status-gps strong{font-size:12px}.status-main small,.status-gps small{font-size:9px}
+        .status-main,.status-gps{gap:6px}.status-main strong,.status-gps strong{font-size:13px}.status-main small,.status-gps small{font-size:11px}
         .status-gps>span:first-child{font-size:17px}.demo-map-label{left:10px;bottom:106px;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 9px;font-size:9px}
-        .home-map-controls{right:10px;bottom:102px}.home-map-controls button{width:42px;height:42px;min-height:42px!important}
-        .online-control{right:10px;bottom:11px;left:10px}.online-control .btn{min-height:50px;font-size:12px}
+        .home-map-controls{right:10px;bottom:102px}.home-map-controls button{width:44px;height:44px;min-height:44px!important}
+        .online-control{right:10px;bottom:11px;left:10px}.online-control .btn{min-height:52px;font-size:16px}
       }
     </style>
   </head>
@@ -114,7 +114,7 @@
     <div id="demoSheet" class="demo-sheet" role="dialog" aria-modal="true" aria-labelledby="demoSheetTitle" hidden onclick="if(event.target===this)closeDemoSheet()"><section class="demo-sheet-card"><div class="demo-sheet-head"><h2 id="demoSheetTitle">Détails</h2><button class="demo-sheet-close" type="button" onclick="closeDemoSheet()" aria-label="Fermer">×</button></div><div id="demoSheetBody" class="demo-sheet-body"></div><div class="demo-sheet-actions"><button class="btn navbtn" type="button" onclick="closeDemoSheet()">Fermer</button></div></section></div>
 
     <script src="./vendor/leaflet-1.9.4.js"></script>
-    <script src="./vasi-driver-dashboard.js?v=1"></script>
+    <script src="./vasi-driver-dashboard.js?v=2"></script>
     <script>
       let demoOnline = false;
       window.lastPos = { coords: { latitude: 48.8566, longitude: 2.3522, heading: 35 } };
