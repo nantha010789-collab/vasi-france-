@@ -91,9 +91,15 @@ test('core customer and provider workspaces use stable mobile viewport shells',(
   assert.match(read('partner-register-v2.html'),/class="action-bar"/);
 });
 test('compact admin navigation exposes all sections through an accessible menu',()=>{
-  assert.match(read('admin/index.html'),/id="adminNavToggle"[^>]*aria-expanded="false"[^>]*aria-controls="nav"/);
+  const html=read('admin/index.html');
+  assert.match(html,/id="adminNavToggle"[^>]*aria-expanded="false"[^>]*aria-controls="nav"/);
+  assert.match(html,/admin\/navigation\.css\?v=2/);
+  assert.match(html,/admin\/app\.js\?v=9/);
   assert.match(read('admin/app.js'),/dataset.mobilePrimary/);
-  assert.match(read('admin/navigation.css'),/\.sidebar.is-nav-expanded nav/);
+  const css=read('admin/navigation.css');
+  assert.match(css,/\.sidebar.is-nav-expanded nav/);
+  assert.match(css,/grid-template-columns:\s*minmax\(0,4fr\) minmax\(0,1fr\)/);
+  assert.match(css,/\.admin-nav-toggle\[aria-expanded="true"\]/);
 });
 test('public preview shares dashboard styles and remains explicitly simulated',()=>{
   const html=read('driver-preview.html');

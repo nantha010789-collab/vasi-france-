@@ -19,8 +19,8 @@
   input.field, select.field, textarea.field { font-size: 16px; }
   .sidebar {
     display: grid;
-    grid-template-columns: minmax(0,1fr) 60px;
-    gap: 4px;
+    grid-template-columns: minmax(0,4fr) minmax(0,1fr);
+    gap: 2px;
     padding-inline: max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right));
     box-shadow: 0 -8px 32px #10182820;
   }
@@ -37,12 +37,13 @@
     padding: 7px 3px;
     border: 0;
     border-radius: 10px;
-    background: #273142;
-    color: #fff;
+    background: transparent;
+    color: #b9c0cc;
     font: 700 11px/1.2 system-ui;
     cursor: pointer;
   }
   .admin-nav-toggle > span:first-child { font-size: 21px; }
+  .admin-nav-toggle[aria-expanded="true"] { background: #273142; color: #fff; }
   .admin-nav-toggle:focus-visible { outline: 3px solid #84adff; outline-offset: 2px; }
   .sidebar.is-nav-expanded { grid-template-columns: 1fr; }
   .sidebar.is-nav-expanded nav { grid-template-columns: repeat(3,minmax(0,1fr)); max-height: 64dvh; overflow-y: auto; }
