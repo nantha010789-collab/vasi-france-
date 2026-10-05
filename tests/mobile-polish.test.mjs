@@ -62,6 +62,16 @@ test('all document inputs keep native selection behind bilingual styled controls
   assert.match(read('vasi-partner-mobile.css'),/\.file-picker:focus-within/);
   assert.match(read('sw.js'),/appUrl\("vasi-partner-mobile.css"\)/);
 });
+test('registration exposes one clear back control instead of duplicate buttons',()=>{
+  const html=read('partner-register-v2.html');
+  const navigation=read('vasi-navigation.js');
+  assert.equal((html.match(/id="previousButton"/g)||[]).length,1);
+  assert.doesNotMatch(html,/class="back-btn"/);
+  assert.doesNotMatch(html,/function goBack\(/);
+  assert.match(navigation,/"partner-register-v2\.html",/);
+  assert.match(html,/function previousStep\(\)/);
+  assert.match(html,/function nextStep\(\)/);
+});
 test('compact admin navigation exposes all sections through an accessible menu',()=>{
   assert.match(read('admin/index.html'),/id="adminNavToggle"[^>]*aria-expanded="false"[^>]*aria-controls="nav"/);
   assert.match(read('admin/app.js'),/dataset.mobilePrimary/);
