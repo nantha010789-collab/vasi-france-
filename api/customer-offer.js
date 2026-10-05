@@ -23,42 +23,22 @@ export default async function handler(req, res) {
     if (!userResponse.ok || !user?.id)
       return res.status(401).json({ error: "Session expired" });
     const ridesResponse = await fetch(
-      `${supabaseUrl}/rest/v1/rides?select=status,completed_at,requested_at&customer_id=eq.${encodeURIComponent(user.id)}&order=requested_at.desc&limit=100`,
+      `${supabaseUrl}/rest/v1/rides?select=id&customer_id=eq.${encodeURIComponent(user.id)}&status=neq.cancelled&limit=1`,
       { headers },
     );
     if (!ridesResponse.ok) throw Error("Could not analyse ride activity");
-    const completed = (await ridesResponse.json()).filter(
-      (ride) => ride.status === "completed",
-    );
-    const lastRide =
-      completed[0]?.completed_at || completed[0]?.requested_at || null;
-    const inactive =
-      lastRide && Date.now() - Date.parse(lastRide) >= 30 * 86400000;
-    const percent = completed.length === 0 || inactive ? 15 : 10;
-    return res
-      .status(200)
-      .json({
-        active: true,
-        discount_percent: percent,
-        max_discount_eur: 6,
-        reason:
-          completed.length === 0
-            ? "welcome"
-            : inactive
-              ? "welcome_back"
-              : "loyalty",
-        label:
-          completed.length === 0
-            ? "VASI Welcome"
-            : inactive
-              ? "VASI Welcome Back"
-              : "VASI Loyalty",
-        safeguards: {
-          allowed_percentages: [10, 15],
-          sensitive_data_used: false,
-          driver_pay_protected: true,
-        },
-      });
+    const eligible = (await ridesResponse.json()).length === 0;
+    return res.status(200).json({
+      active: eligible,
+      discount_percent: eligible ? 5 : 0,
+      max_discount_eur: eligible ? 1 : 0,
+      reason: eligible ? "welcome" : "not_eligible",
+      label: eligible ? "VASI Welcome" : null,
+      safeguards: {
+        allowed_percentages: [5], first_ride_only: true,
+        sensitive_data_used: false, driver_pay_protected: true,
+      },
+    });
   } catch (error) {
     return res
       .status(500)

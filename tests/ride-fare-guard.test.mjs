@@ -74,7 +74,7 @@ test('same shared guard runs in browser and server', () => {
   );
   const ui = readFileSync(new URL('../ride-flow.html', import.meta.url), 'utf8');
   assert.match(ui, /assets\/ride-fare-guard\.js/);
-  assert.match(ui, /VasiRideFareGuard\(unprotectedPriceFor/);
+  assert.match(ui, /VasiFundedRideQuote\(\s*unprotectedPriceFor/);
 });
 
 test('invalid pricing never returns an unprotected fare', () => {
