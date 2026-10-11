@@ -107,7 +107,7 @@ test("driver, restaurant and admin surfaces use isolated login sessions", () => 
 
   assert.match(routes, /"source": "\/partner", "destination": "\/partner\.html"/);
   assert.match(partnerEntry, /VASI Partner · Restaurant/);
-  assert.match(partnerEntry, /Se connecter à mon restaurant/);
+  assert.match(partnerEntry, /Se connecter à mon commerce/);
   assert.match(partnerEntry, /storageKey: "vasi-partner-auth"/);
   assert.doesNotMatch(partnerEntry, /admin-login|driver-home|ride-flow/);
   assert.match(accountRole, /vasi_driver_session_role/);
