@@ -100,3 +100,8 @@ h2 { font-size: 18px; line-height: 1.25; }
   .intro, .card-lead { font-size: 13px; margin-bottom: 8px; }
   .role-card { min-height: 92px; }
 }
+
+.progress-shell { flex:0 0 auto; margin-bottom:4px; }
+.field { margin:10px 0; }
+.input { min-height:48px; padding:12px; }
+@media (max-width:480px) { #pageTitle { font-size:clamp(24px,6.8vw,30px); } }
