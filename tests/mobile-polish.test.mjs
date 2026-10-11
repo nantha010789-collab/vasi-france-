@@ -94,7 +94,7 @@ test('compact admin navigation exposes all sections through an accessible menu',
   const html=read('admin/index.html');
   assert.match(html,/id="adminNavToggle"[^>]*aria-expanded="false"[^>]*aria-controls="nav"/);
   assert.match(html,/admin\/navigation\.css\?v=2/);
-  assert.match(html,/admin\/app\.js\?v=9/);
+  assert.match(html,/admin\/app\.js\?v=10/);
   assert.match(read('admin/app.js'),/dataset.mobilePrimary/);
   const css=read('admin/navigation.css');
   assert.match(css,/\.sidebar.is-nav-expanded nav/);
