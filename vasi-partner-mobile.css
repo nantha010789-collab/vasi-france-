@@ -63,3 +63,40 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (prefers-reduced-motion: reduce) {
   .step, .progress-fill { animation: none; transition: none; }
 }
+
+/* Keep the registration shell and actions inside the visible viewport. */
+body[data-scroll-mode="viewport"] > .wrap {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 640px);
+  padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+body[data-scroll-mode="viewport"] > .wrap[hidden] { display: none; }
+.page-nav { flex: 0 0 auto; min-height: 28px; margin-bottom: 6px; }
+.save-state { min-height: 28px; max-width: 100%; font-size: 11px; }
+.brand { flex: 0 0 auto; margin-bottom: 10px; }
+.brand img { width: 96px; }
+.brand-divider { height: 24px; }
+.brand-product { font-size: 11px; }
+#wizard { flex: 1 1 auto; min-height: 0; scrollbar-width: thin; }
+.progress-shell { padding: 10px 12px; border-radius: 14px; }
+.progress-track { margin-top: 8px; height: 5px; }
+h1 { font-size: clamp(24px, 6.8vw, 34px); margin: 14px 0 7px; line-height: 1.1; }
+.intro { font-size: 14px; line-height: 1.4; margin-bottom: 12px; }
+h2 { font-size: 18px; line-height: 1.25; }
+.card { padding: 14px; margin: 8px 0; }
+.card-lead { font-size: 14px; line-height: 1.4; margin-bottom: 12px; }
+.role-card { min-height: 104px; padding: 12px; font-size: 16px; }
+.role-card .icon { font-size: 24px; margin-bottom: 8px; }
+.rule { font-size: 12px; line-height: 1.4; padding: 10px; margin-top: 10px; }
+.action-bar { position: static; flex: 0 0 auto; padding: 8px 0 0; background: none; }
+.action-inner { padding: 6px; gap: 8px; }
+.action-btn { min-height: 48px; }
+#success { min-height: 0; overflow-y: auto; touch-action: pan-y; }
+@media (max-height: 650px) {
+  .page-nav { margin-bottom: 2px; }
+  .brand { margin-bottom: 6px; }
+  h1 { margin-top: 10px; font-size: 24px; }
+  .intro, .card-lead { font-size: 13px; margin-bottom: 8px; }
+  .role-card { min-height: 92px; }
+}
