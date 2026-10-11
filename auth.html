@@ -990,6 +990,14 @@
       }
       render();
       restorePendingOtp();
+      if (surface === "partner") {
+        const pendingEmail = sessionStorage.getItem("vasi_partner_login_email");
+        if (pendingEmail && !usesPhone()) {
+          if (awaitingCode() && awaitingCode() !== pendingEmail) { resetAuthForm(); render(); }
+          $("identity").value = pendingEmail;
+        }
+        sessionStorage.removeItem("vasi_partner_login_email");
+      }
       $("identity").addEventListener("keydown", (event) => {
         if (event.key === "Enter") submitAuth();
       });

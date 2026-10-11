@@ -672,8 +672,8 @@ test("public surfaces distinguish an empty catalog and ship consistent localizat
   ]);
 
   assert.match(food, /catalog\.length/);
-  assert.match(food, /No restaurants are available yet\./);
-  assert.match(food, /Approved partners will appear here/);
+  assert.match(food, /No partner shops are available yet\./);
+  assert.match(food, /Approved restaurants and shops will appear/);
   assert.match(food, /class="top-actions"><button[^>]+>Orders<\/button><\/div>/);
   assert.doesNotMatch(food, /location\.href='index\.html'">Home<\/button>/);
   assert.doesNotMatch(food, /<aside class="join"|restaurant-register|restaurant-dashboard|Own a restaurant/);
@@ -1230,11 +1230,11 @@ test("restaurant join and dashboard use restaurant authentication", async () => 
   assert.match(register, /Créer mon compte restaurant/);
   assert.match(register, /partnerRole\.setIntent\('restaurant'\)/);
   assert.match(register, /storageKey:'vasi-partner-auth'/);
-  assert.match(register, /emailRedirectTo:\s*new URL\(["']restaurant-register\.html["']/);
-  assert.match(register, /shouldCreateUser:\s*true/);
+  assert.match(register, /auth\.html\?role=restaurant&method=email&surface=partner/);
+  assert.doesNotMatch(register, /client\.auth\.signInWithOtp/);
   assert.match(register, /Continuer avec mon numéro de téléphone/);
   assert.match(register, /auth\.html\?role=restaurant&method=phone/);
-  assert.match(register, /service e-mail est momentanément indisponible/);
+  assert.match(auth, /vasi_partner_login_email/);
   assert.match(register, /id="restaurantPanel" class="panel hidden"/);
   assert.match(auth, /const requestedMethod = searchParams\.get\("method"\)/);
   assert.match(auth, /const usesPhone = \(\) => authMethod === "phone"/);

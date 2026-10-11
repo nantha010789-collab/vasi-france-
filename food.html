@@ -12,6 +12,7 @@
     @media(max-width:520px){.app{padding-top:10px;padding-left:12px;padding-right:12px}.top{grid-template-columns:auto minmax(76px,1fr) auto;gap:8px}.brand img{width:104px!important}.item{align-items:center}.food-photo,.food-placeholder{width:58px;height:58px}.food-copy .muted{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.top .btn{padding:9px 11px}.restaurant{padding:14px}.quantity{gap:4px}.quantity button{min-width:34px;padding:7px}}
     @media(max-width:360px){.brand img{width:92px!important}.top .btn{padding-inline:10px;font-size:13px}.join-actions{grid-template-columns:1fr}}
     .cart-actions{display:flex;gap:7px}.group-btn{min-height:46px;border:1px solid #444;border-radius:13px;background:#202020;color:#fff;padding:11px;font-weight:850}
+      .chips .chip{flex:0 0 auto;white-space:nowrap}
   </style>
   <link rel="stylesheet" href="./vasi-mobile-fit.css">
 <link rel="stylesheet" href="/vasi-responsive.css?v=1" />
@@ -19,9 +20,10 @@
 <body>
   <main class="app">
     <header class="top"><div class="brand"><img class="vasi-wordmark" src="./assets/vasi-logo.png" alt="VASI" style="display:block;height:auto;max-height:46px;object-fit:contain" /></div><div class="top-actions"><button class="btn" onclick="location.href='food-orders.html'">Orders</button></div></header>
-    <section class="hero"><div class="muted">VASI Food</div><h1>Food, your way.</h1><p class="muted">Approved local restaurants, live menus and protected delivery.</p></section>
+    <section class="hero"><div class="muted">VASI Food</div><h1>Meals &amp; groceries.</h1><p class="muted">Restaurants, grocery shops and supermarkets, delivered to you.</p></section>
     <label class="sr-only" for="search">Search restaurants, dishes or allergens</label>
-    <input id="search" class="search" placeholder="Search restaurant, dish or cuisine…" autocomplete="off" oninput="render()">
+    <input id="search" class="search" placeholder="Search shop, meal or grocery product…" autocomplete="off" oninput="render()">
+    <nav id="storeTypes" class="chips" aria-label="Shop type filters"></nav>
     <nav id="chips" class="chips" aria-label="Cuisine filters"></nav>
     <section class="list" id="restaurants"><p class="muted">Loading partner restaurants…</p></section>
     <p id="status" class="status" aria-live="polite"></p>
@@ -32,13 +34,14 @@
   </aside>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
   <script src="./vasi-languages.js?v=4"></script>
-  <script src="./vasi-region.js"></script>
+  <script src="./vasi-region.js"></script><script src="./vasi-commerce.js?v=1"></script>
   <script>
     const el=id=>document.getElementById(id);
     const t=value=>window.VasiLanguage?.translate?.(value)||value;
     const region=VasiRegion.getRegion();
     const money=value=>VasiRegion.money(value,region.code);
     const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
+    let activeStoreType='all';
     let catalog=[],activeCuisine='All',basket=JSON.parse(localStorage.getItem('vasi_food_basket')||'{"restaurant_id":null,"items":{}}');
     const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const count=()=>Object.values(basket.items||{}).reduce((a,b)=>a+Number(b||0),0);
@@ -48,18 +51,19 @@
     function add(restaurantId,itemId){if(basket.restaurant_id&&basket.restaurant_id!==restaurantId){basket={restaurant_id:restaurantId,items:{}};el('status').textContent=t('New basket started. You can order from one restaurant at a time.')}basket.restaurant_id=restaurantId;basket.items[itemId]=(basket.items[itemId]||0)+1;save();render()}
     function remove(itemId){if(!basket.items[itemId])return;basket.items[itemId]--;if(basket.items[itemId]<=0)delete basket.items[itemId];if(!count())basket.restaurant_id=null;save();render()}
     function setCuisine(value){activeCuisine=value;renderChips();render()}
-    function renderChips(){const cuisines=['All',...new Set(catalog.map(r=>r.cuisine).filter(Boolean))];el('chips').innerHTML=cuisines.map(c=>`<button class="chip ${c===activeCuisine?'active':''}" type="button" data-cuisine="${esc(c)}">${c==='All'?esc(t('All food')):esc(c)}</button>`).join('')}
+    function setStoreType(value){activeStoreType=value;activeCuisine='All';renderChips();render()}
+    function renderChips(){el('storeTypes').innerHTML=Object.entries({all:'All shops',...VasiCommerce.labels}).map(([value,label])=>`<button class="chip ${value===activeStoreType?'active':''}" type="button" data-store-type="${value}" aria-pressed="${value===activeStoreType}">${esc(t(label))}</button>`).join('');const cuisines=['All',...new Set(catalog.filter(r=>activeStoreType==='all'||VasiCommerce.type(r.cuisine)===activeStoreType).flatMap(r=>VasiCommerce.type(r.cuisine)==='restaurant'?[r.cuisine]:r.items.map(i=>i.category)).filter(Boolean))];el('chips').innerHTML=cuisines.map(c=>`<button class="chip ${c===activeCuisine?'active':''}" type="button" data-cuisine="${esc(c)}">${c==='All'?esc(t('All categories')):esc(t(c))}</button>`).join('')}
     function searchable(restaurant){return [restaurant.name,restaurant.cuisine,...restaurant.items.flatMap(i=>[i.name,i.description,i.category,...(i.allergens||[])])].filter(Boolean).join(' ').toLowerCase()}
     function render(){
       const query=el('search').value.trim().toLowerCase();
-      const rows=catalog.filter(r=>(activeCuisine==='All'||r.cuisine===activeCuisine)&&searchable(r).includes(query));
+      const rows=catalog.filter(r=>(activeStoreType==='all'||VasiCommerce.type(r.cuisine)===activeStoreType)&&(activeCuisine==='All'||r.cuisine===activeCuisine||(VasiCommerce.type(r.cuisine)!=='restaurant'&&r.items.some(i=>i.category===activeCuisine)))&&searchable(r).includes(query));
       el('restaurants').innerHTML=rows.map(r=>`<article class="restaurant">
-        <div class="restaurant-head"><div><h2>${r.icon||'🍽️'} ${esc(r.name)}</h2><div class="muted">${esc(r.cuisine||t('Local restaurant'))}</div></div><span class="open">● ${esc(t('OPEN'))}</span></div>
+        <div class="restaurant-head"><div><h2>${VasiCommerce.type(r.cuisine)==='restaurant'?'🍽️':'🛒'} ${esc(r.name)}</h2><div class="muted">${esc(r.cuisine||t('Local restaurant'))}</div></div><span class="open">● ${esc(t('OPEN'))}</span></div>
         <div class="facts"><span class="fact">🕒 ${esc(r.eta)}</span><span class="fact">${esc(t('Delivery'))} ${money(r.delivery_fee||0)}</span><span class="fact">${esc(t('Min.'))} ${money(r.minimum_order||0)}</span></div>
-        <div class="menu">${r.items.map(i=>{const qty=basket.restaurant_id===r.id?Number(basket.items[i.id]||0):0;return `<div class="item"><div class="food">${i.photo_url?`<img class="food-photo" src="${esc(i.photo_url)}" alt="${esc(i.name)}" loading="lazy">`:'<div class="food-placeholder" aria-hidden="true">🍽️</div>'}<div class="food-copy"><b>${esc(i.name)}</b><div class="muted">${esc(i.description||i.category||t('Freshly prepared'))}</div>${(i.allergens||[]).length?`<div class="allergen">${esc(t('Allergens'))}: ${esc(i.allergens.join(', '))}</div>`:''}<div><b>${money(i.price)}</b></div></div></div><div class="quantity">${qty?`<button class="remove" aria-label="${esc(t('Remove one'))} ${esc(i.name)}" onclick="remove('${i.id}')">−</button><b>${qty}</b>`:''}<button aria-label="${esc(t('Add'))} ${esc(i.name)}" onclick="add('${r.id}','${i.id}')">+</button></div></div>`}).join('')}</div>
+        <div class="menu">${r.items.filter(i=>activeCuisine==='All'||VasiCommerce.type(r.cuisine)==='restaurant'||i.category===activeCuisine).map(i=>{const qty=basket.restaurant_id===r.id?Number(basket.items[i.id]||0):0;return `<div class="item"><div class="food">${i.photo_url?`<img class="food-photo" src="${esc(i.photo_url)}" alt="${esc(i.name)}" loading="lazy">`:'<div class="food-placeholder" aria-hidden="true">🍽️</div>'}<div class="food-copy"><b>${esc(i.name)}</b><div class="muted">${esc(i.description||i.category||t('Product details'))}</div>${(i.allergens||[]).length?`<div class="allergen">${esc(t('Allergens'))}: ${esc(i.allergens.join(', '))}</div>`:''}<div><b>${money(i.price)}</b></div></div></div><div class="quantity">${qty?`<button class="remove" aria-label="${esc(t('Remove one'))} ${esc(i.name)}" onclick="remove('${i.id}')">−</button><b>${qty}</b>`:''}<button aria-label="${esc(t('Add'))} ${esc(i.name)}" onclick="add('${r.id}','${i.id}')">+</button></div></div>`}).join('')}</div>
       </article>`).join('')||(catalog.length
-        ? `<div class="empty"><div class="empty-icon" aria-hidden="true">🔎</div><b>${esc(t('No matching food found.'))}</b><p class="muted">${esc(t('Try another dish, cuisine or allergen search.'))}</p></div>`
-        : `<div class="empty"><div class="empty-icon" aria-hidden="true">🍽️</div><b>${esc(t('No restaurants are available yet.'))}</b><p class="muted">${esc(t('Approved partners will appear here as soon as their menus are ready.'))}</p></div>`);
+        ? `<div class="empty"><div class="empty-icon" aria-hidden="true">🔎</div><b>${esc(t('No matching products found.'))}</b><p class="muted">${esc(t('Try another product, shop or category.'))}</p></div>`
+        : `<div class="empty"><div class="empty-icon" aria-hidden="true">🍽️</div><b>${esc(t('No partner shops are available yet.'))}</b><p class="muted">${esc(t('Approved restaurants and shops will appear when their catalogs are ready.'))}</p></div>`);
       save();
     }
     function checkout(){if(!count()){el('status').textContent=t('Add an item before checkout.');return}location.href='food-checkout.html'}
@@ -74,6 +78,7 @@
         location.href='group-order.html?token='+encodeURIComponent(data.token);
       }catch(error){el('status').textContent=error.message}
     }
+    el('storeTypes').addEventListener('click',event=>{const button=event.target.closest('[data-store-type]');if(button)setStoreType(button.dataset.storeType)});
     el('chips').addEventListener('click',event=>{const button=event.target.closest('[data-cuisine]');if(button)setCuisine(button.dataset.cuisine)});
     fetch('/api/food-order?country='+encodeURIComponent(region.code)).then(async response=>{const result=await response.json();if(!response.ok)throw Error(result.error);catalog=result.restaurants||[];renderChips();render()}).catch(error=>el('restaurants').innerHTML='<p class="muted">'+esc(error.message||t('Menu unavailable'))+'</p>');
     window.addEventListener('vasi:languagechange',()=>{renderChips();render();save()});
