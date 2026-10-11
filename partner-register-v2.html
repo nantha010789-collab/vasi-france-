@@ -27,16 +27,16 @@
       @media(max-width:460px){.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.card{padding:15px}.roles,.vehicles{gap:8px}.role-card,.vehicle-card{padding:14px;min-height:108px}.action-bar{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}.action-inner{grid-template-columns:106px minmax(0,1fr)}.save-state{max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
-    <link rel="stylesheet" href="./vasi-partner-mobile.css?v=1" />
+    <link rel="stylesheet" href="./vasi-partner-mobile.css?v=2" />
   </head>
-  <body>
+  <body data-scroll-mode="viewport">
     <main class="wrap" hidden>
       <div class="page-nav">
         <span id="saveState" class="save-state" aria-live="polite">Brouillon sécurisé</span>
       </div>
       <div class="brand" aria-label="VASI Driver"><img src="./assets/vasi-logo.png" alt="VASI" /><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Driver</span></div>
 
-      <section id="wizard">
+      <section id="wizard" data-scroll-region>
         <div class="progress-shell" aria-label="Progression de l’inscription"><div class="progress-row"><span id="stepLabel" class="eyebrow">Votre activité</span><span id="stepCount" class="step-count">Étape 1 sur 7</span></div><div class="progress-track"><div id="progressFill" class="progress-fill"></div></div></div>
         <div id="applicationStatus" class="status-banner" role="status"></div>
         <h1 id="pageTitle">Choisissez votre activité</h1>
@@ -106,8 +106,8 @@
       </section>
 
       <section id="success" class="card success" aria-live="polite"><div class="success-icon">✓</div><h2>Dossier envoyé</h2><p>Votre demande est maintenant en cours de vérification. VASI vous informera dès qu’une décision sera disponible.</p><button class="action-btn primary" type="button" onclick="location.href=role==='ride'?'driver.html':'delivery-driver.html'">Ouvrir VASI Driver</button></section>
-    </main>
     <footer id="actionBar" class="action-bar"><div class="action-inner"><button id="previousButton" class="action-btn" type="button" onclick="previousStep()">Retour</button><button id="nextButton" class="action-btn primary" type="button" onclick="nextStep()">Continuer</button></div></footer>
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vasi-region.js"></script>
@@ -132,7 +132,7 @@
       function renderCountry(){ const region = VasiRegion.getRegion('FR'); VasiRegion.setCountry('FR'); $('phone').placeholder = region.phonePlaceholder; $('ridePermitLabel').textContent = 'Carte professionnelle VTC'; $('rideLicenceLabel').textContent = 'Permis de conduire'; $('rideBusinessLabel').textContent = 'SIREN / KBIS / RNE'; $('rideInsuranceLabel').textContent = 'Assurance professionnelle'; $('rideRegistrationLabel').textContent = 'Carte grise'; $('courierBusinessLabel').textContent = 'SIREN / KBIS / RNE'; $('courierBusinessHelp').textContent = 'Preuve de votre activité indépendante en France.'; $('courierRegistrationLabel').textContent = 'Carte grise'; $('transportLicenceDoc').classList.remove('hidden'); }
       function render(){ $('ride').classList.toggle('active', role === 'ride'); $('courier').classList.toggle('active', role === 'courier'); $('rideProfessionalDocs').classList.toggle('hidden', role !== 'ride'); $('vehicles').classList.toggle('hidden', role !== 'courier'); $('rideDocs').classList.toggle('hidden', role !== 'ride'); $('courierDocs').classList.toggle('hidden', role !== 'courier'); $('professionalIntro').textContent = role === 'ride' ? 'Ajoutez les justificatifs nécessaires à l’activité VTC.' : 'Choisissez le véhicule que vous utiliserez pour vos livraisons.'; $('vehicleDocsIntro').textContent = role === 'ride' ? 'Ajoutez l’assurance professionnelle et les documents du véhicule.' : 'Ajoutez vos justificatifs d’activité et l’équipement de livraison.'; renderVehicle(); renderStep(); }
       function renderVehicle(){ document.querySelectorAll('[data-vehicle]').forEach(button => button.classList.toggle('active', button.dataset.vehicle === vehicle)); const motor = role === 'courier' && motorVehicles.has(vehicle); const cycle = role === 'courier' && !motor; $('bikeRule').classList.toggle('hidden', !cycle); $('motorRule').classList.toggle('hidden', !motor); $('motorDocs').classList.toggle('hidden', !motor); const names = {bike:'Photo du vélo',ebike:'Photo du vélo électrique',scooter:'Photo du scooter',moto:'Photo de la moto',car:'Photo de la voiture'}; $('vehiclePhotoLabel').textContent = names[vehicle] || 'Photo du véhicule'; }
-      function renderStep(){ document.querySelectorAll('.step').forEach(step => step.classList.toggle('active', Number(step.dataset.step) === currentStep)); const [label,title,intro] = stepMeta[currentStep]; $('stepLabel').textContent = label; $('stepCount').textContent = `Étape ${currentStep + 1} sur ${stepMeta.length}`; $('progressFill').style.width = `${((currentStep + 1) / stepMeta.length) * 100}%`; $('pageTitle').textContent = title; $('pageIntro').textContent = intro; $('previousButton').textContent = currentStep === 0 ? 'Quitter' : 'Retour'; $('nextButton').textContent = currentStep === stepMeta.length - 1 ? 'Envoyer mon dossier' : 'Continuer'; $('nextButton').disabled = submitting; if (currentStep === 5) window.setTimeout(startCamera,0); else stopCamera(); if (currentStep === 6) renderReview(); window.scrollTo({top:0,behavior:'smooth'}); saveDraft(); }
+      function renderStep(){ document.querySelectorAll('.step').forEach(step => step.classList.toggle('active', Number(step.dataset.step) === currentStep)); const [label,title,intro] = stepMeta[currentStep]; $('stepLabel').textContent = label; $('stepCount').textContent = `Étape ${currentStep + 1} sur ${stepMeta.length}`; $('progressFill').style.width = `${((currentStep + 1) / stepMeta.length) * 100}%`; $('pageTitle').textContent = title; $('pageIntro').textContent = intro; $('previousButton').textContent = currentStep === 0 ? 'Quitter' : 'Retour'; $('nextButton').textContent = currentStep === stepMeta.length - 1 ? 'Envoyer mon dossier' : 'Continuer'; $('nextButton').disabled = submitting; if (currentStep === 5) window.setTimeout(startCamera,0); else stopCamera(); if (currentStep === 6) renderReview(); $('wizard').scrollTop = 0; saveDraft(); }
       function nextStep(){ if (submitting) return; if (currentStep === stepMeta.length - 1) return submitApplication(); const problem = validateStep(currentStep); if (problem) return showStepError(problem); clearStepError(); currentStep += 1; renderStep(); }
       function previousStep(){ if (submitting) return; if (currentStep === 0) { if (history.length > 1) history.back(); else location.href = driverSurface ? 'driver-home.html' : 'index.html'; return; } clearStepError(); currentStep -= 1; renderStep(); }
       function showStepError(message){ const target = document.querySelector(`.step[data-step="${currentStep}"] .card`); let error = target.querySelector('.step-error'); if (!error) { error = document.createElement('p'); error.className = 'status err step-error'; error.setAttribute('role','alert'); target.appendChild(error); } error.textContent = message; error.scrollIntoView({block:'nearest'}); }
