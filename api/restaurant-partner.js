@@ -291,7 +291,7 @@ async function aiReviewPhoto(photo, item) {
           process.env.OPENAI_SUPPORT_MODEL ||
           "gpt-5-mini",
         instructions:
-          "Review a restaurant menu photo for a delivery marketplace. Approve only when it clearly shows food or a sealed drink that plausibly matches the menu item, is sufficiently lit and sharp, has no prominent watermark, contact details, price text, QR code, unrelated people, unsafe or explicit material. Use needs_changes only for a clear objective failure such as no food, severe blur/darkness, advertising text, or unsafe content. Use admin_review for uncertainty, possible mismatch, branded packaging, or borderline quality. Be conservative. Give one short, helpful reason without identifying people or inferring sensitive traits.",
+          "Review a restaurant or grocery product photo for a delivery marketplace. Approve only when it clearly shows prepared food, fresh groceries, a packaged grocery product or an ordinary household product that plausibly matches the catalog item, is sufficiently lit and sharp, has no prominent watermark, contact details, price text, QR code, unrelated people, unsafe or explicit material. Use needs_changes only for a clear objective failure such as no relevant product, severe blur/darkness, advertising text, or unsafe content. Use admin_review for uncertainty, possible mismatch, branded packaging, or borderline quality. Be conservative. Give one short, helpful reason without identifying people or inferring sensitive traits.",
         input: [
           {
             role: "user",
