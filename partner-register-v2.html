@@ -27,8 +27,9 @@
       @media(max-width:460px){.wrap{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.card{padding:15px}.roles,.vehicles{gap:8px}.role-card,.vehicle-card{padding:14px;min-height:108px}.action-bar{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}.action-inner{grid-template-columns:106px minmax(0,1fr)}.save-state{max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
-    <link rel="stylesheet" href="./vasi-partner-mobile.css?v=2" />
-  </head>
+    <link rel="stylesheet" href="./vasi-partner-mobile.css?v=3" />
+  <link rel="stylesheet" href="/vasi-responsive.css?v=1" />
+</head>
   <body data-scroll-mode="viewport">
     <main class="wrap" hidden>
       <div class="page-nav">
@@ -36,8 +37,9 @@
       </div>
       <div class="brand" aria-label="VASI Driver"><img src="./assets/vasi-logo.png" alt="VASI" /><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Driver</span></div>
 
-      <section id="wizard" data-scroll-region>
         <div class="progress-shell" aria-label="Progression de l’inscription"><div class="progress-row"><span id="stepLabel" class="eyebrow">Votre activité</span><span id="stepCount" class="step-count">Étape 1 sur 7</span></div><div class="progress-track"><div id="progressFill" class="progress-fill"></div></div></div>
+      <section id="wizard" data-scroll-region>
+
         <div id="applicationStatus" class="status-banner" role="status"></div>
         <h1 id="pageTitle">Choisissez votre activité</h1>
         <p id="pageIntro" class="intro">Un seul compte VASI Driver, avec un parcours adapté à votre activité.</p>

@@ -1,0 +1,29 @@
+/* Shared mobile safeguards; page-specific layouts keep their own scroll model. */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+*, *::before, *::after { box-sizing:border-box; }
+img, video, canvas, svg { max-width:100%; }
+input, select, textarea { max-width:100%; }
+@media (max-width:768px) {
+  input, select, textarea { font-size:16px; }
+  main, section, article, form, .card, .panel, .grid > *, .top > *, .topbar > * { min-width:0; }
+  h1, h2, h3, p, label, .muted, .cell-sub { overflow-wrap:break-word; }
+  button:not(.leaflet-control-zoom-in):not(.leaflet-control-zoom-out), .btn, .button, .action, .action-btn {
+    min-height:44px; white-space:normal; overflow-wrap:break-word; touch-action:manipulation;
+  }
+  textarea { resize:vertical; }
+  .table-wrap { max-width:100%; overflow:auto; overscroll-behavior-x:contain; }
+  :focus-visible { outline-offset:2px; }
+}
+@media (max-width:480px) {
+  h1 { font-size:clamp(26px,8vw,36px); line-height:1.12; }
+  .topbar, .panel-head { flex-wrap:wrap; }
+  .topbar .top-actions { flex-wrap:wrap; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { scroll-behavior:auto!important; }
+}
+@media (max-width:480px) {
+  .page-hero .shell, .page-heading { grid-template-columns:minmax(0,1fr); }
+  .page-hero .shell > *, .page-heading > * { min-width:0; }
+  .page-hero h1 { font-size:clamp(30px,9vw,42px); line-height:1.08; overflow-wrap:anywhere; }
+}
