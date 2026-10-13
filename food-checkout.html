@@ -50,6 +50,7 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script src="./vasi-notifications.js"></script>
     <script src="./vasi-region.js"></script>
+    <script src="./vasi-commerce.js?v=2"></script>
     <script>
       const client = supabase.createClient(
         "https://vhfyvkrvysrooaqzcxsp.supabase.co",
@@ -58,7 +59,7 @@
       const PAYMENT_ENDPOINT = "https://vhfyvkrvysrooaqzcxsp.supabase.co/functions/v1/food-payment";
       const el = (id) => document.getElementById(id);
       const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char]);
-      const basket = JSON.parse(localStorage.getItem("vasi_food_basket") || '{"restaurant_id":null,"items":{}}');
+      const basket = VasiCommerce.readBasket(localStorage);
       const basketPayload = () => ({
         restaurant_id: basket.restaurant_id,
         items: Object.entries(basket.items || {}).map(([id, quantity]) => ({ id, quantity })),
@@ -70,14 +71,16 @@
       let stripeElements = null;
       let orderId = null;
 
+      function localDate(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,"0")}-${String(value.getDate()).padStart(2,"0")}`}
+
       function toggleSchedule() {
         const scheduled = el("deliveryTiming").value === "scheduled";
         el("scheduleFields").hidden = !scheduled;
         if (scheduled && !el("scheduleDate").value) {
           const next = new Date(Date.now() + 60 * 60 * 1000);
-          el("scheduleDate").min = new Date().toISOString().slice(0, 10);
-          el("scheduleDate").max = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-          el("scheduleDate").value = next.toISOString().slice(0, 10);
+          el("scheduleDate").min = localDate(new Date());
+          el("scheduleDate").max = localDate(new Date(Date.now() + 7 * 86400000));
+          el("scheduleDate").value = localDate(next);
           el("scheduleTime").value = `${String(next.getHours()).padStart(2,"0")}:${String(next.getMinutes()).padStart(2,"0")}`;
         }
       }
@@ -87,6 +90,7 @@
         const date = el("scheduleDate").value, time = el("scheduleTime").value;
         if (!date || !time) throw new Error("Choose the scheduled delivery date and time");
         const when = new Date(`${date}T${time}`);
+        if (!Number.isFinite(when.getTime())) throw new Error("Choose a valid delivery date and time");
         if (when.getTime() < Date.now() + 30 * 60 * 1000) throw new Error("Scheduled order must be at least 30 minutes from now");
         if (when.getTime() > Date.now() + 7 * 86400000) throw new Error("Scheduled order must be within 7 days");
         return when.toISOString();
@@ -144,6 +148,9 @@
             button.disabled = false;
             return;
           }
+          const configResponse = await fetch("/api/payment-config", { cache: "no-store" });
+          const config = await configResponse.json();
+          if (!configResponse.ok || !config.enabled || !config.publishable_key) throw new Error("Card payment is not configured");
           const orderResponse = await fetch("/api/food-order", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
@@ -161,9 +168,6 @@
           orderId = order.order_id;
           showTotals(order);
 
-          const configResponse = await fetch("/api/payment-config", { cache: "no-store" });
-          const config = await configResponse.json();
-          if (!config.enabled || !config.publishable_key) throw new Error("Card payment is not configured");
           const payment = await requestPayment(session, { action: "create", order_id: orderId });
           stripeInstance = Stripe(config.publishable_key);
           stripeElements = stripeInstance.elements({

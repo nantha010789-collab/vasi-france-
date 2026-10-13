@@ -27,3 +27,9 @@ test('partner render updates shared category suggestions when the store type cha
   assert.match(ctx.app.innerHTML,/<input name="category"[^>]*list="productCategories"/);
  }
 });
+test('saved baskets recover from invalid data and keep valid group-order quantities',()=>{
+ for(const value of ['not-json','null','[]','{}',JSON.stringify({restaurant_id:'shop',items:null}),JSON.stringify({restaurant_id:'shop',items:[]})])assert.deepEqual(JSON.parse(JSON.stringify(c.readBasket({getItem:()=>value}))),{restaurant_id:null,items:{}});
+ const basket=c.readBasket({getItem:()=>JSON.stringify({restaurant_id:'shop',items:{milk:2,tooMany:11,negative:-1,fraction:1.5,text:'2'},group_order_id:'group'})});
+ assert.deepEqual(JSON.parse(JSON.stringify(basket)),{restaurant_id:'shop',items:{milk:2},group_order_id:'group'});
+ assert.equal(c.readBasket({getItem(){throw Error('Unavailable storage')}}).restaurant_id,null);
+});
