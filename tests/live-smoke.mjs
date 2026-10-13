@@ -94,7 +94,7 @@ const checks = [
     assert.equal(body.status, "ok");
     assert.equal(body.service, "vasi-web");
   })(),
-  expectPage(production, "/vasi-clean-start.html", ['class="app"', "ride-flow.html"]),
+  expectPage(production, "/vasi-clean-start.html", ["location.replace(\"index.html\")"]),
   expectPage(pages, "/vasi-france-/", ["Move.", "vasi-notifications.js"]),
   expectPage(pages, "/vasi-france-/ride-chat.html", ["callButton", "vasi-call.js"]),
   expectPage(pages, "/vasi-france-/manifest.webmanifest", ["vasi-word-icon-192.png", "vasi-word-icon-512.png"]),
