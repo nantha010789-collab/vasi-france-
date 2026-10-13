@@ -305,23 +305,39 @@
   async function support(){try{const data=await api('/api/support?admin=1'),rows=data.tickets||[];const html=table(['Ticket','Compte','Message','Priorité','Statut','Action'],rows.map(t=>`<tr data-status="${esc(t.status)}"><td><div class="cell-main">${esc(t.subject||t.category||'Support')}</div><div class="cell-sub">${fmt(t.created_at)}</div></td><td>${esc(t.user_role||'client')}</td><td><div class="cell-sub">${esc(t.description||'')}</div></td><td>${badge(t.priority)}</td><td>${badge(t.status)}</td><td><button class="button" data-ticket="${esc(t.id)}">Répondre</button></td></tr>`));shell('Support',`<section class="panel"><div class="panel-head"><h2>Tickets clients et partenaires</h2></div>${filters(['open','waiting_human','in_progress','resolved','closed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-ticket]').forEach(btn=>btn.addEventListener('click',async()=>{const reply=prompt('Réponse VASI :');if(!reply?.trim())return;await runAction(btn,async()=>{await api('/api/support',{method:'PATCH',body:JSON.stringify({id:btn.dataset.ticket,status:'resolved',human_reply:reply.trim()})});notify('Réponse enregistrée');support()})}))}catch(e){shell('Support',errorView(e))}}
   async function guides(){shell('Guides',`<section class="panel"><div class="panel-head"><div><h2>Guides opérationnels VASI</h2><p class="muted">Procédures courtes pour les actions sensibles et les tâches quotidiennes.</p></div><a class="button primary" href="../tutorials.html" target="_blank" rel="noopener">Ouvrir le centre complet</a></div><div class="summary-grid">${metric('01','Prioriser','Centre de contrôle')}${metric('02','Vérifier','Dossier et identité')}${metric('03','Surveiller','Courses et GPS')}${metric('04','Journaliser','Paiements et décisions')}</div></section><section class="panel"><h2>Règles essentielles</h2><div class="ops-grid"><article class="ops-alert"><strong>Validation humaine</strong><p>Un nom identique ne suffit jamais. Vérifiez l’original, les deux faces, le selfie, les dates et enregistrez une note.</p></article><article class="ops-alert"><strong>Paiements et suspensions</strong><p>Vérifiez la course, le montant et le motif. Toute décision sensible doit rester humaine et apparaître dans le journal.</p></article><article class="ops-alert"><strong>Données personnelles</strong><p>Ne demandez jamais un mot de passe, un code OTP complet ou un numéro de carte bancaire complet.</p></article></div></section>`)}
   async function deletions(){try{const data=await api('/api/admin-deletions'),rows=data.requests||[];const html=table(['Demande','Compte','Motif','Échéance','Statut','Actions'],rows.map(r=>`<tr data-status="${esc(r.status)}"><td><div class="cell-main mono">#${esc(r.id.slice(0,8).toUpperCase())}</div><div class="cell-sub">${fmt(r.requested_at)}</div></td><td class="mono">${esc(String(r.user_id).slice(0,8))}</td><td><div class="cell-sub">${esc(r.reason||'Aucun motif')}</div></td><td>${fmt(r.scheduled_for)}</td><td>${badge(r.status)}</td><td>${['requested','processing'].includes(r.status)?`<div class="actions"><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="processing">Traiter</button><button class="button danger" data-deletion="${esc(r.id)}" data-deletion-status="rejected">Refuser</button><button class="button" data-deletion="${esc(r.id)}" data-deletion-status="cancelled">Annuler</button></div>`:'—'}</td></tr>`));shell('Suppressions',`<section class="panel"><div class="panel-head"><div><h2>Demandes de suppression</h2><p class="muted">Vérifiez les courses, paiements et obligations légales avant toute suppression. La clôture définitive exige la procédure serveur sécurisée.</p></div><button class="button" data-refresh>Actualiser</button></div>${filters(['requested','processing','cancelled','rejected','completed'])}${html}</section>`);bindFilter();document.querySelectorAll('[data-deletion]').forEach(btn=>btn.addEventListener('click',async()=>{const note=prompt('Note interne :','Vérification administrateur')||'';if(!confirm('Confirmer la mise à jour de cette demande ?'))return;await runAction(btn,async()=>{await api('/api/admin-deletions',{method:'PATCH',body:JSON.stringify({id:btn.dataset.deletion,status:btn.dataset.deletionStatus,admin_note:note})});notify('Demande mise à jour');deletions()})}))}catch(e){shell('Suppressions',errorView(e))}}
+  function gpsPoint(driver){
+    if([driver.latitude,driver.longitude].some(v=>v==null||typeof v==='boolean'||String(v).trim()===''))return null;
+    const lat=Number(driver.latitude),lng=Number(driver.longitude);
+    return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180?[lat,lng]:null;
+  }
   async function gps(){
     const version=renderVersion;
     if(!map){
       shell('Live GPS',`<section class="panel gps-panel"><div class="panel-head"><div><h2>Live drivers</h2><p id="gpsStatus" class="muted" role="status">Loading driver positions…</p></div><button class="button" data-refresh>Refresh</button></div><div class="gps-map-shell"><div id="gpsMap" class="gps-map" aria-label="Interactive live driver map"></div><div id="gpsMapLoading" class="gps-map-loading" role="status"><span class="gps-spinner" aria-hidden="true"></span>Loading map…</div><div id="gpsMapNotice" class="gps-map-notice" role="status" hidden></div><div class="gps-map-legend" aria-label="Map legend"><span><i class="gps-dot live"></i>Recent position</span><span><i class="gps-dot stale"></i>Refresh needed</span></div></div></section>`);
-      if(!window.L||!window.maplibregl||typeof window.L.maplibreGL!=='function'){shell('Live GPS',errorView(new Error('The map could not be loaded. Check your internet connection.')));return}
+      if(!window.L){shell('Live GPS',errorView(new Error('The map could not be loaded. Check your internet connection.')));return}
       const mapElement=document.getElementById('gpsMap');
       map=window.L.map(mapElement,{zoomControl:true,zoomAnimation:true,fadeAnimation:true,trackResize:true}).setView([48.8566,2.3522],9);
-      mapTiles=professionalVectorLayer().addTo(map);
-      const vectorMap=mapTiles.getMaplibreMap();
-      vectorMap.on('load',()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapLoadFailures=0;syncMapSize()});
-      vectorMap.on('error',()=>{
-        mapLoadFailures+=1;
-        if(mapLoadFailures<4)return;
-        const notice=document.getElementById('gpsMapNotice');
-        if(notice){notice.hidden=false;notice.textContent='The map reconnects automatically. Check your connection if it remains unavailable.'}
-      });
-      map.whenReady(()=>{syncMapSize();document.getElementById('gpsMapLoading')?.classList.add('hidden')});
+      const mapReady=()=>{document.getElementById('gpsMapLoading')?.classList.add('hidden');mapLoadFailures=0;syncMapSize()};
+      let rasterStarted=false;
+      const useRaster=()=>{
+        if(rasterStarted)return;
+        rasterStarted=true;
+        if(mapTiles)map.removeLayer(mapTiles);
+        mapTiles=window.L.tileLayer('/api/map-tile?z={z}&x={x}&y={y}',{maxNativeZoom:19,maxZoom:20,attribution:'© OpenStreetMap contributors'});
+        mapTiles.on('tileload',mapReady);
+        mapTiles.on('tileerror',()=>{const notice=document.getElementById('gpsMapNotice');if(notice){notice.hidden=false;notice.textContent='Map temporarily unavailable. Check your connection and refresh.'}});
+        mapTiles.addTo(map);
+      };
+      try{
+        if(!window.maplibregl?.supported?.()||typeof window.L.maplibreGL!=='function')useRaster();
+        else{
+          mapTiles=professionalVectorLayer().addTo(map);
+          const vectorMap=mapTiles.getMaplibreMap();
+          vectorMap.on('load',mapReady);
+          vectorMap.on('error',()=>{mapLoadFailures+=1;if(mapLoadFailures>=4)useRaster()});
+        }
+      }catch{useRaster()}
+      map.whenReady(syncMapSize);
       watchMapSize(mapElement);
     }
     const status=document.getElementById('gpsStatus');
@@ -330,9 +346,9 @@
       setConnected(true);
       const visible=new Set(),bounds=[];
       (data.drivers||[]).forEach(d=>{
-        const latitude=Number(d.latitude),longitude=Number(d.longitude);
-        if(!d.online||!d.verified||!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
-        const minutes=Math.round(d.location_age_seconds/60),point=[latitude,longitude],age=d.location_age_seconds==null?(isFrench()?'Position ancienne':'Old position'):d.location_age_seconds<60?(isFrench()?'À l’instant':'Just now'):(isFrench()?`Il y a ${minutes} min`:`${minutes} min ago`);
+        const point=gpsPoint(d);
+        if(!d.online||!d.verified||!point)return;
+        const minutes=Math.round(d.location_age_seconds/60),age=d.location_age_seconds==null?(isFrench()?'Position ancienne':'Old position'):d.location_age_seconds<60?(isFrench()?'À l’instant':'Just now'):(isFrench()?`Il y a ${minutes} min`:`${minutes} min ago`);
         const popup=`<strong>${esc(d.full_name||(isFrench()?'Chauffeur':'Driver'))}</strong><br>${esc(d.vehicle_plate||'')}<br>${esc(d.online?(isFrench()?'En ligne':'Online'):(isFrench()?'Hors ligne':'Offline'))} · ${esc(age)}`;
         visible.add(d.id);bounds.push(point);
         const stale=d.stale===true||Number(d.location_age_seconds)>60;
