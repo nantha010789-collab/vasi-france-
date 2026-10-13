@@ -6,7 +6,7 @@ import vm from "node:vm";
 function harness({timeout=false,hungSession=false}={}) {
   const elements=new Map(), requests=[];
   function element(id) {
-    if(!elements.has(id)) elements.set(id,{innerHTML:"",textContent:"",className:"",value:"",dataset:{},classList:{toggle(){}},setAttribute(){},addEventListener(){},appendChild(){},closest:()=>element('sidebar')});
+    if(!elements.has(id)) elements.set(id,{innerHTML:"",textContent:"",className:"",value:"",dataset:{},classList:{toggle(){},add(){},remove(){}},setAttribute(){},addEventListener(){},appendChild(){},closest:()=>element('sidebar')});
     return elements.get(id);
   }
   const document={getElementById:element,querySelectorAll:()=>[],createElement:()=>element(Math.random()),addEventListener(){}};
@@ -16,9 +16,9 @@ function harness({timeout=false,hungSession=false}={}) {
     requests.push({path,resolve:body=>resolve({ok:true,status:200,json:async()=>body})});
     if(timeout) signal.addEventListener("abort",()=>reject(new Error("aborted")),{once:true});
   })});
-  const source=readFileSync("admin/app.js","utf8").replace("  start();","  window.adminTest={render};");
+  const source=readFileSync("admin/app.js","utf8").replace("  start();","  window.adminTest={render,runAction};");
   vm.runInContext(source,context);
-  return {render:window.adminTest.render,requests,elements};
+  return {render:window.adminTest.render,runAction:window.adminTest.runAction,requests,elements};
 }
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 
@@ -46,4 +46,15 @@ test("hanging session checks also stop the spinner with a retry error",async()=>
   await h.render("documents");
   assert.match(h.elements.get("app").innerHTML,/Le chargement a pris trop de temps/);
   assert.match(h.elements.get("app").innerHTML,/Réessayer/);
+});
+
+test("admin action failures show an error and restore the button for retry",async()=>{
+ const h=harness(),button={disabled:false};
+ await h.runAction(button,async()=>{throw new Error('Service indisponible')});
+ assert.equal(button.disabled,false);
+ assert.equal(h.elements.get('toast').textContent,'Service indisponible');
+ let calls=0,finish;const action=()=>{calls++;return new Promise(r=>finish=r)};
+ const first=h.runAction(button,action);
+ await h.runAction(button,action);assert.equal(calls,1);finish();await first;
+ assert.equal(button.disabled,false);
 });
