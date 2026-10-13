@@ -72,7 +72,7 @@ const checks = [
   })(),
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
   expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn", "airportGuidance", "vasi-airports.js"]),
-  expectPage(production, "/food.html", ["food-orders.html", "Approved local restaurants"]),
+  expectPage(production, "/food.html", ["food-orders.html", "storeTypes", "vasi-commerce.js"]),
   expectPage(production, "/food-orders.html", ["VASI Food orders", "food_order_safety", "vasi-account-role.js"]),
   expectPage(production, "/vasi-airports.js", ["Paris–Charles de Gaulle", "Paris–Orly", "Paris Beauvais–Tillé"]),
   (async () => {
