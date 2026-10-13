@@ -72,7 +72,7 @@ const checks = [
   })(),
   expectPage(production, "/ride-chat.html", ["callButton", "vasi-call.js", "remoteAudio"]),
   expectPage(production, "/ride-flow.html", ["passengerCount", "luggageCount", "airportReadyBtn", "airportGuidance", "vasi-airports.js"]),
-  expectPage(production, "/food.html", ["food-orders.html", "Approved local restaurants"]),
+  expectPage(production, "/food.html", ["food-orders.html", "storeTypes", "vasi-commerce.js"]),
   expectPage(production, "/food-orders.html", ["VASI Food orders", "food_order_safety", "vasi-account-role.js"]),
   expectPage(production, "/vasi-airports.js", ["Paris–Charles de Gaulle", "Paris–Orly", "Paris Beauvais–Tillé"]),
   (async () => {
@@ -94,7 +94,7 @@ const checks = [
     assert.equal(body.status, "ok");
     assert.equal(body.service, "vasi-web");
   })(),
-  expectPage(production, "/vasi-clean-start.html", ["location.replace(\"index.html\")"]),
+  expectPage(production, "/vasi-clean-start.html", ['class="app"', "ride-flow.html"]),
   expectPage(pages, "/vasi-france-/", ["Move.", "vasi-notifications.js"]),
   expectPage(pages, "/vasi-france-/ride-chat.html", ["callButton", "vasi-call.js"]),
   expectPage(pages, "/vasi-france-/manifest.webmanifest", ["vasi-word-icon-192.png", "vasi-word-icon-512.png"]),
