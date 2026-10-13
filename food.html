@@ -34,7 +34,7 @@
   </aside>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
   <script src="./vasi-languages.js?v=4"></script>
-  <script src="./vasi-region.js"></script><script src="./vasi-commerce.js?v=1"></script>
+  <script src="./vasi-region.js"></script><script src="./vasi-commerce.js?v=2"></script>
   <script>
     const el=id=>document.getElementById(id);
     const t=value=>window.VasiLanguage?.translate?.(value)||value;
@@ -42,13 +42,13 @@
     const money=value=>VasiRegion.money(value,region.code);
     const client=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT');
     let activeStoreType='all';
-    let catalog=[],activeCuisine='All',basket=JSON.parse(localStorage.getItem('vasi_food_basket')||'{"restaurant_id":null,"items":{}}');
+    let catalog=[],activeCuisine='All',basket=VasiCommerce.readBasket(localStorage);
     const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const count=()=>Object.values(basket.items||{}).reduce((a,b)=>a+Number(b||0),0);
     const basketRestaurant=()=>catalog.find(r=>r.id===basket.restaurant_id);
     function basketValue(){const restaurant=basketRestaurant();return (restaurant?.items||[]).reduce((sum,item)=>sum+Number(item.price||0)*Number(basket.items[item.id]||0),0)}
     function save(){localStorage.setItem('vasi_food_basket',JSON.stringify(basket));const quantity=count(),restaurant=basketRestaurant();el('count').textContent=quantity;el('basketTotal').textContent=money(basketValue());el('cartRestaurant').textContent=restaurant?.name||t('Your basket');el('cartbar').hidden=!quantity}
-    function add(restaurantId,itemId){if(basket.restaurant_id&&basket.restaurant_id!==restaurantId){basket={restaurant_id:restaurantId,items:{}};el('status').textContent=t('New basket started. You can order from one restaurant at a time.')}basket.restaurant_id=restaurantId;basket.items[itemId]=(basket.items[itemId]||0)+1;save();render()}
+    function add(restaurantId,itemId){if(basket.restaurant_id===restaurantId&&Number(basket.items[itemId]||0)>=10){el('status').textContent=t('Maximum 10 of each item per order.');return}if(basket.restaurant_id&&basket.restaurant_id!==restaurantId){basket={restaurant_id:restaurantId,items:{}};el('status').textContent=t('New basket started. You can order from one restaurant at a time.')}basket.restaurant_id=restaurantId;basket.items[itemId]=(basket.items[itemId]||0)+1;save();render()}
     function remove(itemId){if(!basket.items[itemId])return;basket.items[itemId]--;if(basket.items[itemId]<=0)delete basket.items[itemId];if(!count())basket.restaurant_id=null;save();render()}
     function setCuisine(value){activeCuisine=value;renderChips();render()}
     function setStoreType(value){activeStoreType=value;activeCuisine='All';renderChips();render()}
