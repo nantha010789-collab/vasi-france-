@@ -2842,6 +2842,14 @@
             '<span class="error">Pickup not found — try the postcode and city</span>';
         }
       }
+      function routeMapPadding(mapRect, panelRect) {
+        const sidePanel = panelRect.width < mapRect.width * 0.7;
+        const top = sidePanel ? 118 : 76;
+        return {
+          paddingTopLeft: [sidePanel ? Math.max(28, Math.min(panelRect.right - mapRect.left + 28, mapRect.width - 120)) : 28, top],
+          paddingBottomRight: [28, sidePanel ? 28 : Math.max(28, Math.min(mapRect.bottom - panelRect.top + 28, mapRect.height - top - 80))],
+        };
+      }
       async function buildRoute() {
         if (!pickup || !pickupConfirmed || !destination)
           return;
@@ -2882,17 +2890,13 @@
               lineJoin: "round",
             },
           }).addTo(map);
-          const bottomPadding = Math.min(
-            Math.max($("panel").offsetHeight + 20, 220),
-            Math.round($("map").offsetHeight * 0.48),
-          );
-          map.fitBounds(routeLine.getBounds(), {
-            paddingTopLeft: [28, 118],
-            paddingBottomRight: [28, bottomPadding],
-          });
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
+          syncMapUiState();
+          requestAnimationFrame(() => {
+            if (routeLine) map.fitBounds(routeLine.getBounds(), routeMapPadding($("map").getBoundingClientRect(), $("panel").getBoundingClientRect()));
+          });
           const routeSummary = `${degraded ? "Approx. · " : ""}${route.km.toFixed(1)} km · about ${route.mins} min${stops.length ? ` · ${stops.length} stop${stops.length > 1 ? "s" : ""}` : ""}`;
           $("tripInfo").textContent = routeSummary;
           $("mapTripSummary").textContent = routeSummary;
