@@ -185,6 +185,52 @@
         }
       }
 
+      function showConfirmedOrder(confirmed) {
+        el("orderBtn").hidden = true;
+        el("payBtn").disabled = true;
+        localStorage.removeItem("vasi_food_basket");
+        const pin = /^\d{4}$/.test(String(confirmed.delivery_pin || "")) ? String(confirmed.delivery_pin) : "••••";
+        el("paymentPanel").classList.remove("visible");
+        const timing = confirmed.scheduled_for
+          ? `<br><span class="muted">Scheduled for ${esc(new Date(confirmed.scheduled_for).toLocaleString())}. The restaurant and courier flow opens shortly before this time.</span>`
+          : "";
+        el("status").innerHTML = `<span class="success">Payment successful. Your order is confirmed.</span>${timing}<br><span class="muted">Order ID: ${esc(orderId.slice(0, 8).toUpperCase())}</span><br><br><span class="muted">DELIVERY PIN</span><br><span class="pin">${esc(pin)}</span><br><span class="muted">Give this PIN only when your food arrives. It releases the courier earning.</span><br><a class="login" href="food-orders.html">View Food activity</a>`;
+      }
+
+      async function resumePaymentReturn() {
+        el("orderBtn").hidden = true;
+        el("paymentPanel").classList.remove("visible");
+        el("status").textContent = "Checking payment status. Please do not place another order…";
+        try {
+          const { data: { session } } = await client.auth.getSession();
+          if (!session) {
+            const next = "food-checkout.html?order_id=" + encodeURIComponent(orderId);
+            localStorage.setItem("vasi_role", "customer");
+            localStorage.setItem("vasi_return", next);
+            el("status").innerHTML = 'Sign in to check this order. <a class="login" href="auth.html?role=customer&amp;next=' + encodeURIComponent(next) + '">Login</a>';
+            return;
+          }
+          const confirmed = await requestPayment(session, { action: "confirm", order_id: orderId });
+          if (!confirmed.paid) throw new Error("Payment is not confirmed yet. Check your order before paying again.");
+          showConfirmedOrder(confirmed);
+        } catch (error) {
+          el("status").innerHTML = esc(error.message || "Payment status is unavailable.") + '<br><button class="cta" onclick="resumePaymentReturn()">Check payment status again</button><br><a class="login" href="food-orders.html">View Food activity</a>';
+        }
+      }
+
+      async function initializeCheckout() {
+        const returnedId = new URLSearchParams(location.search).get("order_id");
+        if (returnedId === null) return price();
+        el("orderBtn").hidden = true;
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(returnedId)) {
+          el("status").textContent = "Invalid order reference. Open Food activity to check your order.";
+          return;
+        }
+        orderId = returnedId;
+        history.replaceState(null, "", location.pathname + "?order_id=" + encodeURIComponent(orderId));
+        return resumePaymentReturn();
+      }
+
       async function payNow() {
         if (!stripeInstance || !stripeElements || !orderId) return;
         const button = el("payBtn");
@@ -201,20 +247,14 @@
           if (!session) throw new Error("Login session expired");
           const confirmed = await requestPayment(session, { action: "confirm", order_id: orderId });
           if (!confirmed.paid) throw new Error("Payment confirmation is still pending");
-          localStorage.removeItem("vasi_food_basket");
-          const pin = /^\d{4}$/.test(String(confirmed.delivery_pin || "")) ? String(confirmed.delivery_pin) : "••••";
-          el("paymentPanel").classList.remove("visible");
-          const timing = confirmed.scheduled_for
-            ? `<br><span class="muted">Scheduled for ${esc(new Date(confirmed.scheduled_for).toLocaleString())}. The restaurant and courier flow opens shortly before this time.</span>`
-            : "";
-          el("status").innerHTML = `<span class="success">Payment successful. Your order is confirmed.</span>${timing}<br><span class="muted">Order ID: ${esc(orderId.slice(0, 8).toUpperCase())}</span><br><br><span class="muted">DELIVERY PIN</span><br><span class="pin">${esc(pin)}</span><br><span class="muted">Give this PIN only when your food arrives. It releases the courier earning.</span><br><a class="login" href="food-orders.html">View Food activity</a>`;
+          showConfirmedOrder(confirmed);
         } catch (error) {
           el("status").textContent = error.message;
           button.disabled = false;
         }
       }
 
-      price();
+      initializeCheckout();
       VasiNotifications.start(client, { role: "customer" });
     </script>
     <script src="./vasi-languages.js?v=4"></script>
