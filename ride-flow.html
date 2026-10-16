@@ -1155,9 +1155,9 @@
       .tripOptions > summary span { display: none; }
       .priceOptions > summary b { float: right; }
       .priceOptions .fareRow, .priceOptions #tripInfo, .priceOptions .fareSummaryTop { display: none; }
-      .paymentChoices > summary { display: flex; gap: 10px; align-items: center; padding: 10px 4px; cursor: pointer; font-size: 12px; list-style: none; }
+      .paymentChoices > summary { display: flex; gap: 10px; align-items: center; padding: 12px 4px; cursor: pointer; font-size: 15px; list-style: none; }
       .paymentChoices > summary::-webkit-details-marker { display: none; }
-      .paymentChoices > summary b { margin-left: auto; }
+      .paymentChoices > summary b { margin-left: auto; font-size: 17px; }
       .paymentChoices[open] .paygrid { max-height: 120px; overflow-y: auto; }
       .paymentChoices .section { display: none; }
       .paymentChoices .pay { min-height: 44px; padding: 10px; }
@@ -1465,32 +1465,12 @@
               ✓ Use this pickup time
             </button>
           </div>
-          </details>
-          <details class="priceOptions"><summary>Price details <b id="fare">—</b></summary>
-          <div class="fareRow">
-            <span class="fareLabel">Upfront fare</span
-            ><span class="fare">Total</span>
-          </div>
-          <div id="tripInfo" class="trip"></div>
-          <div class="fareSummary" aria-live="polite">
-            <div class="fareSummaryTop">
-              <span>Selected service</span><b id="fareService">VASI Go</b>
-              <span>Payment method</span><b id="farePayment">Cash</b>
-            </div>
-            <div class="fareDetails">
-              <div class="fareBreakdown">
-                <span>Route</span><b id="fareRoute">—</b>
-                <span>Current rate</span><b id="fareRate">VASI offer applied</b>
-                <span>Estimated total</span><b class="fareTotalValue" id="fareTotal">—</b>
-                <p class="fareDisclosure">The fare is shown before booking. Tolls or customer-approved trip changes may adjust the final amount.</p>
-              </div>
-            </div>
-          </div>
           <div class="policy" style="margin-top: 10px">
             <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
             <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
           </div>
           </details>
+<div hidden aria-hidden="true" id="fareData"><span id="fare"></span><span id="tripInfo"></span><span id="fareService"></span><span id="farePayment"></span><span id="fareRoute"></span><span id="fareRate"></span><span id="fareTotal"></span></div>
           </div>
           <div class="bookingActions">
           <details id="paymentChoices" class="paymentChoices"><summary><span>Payment method</span><b id="paymentChoiceLabel">Cash</b><span aria-hidden="true">›</span></summary>
