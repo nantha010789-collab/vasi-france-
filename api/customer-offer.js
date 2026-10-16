@@ -31,12 +31,13 @@ export default async function handler(req, res) {
     return res.status(200).json({
       active: eligible,
       discount_percent: eligible ? 5 : 0,
-      max_discount_eur: eligible ? 1 : 0,
+      max_discount_eur: eligible ? 3 : 0,
       reason: eligible ? "welcome" : "not_eligible",
       label: eligible ? "VASI Welcome" : null,
       safeguards: {
         allowed_percentages: [5], first_ride_only: true,
         sensitive_data_used: false, driver_pay_protected: true,
+        platform_cost_reserve: true,
       },
     });
   } catch (error) {

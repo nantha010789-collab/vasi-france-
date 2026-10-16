@@ -10,8 +10,14 @@ globalThis.VasiRideFareGuard = function (fare, commissionPercent = 12, km = 0) {
   return customerCents / 100;
 };
 
+// Conservative planning reserve, not a claim about actual Stripe fees or profit.
+// Keep EUR 2 for operations after a 3.5% + EUR 0.30 payment-cost allowance.
+globalThis.VasiRideOfferReserveCents = function (settlementCents) {
+  return Math.ceil(settlementCents * 3.5 / 100) + 30 + 200;
+};
+
 // Builds a customer offer without reducing the protected driver amount.
-// The discount is capped at VASI's gross commission, so VASI funds the offer.
+// The discount may use only commission remaining after the cost reserve.
 globalThis.VasiFundedRideQuote = function (
   fare,
   commissionPercent = 12,
@@ -38,7 +44,7 @@ globalThis.VasiFundedRideQuote = function (
   const fundedDiscountCents = Math.max(0, Math.min(
     requestedDiscountCents,
     discountCapCents,
-    grossCommissionCents,
+    Math.max(0, grossCommissionCents - globalThis.VasiRideOfferReserveCents(settlementCents)),
   ));
   const driverCents = settlementCents - grossCommissionCents;
   const customerCents = settlementCents - fundedDiscountCents;

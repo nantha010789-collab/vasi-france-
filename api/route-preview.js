@@ -224,6 +224,51 @@ function coordinate(value, min, max) {
     : null;
 }
 
+export async function getDrivingRoute(points, { metricsOnly = false } = {}) {
+  const googleKey = googleMapsKey();
+  if (googleKey) {
+    try {
+      const googleRoute = await googleDrivingRoute(points, googleKey);
+      if (googleRoute) return googleRoute;
+    } catch (error) {
+      console.warn("[route-preview] Google Routes failed", error?.message);
+    }
+  }
+  const coordinates = points
+    .map((point) => `${point.lng},${point.lat}`)
+    .join(";");
+  const data = await getJson(
+    `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`,
+    "Route service",
+  );
+  const route = data?.routes?.[0];
+  if (
+    !route || (!metricsOnly && !route.geometry) ||
+    !Number.isFinite(route.distance) ||
+    !Number.isFinite(route.duration)
+  )
+    throw new Error("No driving route found");
+  return {
+    provider: "osrm",
+    traffic_aware: false,
+    distance_km: route.distance / 1000,
+    duration_min: Math.ceil(route.duration / 60),
+    geometry: route.geometry,
+    steps: (route.legs || []).flatMap((leg) =>
+      (leg.steps || []).slice(0, 24).map((step) => ({
+        distance_m: Math.round(Number(step.distance) || 0),
+        duration_s: Math.round(Number(step.duration) || 0),
+        name: String(step.name || "").slice(0, 160),
+        type: String(step.maneuver?.type || "continue").slice(0, 40),
+        modifier: String(step.maneuver?.modifier || "straight").slice(0, 40),
+        location: Array.isArray(step.maneuver?.location)
+          ? step.maneuver.location.slice(0, 2).map(Number)
+          : null,
+      })),
+    ),
+  };
+}
+
 export default async function handler(req, res) {
   cors(req, res);
   res.setHeader("Cache-Control", "no-store");
@@ -323,48 +368,7 @@ export default async function handler(req, res) {
     }));
     if (points.some((point) => point.lat === null || point.lng === null))
       return res.status(400).json({ error: "Invalid route coordinates" });
-    const googleKey = googleMapsKey();
-    if (googleKey) {
-      try {
-        const googleRoute = await googleDrivingRoute(points, googleKey);
-        if (googleRoute) return res.status(200).json(googleRoute);
-      } catch (error) {
-        console.warn("[route-preview] Google Routes failed", error?.message);
-      }
-    }
-    const coordinates = points
-      .map((point) => `${point.lng},${point.lat}`)
-      .join(";");
-    const data = await getJson(
-      `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`,
-      "Route service",
-    );
-    const route = data?.routes?.[0];
-    if (
-      !route?.geometry ||
-      !Number.isFinite(route.distance) ||
-      !Number.isFinite(route.duration)
-    )
-      return res.status(404).json({ error: "No driving route found" });
-    return res.status(200).json({
-      provider: "osrm",
-      traffic_aware: false,
-      distance_km: route.distance / 1000,
-      duration_min: Math.ceil(route.duration / 60),
-      geometry: route.geometry,
-      steps: (route.legs || []).flatMap((leg) =>
-        (leg.steps || []).slice(0, 24).map((step) => ({
-          distance_m: Math.round(Number(step.distance) || 0),
-          duration_s: Math.round(Number(step.duration) || 0),
-          name: String(step.name || "").slice(0, 160),
-          type: String(step.maneuver?.type || "continue").slice(0, 40),
-          modifier: String(step.maneuver?.modifier || "straight").slice(0, 40),
-          location: Array.isArray(step.maneuver?.location)
-            ? step.maneuver.location.slice(0, 2).map(Number)
-            : null,
-        })),
-      ),
-    });
+    return res.status(200).json(await getDrivingRoute(points));
   } catch (error) {
     return res
       .status(503)
