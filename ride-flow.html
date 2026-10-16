@@ -1117,6 +1117,41 @@
       @media (prefers-reduced-motion: reduce) {
         .panel { transition: none; }
       }
+      /* A single booking action stays visible while optional details scroll. */
+      .panel.bookingMode { height: min(68dvh, 680px); display: flex; flex-direction: column; overflow: hidden !important; }
+      .panel.bookingMode > .grab, .panel.bookingMode > .sheetHeading, .panel.bookingMode > .routeCard { flex-shrink: 0; }
+      #booking:not(.hidden) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+      .bookingScroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; flex: 1; }
+      .bookingActions { flex-shrink: 0; background: #141414; border-top: 1px solid #333; padding-top: 8px; }
+      .bookingActions .cta { margin-top: 8px; min-height: 48px; }
+      .bookingActions .policy { font-size: 10px; margin-top: 6px !important; }
+      .bookingActions .policy b { font-size: 10px; }
+      .bookingMode .routeCard { margin-bottom: 8px; }
+      .bookingMode .routeCard .field { padding: 7px 12px 7px 34px; }
+      .bookingMode .fieldLabel { font-size: 10px; }
+      .bookingMode .field b { font-size: 12px; }
+      .bookingMode .sheetHeading { margin-bottom: 6px; }
+      .bookingMode .section { margin: 8px 0 5px; font-size: 11px; }
+      .bookingMode .promo { margin: 4px 0; padding: 7px; font-size: 11px; }
+      .types { grid-template-columns: 1fr; gap: 5px; }
+      .type, .type.active { display: grid; grid-template-columns: 66px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 10px; min-height: 62px; border-width: 2px; border-radius: 13px; }
+      .type .vehiclePhoto { width: 66px; height: 43px; margin: 0; }
+      .type .vehiclePhoto img { height: 42px; }
+      .type .vehicleText { min-width: 0; margin: 0; }
+      .type strong { font-size: 15px; color: #fff; }
+      .type .price { margin: 0; font-size: 16px; white-space: nowrap; }
+      .tripOptions, .priceOptions { border-top: 1px solid #333; margin-top: 8px; }
+      .tripOptions > summary, .priceOptions > summary { padding: 12px 2px; cursor: pointer; font-size: 12px; font-weight: 700; }
+      .tripOptions > summary span { display: block; margin-top: 3px; font-size: 10px; color: #aaa; font-weight: 400; }
+      .priceOptions > summary b { float: right; }
+      .priceOptions .fareRow, .priceOptions #tripInfo, .priceOptions .fareSummaryTop { display: none; }
+      .paymentChoices > summary { display: flex; gap: 10px; align-items: center; padding: 10px 4px; cursor: pointer; font-size: 12px; list-style: none; }
+      .paymentChoices > summary::-webkit-details-marker { display: none; }
+      .paymentChoices > summary b { margin-left: auto; }
+      .paymentChoices[open] .paygrid { max-height: 120px; overflow-y: auto; }
+      .paymentChoices .section { display: none; }
+      .paymentChoices .pay { min-height: 44px; padding: 10px; }
+      @supports not (height: 100dvh) { .panel.bookingMode { height: min(68vh, 680px); } }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <style id="vasi-ride-fixed-viewport">
@@ -1324,6 +1359,11 @@
           <div id="savedPlacesList"></div>
         </div>
         <div id="booking" class="hidden">
+          <div class="bookingScroll">
+          <div id="promo" class="promo">VASI offer price</div>
+          <div class="section">Choose vehicle</div>
+          <div id="types" class="types"></div>
+<details class="tripOptions"><summary>Trip options <span>Stops · preferences · pickup time</span></summary>
           <div class="section">Route</div>
           <div id="stops" class="stops"></div>
           <button
@@ -1333,30 +1373,6 @@
           >
             ➕ Add stop <span id="stopCount">0/5</span>
           </button>
-          <div id="promo" class="promo">VASI offer price</div>
-          <div class="section">Choose vehicle</div>
-          <div id="types" class="types"></div>
-          <div class="fareRow">
-            <span class="fareLabel">Upfront fare</span
-            ><span class="fare" id="fare">—</span>
-          </div>
-          <div id="tripInfo" class="trip"></div>
-          <div class="fareSummary" aria-live="polite">
-            <div class="fareSummaryTop">
-              <span>Selected service</span><b id="fareService">VASI Go</b>
-              <span>Payment method</span><b id="farePayment">Cash</b>
-            </div>
-            <details class="fareDetails">
-              <summary>Price details</summary>
-              <div class="fareBreakdown">
-                <span>Route</span><b id="fareRoute">—</b>
-                <span>Current rate</span><b id="fareRate">VASI offer applied</b>
-                <span>Estimated total</span><b class="fareTotalValue" id="fareTotal">—</b>
-                <p class="fareDisclosure">The fare is shown before booking. Tolls or customer-approved trip changes may adjust the final amount.</p>
-              </div>
-            </details>
-            <button class="fareContinue" type="button" id="fareContinue" onclick="showTripOptions()">Continue · VASI Go</button>
-          </div>
           <div class="section">Trip preferences</div>
           <div class="preferenceGrid">
             <label class="preference"><input id="airportPickup" type="checkbox" onchange="toggleAirport()" /> ✈️ Airport pickup</label>
@@ -1391,27 +1407,6 @@
           <div id="businessRide" class="hidden">
             <select id="businessAccount" class="bookingInput"><option value="">Personal ride</option></select>
             <input id="companyReference" class="bookingInput" maxlength="80" placeholder="Company cost centre / reference (optional)" />
-          </div>
-          <div class="section">Payment</div>
-          <div class="paygrid">
-            <button class="pay active" onclick="payment(this, 'cash')">
-              💶 Cash</button
-            ><button id="cardPay" class="pay" onclick="payment(this, 'card')">
-              💳 Card</button
-            ><button
-              id="applePay"
-              class="pay"
-              onclick="payment(this, 'apple_pay')"
-            >
-               Apple Pay
-            </button
-            ><button
-              id="googlePay"
-              class="pay"
-              onclick="payment(this, 'google_pay')"
-            >
-              G Pay
-            </button>
           </div>
           <div class="section">Pickup time</div>
           <div class="options">
@@ -1454,6 +1449,53 @@
               ✓ Use this pickup time
             </button>
           </div>
+          </details>
+          <details class="priceOptions"><summary>Price details <b id="fare">—</b></summary>
+          <div class="fareRow">
+            <span class="fareLabel">Upfront fare</span
+            ><span class="fare">Total</span>
+          </div>
+          <div id="tripInfo" class="trip"></div>
+          <div class="fareSummary" aria-live="polite">
+            <div class="fareSummaryTop">
+              <span>Selected service</span><b id="fareService">VASI Go</b>
+              <span>Payment method</span><b id="farePayment">Cash</b>
+            </div>
+            <div class="fareDetails">
+              <div class="fareBreakdown">
+                <span>Route</span><b id="fareRoute">—</b>
+                <span>Current rate</span><b id="fareRate">VASI offer applied</b>
+                <span>Estimated total</span><b class="fareTotalValue" id="fareTotal">—</b>
+                <p class="fareDisclosure">The fare is shown before booking. Tolls or customer-approved trip changes may adjust the final amount.</p>
+              </div>
+            </div>
+          </div>
+          </details>
+          </div>
+          <div class="bookingActions">
+          <details id="paymentChoices" class="paymentChoices"><summary><span>Payment method</span><b id="paymentChoiceLabel">Cash</b><span aria-hidden="true">›</span></summary>
+          <div class="section">Payment</div>
+          <div class="paygrid">
+            <button class="pay active" onclick="payment(this, 'cash')">
+              💶 Cash</button
+            ><button id="cardPay" class="pay" onclick="payment(this, 'card')">
+              💳 Card</button
+            ><button
+              id="applePay"
+              class="pay"
+              onclick="payment(this, 'apple_pay')"
+            >
+               Apple Pay
+            </button
+            ><button
+              id="googlePay"
+              class="pay"
+              onclick="payment(this, 'google_pay')"
+            >
+              G Pay
+            </button>
+          </div>
+          </details>
           <div class="policy" style="margin-top: 10px">
             <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
             <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
@@ -1461,6 +1503,7 @@
           <button id="routeBtn" class="cta" onclick="requestRide()">
             Request VASI ride
           </button>
+          </div>
         </div>
         <div id="driverArea" class="hidden">
           <div class="driverCard">
@@ -2931,7 +2974,7 @@
         $("types").innerHTML = Object.entries(classes)
           .map(
             ([k, c]) =>
-              `<button class="type" id="type-${k}" onclick="selectType('${k}')">${vehiclePhotoHtml(k)}<strong>${c.name}</strong><span>${c.sfood} sfood</span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
+              `<button class="type" id="type-${k}" aria-pressed="false" onclick="selectType('${k}')">${vehiclePhotoHtml(k)}<span class="vehicleText"><strong>${c.name}</strong><span>${c.sfood} ${tr("seats")}</span></span><span class="price">${money(priceFor(route.km, route.mins, k))}</span></button>`,
           )
           .join("");
       }
@@ -2939,9 +2982,9 @@
         selected = k;
         document
           .querySelectorAll(".type")
-          .forEach((x) => x.classList.remove("active"));
+          .forEach((x) => { x.classList.remove("active"); x.setAttribute("aria-pressed", "false"); });
         const el = $("type-" + k);
-        if (el) el.classList.add("active");
+        if (el) { el.classList.add("active"); el.setAttribute("aria-pressed", "true"); }
         const f = priceFor(route.km, route.mins, k);
         $("fare").textContent = money(f);
         $("routeBtn").textContent = `${tr("Request ride")} ${classes[k].name} · ${money(f)}`;
@@ -2958,6 +3001,7 @@
           .querySelectorAll(".pay")
           .forEach((x) => x.classList.remove("active"));
         el.classList.add("active");
+        $("paymentChoices").open = false;
         renderFareSummary(priceFor(route.km, route.mins, selected));
       }
       function renderFareSummary(fareValue = priceFor(route.km, route.mins, selected)) {
@@ -2978,10 +3022,7 @@
           ? `VASI Welcome · −${money(welcomeDiscount)}`
           : pricingOffer.active ? tr("VASI offer applied") : tr("Standard VASI rate");
         $("fareTotal").textContent = money(fareValue);
-        $("fareContinue").textContent = `${tr("Continue")} · VASI ${classes[selected].name} · ${money(fareValue)}`;
-      }
-      function showTripOptions() {
-        document.querySelector(".preferenceGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        $("paymentChoiceLabel").textContent = tr(paymentLabels[pay] || "Cash");
       }
       async function addStop() {
         if (stops.length >= 5) return toast("Maximum 5 stops");
@@ -3177,7 +3218,7 @@
             ? "Driver assigned · "
             : "Searching nearby drivers · ") +
           c.sfood +
-          " sfood · " +
+          " seats · " +
           payLabel(pay);
         setRideStatus(r);
       }
