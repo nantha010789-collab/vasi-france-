@@ -581,3 +581,5 @@ body[data-vasi-driver="ride"] :is(button, a, summary):focus-visible { outline: 3
   .searching-pulse,
   .toast { animation: none; transition: none; }
 }
+
+.driver-fare-breakdown{margin-top:14px;padding:12px;border:1px solid #344258;border-radius:14px;background:#101b2c;font-size:13px}.driver-fare-breakdown>div{display:flex;justify-content:space-between;gap:12px;padding:5px 0}.driver-fare-breakdown span{min-width:0}.driver-fare-breakdown b{flex-shrink:0}.driver-fare-breakdown .driver-net{color:#8de8b1;font-weight:800;border-top:1px solid #344258;margin-top:4px;padding-top:10px}.driver-fare-breakdown p{margin:9px 0 0;color:#b3bed0;font-size:12px;line-height:1.45}
