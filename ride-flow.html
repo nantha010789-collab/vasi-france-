@@ -1161,6 +1161,18 @@
       .paymentChoices[open] .paygrid { max-height: 120px; overflow-y: auto; }
       .paymentChoices .section { display: none; }
       .paymentChoices .pay { min-height: 44px; padding: 10px; }
+      .searchHead { display: none; }
+      .panel.searchMode { display: flex; flex-direction: column; height: min(560px, var(--search-height, 72dvh)); max-height: var(--search-height, 72dvh) !important; bottom: var(--search-bottom, 8px) !important; overflow: hidden !important; }
+      .searchMode > .stageSteps, .searchMode > .sheetHeading, .searchMode > .routeCard, .searchMode > .savedPlaces { display: none !important; }
+      .searchMode .searchHead { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; flex-shrink: 0; }
+      .searchHead button { background: #222; border: 1px solid #444; color: #fff; border-radius: 10px; min-width: 44px; min-height: 44px; font-size: 22px; }
+      .searchHead strong { font-size: 18px; }
+      .searchMode #searchWrap:not(.hidden), .searchMode #pickupSearchWrap:not(.hidden) { display: flex; flex: 1; flex-direction: column; min-height: 0; margin: 0; }
+      .searchMode #searchWrap > .field, .searchMode #pickupSearchWrap > .field, .searchMode #pickupSearchWrap > .option { flex-shrink: 0; }
+      .searchMode .addressSuggestions { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 4px 0 0; }
+      .addressSuggestion strong, .addressSuggestion small { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+      .addressSuggestion small { font-size: 13px; line-height: 1.5; color: #c0c5ce; }
+      .searchMode > .status { flex-shrink: 0; font-size: 11px; margin: 6px 0 0; }
       @supports not (height: 100dvh) { .panel.bookingMode { max-height: min(80vh, 760px) !important; } }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
@@ -1293,6 +1305,7 @@
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section id="panel" class="panel" data-scroll-region>
         <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
+        <div class="searchHead"><button type="button" aria-label="Back" onclick="closeAddressSearch()">←</button><strong id="searchTitle">Destination</strong></div>
         <ol class="stageSteps" aria-label="Booking progress">
           <li id="addressStep" aria-current="step">1 · <span>Pickup</span> / <span>Destination</span></li>
           <li id="choiceStep">2 · <span>Choose vehicle</span> / <span>Payment</span></li>
@@ -1740,6 +1753,11 @@
           driverVisible = !$("driverArea").classList.contains("hidden"),
           pinVisible = !$("pickupPinConfirm").classList.contains("hidden"),
           pinReticle = $("pinReticle");
+        const searching = !bookingVisible && !driverVisible && !pinVisible &&
+          (!$("pickupSearchWrap").classList.contains("hidden") || !$("searchWrap").classList.contains("hidden"));
+        panel.classList.toggle("searchMode", searching);
+        $("searchTitle").textContent = tr(mapSelectionKind === "pickup" ? "Pickup" : "Destination");
+        updateSearchViewport();
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
         panel.dataset.stage = driverVisible ? "driver" : bookingVisible ? "choice" : "address";
@@ -1769,6 +1787,21 @@
       function expandPanel() {
         $("panel").classList.remove("collapsed");
         document.querySelector(".grab")?.setAttribute("aria-expanded", "true");
+      }
+      function updateSearchViewport() {
+        const viewport = window.visualViewport;
+        const height = viewport?.height || window.innerHeight;
+        const bottom = Math.max(0, $("map").getBoundingClientRect().bottom - (height + (viewport?.offsetTop || 0)));
+        $("panel").style.setProperty("--search-height", `${Math.max(180, height - 24)}px`);
+        $("panel").style.setProperty("--search-bottom", `${bottom + 8}px`);
+      }
+      function closeAddressSearch() {
+        $("pickupSearchWrap").classList.add("hidden");
+        $("searchWrap").classList.add("hidden");
+        document.activeElement?.blur();
+        $("status").textContent = "";
+        syncMapUiState();
+        if (pickupConfirmed && destination) buildRoute();
       }
       function togglePanel() {
         if ($("panel").classList.contains("pinMode")) return;
@@ -2373,6 +2406,7 @@
         });
         let mapResizeTimer;
         const resizeRideMap = () => {
+          updateSearchViewport();
           clearTimeout(mapResizeTimer);
           mapResizeTimer = setTimeout(() => {
             map.invalidateSize({ animate: false, pan: false });
@@ -2383,10 +2417,13 @@
         };
         window.addEventListener("resize", resizeRideMap);
         window.visualViewport?.addEventListener("resize", resizeRideMap);
+        window.visualViewport?.addEventListener("scroll", updateSearchViewport);
         const panelStateObserver = new MutationObserver(syncMapUiState);
         panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("driverArea"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("pickupPinConfirm"), { attributes: true, attributeFilter: ["class"] });
+        panelStateObserver.observe($("pickupSearchWrap"), { attributes: true, attributeFilter: ["class"] });
+        panelStateObserver.observe($("searchWrap"), { attributes: true, attributeFilter: ["class"] });
         syncMapUiState();
         checkPaymentAvailability();
         if (homePickup) useHomePickup();
