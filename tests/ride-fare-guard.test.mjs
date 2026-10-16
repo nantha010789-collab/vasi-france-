@@ -26,25 +26,26 @@ test('VASI funds customer offers without reducing driver pay', () => {
   const welcome = fundedQuote(7.5, 12, 1, 15, 6);
   assert.deepEqual(welcome, {
     settlement_fare: 10.23,
-    customer_fare: 9,
-    customer_discount: 1.23,
-    platform_funded_discount: 1.23,
+    customer_fare: 10.23,
+    customer_discount: 0,
+    platform_funded_discount: 0,
     gross_vasi_commission: 1.23,
-    vasi_commission: 0,
+    vasi_commission: 1.23,
     driver_amount: 9,
   });
   const loyalty = fundedQuote(7.5, 12, 1, 10, 6);
-  assert.equal(loyalty.customer_fare, 9.21);
+  assert.equal(loyalty.customer_fare, 10.23);
   assert.equal(loyalty.driver_amount, 9);
-  assert.equal(loyalty.vasi_commission, 0.21);
+  assert.equal(loyalty.vasi_commission, 1.23);
   assert.equal(loyalty.customer_fare, loyalty.driver_amount + loyalty.vasi_commission);
 });
 
 test('funded offer never exceeds VASI gross commission', () => {
   const quote = fundedQuote(25, 12, 10, 50, 100);
-  assert.equal(quote.customer_discount, quote.gross_vasi_commission);
-  assert.equal(quote.vasi_commission, 0);
-  assert.equal(quote.customer_fare, quote.driver_amount);
+  const reserve=VasiRideOfferReserveCents(Math.round(quote.settlement_fare*100))/100;
+  assert.ok(quote.customer_discount <= Math.max(0,quote.gross_vasi_commission-reserve)+0.001);
+  assert.ok(quote.vasi_commission >= Math.min(quote.gross_vasi_commission,reserve)-0.001);
+  assert.equal(quote.customer_fare, quote.driver_amount+quote.vasi_commission);
 });
 
 // Synthetic scenarios: short/long rides and traffic, not competitor quotes.

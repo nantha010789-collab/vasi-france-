@@ -1,4 +1,5 @@
 import '../assets/ride-fare-guard.js';
+import { getDrivingRoute } from './route-preview.js';
 
 const supabaseUrl =
   process.env.VASI_SUPABASE_URL ||
@@ -131,7 +132,7 @@ async function customerOffer(auth) {
       headers: { Authorization: auth },
     });
     const offer = await r.json();
-    return r.ok && offer.active === true && Number(offer.discount_percent) === 5 && Number(offer.max_discount_eur) === 1
+    return r.ok && offer.active === true && Number(offer.discount_percent) === 5 && Number(offer.max_discount_eur) === 3
       ? offer
       : null;
   } catch {
@@ -188,19 +189,8 @@ async function geocodeStop(address, country) {
   return { address, lat, lng };
 }
 async function routeMetrics(points) {
-  const coords = points.map((p) => `${p.lng},${p.lat}`).join(";");
-  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
-  const response = await fetch(url, { headers: { "User-Agent": "VASI/1.0" } });
-  if (!response.ok) throw new Error("Route pricing service unavailable");
-  const data = await response.json();
-  const route = data?.routes?.[0];
-  if (
-    !route ||
-    !Number.isFinite(route.distance) ||
-    !Number.isFinite(route.duration)
-  )
-    throw new Error("Could not price this route");
-  return { km: route.distance / 1000, mins: Math.ceil(route.duration / 60) };
+  const route = await getDrivingRoute(points, { metricsOnly: true });
+  return { km: route.distance_km, mins: route.duration_min };
 }
 
 export default async function handler(req, res) {
@@ -275,8 +265,19 @@ export default async function handler(req, res) {
     if (stopAddresses.some((x) => x.length > 200))
       return res.status(400).json({ error: "Stop address is too long" });
     const stops = [];
-    for (const address of stopAddresses)
-      stops.push(await geocodeStop(address, country));
+    if (b.stop_points !== undefined) {
+      if (!Array.isArray(b.stop_points) || b.stop_points.length !== stopAddresses.length)
+        return res.status(400).json({ error: "Stop locations do not match the displayed route" });
+      for (const [i, point] of b.stop_points.entries()) {
+        const lat = point?.lat == null ? null : finiteCoord(point.lat, -90, 90);
+        const lng = point?.lng == null ? null : finiteCoord(point.lng, -180, 180);
+        if (lat === null || lng === null)
+          return res.status(400).json({ error: "Invalid stop location" });
+        stops.push({ address: stopAddresses[i], lat, lng });
+      }
+    } else {
+      for (const address of stopAddresses) stops.push(await geocodeStop(address, country));
+    }
 
     const points = [
       { lat: pickupLat, lng: pickupLng },
@@ -298,6 +299,15 @@ export default async function handler(req, res) {
         ? null
         : Number(smartOffer.max_discount_eur),
     );
+    if (b.quoted_fare !== undefined &&
+        (!Number.isFinite(b.quoted_fare) || b.quoted_fare < 0 ||
+         Math.abs(b.quoted_fare - quote.customer_fare) > 0.011)) {
+      return res.status(409).json({
+        price_changed: true,
+        error: "Le prix a changé. Vérifiez le nouveau prix puis confirmez à nouveau.",
+        estimated_fare: quote.customer_fare,
+      });
+    }
     const authoritativeFare = quote.customer_fare;
     const preOfferFare = quote.settlement_fare;
     const discountAmount = quote.customer_discount;

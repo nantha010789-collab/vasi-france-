@@ -32,6 +32,9 @@ jobs:
           -f tests/fixtures/driver-guarantee-schema.sql
           -f supabase/migrations/20261016091552_fix_driver_activity_guarantee_reconciliation.sql
           -f tests/driver-activity-guarantee.sql
+          -f tests/fixtures/welcome-offer-schema.sql
+          -f supabase/migrations/20261016125943_protect_welcome_offer_costs.sql
+          -f tests/welcome-offer-costs.sql
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10

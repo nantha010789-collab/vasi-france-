@@ -1514,7 +1514,7 @@
         </div>
       </div>
     </main>
-    <script src="./assets/ride-fare-guard.js"></script>
+    <script src="./assets/ride-fare-guard.js?v=2"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vendor/leaflet-1.9.4.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
@@ -1822,6 +1822,8 @@
         return fare;
       }
       async function loadCustomerOffer() {
+        smartOffer = null;
+        $("promo").classList.add("hidden");
         const session = (await sb.auth.getSession()).data.session;
         if (!session || pricingOffer.mode === "percentage") return;
         try {
@@ -1832,7 +1834,7 @@
           const offer = await response.json();
           if (
             !response.ok ||
-            offer.active !== true || Number(offer.discount_percent) !== 5 || Number(offer.max_discount_eur) !== 1
+            offer.active !== true || Number(offer.discount_percent) !== 5 || Number(offer.max_discount_eur) !== 3
           )
             return;
           smartOffer = offer;
@@ -2968,9 +2970,13 @@
         $("fareService").textContent = `VASI ${classes[selected].name}`;
         $("farePayment").textContent = tr(paymentLabels[pay] || "Cash");
         $("fareRoute").textContent = `${route.km.toFixed(1)} km · ${route.mins} min`;
-        $("fareRate").textContent = pricingOffer.active || smartOffer
-          ? tr("VASI offer applied")
-          : tr("Standard VASI rate");
+        const beforeWelcome = VasiFundedRideQuote(
+          unprotectedPriceFor(route.km, route.mins, selected), rideCommissionPercent, route.km,
+        ).customer_fare;
+        const welcomeDiscount = Math.max(0, beforeWelcome - fareValue);
+        $("fareRate").textContent = smartOffer && welcomeDiscount > 0.001
+          ? `VASI Welcome · −${money(welcomeDiscount)}`
+          : pricingOffer.active ? tr("VASI offer applied") : tr("Standard VASI rate");
         $("fareTotal").textContent = money(fareValue);
         $("fareContinue").textContent = `${tr("Continue")} · VASI ${classes[selected].name} · ${money(fareValue)}`;
       }
@@ -3118,10 +3124,12 @@
               service: "VASI " + classes[selected].name,
               payment_method: pay,
               estimated_fare: priceFor(route.km, route.mins, selected),
+              quoted_fare: priceFor(route.km, route.mins, selected),
               country,
               currency: region.currency,
               scheduled_for: scheduled,
               stops: stops.map((s) => s.address),
+              stop_points: stops.map((s) => ({ lat: s.lat, lng: s.lng })),
               airport_pickup: airportPickup,
               flight_number: flightNumber || null,
               passenger_count: Number($("passengerCount").value || 1),
@@ -3134,6 +3142,11 @@
             }),
           });
           const d = await res.json();
+          if (res.status === 409 && d.price_changed) {
+            await loadCustomerOffer();
+            await buildRoute();
+            throw Error(d.error);
+          }
           if (!res.ok) throw Error(d.error || "Could not create ride");
           ride = d.ride || d;
           if (!ride.id) throw Error("Ride ID missing");
