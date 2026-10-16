@@ -1117,12 +1117,12 @@
       @media (prefers-reduced-motion: reduce) {
         .panel { transition: none; }
       }
-      /* A single booking action stays visible while optional details scroll. */
-      .panel.bookingMode { height: min(68dvh, 680px); display: flex; flex-direction: column; overflow: hidden !important; }
+      /* One sheet scrolls as a whole: vehicle rows are never in a clipped inner box. */
+      .panel.bookingMode { height: auto; max-height: min(80dvh, 760px) !important; display: block; overflow-y: auto !important; }
       .panel.bookingMode > .grab, .panel.bookingMode > .sheetHeading, .panel.bookingMode > .routeCard { flex-shrink: 0; }
-      #booking:not(.hidden) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
-      .bookingScroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; flex: 1; }
-      .bookingActions { flex-shrink: 0; background: #141414; border-top: 1px solid #333; padding-top: 8px; }
+      #booking:not(.hidden) { display: block; min-height: 0; }
+      .bookingScroll { overflow: visible; }
+      .bookingActions { position: sticky; bottom: -14px; z-index: 2; background: #141414; border-top: 1px solid #333; padding: 6px 0 10px; }
       .bookingActions .cta { margin-top: 8px; min-height: 48px; }
       .bookingActions .policy { font-size: 10px; margin-top: 6px !important; }
       .bookingActions .policy b { font-size: 10px; }
@@ -1130,19 +1130,29 @@
       .bookingMode .routeCard .field { padding: 7px 12px 7px 34px; min-height: 0; }
       .bookingMode .fieldLabel { font-size: 10px; }
       .bookingMode .field b { font-size: 12px; }
-      .bookingMode .sheetHeading { margin-bottom: 6px; }
+      .bookingMode .sheetHeading { display: none; }
+      .stageSteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 4px 0 10px; padding: 0; list-style: none; font-size: 10px; color: #999; }
+      .stageSteps li { padding: 6px 2px; border-bottom: 2px solid #333; }
+      .stageSteps li[aria-current="step"] { color: #fff; border-color: #448aff; font-weight: 800; }
+      .bookingMode .routeCard, .driverMode .routeCard, .driverMode .sheetHeading { display: none; }
+      .bookingRoute { display: flex; width: 100%; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 10px; background: #1a1a1a; color: #ddd; border: 1px solid #333; border-radius: 10px; text-align: left; }
+      .bookingRoute span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+      .bookingRoute b { margin-left: auto; }
+      .bookingMode #status:empty { display: none; }
+      .bookingMode .grab { margin-bottom: 8px; }
+      .bookingMode .routeCard .field b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .bookingMode .section { margin: 8px 0 5px; font-size: 11px; }
       .bookingMode .promo { margin: 4px 0; padding: 7px; font-size: 11px; }
       #types { grid-template-columns: 1fr !important; gap: 5px; }
-      .type, .type.active { display: grid; grid-template-columns: 66px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 10px; min-height: 62px; border-width: 2px; border-radius: 13px; }
-      .type .vehiclePhoto { width: 66px; height: 43px; margin: 0; }
-      .type .vehiclePhoto img { height: 42px; }
+      .type, .type.active { display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 10px; min-height: 56px; border-width: 2px; border-radius: 13px; }
+      .type .vehiclePhoto { width: 60px; height: 38px; margin: 0; }
+      .type .vehiclePhoto img { height: 37px; }
       .type .vehicleText { min-width: 0; margin: 0; }
       .type strong { font-size: 15px; color: #fff; }
       .type .price { margin: 0; font-size: 16px; white-space: nowrap; }
       .tripOptions, .priceOptions { border-top: 1px solid #333; margin-top: 8px; }
       .tripOptions > summary, .priceOptions > summary { padding: 12px 2px; cursor: pointer; font-size: 12px; font-weight: 700; }
-      .tripOptions > summary span { display: block; margin-top: 3px; font-size: 10px; color: #aaa; font-weight: 400; }
+      .tripOptions > summary span { display: none; }
       .priceOptions > summary b { float: right; }
       .priceOptions .fareRow, .priceOptions #tripInfo, .priceOptions .fareSummaryTop { display: none; }
       .paymentChoices > summary { display: flex; gap: 10px; align-items: center; padding: 10px 4px; cursor: pointer; font-size: 12px; list-style: none; }
@@ -1151,7 +1161,7 @@
       .paymentChoices[open] .paygrid { max-height: 120px; overflow-y: auto; }
       .paymentChoices .section { display: none; }
       .paymentChoices .pay { min-height: 44px; padding: 10px; }
-      @supports not (height: 100dvh) { .panel.bookingMode { height: min(68vh, 680px); } }
+      @supports not (height: 100dvh) { .panel.bookingMode { max-height: min(80vh, 760px) !important; } }
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <style id="vasi-ride-fixed-viewport">
@@ -1283,6 +1293,11 @@
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section id="panel" class="panel" data-scroll-region>
         <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
+        <ol class="stageSteps" aria-label="Booking progress">
+          <li id="addressStep" aria-current="step">1 · <span>Pickup</span> / <span>Destination</span></li>
+          <li id="choiceStep">2 · <span>Choose vehicle</span> / <span>Payment</span></li>
+          <li id="driverStep">3 · <span>VASI driver</span></li>
+        </ol>
         <div class="sheetHeading">
           <strong>Plan your ride</strong>
           <span id="stageHint">Pickup</span>
@@ -1359,6 +1374,7 @@
           <div id="savedPlacesList"></div>
         </div>
         <div id="booking" class="hidden">
+          <button class="bookingRoute" type="button" onclick="focusDestination()" aria-label="Edit route"><span id="bookingRouteLabel"></span><b aria-hidden="true">✎</b></button>
           <div class="bookingScroll">
           <div id="promo" class="promo">VASI offer price</div>
           <div class="section">Choose vehicle</div>
@@ -1470,6 +1486,10 @@
               </div>
             </div>
           </div>
+          <div class="policy" style="margin-top: 10px">
+            <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
+            <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
+          </div>
           </details>
           </div>
           <div class="bookingActions">
@@ -1496,10 +1516,6 @@
             </button>
           </div>
           </details>
-          <div class="policy" style="margin-top: 10px">
-            <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
-            <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
-          </div>
           <button id="routeBtn" class="cta" onclick="requestRide()">
             Request VASI ride
           </button>
@@ -1745,6 +1761,12 @@
           pinReticle = $("pinReticle");
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
+        panel.dataset.stage = driverVisible ? "driver" : bookingVisible ? "choice" : "address";
+        for (const [id, active] of [["addressStep", !bookingVisible && !driverVisible], ["choiceStep", bookingVisible && !driverVisible], ["driverStep", driverVisible]]) {
+          if (active) $(id).setAttribute("aria-current", "step");
+          else $(id).removeAttribute("aria-current");
+        }
+        if (bookingVisible) $("bookingRouteLabel").textContent = `${$("pickup").textContent} → ${$("destination").textContent}`;
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
         pinReticle.classList.add("hidden");
@@ -2546,6 +2568,7 @@
         } else $("status").textContent = "Destination selected — now choose your pickup";
       }
       function focusPickup() {
+        $("booking").classList.add("hidden");
         mapSelectionKind = "pickup";
         expandPanel();
         syncMapUiState();
@@ -2556,6 +2579,7 @@
           "Type a pickup address, use current location or tap the map";
       }
       function focusDestination() {
+        $("booking").classList.add("hidden");
         mapSelectionKind = "destination";
         expandPanel();
         syncMapUiState();
@@ -2935,6 +2959,9 @@
               lineJoin: "round",
             },
           }).addTo(map);
+          $("pickupSearchWrap").classList.add("hidden");
+          $("searchWrap").classList.add("hidden");
+          document.activeElement?.blur();
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
@@ -2955,7 +2982,7 @@
               ? "Weak connection — showing an approximate route. VASI will refresh automatically when the network improves."
               : stops.length
                 ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
-                : "Choose your vehicle, stops and pickup time";
+                : "";
         } catch (e) {
           console.error(
             "[ride-route] " +
