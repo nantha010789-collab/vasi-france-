@@ -1131,6 +1131,13 @@
       .bookingMode .fieldLabel { font-size: 10px; }
       .bookingMode .field b { font-size: 12px; }
       .bookingMode .sheetHeading { display: none; }
+      .stageSteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 4px 0 10px; padding: 0; list-style: none; font-size: 10px; color: #999; }
+      .stageSteps li { padding: 6px 2px; border-bottom: 2px solid #333; }
+      .stageSteps li[aria-current="step"] { color: #fff; border-color: #448aff; font-weight: 800; }
+      .bookingMode .routeCard, .driverMode .routeCard, .driverMode .sheetHeading { display: none; }
+      .bookingRoute { display: flex; width: 100%; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 10px; background: #1a1a1a; color: #ddd; border: 1px solid #333; border-radius: 10px; text-align: left; }
+      .bookingRoute span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+      .bookingRoute b { margin-left: auto; }
       .bookingMode #status:empty { display: none; }
       .bookingMode .grab { margin-bottom: 8px; }
       .bookingMode .routeCard .field b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1286,6 +1293,11 @@
       <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section id="panel" class="panel" data-scroll-region>
         <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
+        <ol class="stageSteps" aria-label="Booking progress">
+          <li id="addressStep" aria-current="step">1 · <span>Pickup</span> / <span>Destination</span></li>
+          <li id="choiceStep">2 · <span>Choose vehicle</span> / <span>Payment</span></li>
+          <li id="driverStep">3 · <span>VASI driver</span></li>
+        </ol>
         <div class="sheetHeading">
           <strong>Plan your ride</strong>
           <span id="stageHint">Pickup</span>
@@ -1362,6 +1374,7 @@
           <div id="savedPlacesList"></div>
         </div>
         <div id="booking" class="hidden">
+          <button class="bookingRoute" type="button" onclick="focusDestination()" aria-label="Edit route"><span id="bookingRouteLabel"></span><b aria-hidden="true">✎</b></button>
           <div class="bookingScroll">
           <div id="promo" class="promo">VASI offer price</div>
           <div class="section">Choose vehicle</div>
@@ -1748,6 +1761,12 @@
           pinReticle = $("pinReticle");
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
+        panel.dataset.stage = driverVisible ? "driver" : bookingVisible ? "choice" : "address";
+        for (const [id, active] of [["addressStep", !bookingVisible && !driverVisible], ["choiceStep", bookingVisible && !driverVisible], ["driverStep", driverVisible]]) {
+          if (active) $(id).setAttribute("aria-current", "step");
+          else $(id).removeAttribute("aria-current");
+        }
+        if (bookingVisible) $("bookingRouteLabel").textContent = `${$("pickup").textContent} → ${$("destination").textContent}`;
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
         pinReticle.classList.add("hidden");
