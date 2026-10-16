@@ -1069,12 +1069,12 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
   assert.match(source, /id="pickupSearch"/);
   assert.match(source, /function searchPickup\(\)/);
   assert.match(source, /function confirmPickup\(\)/);
-  assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: true/);
+  assert.match(source, /pickupMarker = L\.marker\(p, \{[\s\S]*?draggable: false/);
   assert.match(source, /id="pinReticle"/);
   assert.match(source, /selectionMarker/);
-  assert.match(source, /pickupMarker\.on\("drag"/);
-  assert.match(source, /pickupMarker\.on\("dragend"/);
-  assert.match(source, /reverseGeocodePoint\("pickup", pickup\)/);
+  assert.match(source, /function pickupTargetPoint\(\)/);
+  assert.match(source, /map\.on\("zoomend"/);
+  assert.match(source, /VasiPickupMapCenter/);
   assert.match(source, /const PIN_CONFIRM_ZOOM = 19/);
   assert.doesNotMatch(source, /id="destinationPinAddress"/);
   assert.doesNotMatch(source, /Confirm destination spot/);
@@ -1095,7 +1095,7 @@ test("ride map uses crisp vector road labels with a buffered raster fallback", a
   const source = await readFile("ride-flow.html", "utf8");
   assert.match(source, /maplibre-gl@5\.24\.0/);
   assert.match(source, /maplibre-gl-leaflet@0\.1\.4/);
-  assert.match(source, /https:\/\/tiles\.openfreemap\.org\/styles\/liberty/);
+  assert.match(source, /https:\/\/tiles\.openfreemap\.org\/styles\/positron/);
   assert.match(source, /window\.maplibregl\?\.supported\?\.\(\)/);
   assert.match(source, /vectorMap\.once\("load"/);
   assert.match(source, /vectorMap\.resize\(\)/);
