@@ -1130,7 +1130,10 @@
       .bookingMode .routeCard .field { padding: 7px 12px 7px 34px; min-height: 0; }
       .bookingMode .fieldLabel { font-size: 10px; }
       .bookingMode .field b { font-size: 12px; }
-      .bookingMode .sheetHeading { margin-bottom: 6px; }
+      .bookingMode .sheetHeading { display: none; }
+      .bookingMode #status:empty { display: none; }
+      .bookingMode .grab { margin-bottom: 8px; }
+      .bookingMode .routeCard .field b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .bookingMode .section { margin: 8px 0 5px; font-size: 11px; }
       .bookingMode .promo { margin: 4px 0; padding: 7px; font-size: 11px; }
       #types { grid-template-columns: 1fr !important; gap: 5px; }
@@ -1470,6 +1473,10 @@
               </div>
             </div>
           </div>
+          <div class="policy" style="margin-top: 10px">
+            <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
+            <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
+          </div>
           </details>
           </div>
           <div class="bookingActions">
@@ -1496,10 +1503,6 @@
             </button>
           </div>
           </details>
-          <div class="policy" style="margin-top: 10px">
-            <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
-            <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
-          </div>
           <button id="routeBtn" class="cta" onclick="requestRide()">
             Request VASI ride
           </button>
@@ -2546,6 +2549,7 @@
         } else $("status").textContent = "Destination selected — now choose your pickup";
       }
       function focusPickup() {
+        $("booking").classList.add("hidden");
         mapSelectionKind = "pickup";
         expandPanel();
         syncMapUiState();
@@ -2556,6 +2560,7 @@
           "Type a pickup address, use current location or tap the map";
       }
       function focusDestination() {
+        $("booking").classList.add("hidden");
         mapSelectionKind = "destination";
         expandPanel();
         syncMapUiState();
@@ -2935,6 +2940,9 @@
               lineJoin: "round",
             },
           }).addTo(map);
+          $("pickupSearchWrap").classList.add("hidden");
+          $("searchWrap").classList.add("hidden");
+          document.activeElement?.blur();
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
@@ -2955,7 +2963,7 @@
               ? "Weak connection — showing an approximate route. VASI will refresh automatically when the network improves."
               : stops.length
                 ? "Route updated with your stop" + (stops.length > 1 ? "s" : "")
-                : "Choose your vehicle, stops and pickup time";
+                : "";
         } catch (e) {
           console.error(
             "[ride-route] " +
