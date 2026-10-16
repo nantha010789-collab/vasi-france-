@@ -1041,8 +1041,8 @@
         pointer-events: none;
       }
       body.pinConfirmMode .selectionMarker {
-        cursor: grab;
-        touch-action: none;
+        opacity: 0 !important;
+        pointer-events: none;
       }
       body.pinConfirmMode .selectionMarker.leaflet-drag-target {
         cursor: grabbing;
@@ -1554,6 +1554,7 @@
       </div>
     </main>
     <script src="./assets/ride-fare-guard.js?v=2"></script>
+    <script src="./assets/ride-map-geometry.js?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vendor/leaflet-1.9.4.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
@@ -1749,7 +1750,7 @@
         if (bookingVisible) $("bookingRouteLabel").textContent = `${$("pickup").textContent} → ${$("destination").textContent}`;
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
-        pinReticle.classList.add("hidden");
+        pinReticle.classList.toggle("hidden", !pinVisible || bookingVisible || driverVisible);
         if (pinVisible && !bookingVisible && !driverVisible) {
           requestAnimationFrame(() => {
             document.body.style.setProperty("--pin-panel-height", `${panel.offsetHeight}px`);
@@ -1781,10 +1782,14 @@
       }
       function pinTargetLatLng() {
         if (!map) return null;
-        const size = map.getSize(),
-          panelHeight = $("panel").classList.contains("pinMode") ? $("panel").offsetHeight : 0,
-          point = L.point(size.x / 2, Math.max(120, (size.y - panelHeight) / 2));
-        return map.containerPointToLatLng(point);
+        const target = pickupTargetPoint();
+        return map.containerPointToLatLng(target);
+      }
+      function pickupTargetPoint() {
+        const point = VasiPickupMapCenter($("map").getBoundingClientRect(), $("panel").getBoundingClientRect());
+        $("pinReticle").style.left = `${point.x}px`;
+        $("pinReticle").style.top = `${point.y}px`;
+        return L.point(point.x, point.y);
       }
       function moveActivePinToMapCenter(kind = activePinKind()) {
         if (!kind || !map) return null;
@@ -1799,9 +1804,10 @@
       function alignPinWithVisibleMap(kind) {
         requestAnimationFrame(() => {
           if (activePinKind() !== kind) return;
-          const panelHeight = $("panel").offsetHeight;
-          map.panBy([0, panelHeight / 2], { animate: false });
-          moveActivePinToMapCenter(kind);
+          // Move the camera, never the selected coordinates, when the layout changes.
+          const target = pickupTargetPoint();
+          const current = map.latLngToContainerPoint(pickup);
+          map.panBy([current.x - target.x, current.y - target.y], { animate: false });
         });
       }
       async function reverseGeocodePoint(kind, point) {
@@ -2297,7 +2303,7 @@
         ) {
           try {
             const vectorLayer = L.maplibreGL({
-              style: "https://tiles.openfreemap.org/styles/liberty",
+              style: "https://tiles.openfreemap.org/styles/positron",
               attributionControl: false,
               interactive: false,
               padding: 0.12,
@@ -2362,6 +2368,21 @@
           mapPinDragKind = null;
           if (kind) reverseGeocodePin(kind);
         });
+        map.on("zoomend", () => {
+          if (activePinKind()) alignPinWithVisibleMap("pickup");
+        });
+        let mapResizeTimer;
+        const resizeRideMap = () => {
+          clearTimeout(mapResizeTimer);
+          mapResizeTimer = setTimeout(() => {
+            map.invalidateSize({ animate: false, pan: false });
+            if (activePinKind()) alignPinWithVisibleMap("pickup");
+            else if (routeLine && !$("booking").classList.contains("hidden"))
+              map.fitBounds(routeLine.getBounds(), routeMapPadding($("map").getBoundingClientRect(), $("panel").getBoundingClientRect()));
+          }, 150);
+        };
+        window.addEventListener("resize", resizeRideMap);
+        window.visualViewport?.addEventListener("resize", resizeRideMap);
         const panelStateObserver = new MutationObserver(syncMapUiState);
         panelStateObserver.observe($("booking"), { attributes: true, attributeFilter: ["class"] });
         panelStateObserver.observe($("driverArea"), { attributes: true, attributeFilter: ["class"] });
@@ -2467,23 +2488,10 @@
           if (pickupMarker) pickupMarker.remove();
           pickupMarker = L.marker(p, {
             icon: pickupIcon,
-            draggable: true,
+            draggable: false,
             keyboard: false,
             title: "Move VASI pickup pin",
           }).addTo(map);
-          pickupMarker.on("drag", (event) => {
-            if (activePinKind() !== "pickup") return;
-            const point = event.target.getLatLng();
-            pickup = [point.lat, point.lng];
-            pickupConfirmed = false;
-          });
-          pickupMarker.on("dragend", (event) => {
-            if (activePinKind() !== "pickup") return;
-            const point = event.target.getLatLng();
-            pickup = [point.lat, point.lng];
-            pickupConfirmed = false;
-            reverseGeocodePoint("pickup", pickup);
-          });
           pickupMarker.getElement()?.classList.add("selectionMarker");
           map.setView(p, PIN_CONFIRM_ZOOM);
           alignPinWithVisibleMap("pickup");
