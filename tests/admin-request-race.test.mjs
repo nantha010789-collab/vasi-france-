@@ -58,3 +58,9 @@ test("admin action failures show an error and restore the button for retry",asyn
  await h.runAction(button,action);assert.equal(calls,1);finish();await first;
  assert.equal(button.disabled,false);
 });
+test('admin bookings show customer fare, VASI commission and driver amount separately',async()=>{
+ const h=harness(),loading=h.render('bookings');await flush();
+ h.requests.find(r=>r.path==='/api/admin-bookings').resolve([{id:'test',estimated_price:20,vasi_commission:2.4,driver_amount:17.6,status:'pending'}]);await loading;
+ const view=h.elements.get('app').innerHTML;
+ for(const text of ['Prix client','Commission VASI','Gain chauffeur','20,00','2,40','17,60'])assert(view.includes(text),text);
+});
