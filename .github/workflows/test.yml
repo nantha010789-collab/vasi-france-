@@ -9,6 +9,29 @@ permissions:
   contents: read
 
 jobs:
+  driver-guarantee-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: vasi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test production reconciliation SQL with isolated fixtures
+        env:
+          PGPASSWORD: isolated-test-only
+        run: >-
+          psql -h localhost -U postgres -d vasi_test -v ON_ERROR_STOP=1
+          -f tests/fixtures/driver-guarantee-schema.sql
+          -f supabase/migrations/20261016091552_fix_driver_activity_guarantee_reconciliation.sql
+          -f tests/driver-activity-guarantee.sql
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10

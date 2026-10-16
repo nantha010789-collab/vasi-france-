@@ -484,7 +484,9 @@ Deno.serve(async (req) => {
         .eq('id', guaranteeId).in('status', ['pending', 'failed']).select().maybeSingle();
       if (reserveError) throw reserveError;
       if (!reserved) return json({ error: 'Guarantee payment is already being processed' }, 409);
-      const amount = Math.round(Number(guarantee.top_up_amount) * 100);
+      // Reconciliation may have updated the pending row since the first read.
+      // Pay the snapshot returned by the atomic claim, which is now frozen.
+      const amount = Math.round(Number(reserved.top_up_amount) * 100);
       const params = new URLSearchParams({
         amount: String(amount),
         currency: String(guarantee.currency || 'EUR').toLowerCase(),
