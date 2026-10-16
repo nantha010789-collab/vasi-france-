@@ -234,7 +234,7 @@
     </style>
     <link rel="stylesheet" href="./vasi-mobile-fit.css" />
     <link rel="stylesheet" href="./vasi-driver-shell.css?v=1" />
-    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=4" />
+    <link rel="stylesheet" href="./vasi-driver-dashboard.css?v=5" />
   <link rel="stylesheet" href="/vasi-responsive.css?v=1" />
 </head>
   <body data-scroll-mode="viewport" data-vasi-driver="ride">
@@ -837,7 +837,9 @@
       }
       async function loadPending() {
         if (activeRide) return;
-        const { data, error } = await client.rpc("vasi_driver_offer_details");
+        let result = await client.rpc("vasi_driver_offer_pricing");
+        if (result.error && ["PGRST202", "42883"].includes(result.error.code)) result = await client.rpc("vasi_driver_offer_details");
+        const { data, error } = result;
         if (error) return;
         if (data && data[0]) showOffer(data[0]);
       }
@@ -849,21 +851,41 @@
         offered = null;
         if (!activeRide) document.getElementById("ride").innerHTML = "";
       }
+      function driverFareBreakdown(r) {
+        const amount = value => value == null || value === "" || !Number.isFinite(Number(value)) ? null : Number(value);
+        const customer = amount(r.final_fare ?? r.estimated_fare), driver = amount(r.driver_amount);
+        const commission = amount(r.vasi_commission) ?? (customer !== null && driver !== null ? customer - driver : null);
+        const km = amount(r.estimated_distance_km), minutes = amount(r.estimated_duration_minutes);
+        const value = n => n === null ? "À confirmer" : esc(money(n));
+        const discount = amount(r.customer_discount);
+        return `<div class="driver-fare-breakdown" aria-label="Détail du prix et du gain chauffeur">
+          <div><span>Prix client</span><b>${value(customer)}</b></div>
+          <div><span>Commission VASI${discount > 0 ? ' après remise' : ''}</span><b>${value(commission)}</b></div>
+          <div class="driver-net"><span>Votre gain après commission</span><b>${value(driver)}</b></div>
+          ${km !== null ? `<div><span>Distance estimée en course</span><b>${km.toFixed(1)} km</b></div>` : ''}
+          ${minutes !== null ? `<div><span>Durée estimée en course</span><b>${Math.round(minutes)} min</b></div>` : ''}
+          ${km > 0 && driver !== null ? `<div><span>Gain estimé par km en course</span><b>${esc(money(driver / km))}/km</b></div>` : ''}
+          ${discount > 0 ? `<p>Remise client de ${esc(money(discount))} financée par VASI, sans réduction de votre gain.</p>` : ''}
+          ${amount(r.commission_percent) !== null ? `<p>Taux de commission contractuel : ${amount(r.commission_percent)} % avant remise financée par VASI.</p>` : ''}
+          <p>Gain avant carburant, véhicule, assurance, cotisations et impôts. Distance et durée hors trajet d’approche.</p>
+        </div>`;
+      }
       function showOffer(o) {
         offered = o;
-        const fare = money(Number(o.driver_amount || o.estimated_fare || 0));
+        const fare = o.driver_amount == null ? "Gain à confirmer" : money(Number(o.driver_amount));
         const planned = o.scheduled_for
           ? new Date(o.scheduled_for).toLocaleString("fr-FR", { weekday:"short", day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" })
           : "Départ immédiat";
         const payment = o.payment_method === "cash" ? "Espèces" : "Carte";
         document.getElementById("ride").innerHTML = `
           <article class="offer-professional">
-            <div class="offer-head"><div><span class="service-chip">${esc(o.service || "VASI Go")}</span><div class="offer-price">${esc(fare)}</div></div><div class="offer-time">Nouvelle demande<br>${esc(planned)}</div></div>
+            <div class="offer-head"><div><span class="service-chip">${esc(o.service || "VASI Go")}</span><div class="muted">Votre gain après commission</div><div class="offer-price">${esc(fare)}</div></div><div class="offer-time">Nouvelle demande<br>${esc(planned)}</div></div>
             <div class="offer-map" aria-hidden="true"><i class="offer-map-route"></i><i class="offer-map-dot start"></i><i class="offer-map-dot end"></i></div>
             <div class="offer-body">
               <div class="offer-route-line"><i class="route-point"></i><div><span>Départ</span><b>${esc(o.pickup_address || "Adresse communiquée après acceptation")}</b></div></div>
               <div class="offer-route-line"><i class="route-point end"></i><div><span>Destination</span><b>${esc(o.destination_address || "Destination à confirmer")}</b></div></div>
               <div class="offer-meta"><span>${esc(payment)}</span><span>${Number(o.passenger_count || 1)} passager${Number(o.passenger_count || 1)>1?'s':''}</span>${Number(o.luggage_count||0)>0?`<span>${Number(o.luggage_count)} bagage${Number(o.luggage_count)>1?'s':''}</span>`:""}${o.airport_pickup?'<span>✈ Aéroport</span>':''}</div>
+              ${driverFareBreakdown(o)}
               <p id="offerCountdown" class="offer-countdown">Offre limitée</p>
               <div class="offer-actions"><button class="btn decline" onclick="respond(false)">Refuser</button><button class="btn accept" onclick="respond(true)">Accepter la course</button></div>
             </div>
@@ -923,7 +945,7 @@
         const { data, error } = await client
           .from("rides")
           .select(
-            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,waiting_fee,payment_method,accepted_at,arrived_at,started_at,scheduled_for,airport_pickup,flight_number,flight_status,flight_timing,flight_delay_minutes,flight_estimated_arrival_at,flight_actual_arrival_at,flight_arrival_terminal,flight_arrival_gate,flight_arrival_baggage,passenger_count,luggage_count,customer_arrival_terminal,airport_pickup_zone,customer_ready_at,service_options,business_account_id,company_reference",
+            "id,status,pickup_address,pickup_lat,pickup_lng,destination_address,destination_lat,destination_lng,service,estimated_fare,final_fare,driver_amount,vasi_commission,commission_percent,regular_fare,customer_discount,estimated_distance_km,estimated_duration_minutes,waiting_fee,payment_method,accepted_at,arrived_at,started_at,scheduled_for,airport_pickup,flight_number,flight_status,flight_timing,flight_delay_minutes,flight_estimated_arrival_at,flight_actual_arrival_at,flight_arrival_terminal,flight_arrival_gate,flight_arrival_baggage,passenger_count,luggage_count,customer_arrival_terminal,airport_pickup_zone,customer_ready_at,service_options,business_account_id,company_reference",
           )
           .in("status", ["accepted", "driver_arriving", "in_progress"])
           .order("accepted_at", { ascending: false })
@@ -1379,7 +1401,7 @@
           : "";
         const freeWaitMinutes = activeRide.airport_pickup ? (String(activeRide.service || "").toLowerCase().match(/comfort|xl|van|premium/) ? 60 : 45) : 3;
         document.getElementById("ride").innerHTML =
-          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><button class="navClose" type="button" onclick="collapseDriverNavigation()" aria-label="Réduire la navigation">‹</button><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span id="driverNavigationRoad">Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div id="driverNavigationSpeed" class="navSpeed" aria-live="polite">GPS…</div><div class="navMapControls" aria-label="Contrôles de la carte"><button id="driverRecenterButton" class="is-active" type="button" onclick="recenterDriverMap()" aria-label="Recentrer la carte sur le chauffeur" title="Recentrer">◎</button><button id="driverVoiceButton" class="is-active" type="button" onclick="toggleDriverVoice()" aria-label="Couper les instructions vocales" title="Voix activée">🔊</button></div><div class="navExternal" aria-label="Options de navigation"><button type="button" onclick="expandDriverNavigation()">Plein écran</button><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
+          `<div class="offer"><span class="tripstatus">${badge}</span><h2>${title}</h2><div class="driverNavigation"><div id="driverNavigationMap" aria-label="Navigation GPS vers la prochaine étape"></div><button class="navClose" type="button" onclick="collapseDriverNavigation()" aria-label="Réduire la navigation">‹</button><div class="navOverlay"><div><b id="driverNavigationSummary">Préparation de l’itinéraire…</b><span id="driverNavigationRoad">Recalcul automatique avec votre position GPS</span></div><span id="driverNavigationMetric" class="navMetric">GPS…</span></div><div id="driverNavigationSpeed" class="navSpeed" aria-live="polite">GPS…</div><div class="navMapControls" aria-label="Contrôles de la carte"><button id="driverRecenterButton" class="is-active" type="button" onclick="recenterDriverMap()" aria-label="Recentrer la carte sur le chauffeur" title="Recentrer">◎</button><button id="driverVoiceButton" class="is-active" type="button" onclick="toggleDriverVoice()" aria-label="Couper les instructions vocales" title="Voix activée">🔊</button></div><div class="navExternal" aria-label="Options de navigation"><button type="button" onclick="expandDriverNavigation()">Plein écran</button><button type="button" onclick="openExternalNavigation('google')">Google Maps</button><button type="button" onclick="openExternalNavigation('waze')">Waze</button></div></div>${routeHtml()}<div class="tripline"><div class="muted">Service · Payment</div><b>${esc(activeRide.service || "VASI")} · ${esc(activeRide.payment_method || "cash")}${fare != null ? " · " + money(fare) : ""}</b></div>${driverFareBreakdown(activeRide)}${preferences?`<div class="fee">${preferences}</div>`:""}${flightDetails}${st === "driver_arriving" || wait > 0 ? `<div class="fee">Pickup waiting fee: ${money(wait)} · first ${freeWaitMinutes} minutes free</div>` : ""}${nextActionHtml()}</div>`;
         document.getElementById("ride").insertAdjacentHTML(
           "beforeend",
           '<button class="btn chatbtn" onclick="openRideChat()">💬 Chat · 📞 Voice call</button>',
