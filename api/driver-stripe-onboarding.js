@@ -1,3 +1,4 @@
+import { createRecipient, recipientOnboarding } from "../supabase/functions/_shared/stripe-connect.js";
 const supabaseUrl =
   process.env.VASI_SUPABASE_URL ||
   process.env.SUPABASE_URL ||
@@ -183,28 +184,11 @@ export default async function handler(req, res) {
     }
 
     if (!accountId) {
-      const country = driverCountry(req.body?.country);
-      const params = new URLSearchParams();
-      params.set("controller[fees][payer]", "application");
-      params.set("controller[losses][payments]", "application");
-      params.set("controller[stripe_dashboard][type]", "express");
-      params.set("capabilities[transfers][requested]", "true");
-      params.set("country", country);
-      params.set("default_currency", "eur");
-      if (driver.full_name)
-        params.set("business_profile[name]", driver.full_name);
-      if (driver.phone)
-        params.set("business_profile[support_phone]", driver.phone);
-      if (user.email) params.set("email", user.email);
-      params.set("metadata[vasi_driver_id]", driver.id);
-      params.set("metadata[vasi_user_id]", user.id);
-
-      const { response, data } = await stripeForm("/v1/accounts", params);
-      if (!response.ok)
-        return res.status(response.status).json({
-          error: data?.error?.message || "Stripe account creation failed",
-        });
-
+      const data = await createRecipient(stripeKey, {
+        name: driver.full_name || "VASI Driver", email: user.email,
+        metadata: { vasi_driver_id: driver.id, vasi_user_id: user.id },
+        idempotencyKey: `vasi-driver-account-v2-${driver.id}`,
+      });
       accountId = data.id;
       account = data;
       await saveDriverPayoutState(driver.id, {
@@ -228,10 +212,10 @@ export default async function handler(req, res) {
     );
     linkParams.set("type", "account_onboarding");
 
-    const { response, data } = await stripeForm(
-      "/v1/account_links",
-      linkParams,
-    );
+    const { response, data } = account?.metadata?.vasi_connect_api === 'v2'
+      ? { response: {ok:true}, data: await recipientOnboarding(stripeKey, account,
+          `${publicUrl}/driver.html?stripe=refresh`, `${publicUrl}/driver.html?stripe=complete`) }
+      : await stripeForm("/v1/account_links", linkParams);
     if (!response.ok)
       return res.status(response.status).json({
         error: data?.error?.message || "Stripe onboarding link failed",
