@@ -2228,7 +2228,9 @@
       }
       async function checkPaymentAvailability() {
         try {
-          const r = await fetch("/api/payment-config", { cache: "no-store" });
+          const session=await getSession();
+          if(!session){for(const id of ['cardPay','applePay','googlePay']){const button=$(id);button.disabled=true;button.title='Connexion requise pour le paiement sécurisé';}return;}
+          const r = await fetch("/api/payment-config", { cache: "no-store",headers:session?{Authorization:'Bearer '+session.access_token}:{} });
           const d = await r.json();
           if (r.ok && d.enabled && d.publishable_key) return;
           throw Error();
@@ -3312,7 +3314,7 @@
           const s = await getSession();
           if (!s) throw Error("Please sign in again");
           const [cfg, intent] = await Promise.all([
-            fetch("/api/payment-config", { cache: "no-store" }).then(
+            fetch("/api/payment-config", { cache: "no-store",headers:{Authorization:'Bearer '+s.access_token} }).then(
               async (r) => {
                 const d = await r.json();
                 if (!r.ok)

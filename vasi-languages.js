@@ -202,6 +202,7 @@
       "Estimated delivery": "Livraison estimée",
       "Get delivery quote": "Obtenir un tarif de livraison",
       "Book VASI delivery": "Commander une livraison VASI",
+      "Parcel booking is not available yet.": "La réservation de colis n’est pas encore disponible.",
       "Overview": "Vue d’ensemble",
       "Rides": "Courses",
       "Live GPS": "GPS en direct",

@@ -1,6 +1,4 @@
 import routePreview, { getDrivingRoute } from './route-preview.js';
-const supabaseUrl = process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL || "https://vhfyvkrvysrooaqzcxsp.supabase.co";
-const publishableKey = process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
 const PRICING = {
   document: { base: 4, km: 0.65, min: 0.10, minimum: 6 },
   parcel: { base: 5, km: 0.80, min: 0.12, minimum: 7.5 },
@@ -46,19 +44,13 @@ function calculatePrice(type, metrics, pricing = PRICING) {
   return Number(Math.max(p.minimum, p.base + metrics.distanceKm * p.km + metrics.durationMin * p.min).toFixed(2));
 }
 
-async function authenticatedUser(authorization) {
-  if (!authorization.startsWith("Bearer ")) return null;
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: publishableKey, Authorization: authorization } });
-  if (!response.ok) return null;
-  const user = await response.json();
-  return user?.id ? user : null;
-}
-
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST required" });
   res.setHeader("Cache-Control", "no-store");
   try {
     const body = req.body || {};
+    // Quotes remain available; never dispatch an unpaid parcel as a paid booking.
+    if(body.action==='book')return res.status(503).json({error:'La réservation de colis n’est pas encore disponible. Aucun paiement ni commande n’a été créé.'});
     const country = "FR";
     const currency = "EUR";
     const pricing = PRICING;
@@ -67,21 +59,8 @@ export default async function handler(req, res) {
     const [pickup, dropoff] = await Promise.all([resolveDeliveryAddress(cleanAddress(body.pickup_address)), resolveDeliveryAddress(cleanAddress(body.dropoff_address))]);
     const metrics = await route(pickup, dropoff);
     const quote = calculatePrice(type, metrics, pricing);
-    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency, country };
-    if (body.action !== "book") return res.status(200).json(result);
-
-    const authorization = req.headers.authorization || "";
-    const user = await authenticatedUser(authorization);
-    if (!user) return res.status(401).json({ error: "Login required" });
-    const response = await fetch(`${supabaseUrl}/rest/v1/delivery_orders`, {
-      method: "POST",
-      headers: { apikey: publishableKey, Authorization: authorization, "Content-Type": "application/json", Prefer: "return=representation" },
-      body: JSON.stringify({ customer_id: user.id, pickup_address: pickup.address, dropoff_address: dropoff.address, item_type: type, quote, currency, status: "pending" }),
-    });
-    const created = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: created?.message || created?.error || "Could not book delivery" });
-    const order = Array.isArray(created) ? created[0] : created;
-    return res.status(201).json({ ...result, order_id: order?.id || null });
+    const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency, country, booking_available:false };
+    return res.status(200).json(result);
   } catch (error) {
     const message = error?.message || "Delivery service error";
     return res.status(/address|adresse|route|150 km/i.test(message) ? 400 : 502).json({ error: message });
