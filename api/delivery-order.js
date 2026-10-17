@@ -1,3 +1,4 @@
+import routePreview, { getDrivingRoute } from './route-preview.js';
 const supabaseUrl = process.env.VASI_SUPABASE_URL || process.env.SUPABASE_URL || "https://vhfyvkrvysrooaqzcxsp.supabase.co";
 const publishableKey = process.env.VASI_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT";
 const PRICING = {
@@ -10,25 +11,34 @@ function cleanAddress(value) {
   return address;
 }
 
-async function geocode(address, country) {
-  const query = new URLSearchParams({ format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: "fr", q: address });
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
-  if (!response.ok) throw new Error("Address search is temporarily unavailable");
-  const result = (await response.json())?.[0];
-  const lat = Number(result?.lat), lng = Number(result?.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error(`Address not found: ${address}`);
-  return { lat, lng, address: result.display_name || address };
+async function lookupAddress(address) {
+  const response={code:200,setHeader(){},status(n){this.code=n;return this;},json(data){this.data=data;return this;}};
+  await routePreview({method:'GET',headers:{},query:{q:address,country:'FR'}},response);
+  if(response.code!==200) throw new Error('Address search is temporarily unavailable');
+  return response.data?.results || [];
+}
+
+export async function resolveDeliveryAddress(address,lookup=lookupAddress) {
+  const number=address.match(/^(\d+(?:\s*(?:bis|ter|quater|[a-z]))?)\b/i)?.[1];
+  const normalized=value=>String(value||'').replace(/\s+/g,'').toLowerCase();
+  const results=await lookup(address);
+  const result=results.find(candidate=>{
+    const lat=Number(candidate.lat),lng=Number(candidate.lon);
+    return Number.isFinite(lat)&&Math.abs(lat)<=90&&Number.isFinite(lng)&&Math.abs(lng)<=180
+      &&candidate.address?.country_code==='fr'
+      &&(candidate.address?.road||candidate.address?.house_number)
+      &&(!number||normalized(candidate.address?.house_number)===normalized(number));
+  });
+  if(!result) throw new Error(number?'Adresse exacte introuvable : le numéro de rue doit être confirmé. Précisez le code postal et la ville.':'Adresse de livraison imprécise. Indiquez une rue et une ville en France.');
+  return {lat:Number(result.lat),lng:Number(result.lon),address:result.display_name||address};
 }
 
 async function route(pickup, dropoff) {
-  const coordinates = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
-  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=false`, { headers: { "User-Agent": "VASI/1.0 (delivery-pricing)" } });
-  if (!response.ok) throw new Error("Delivery route service is unavailable");
-  const best = (await response.json())?.routes?.[0];
-  if (!best || !Number.isFinite(best.distance) || !Number.isFinite(best.duration)) throw new Error("No driving route was found between these addresses");
-  const distanceKm = best.distance / 1000;
+  const best=await getDrivingRoute([pickup,dropoff],{metricsOnly:true});
+  if (!best || !Number.isFinite(best.distance_km) || !Number.isFinite(best.duration_min)) throw new Error("No driving route was found between these addresses");
+  const distanceKm = best.distance_km;
   if (distanceKm > 150) throw new Error("VASI local delivery currently supports routes up to 150 km");
-  return { distanceKm, durationMin: Math.max(1, Math.ceil(best.duration / 60)) };
+  return { distanceKm, durationMin: Math.max(1, Math.ceil(best.duration_min)) };
 }
 
 function calculatePrice(type, metrics, pricing = PRICING) {
@@ -54,7 +64,7 @@ export default async function handler(req, res) {
     const pricing = PRICING;
     const type = String(body.item_type || "parcel").toLowerCase();
     if (!pricing[type]) return res.status(400).json({ error: "Choose parcel or document" });
-    const [pickup, dropoff] = await Promise.all([geocode(cleanAddress(body.pickup_address), country), geocode(cleanAddress(body.dropoff_address), country)]);
+    const [pickup, dropoff] = await Promise.all([resolveDeliveryAddress(cleanAddress(body.pickup_address)), resolveDeliveryAddress(cleanAddress(body.dropoff_address))]);
     const metrics = await route(pickup, dropoff);
     const quote = calculatePrice(type, metrics, pricing);
     const result = { pickup, dropoff, item_type: type, distance_km: Number(metrics.distanceKm.toFixed(2)), duration_min: metrics.durationMin, quote, currency, country };
@@ -74,6 +84,6 @@ export default async function handler(req, res) {
     return res.status(201).json({ ...result, order_id: order?.id || null });
   } catch (error) {
     const message = error?.message || "Delivery service error";
-    return res.status(/address|route|150 km/i.test(message) ? 400 : 502).json({ error: message });
+    return res.status(/address|adresse|route|150 km/i.test(message) ? 400 : 502).json({ error: message });
   }
 }

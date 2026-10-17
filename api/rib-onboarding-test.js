@@ -22,6 +22,10 @@ export function createRibTestHandler({key, authorize, stripe}) {
       if (typeof body === 'string') { try {body=JSON.parse(body);} catch {throw fault('Invalid JSON');} }
       const input = req.method==='GET' ? req.query || {} : body;
       const action = req.method==='GET' ? 'status' : input.action;
+      if (action==='enable_connect') {
+        await stripe('POST','/v1/_unstable/connect/enable',{});
+        return res.status(200).json({test_mode:true,status:'connect_enabled'});
+      }
       if (!ROLES.includes(input.role)) throw fault('Invalid test role');
       if (!['status','onboard'].includes(action)) throw fault('Unsupported action');
       const owned = a => a?.metadata?.service===SERVICE && a.metadata.owner===owner && a.metadata.role===input.role;

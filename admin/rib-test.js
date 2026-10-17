@@ -17,12 +17,13 @@
   }
   async function run(role,action){
     if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);
-    try{const r=await api(role,action);if(action==='onboard'){const u=new URL(r.url);if(u.origin!=='https://connect.stripe.com')throw Error('Adresse Stripe invalide');sessionStorage.setItem('vasi-rib-test-'+role,r.account);location.assign(u.href);return;}
+    try{const r=await api(role,action);if(action==='enable_connect'){$('message').textContent='Connect activé dans le sandbox TEST. Choisissez un partenaire ci-dessous.';return;}if(action==='onboard'){const u=new URL(r.url);if(u.origin!=='https://connect.stripe.com')throw Error('Adresse Stripe invalide');sessionStorage.setItem('vasi-rib-test-'+role,r.account);location.assign(u.href);return;}
       const labels={not_started:'Non commencé.',incomplete:'Formulaire à compléter.',pending:'Informations envoyées. Vérification Stripe en cours.',verified:'RIB ajouté et versements activés par Stripe.'};
       $('status-'+role).textContent=(labels[r.status]||r.status)+(r.account?'\nCompte fictif : '+r.account:'')+(r.account?'\nRIB ajouté : '+(r.bank_added?'oui':'non')+' · Versements activés : '+(r.payouts_enabled?'oui':'non'):'');$('message').textContent='Mode TEST confirmé. Aucun paiement lancé.';
     }catch(e){$('status-'+role).textContent=e.message;$('message').textContent=e.message;}
     finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}
   }
   $('roles').addEventListener('click',e=>{const b=e.target.closest('button');if(b)run(b.dataset.role,b.dataset.action);});
+  $('enableConnect').addEventListener('click',()=>run('driver','enable_connect'));
   (async()=>{for(const role of Object.keys(roles))await run(role,'status');})();
 })();
