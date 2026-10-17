@@ -82,6 +82,7 @@ async function stripe(method,path,params,idem) {
   if(!response.ok) {
     const message=data?.error?.message||'Stripe test request failed';
     if(message.includes("signed up for Connect")) throw fault('Stripe Connect n’est pas activé dans ce sandbox. Activez Connect dans le sandbox Stripe avant de tester l’ajout du RIB.',503);
+    if(path==='/v1/_unstable/connect/enable'&&response.status===404)throw fault('Ce sandbox doit être réclamé dans votre compte Stripe avant de poursuivre la configuration Connect. Aucun compte réel n’a été modifié.',409);
     throw fault(message,response.status);
   }
   return data;

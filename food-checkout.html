@@ -148,7 +148,7 @@
             button.disabled = false;
             return;
           }
-          const configResponse = await fetch("/api/payment-config", { cache: "no-store" });
+          const configResponse = await fetch("/api/payment-config?service=food", { cache: "no-store",headers:{Authorization:'Bearer '+session.access_token} });
           const config = await configResponse.json();
           if (!configResponse.ok || !config.enabled || !config.publishable_key) throw new Error("Card payment is not configured");
           const orderResponse = await fetch("/api/food-order", {
