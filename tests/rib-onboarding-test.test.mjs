@@ -22,13 +22,13 @@ for(const role of ['driver','courier','restaurant'])test(`RIB ${role} uses an is
   const calls=[];
   const r=await run({body:{action:'onboard',role,request_id:'fixture-request-1234',return_url:'https://evil.invalid'},stripe:async(method,path,params,idem)=>{
     calls.push({method,path,params,idem});
-    return path==='/v1/accounts'?fixture(role):{url:'https://connect.stripe.com/setup/fixture'};
+    return path==='/v2/core/accounts'?fixture(role):{url:'https://connect.stripe.com/setup/fixture'};
   }});
   assert.equal(r.code,200);assert.equal(r.body.test_mode,true);assert.equal(r.body.account,'acct_TEST');
-  assert.equal(calls[0].params.country,'FR');assert.equal(calls[0].params['controller[stripe_dashboard][type]'],'express');
-  assert.equal(calls[0].params['metadata[role]'],role);assert.equal(calls[0].params['capabilities[transfers][requested]'],'true');
-  assert.ok(calls[0].idem.includes(role));assert.equal(calls[1].params.type,'account_onboarding');
-  assert.equal(calls[1].params.return_url,`https://www.vasigo.eu/admin/rib-test.html?role=${role}&account=acct_TEST`);
+  assert.equal(calls[0].params.identity.country,'FR');assert.equal(calls[0].params.dashboard,'express');
+  assert.equal(calls[0].params.metadata.role,role);assert.equal(calls[0].params.configuration.recipient.capabilities.stripe_balance.stripe_transfers.requested,true);
+  assert.ok(calls[0].idem.includes(role));assert.equal(calls[1].params.use_case.type,'account_onboarding');
+  assert.equal(calls[1].params.use_case.account_onboarding.return_url,`https://www.vasigo.eu/admin/rib-test.html?role=${role}&account=acct_TEST`);
   assert.ok(!JSON.stringify(calls).includes('evil.invalid'));
 });
 test('RIB test refuses foreign owner, wrong role and untagged production accounts',async()=>{
@@ -39,7 +39,7 @@ test('RIB test refuses foreign owner, wrong role and untagged production account
 test('RIB retry reuses the selected owned account without creating another',async()=>{
   const paths=[];
   const r=await run({body:{action:'onboard',role:'driver',account:'acct_TEST'},stripe:async(method,path)=>{paths.push([method,path]);return method==='GET'?fixture():{url:'https://connect.stripe.com/setup/retry'};}});
-  assert.equal(r.code,200);assert.deepEqual(paths,[['GET','/v1/accounts/acct_TEST'],['POST','/v1/account_links']]);
+  assert.equal(r.code,200);assert.deepEqual(paths,[['GET','/v1/accounts/acct_TEST'],['POST','/v2/core/account_links']]);
 });
 test('RIB status reads Stripe readiness and does not disclose bank account details',async()=>{
   const r=await run({method:'GET',query:{role:'driver',account:'acct_TEST'},stripe:async()=>fixture('driver',{details_submitted:true,payouts_enabled:true,external_accounts:{data:[{object:'bank_account',last4:'1234',routing_number:'private-bank-data'}]}})});
@@ -53,7 +53,7 @@ test('return alone never marks an incomplete or pending RIB verified',async()=>{
   }
 });
 test('RIB test rejects offsite onboarding URLs',async()=>{
-  const r=await run({stripe:async(method,path)=>path==='/v1/accounts'?fixture():{url:'https://evil.invalid'}});assert.equal(r.code,409);
+  const r=await run({stripe:async(method,path)=>path==='/v2/core/accounts'?fixture():{url:'https://evil.invalid'}});assert.equal(r.code,409);
 });
 test('Connect activation uses only the authenticated sandbox and cannot run with a live key',async()=>{
   const paths=[];
