@@ -26,6 +26,14 @@ export function createRibTestHandler({key, authorize, stripe}) {
         await stripe('POST','/v1/_unstable/connect/enable',{});
         return res.status(200).json({test_mode:true,status:'connect_enabled'});
       }
+      if (action==='backend_readiness') {
+        const url=process.env.VASI_SUPABASE_URL||process.env.SUPABASE_URL||'https://vhfyvkrvysrooaqzcxsp.supabase.co';
+        const response=await fetch(`${url}/functions/v1/parcel-payment-service`,{method:'POST',headers:{Authorization:req.headers.authorization,apikey:process.env.VASI_SUPABASE_ANON_KEY||process.env.SUPABASE_ANON_KEY||'sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT','Content-Type':'application/json'},body:JSON.stringify({action:'readiness'}),signal:AbortSignal.timeout(20000)});
+        const result=await response.json();
+        if(!response.ok)throw fault(result.error||'Backend readiness unavailable',response.status);
+        const website=await stripe('GET','/v1/account');
+        return res.status(200).json({test_mode:true,...result,website_account_id:website.id,account_match:!!website.id&&website.id===result.account_id});
+      }
       if (!ROLES.includes(input.role)) throw fault('Invalid test role');
       if (!['status','onboard'].includes(action)) throw fault('Unsupported action');
       const owned = a => a?.metadata?.service===SERVICE && a.metadata.owner===owner && a.metadata.role===input.role;
@@ -66,7 +74,7 @@ export function createRibTestHandler({key, authorize, stripe}) {
 }
 
 async function stripe(method,path,params,idem) {
-  const headers={Authorization:`Bearer ${process.env.STRIPE_SECRET_KEY}`,'Stripe-Version':'2025-07-30.basil'};
+  const headers={Authorization:`Bearer ${process.env.STRIPE_SECRET_KEY}`,'Stripe-Version':path==='/v1/_unstable/connect/enable'?'2026-09-30.preview':'2025-07-30.basil'};
   if(params) headers['Content-Type']='application/x-www-form-urlencoded';
   if(idem) headers['Idempotency-Key']=idem;
   const response=await fetch(`https://api.stripe.com${path}`,{method,headers,...(params?{body:new URLSearchParams(params).toString()}:{}),signal:AbortSignal.timeout(18000)});
