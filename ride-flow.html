@@ -1131,9 +1131,15 @@
       .bookingMode .fieldLabel { font-size: 10px; }
       .bookingMode .field b { font-size: 12px; }
       .bookingMode .sheetHeading { display: none; }
-      .stageSteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 4px 0 10px; padding: 0; list-style: none; font-size: 10px; color: #999; }
-      .stageSteps li { padding: 6px 2px; border-bottom: 2px solid #333; }
-      .stageSteps li[aria-current="step"] { color: #fff; border-color: #448aff; font-weight: 800; }
+      .stageSteps { position: relative; margin: 4px 0 14px; padding: 0 0 12px; list-style: none; border-bottom: 3px solid #303030; }
+      .stageSteps::after { position: absolute; left: 0; bottom: -3px; width: 33.333%; height: 3px; border-radius: 3px; background: #448aff; content: ""; transition: width .2s ease; }
+      [data-stage="choice"] > .stageSteps::after { width: 66.667%; }
+      [data-stage="driver"] > .stageSteps::after { width: 100%; }
+      .stageSteps li { display: none; }
+      .stageSteps li[aria-current="step"] { display: flex; align-items: center; gap: 12px; color: #fff; font-weight: 800; }
+      .stageNumber { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #448aff66; border-radius: 10px; background: #448aff1c; color: #a9c8ff; font-size: 13px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+      .stageTitle { min-width: 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+      @media (prefers-reduced-motion: reduce) { .stageSteps::after { transition: none; } }
       .bookingMode .routeCard, .driverMode .routeCard, .driverMode .sheetHeading { display: none; }
       .bookingRoute { display: flex; width: 100%; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 10px; background: #1a1a1a; color: #ddd; border: 1px solid #333; border-radius: 10px; text-align: left; }
       .bookingRoute span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
@@ -1321,9 +1327,9 @@
         <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
         <div class="searchHead"><button type="button" aria-label="Back" onclick="closeAddressSearch()">←</button><strong id="searchTitle">Destination</strong></div>
         <ol class="stageSteps" aria-label="Booking progress">
-          <li id="addressStep" aria-current="step">1 · <span>Pickup</span> / <span>Destination</span></li>
-          <li id="choiceStep">2 · <span>Choose vehicle</span> / <span>Payment</span></li>
-          <li id="driverStep">3 · <span>VASI driver</span></li>
+          <li id="addressStep" aria-current="step"><span class="stageNumber">1 / 3</span><span class="stageTitle"><span>Pickup</span> / <span>Destination</span></span></li>
+          <li id="choiceStep"><span class="stageNumber">2 / 3</span><span class="stageTitle"><span>Choose vehicle</span> / <span>Payment</span></span></li>
+          <li id="driverStep"><span class="stageNumber">3 / 3</span><span class="stageTitle"><span>VASI driver</span></span></li>
         </ol>
         <div class="sheetHeading">
           <strong>Plan your ride</strong>
