@@ -1218,11 +1218,26 @@
         left: max(16px, env(safe-area-inset-left)) !important;
       }
 
-      .locateBtn,
-      .mapTripSummary {
+      .locateBtn {
         top: max(86px, calc(env(safe-area-inset-top) + 68px)) !important;
       }
 
+      /* Keep route information in the header, away from map pins. */
+      .top { justify-content: space-between; gap: 12px; }
+      .top .back { position: static; flex: 0 0 auto; }
+      .top .mapTripSummary {
+        position: static;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: calc(100% - 92px);
+        margin-left: auto;
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.4;
+        text-align: right;
+        overflow-wrap: anywhere;
+        pointer-events: none;
+      }
       .leaflet-control-attribution {
         margin-top: max(148px, calc(env(safe-area-inset-top) + 136px)) !important;
       }
@@ -1284,10 +1299,10 @@
   <body data-scroll-mode="viewport">
     <main class="app">
       <header class="top">
-        <div class="brand"><img class="vasi-mark" src="./vasi-icon-192.png" alt="VASI" style="display:block;width:38px;height:38px;object-fit:contain;border-radius:10px" /></div>
         <button class="back" type="button" onclick="location.href = 'app.html'" aria-label="Home" title="Home">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
+        <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       </header>
       <div id="map" class="map"></div>
       <div id="pinReticle" class="pinReticle hidden" aria-hidden="true">
@@ -1302,7 +1317,6 @@
       >
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="8" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2" /></svg>
       </button>
-      <div id="mapTripSummary" class="mapTripSummary hidden" aria-live="polite"></div>
       <section id="panel" class="panel" data-scroll-region>
         <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
         <div class="searchHead"><button type="button" aria-label="Back" onclick="closeAddressSearch()">←</button><strong id="searchTitle">Destination</strong></div>
