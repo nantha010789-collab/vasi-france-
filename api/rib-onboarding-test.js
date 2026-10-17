@@ -44,22 +44,21 @@ export function createRibTestHandler({key, authorize, stripe}) {
         if (!owned(account)) throw fault('Test account access denied',403);
       } else if (action==='onboard') {
         if (!/^[A-Za-z0-9-]{16,80}$/.test(input.request_id || '')) throw fault('Unique test request ID required');
-        account=await stripe('POST','/v1/accounts',{
-          country:'FR',default_currency:'eur',
-          'controller[fees][payer]':'application','controller[losses][payments]':'application',
-          'controller[stripe_dashboard][type]':'express','capabilities[transfers][requested]':'true',
-          'business_profile[name]':`VASI TEST ${input.role}`,
-          'metadata[service]':SERVICE,'metadata[owner]':owner,'metadata[role]':input.role,
+        account=await stripe('POST','/v2/core/accounts',{
+          identity:{country:'FR'},display_name:`VASI TEST ${input.role}`,dashboard:'express',
+          defaults:{currency:'eur',responsibilities:{fees_collector:'application',losses_collector:'application'}},
+          configuration:{recipient:{capabilities:{stripe_balance:{stripe_transfers:{requested:true}}}}},
+          metadata:{service:SERVICE,owner,role:input.role},
         },`rib-test-${owner}-${input.role}-${input.request_id}`);
         if (!owned(account)) throw fault('Stripe test account mismatch',409);
       }
       if (!account) return res.status(200).json({test_mode:true,role:input.role,status:'not_started'});
       if (action==='onboard') {
         const back=`${RETURN}?role=${input.role}&account=${encodeURIComponent(account.id)}`;
-        const link=await stripe('POST','/v1/account_links',{
-          account:account.id,type:'account_onboarding',return_url:back,refresh_url:`${back}&expired=1`,
+        const link=await stripe('POST','/v2/core/account_links',{
+          account:account.id,use_case:{type:'account_onboarding',account_onboarding:{configurations:['recipient'],return_url:back,refresh_url:`${back}&expired=1`}},
         });
-        if (!link.url?.startsWith('https://connect.stripe.com/')) throw fault('Invalid Stripe onboarding URL',409);
+        if (!/^https:\/\/(connect|accounts)\.stripe\.com\//.test(link.url||'')) throw fault('Invalid Stripe onboarding URL',409);
         return res.status(200).json({test_mode:true,role:input.role,account:account.id,url:link.url});
       }
       const bankAccounts=(account.external_accounts?.data || []).filter(a=>a.object==='bank_account');
@@ -74,10 +73,11 @@ export function createRibTestHandler({key, authorize, stripe}) {
 }
 
 async function stripe(method,path,params,idem) {
-  const headers={Authorization:`Bearer ${process.env.STRIPE_SECRET_KEY}`,'Stripe-Version':path==='/v1/_unstable/connect/enable'?'2026-09-30.preview':'2025-07-30.basil'};
-  if(params) headers['Content-Type']='application/x-www-form-urlencoded';
+  const v2=path.startsWith('/v2/');
+  const headers={Authorization:`Bearer ${process.env.STRIPE_SECRET_KEY}`,'Stripe-Version':v2?'2026-09-30.endive':path==='/v1/_unstable/connect/enable'?'2026-09-30.preview':'2025-07-30.basil'};
+  if(params) headers['Content-Type']=v2?'application/json':'application/x-www-form-urlencoded';
   if(idem) headers['Idempotency-Key']=idem;
-  const response=await fetch(`https://api.stripe.com${path}`,{method,headers,...(params?{body:new URLSearchParams(params).toString()}:{}),signal:AbortSignal.timeout(18000)});
+  const response=await fetch(`https://api.stripe.com${path}`,{method,headers,...(params?{body:v2?JSON.stringify(params):new URLSearchParams(params).toString()}:{}),signal:AbortSignal.timeout(18000)});
   const data=await response.json();
   if(!response.ok) {
     const message=data?.error?.message||'Stripe test request failed';
