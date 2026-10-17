@@ -1085,7 +1085,7 @@ test("ride map confirms only the pickup pin at street-level zoom", async () => {
     /!pickup \|\| !pickupConfirmed \|\| !destination/,
   );
   assert.match(source, /Confirm your pickup before booking/);
-  assert.match(source, /\.panel\.pinMode\s*\{[\s\S]*?max-height: min\(190px, 30vh\)/);
+  assert.match(source, /\.panel\.pinMode\s*\{[\s\S]*?max-height: min\(230px, 40vh\)/);
   assert.match(source, /<strong>Pickup<\/strong>/);
   assert.doesNotMatch(source, /pinConfirmHead/);
   assert.doesNotMatch(source, /pinAddressCard/);
