@@ -1131,15 +1131,6 @@
       .bookingMode .fieldLabel { font-size: 10px; }
       .bookingMode .field b { font-size: 12px; }
       .bookingMode .sheetHeading { display: none; }
-      .stageSteps { position: relative; margin: 4px 0 14px; padding: 0 0 12px; list-style: none; border-bottom: 3px solid #303030; }
-      .stageSteps::after { position: absolute; left: 0; bottom: -3px; width: 33.333%; height: 3px; border-radius: 3px; background: #448aff; content: ""; transition: width .2s ease; }
-      [data-stage="choice"] > .stageSteps::after { width: 66.667%; }
-      [data-stage="driver"] > .stageSteps::after { width: 100%; }
-      .stageSteps li { display: none; }
-      .stageSteps li[aria-current="step"] { display: flex; align-items: center; gap: 12px; color: #fff; font-weight: 800; }
-      .stageNumber { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #448aff66; border-radius: 10px; background: #448aff1c; color: #a9c8ff; font-size: 13px; line-height: 1.4; font-variant-numeric: tabular-nums; }
-      .stageTitle { min-width: 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
-      @media (prefers-reduced-motion: reduce) { .stageSteps::after { transition: none; } }
       .bookingMode .routeCard, .driverMode .routeCard, .driverMode .sheetHeading { display: none; }
       .bookingRoute { display: flex; width: 100%; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 10px; background: #1a1a1a; color: #ddd; border: 1px solid #333; border-radius: 10px; text-align: left; }
       .bookingRoute span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
@@ -1169,7 +1160,7 @@
       .paymentChoices .pay { min-height: 44px; padding: 10px; }
       .searchHead { display: none; }
       .panel.searchMode { display: flex; flex-direction: column; height: min(560px, var(--search-height, 72dvh)); max-height: var(--search-height, 72dvh) !important; bottom: var(--search-bottom, 8px) !important; overflow: hidden !important; }
-      .searchMode > .stageSteps, .searchMode > .sheetHeading, .searchMode > .routeCard, .searchMode > .savedPlaces { display: none !important; }
+      .searchMode > .sheetHeading, .searchMode > .routeCard, .searchMode > .savedPlaces { display: none !important; }
       .searchMode .searchHead { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; flex-shrink: 0; }
       .searchHead button { background: #222; border: 1px solid #444; color: #fff; border-radius: 10px; min-width: 44px; min-height: 44px; font-size: 22px; }
       .searchHead strong { font-size: 18px; }
@@ -1326,11 +1317,7 @@
       <section id="panel" class="panel" data-scroll-region>
         <button class="grab" type="button" onclick="togglePanel()" aria-label="Plan your ride" aria-expanded="true"></button>
         <div class="searchHead"><button type="button" aria-label="Back" onclick="closeAddressSearch()">←</button><strong id="searchTitle">Destination</strong></div>
-        <ol class="stageSteps" aria-label="Booking progress">
-          <li id="addressStep" aria-current="step"><span class="stageNumber">1 / 3</span><span class="stageTitle"><span>Pickup</span> / <span>Destination</span></span></li>
-          <li id="choiceStep"><span class="stageNumber">2 / 3</span><span class="stageTitle"><span>Choose vehicle</span> / <span>Payment</span></span></li>
-          <li id="driverStep"><span class="stageNumber">3 / 3</span><span class="stageTitle"><span>VASI driver</span></span></li>
-        </ol>
+
         <div class="sheetHeading">
           <strong>Plan your ride</strong>
           <span id="stageHint">Pickup</span>
@@ -1781,10 +1768,7 @@
         panel.classList.toggle("bookingMode", bookingVisible);
         panel.classList.toggle("driverMode", driverVisible);
         panel.dataset.stage = driverVisible ? "driver" : bookingVisible ? "choice" : "address";
-        for (const [id, active] of [["addressStep", !bookingVisible && !driverVisible], ["choiceStep", bookingVisible && !driverVisible], ["driverStep", driverVisible]]) {
-          if (active) $(id).setAttribute("aria-current", "step");
-          else $(id).removeAttribute("aria-current");
-        }
+
         if (bookingVisible) $("bookingRouteLabel").textContent = `${$("pickup").textContent} → ${$("destination").textContent}`;
         panel.classList.toggle("pinMode", pinVisible && !bookingVisible && !driverVisible);
         document.body.classList.toggle("pinConfirmMode", pinVisible && !bookingVisible && !driverVisible);
