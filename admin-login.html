@@ -14,6 +14,7 @@
   <title>VASI Admin</title>
   <style>
     :root{font-family:Inter,system-ui,sans-serif;background:#f4f6f8;color:#101828}*{box-sizing:border-box}body{margin:0}.wrap{max-width:500px;margin:auto;min-height:100vh;min-height:100dvh;padding:max(24px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));display:flex;align-items:center}.card{width:100%;background:#fff;border:1px solid #e4e7ec;border-radius:22px;padding:28px;box-shadow:0 20px 60px #10182812}.brand{font-size:30px;font-weight:950}.eyebrow{color:#667085;text-transform:uppercase;letter-spacing:1.5px;font-size:11px;margin-top:7px}h1{margin:28px 0 6px;font-size:28px}.intro{color:#667085;line-height:1.5}.field{width:100%;min-height:50px;margin-top:11px;background:#fff;border:1px solid #d0d5dd;color:#101828;border-radius:12px;padding:13px;font-size:16px;outline:none}.field:focus{border-color:#175cd3;box-shadow:0 0 0 3px #84adff55}.btn{width:100%;min-height:50px;margin-top:13px;border:0;border-radius:12px;padding:13px;background:#111827;color:#fff;font-weight:800;font-size:16px;cursor:pointer}.btn.secondary{background:#fff;color:#101828;border:1px solid #d0d5dd}.btn.install{background:#eef4ff;color:#1849a9;border:1px solid #b2ccff}.btn:disabled{opacity:.55;cursor:not-allowed}.msg{min-height:20px;color:#b42318;font-size:13px;margin-top:10px}.install-help{margin:10px 0 0;padding:12px;border-radius:12px;background:#eef4ff;color:#1849a9;font-size:13px;line-height:1.45}.secure{margin-top:18px;padding:12px;border-radius:12px;background:#f9fafb;color:#667085;font-size:12px;line-height:1.5}.hidden,[hidden]{display:none!important}label{display:block;margin-top:12px;font-size:14px;font-weight:700}@media(max-width:420px){.wrap{align-items:flex-start}.card{padding:24px 20px;border-radius:20px}h1{font-size:26px}}
+    .password-wrap{position:relative;margin-top:11px}.password-wrap .field{margin-top:0;padding-right:58px}.password-toggle{position:absolute;right:3px;top:3px;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:9px;background:transparent;color:#475467;cursor:pointer}.password-toggle:hover{background:#f2f4f7}.password-toggle:focus-visible{outline:3px solid #84adff;outline-offset:1px}.password-toggle svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.password-toggle .eye-slash{display:none}.password-toggle[aria-pressed="true"] .eye-slash{display:block}
   </style>
 <link rel="stylesheet" href="/vasi-responsive.css?v=1" />
 </head>
@@ -24,7 +25,8 @@
     <p id="intro" class="intro">Utilisez uniquement votre compte administrateur VASI autorisé.</p>
     <div id="loginFields">
       <label>Adresse e-mail<input id="email" class="field" type="email" autocomplete="username" inputmode="email"></label>
-      <label>Mot de passe<input id="password" class="field" type="password" autocomplete="current-password"></label>
+      <label for="password">Mot de passe</label>
+      <div class="password-wrap"><input id="password" class="field" type="password" autocomplete="current-password"><button id="togglePassword" class="password-toggle" type="button" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" aria-controls="password" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18"/></svg></button></div>
     </div>
     <button id="submit" class="btn" type="button">Se connecter</button>
     <button id="forgot" class="btn secondary" type="button">Mot de passe oublié ?</button>
@@ -39,6 +41,14 @@
   <script>
     const db=supabase.createClient('https://vhfyvkrvysrooaqzcxsp.supabase.co','sb_publishable_mypiW8lczhmoQb4rECuE8Q_dEhNiCKT',{auth:{storageKey:'vasi-admin-auth'}}),$=id=>document.getElementById(id);
     const adminRole=VasiAccountRole.scoped('admin');
+    function setPasswordVisibility(visible){
+      $('password').type=visible?'text':'password';
+      const label=visible?'Masquer le mot de passe':'Afficher le mot de passe';
+      $('togglePassword').setAttribute('aria-pressed',String(visible));
+      $('togglePassword').setAttribute('aria-label',label);$('togglePassword').title=label;
+    }
+    $('togglePassword').addEventListener('click',()=>setPasswordVisibility($('password').type==='password'));
+    window.addEventListener('pagehide',()=>setPasswordVisibility(false));
     let mustSignOut=false;
     async function signOutAndContinue(){
       await db.auth.signOut({scope:'local'});adminRole.clear();mustSignOut=false;
@@ -55,6 +65,7 @@
       mustSignOut=true;$('loginFields').classList.add('hidden');$('intro').textContent='Un autre compte VASI est actuellement connecté. Déconnectez-le avant d’ouvrir le compte administrateur.';$('submit').textContent='Se déconnecter et continuer';$('submit').classList.add('secondary');
     }
     async function login(){
+      setPasswordVisibility(false);
       if(mustSignOut)return signOutAndContinue();
       const email=$('email').value.trim().toLowerCase(),password=$('password').value,button=$('submit');
       if(!email||!password){$('msg').textContent='Saisissez votre e-mail et votre mot de passe.';return}
