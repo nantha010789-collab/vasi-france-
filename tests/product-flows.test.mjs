@@ -408,18 +408,18 @@ test("restaurant owners connect their own RIB with weekly Monday payouts", async
       servicePatches.push(JSON.parse(options.body));
       return response([{}]);
     }
-    if (value.endsWith("/v1/accounts")) {
+    if (value.endsWith("/v2/core/accounts")) {
       accountBody = String(options.body);
-      return response({ id: "acct_restaurant", details_submitted: false, payouts_enabled: false });
+      return response({ id: "acct_restaurant", metadata: {vasi_connect_api:"v2"}, details_submitted: false, payouts_enabled: false });
     }
     if (value.endsWith("/v1/balance_settings")) {
       payoutBody = String(options.body);
       payoutAccount = options.headers["Stripe-Account"];
       return response({});
     }
-    if (value.endsWith("/v1/account_links")) {
+    if (value.endsWith("/v2/core/account_links")) {
       onboardingBody = String(options.body);
-      return response({ url: "https://connect.stripe.test/restaurant" });
+      return response({ url: "https://accounts.stripe.com/restaurant" });
     }
     throw new Error(`Unexpected request: ${value}`);
   };
@@ -434,17 +434,17 @@ test("restaurant owners connect their own RIB with weekly Monday payouts", async
     body: {},
   }, res);
 
-  const account = new URLSearchParams(accountBody);
+  const account = JSON.parse(accountBody);
   const payout = new URLSearchParams(payoutBody);
-  const onboarding = new URLSearchParams(onboardingBody);
+  const onboarding = JSON.parse(onboardingBody);
   assert.equal(res.statusCode, 200);
-  assert.equal(account.get("capabilities[transfers][requested]"), "true");
-  assert.equal(account.get("metadata[vasi_restaurant_id]"), "restaurant-1");
-  assert.equal(account.get("metadata[vasi_user_id]"), "owner-1");
+  assert.equal(account.configuration.recipient.capabilities.stripe_balance.stripe_transfers.requested, true);
+  assert.equal(account.metadata.vasi_restaurant_id, "restaurant-1");
+  assert.equal(account.metadata.vasi_user_id, "owner-1");
   assert.equal(payoutAccount, "acct_restaurant");
   assert.equal(payout.get("payments[payouts][schedule][interval]"), "weekly");
   assert.deepEqual(payout.getAll("payments[payouts][schedule][weekly_payout_days][]"), ["monday"]);
-  assert.equal(onboarding.get("return_url"), "https://vasi-new.vercel.app/restaurant-dashboard.html?stripe=complete");
+  assert.equal(onboarding.use_case.account_onboarding.return_url, "https://vasi-new.vercel.app/restaurant-dashboard.html?stripe=complete");
   assert.equal(servicePatches[0].stripe_account_id, "acct_restaurant");
   assert.deepEqual(res.body.payout_schedule, { interval: "weekly", day: "monday" });
 });

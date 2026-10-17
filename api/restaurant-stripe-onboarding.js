@@ -1,3 +1,4 @@
+import { createRecipient, recipientOnboarding } from "../supabase/functions/_shared/stripe-connect.js";
 const supabaseUrl =
   process.env.VASI_SUPABASE_URL ||
   process.env.SUPABASE_URL ||
@@ -184,26 +185,10 @@ export default async function handler(req, res) {
     }
 
     if (!accountId) {
-      const country = "FR";
-      const params = new URLSearchParams();
-      params.set("controller[fees][payer]", "application");
-      params.set("controller[losses][payments]", "application");
-      params.set("controller[stripe_dashboard][type]", "express");
-      params.set("capabilities[transfers][requested]", "true");
-      params.set("country", country);
-      params.set("default_currency", "eur");
-      params.set("business_type", "company");
-      params.set("business_profile[name]", restaurant.name || restaurant.legal_name);
-      if (restaurant.phone)
-        params.set("business_profile[support_phone]", restaurant.phone);
-      if (restaurant.email) params.set("email", restaurant.email);
-      params.set("metadata[vasi_restaurant_id]", restaurant.id);
-      params.set("metadata[vasi_user_id]", user.id);
-
-      account = await stripe("/v1/accounts", {
-        method: "POST",
-        params,
-        idempotencyKey: `vasi-restaurant-account-${restaurant.id}`,
+      account = await createRecipient(stripeKey, {
+        name: restaurant.name || restaurant.legal_name || "VASI Restaurant", email: restaurant.email || user.email,
+        metadata: { vasi_restaurant_id: restaurant.id, vasi_user_id: user.id },
+        idempotencyKey: `vasi-restaurant-account-v2-${restaurant.id}`,
       });
       accountId = account.id;
       await saveRestaurantPayoutState(restaurant.id, {
@@ -226,10 +211,10 @@ export default async function handler(req, res) {
       `${publicUrl}/restaurant-dashboard.html?stripe=complete`,
     );
     linkParams.set("type", "account_onboarding");
-    const link = await stripe("/v1/account_links", {
-      method: "POST",
-      params: linkParams,
-    });
+    const link = account?.metadata?.vasi_connect_api === 'v2'
+      ? await recipientOnboarding(stripeKey, account,
+          `${publicUrl}/restaurant-dashboard.html?stripe=refresh`, `${publicUrl}/restaurant-dashboard.html?stripe=complete`)
+      : await stripe("/v1/account_links", { method: "POST", params: linkParams });
 
     return res.status(200).json({
       connected: true,

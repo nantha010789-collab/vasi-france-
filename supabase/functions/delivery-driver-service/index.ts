@@ -1,3 +1,4 @@
+import { createRecipient, recipientOnboarding } from "../_shared/stripe-connect.js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
@@ -444,25 +445,11 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!accountId) {
-        account = await stripe.accounts.create({
-          country,
-          default_currency: currency,
-          email: user.email || undefined,
-          capabilities: { transfers: { requested: true } },
-          controller: {
-            fees: { payer: "application" },
-            losses: { payments: "application" },
-            stripe_dashboard: { type: "express" },
-          },
-          business_profile: {
-            name: courier.full_name || "VASI Courier",
-            support_phone: courier.phone || undefined,
-          },
-          metadata: {
-            vasi_courier_id: courier.id,
-            vasi_user_id: user.id,
-          },
-        } as Stripe.AccountCreateParams);
+        account = await createRecipient(Deno.env.get("STRIPE_SECRET_KEY"), {
+          name: courier.full_name || "VASI Courier", email: user.email,
+          metadata: { vasi_courier_id: courier.id, vasi_user_id: user.id },
+          idempotencyKey: `vasi-courier-account-v2-${courier.id}`,
+        });
         accountId = account.id;
         const { error: linkError } = await serviceClient
           .from("delivery_drivers")
@@ -475,7 +462,10 @@ Deno.serve(async (req: Request) => {
       await configureWeeklyMondayPayout(accountId);
 
       const publicUrl = Deno.env.get("VASI_PUBLIC_URL") || "https://vasi-new.vercel.app";
-      const link = await stripe.accountLinks.create({
+      const link = account?.metadata?.vasi_connect_api === "v2"
+        ? await recipientOnboarding(Deno.env.get("STRIPE_SECRET_KEY"), account,
+          `${publicUrl}/delivery-driver.html?stripe=refresh`, `${publicUrl}/delivery-driver.html?stripe=complete`)
+        : await stripe.accountLinks.create({
         account: accountId,
         refresh_url: `${publicUrl}/delivery-driver.html?stripe=refresh`,
         return_url: `${publicUrl}/delivery-driver.html?stripe=complete`,

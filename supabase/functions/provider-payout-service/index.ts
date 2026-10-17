@@ -1,3 +1,4 @@
+import { createRecipient, recipientOnboarding } from "../_shared/stripe-connect.js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
@@ -175,22 +176,11 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!accountId) {
-        account = await stripe.accounts.create({
-          country,
-          default_currency: currency,
-          email: user.email || undefined,
-          capabilities: { transfers: { requested: true } },
-          controller: {
-            fees: { payer: "application" },
-            losses: { payments: "application" },
-            stripe_dashboard: { type: "express" },
-          },
-          business_profile: {
-            name: driver.full_name || "VASI Driver",
-            support_phone: driver.phone || undefined,
-          },
+        account = await createRecipient(Deno.env.get("STRIPE_SECRET_KEY"), {
+          name: driver.full_name || "VASI Driver", email: user.email,
           metadata: { vasi_driver_id: driver.id, vasi_user_id: user.id },
-        } as Stripe.AccountCreateParams);
+          idempotencyKey: `vasi-driver-account-v2-${driver.id}`,
+        });
         accountId = account.id;
         await serviceClient.from("drivers").update({
           stripe_account_id: accountId,
@@ -200,7 +190,10 @@ Deno.serve(async (req: Request) => {
         }).eq("id", driver.id);
       }
       await configureWeeklyMondayPayout(accountId);
-      const link = await stripe.accountLinks.create({
+      const link = account?.metadata?.vasi_connect_api === "v2"
+        ? await recipientOnboarding(Deno.env.get("STRIPE_SECRET_KEY"), account,
+          `${publicUrl}/driver.html?stripe=refresh`, `${publicUrl}/driver.html?stripe=complete`)
+        : await stripe.accountLinks.create({
         account: accountId,
         refresh_url: `${publicUrl}/driver.html?stripe=refresh`,
         return_url: `${publicUrl}/driver.html?stripe=complete`,
@@ -236,23 +229,11 @@ Deno.serve(async (req: Request) => {
         }
 
         if (!accountId) {
-          account = await stripe.accounts.create({
-            country,
-            default_currency: currency,
-            email: restaurant.email || user.email || undefined,
-            business_type: "company",
-            capabilities: { transfers: { requested: true } },
-            controller: {
-              fees: { payer: "application" },
-              losses: { payments: "application" },
-              stripe_dashboard: { type: "express" },
-            },
-            business_profile: {
-              name: restaurant.name || restaurant.legal_name || "VASI Restaurant",
-              support_phone: restaurant.phone || undefined,
-            },
-            metadata: { vasi_restaurant_id: restaurant.id, vasi_user_id: user.id },
-          } as Stripe.AccountCreateParams);
+          account = await createRecipient(Deno.env.get("STRIPE_SECRET_KEY"), {
+          name: restaurant.name || restaurant.legal_name || "VASI Restaurant", email: restaurant.email || user.email,
+          metadata: { vasi_restaurant_id: restaurant.id, vasi_user_id: user.id },
+          idempotencyKey: `vasi-restaurant-account-v2-${restaurant.id}`,
+        });
           accountId = account.id;
           await serviceClient.from("restaurants").update({
             stripe_account_id: accountId,
@@ -262,7 +243,10 @@ Deno.serve(async (req: Request) => {
           }).eq("id", restaurant.id);
         }
         await configureWeeklyMondayPayout(accountId);
-        const link = await stripe.accountLinks.create({
+        const link = account?.metadata?.vasi_connect_api === "v2"
+          ? await recipientOnboarding(Deno.env.get("STRIPE_SECRET_KEY"), account,
+            `${publicUrl}/restaurant-dashboard.html?stripe=refresh`, `${publicUrl}/restaurant-dashboard.html?stripe=complete`)
+          : await stripe.accountLinks.create({
           account: accountId,
           refresh_url: `${publicUrl}/restaurant-dashboard.html?stripe=refresh`,
           return_url: `${publicUrl}/restaurant-dashboard.html?stripe=complete`,
