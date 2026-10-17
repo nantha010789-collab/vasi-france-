@@ -7,7 +7,7 @@ test('payment configuration failure stops checkout before creating an order',asy
  const nodes={address:{value:'Paris'},orderBtn:{},status:{}},calls=[];
  const ctx={el:id=>nodes[id],client:{auth:{getSession:async()=>({data:{session:{access_token:'TEST_ONLY'}}})}},fetch:async path=>{calls.push(path);return {ok:true,json:async()=>({enabled:false})}},localStorage:{setItem(){}}};
  vm.runInNewContext(source.slice(source.indexOf('      async function preparePayment()'),source.indexOf('      async function payNow()')),ctx);await ctx.preparePayment();
- assert.deepEqual(calls,['/api/payment-config']);assert.match(nodes.status.textContent,/not configured/);assert.equal(nodes.orderBtn.disabled,false);
+ assert.deepEqual(calls,['/api/payment-config?service=food']);assert.match(nodes.status.textContent,/not configured/);assert.equal(nodes.orderBtn.disabled,false);
 });
 test('scheduled checkout derives calendar dates in the phone timezone',()=>{
  const ctx={};vm.runInNewContext(source.slice(source.indexOf('      function localDate('),source.indexOf('      function scheduledFor()')),ctx);
