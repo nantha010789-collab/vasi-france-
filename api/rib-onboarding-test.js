@@ -67,7 +67,11 @@ async function stripe(method,path,params,idem) {
   if(idem) headers['Idempotency-Key']=idem;
   const response=await fetch(`https://api.stripe.com${path}`,{method,headers,...(params?{body:new URLSearchParams(params).toString()}:{}),signal:AbortSignal.timeout(18000)});
   const data=await response.json();
-  if(!response.ok) throw fault(data?.error?.message||'Stripe test request failed',response.status);
+  if(!response.ok) {
+    const message=data?.error?.message||'Stripe test request failed';
+    if(message.includes("signed up for Connect")) throw fault('Stripe Connect n’est pas activé dans ce sandbox. Activez Connect dans le sandbox Stripe avant de tester l’ajout du RIB.',503);
+    throw fault(message,response.status);
+  }
   return data;
 }
 export default async function handler(req,res) {
