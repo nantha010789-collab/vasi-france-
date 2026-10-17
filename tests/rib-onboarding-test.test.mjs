@@ -55,3 +55,11 @@ test('return alone never marks an incomplete or pending RIB verified',async()=>{
 test('RIB test rejects offsite onboarding URLs',async()=>{
   const r=await run({stripe:async(method,path)=>path==='/v1/accounts'?fixture():{url:'https://evil.invalid'}});assert.equal(r.code,409);
 });
+test('Connect activation uses only the authenticated sandbox and cannot run with a live key',async()=>{
+  const paths=[];
+  const body={action:'enable_connect'};
+  const r=await run({body,stripe:async(method,path)=>{paths.push([method,path]);return {};}});
+  assert.equal(r.body.status,'connect_enabled');assert.equal(r.body.test_mode,true);
+  assert.deepEqual(paths,[['POST','/v1/_unstable/connect/enable']]);
+  assert.equal((await run({body,key:'sk_live_fixture'})).code,503);
+});
