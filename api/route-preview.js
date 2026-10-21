@@ -348,6 +348,7 @@ export default async function handler(req, res) {
         lat: String(feature.geometry?.coordinates?.[1]),
         lon: String(feature.geometry?.coordinates?.[0]),
         display_name: feature.properties?.label,
+        type: feature.properties?.type,
         address: {
           house_number: feature.properties?.housenumber,
           road: feature.properties?.street || feature.properties?.name,
