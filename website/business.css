@@ -525,3 +525,8 @@ body[data-vasi-business]{
   .service-card p{min-height:0;}
   .service-features{margin-bottom:22px;}
 }
+
+.app-entry-links { display:grid; gap:12px; margin-top:24px; max-width:560px; }
+.app-entry-links .button { width:100%; min-height:52px; height:auto; white-space:normal; text-align:center; overflow-wrap:anywhere; }
+.app-entry-links .button-outline { color:#fff; border-color:rgba(255,255,255,.38); background:rgba(255,255,255,.06); }
+.app-entry-links .button-outline:hover { background:rgba(255,255,255,.14); }
