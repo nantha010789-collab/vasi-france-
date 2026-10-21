@@ -1,3 +1,4 @@
+import { usableGeocode } from "./_geocode-quality.js";
 const REGIONS = {
   FR: { countryCode: "fr", language: "fr", googleRegion: "fr" },
 };
@@ -31,6 +32,7 @@ function googleAddress(result) {
     lat: String(result.geometry?.location?.lat),
     lon: String(result.geometry?.location?.lng),
     display_name: result.formatted_address,
+    type: (result.types || [])[0],
     address: {
       house_number: components.street_number,
       road: components.route,
@@ -323,14 +325,14 @@ export default async function handler(req, res) {
             `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&language=${selectedRegion.language}&region=${selectedRegion.googleRegion}&key=${encodeURIComponent(googleKey)}`,
             "Google Geocoding",
           );
-          results = (google?.results || []).slice(0, 3).map(googleAddress);
+          results = (google?.results || []).slice(0, 3).map(googleAddress).filter(result => usableGeocode(result, query));
         } catch (error) {
           console.warn("[route-preview] Google geocoder failed", error?.message);
         }
       }
       const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=3&countrycodes=${selectedRegion.countryCode}&q=${encodeURIComponent(query)}`;
       try {
-        if (!results.length) results = await getJson(url, "Address search");
+        if (!results.length) results = (await getJson(url, "Address search")).filter(result => usableGeocode(result, query));
       } catch (error) {
         console.warn("[route-preview] primary geocoder failed", error?.message);
       }
@@ -355,7 +357,7 @@ export default async function handler(req, res) {
           country_code: "fr",
         },
       }));
-      return res.status(200).json({ results: fallback });
+      return res.status(200).json({ results: fallback.filter(result => usableGeocode(result, query)) });
     }
     if (req.method !== "POST")
       return res.status(405).json({ error: "GET or POST required" });

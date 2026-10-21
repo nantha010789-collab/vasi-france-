@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from '@supabase/supabase-js';
 import { reviewIssue, inspectFiles, expiringDocuments } from './document-review.ts';
+import { parisDayBounds, financialSummary, readAllReportRows } from './reporting.js';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -95,9 +96,7 @@ Deno.serve(async (req) => {
   }
 
   async function stats() {
-    const start = new Date();
-    start.setUTCHours(0, 0, 0, 0);
-    const iso = start.toISOString();
+    const { start: iso, end: dayEnd, timeZone } = parisDayBounds();
     const count = async (table: string, apply?: (query: any) => any) => {
       let query = db.from(table).select('id', { count: 'exact', head: true });
       if (apply) query = apply(query);
@@ -119,31 +118,25 @@ Deno.serve(async (req) => {
       count('drivers', q => q.eq('online', true)),
       count('drivers', q => q.eq('verified', true)),
       count('driver_documents', q => q.eq('status', 'pending')),
-      count('rides', q => q.eq('status', 'completed').gte('requested_at', iso)),
-      count('bookings', q => q.gte('created_at', iso)),
-      count('payments', q => q.gte('created_at', iso)),
+      count('rides', q => q.eq('status', 'completed').gte('completed_at', iso).lt('completed_at', dayEnd)),
+      count('bookings', q => q.gte('created_at', iso).lt('created_at', dayEnd)),
+      count('payments', q => q.in('status', ['succeeded', 'paid']).gte('created_at', iso).lt('created_at', dayEnd)),
       count('delivery_drivers', q => q.eq('application_status', 'pending')),
       count('restaurants', q => q.eq('status', 'pending')),
       count('drivers', q => q.eq('stripe_payouts_enabled', true)),
       count('delivery_drivers', q => q.eq('stripe_payouts_enabled', true)),
       count('restaurants', q => q.eq('stripe_payouts_enabled', true)),
     ]);
-    const [{ data: todayBookings, error: bookingError }, { data: todayRides, error: rideError }, { data: todayPayments, error: paymentError }] =
-      await Promise.all([
-        db.from('bookings').select('estimated_price,vasi_commission,driver_amount').gte('created_at', iso),
-        db.from('rides').select('final_fare,estimated_fare,status').gte('requested_at', iso),
-        db.from('payments').select('amount,status').gte('created_at', iso),
-      ]);
-    if (bookingError || rideError || paymentError) throw bookingError || rideError || paymentError;
-    const sum = (rows: any[] | null, field: string) => (rows || []).reduce((total, row) => total + (Number(row[field]) || 0), 0);
+    const [todayRides, todayPayments] = await Promise.all([
+      readAllReportRows(() => db.from('rides').select('id,final_fare,vasi_commission,driver_amount,status,currency').eq('status', 'completed').gte('completed_at', iso).lt('completed_at', dayEnd)),
+      readAllReportRows(() => db.from('payments').select('id,amount,status,currency').in('status', ['succeeded', 'paid']).gte('created_at', iso).lt('created_at', dayEnd)),
+    ]);
     return {
       drivers, customers, bookings, documents, payments, activeRides, onlineDrivers,
       verifiedDrivers, pendingDocuments, completedToday, bookingToday, paymentToday,
       pendingCouriers, pendingRestaurants, payoutReadyDrivers, payoutReadyCouriers, payoutReadyRestaurants,
-      todayGross: sum(todayBookings, 'estimated_price') || sum(todayRides, 'final_fare'),
-      todayCommission: sum(todayBookings, 'vasi_commission'),
-      todayDriverAmount: sum(todayBookings, 'driver_amount'),
-      todayPaymentsAmount: sum(todayPayments, 'amount'),
+      reportTimeZone: timeZone, reportDayStart: iso, reportDayEnd: dayEnd,
+      ...financialSummary(todayRides, todayPayments),
     };
   }
 
