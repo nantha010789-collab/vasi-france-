@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     ? (photoMode ? 'list_menu_photo_reviews' : 'list_restaurants')
     : (photoMode ? 'review_menu_photo' : 'review_restaurant');
   const payload = req.method === 'GET'
-    ? { status: req.query.status }
+    ? { status: req.query.status, store_type: req.query.store_type, search: req.query.search, page: req.query.page }
     : body;
   return sendAdminResult(res, await callAdminService(req, action, payload));
 }
