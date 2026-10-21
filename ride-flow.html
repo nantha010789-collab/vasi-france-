@@ -432,8 +432,9 @@
         font-size: 16px;
         font-weight: 850;
         line-height: 1.35;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        text-overflow: clip;
+        white-space: normal;
+        overflow-wrap: anywhere;
       }
       .pinConfirm button {
         width: 100%;
@@ -1575,6 +1576,7 @@
     </main>
     <script src="./assets/ride-fare-guard.js?v=2"></script>
     <script src="./assets/ride-map-geometry.js?v=1"></script>
+    <script src="./assets/ride-address.js?v=1"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.min.js"></script>
     <script src="./vendor/leaflet-1.9.4.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
@@ -2833,7 +2835,7 @@
         const net = await VasiNet.json(u, { cache: "no-store" }, {
           timeout: 7000,
           retries: 2,
-          cacheKey: "geocode:" + country + ":" + normalizeDestinationQuery(q).toLowerCase(),
+          cacheKey: "geocode:v2:" + country + ":" + normalizeDestinationQuery(q).toLowerCase(),
           maxAge: 30 * 24 * 60 * 60 * 1000,
         });
         return net.data?.results?.[0] || null;
@@ -2877,24 +2879,7 @@
         return null;
       }
       function formatGeocodedAddress(found, fallbackText = "Destination") {
-        const a = found?.address || {};
-        const street = [a.house_number, a.road || a.pedestrian || a.footway]
-          .filter(Boolean)
-          .join(" ");
-        const place =
-          a.amenity || a.shop || a.tourism || a.building || a.name || "";
-        const city =
-          a.city ||
-          a.town ||
-          a.village ||
-          a.municipality ||
-          a.locality ||
-          a.county ||
-          "";
-        const cityLine = [a.postcode, city].filter(Boolean).join(" ");
-        const parts = [street || place, cityLine, a.country].filter(Boolean);
-        if (parts.length >= 2) return [...new Set(parts)].join(", ");
-        return found?.display_name || fallbackText;
+        return VasiRideAddress.format(found, fallbackText);
       }
       async function searchDestination() {
         const raw = $("destSearch").value.trim();
