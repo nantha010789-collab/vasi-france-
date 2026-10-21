@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from '@supabase/supabase-js';
 import { reviewIssue, inspectFiles, expiringDocuments } from './document-review.ts';
 import { parisDayBounds, financialSummary, readAllReportRows } from './reporting.js';
+import { commerceListOptions, catalogueCounts } from './commerce-admin.js';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -351,9 +352,18 @@ Deno.serve(async (req) => {
 
     if (action === 'list_restaurants') {
       const status = ['pending', 'approved', 'rejected'].includes(body.status) ? body.status : 'pending';
-      const { data, error } = await db.from('restaurants').select('*').eq('status', status).order('created_at', { ascending: false }).limit(100);
+      const options = commerceListOptions(body);
+      let query = db.from('restaurants').select('*', { count: 'exact' }).eq('status', status);
+      if (options.type === 'grocery') query = query.ilike('cuisine', 'Épicerie%');
+      if (options.type === 'supermarket') query = query.ilike('cuisine', 'Supermarché%');
+      if (options.type === 'restaurant') query = query.or('cuisine.is.null,and(cuisine.not.ilike.Épicerie%,cuisine.not.ilike.Supermarché%)');
+      if (options.search) query = query.ilike('name', '%' + options.search + '%');
+      const { data, error, count } = await query.order('created_at', { ascending: false }).order('id', { ascending: false }).range(options.from, options.to);
       if (error) throw error;
-      return json({ ok: true, restaurants: data || [] });
+      const ids = (data || []).map((row: any) => row.id);
+      const items = ids.length ? await readAllReportRows(() => db.from('restaurant_menu_items').select('id,restaurant_id,active').in('restaurant_id', ids)) : [];
+      const counts = catalogueCounts(items);
+      return json({ ok: true, restaurants: (data || []).map((row: any) => ({ ...row, catalogue: counts.get(row.id) || { total: 0, available: 0 } })), pagination: { page: options.page, page_size: options.pageSize, total: count || 0, has_more: options.from + (data || []).length < (count || 0) } });
     }
     if (action === 'list_menu_photo_reviews') {
       const requested = ['checking', 'admin_review', 'needs_changes', 'approved'].includes(body.status) ? body.status : 'admin_review';
