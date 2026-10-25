@@ -3,9 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "ios:add": "npx cap add ios",
-    "android:add": "npx cap add android",
-    "sync": "npx cap sync",
+    "ios:add": "npx cap add ios && node ../scripts/portrait.mjs",
+    "android:add": "npx cap add android && node ../scripts/portrait.mjs",
+    "sync": "npx cap sync && node ../scripts/portrait.mjs",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android"
   },
