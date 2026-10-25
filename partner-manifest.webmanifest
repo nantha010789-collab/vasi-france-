@@ -7,7 +7,7 @@
   "start_url": "/partner",
   "scope": "/",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "portrait",
   "background_color": "#050505",
   "theme_color": "#050505",
   "categories": [

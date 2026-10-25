@@ -30,3 +30,7 @@ Before public store submission:
 5. Run the complete customer/driver/partner acceptance checklist on real iPhone and Android devices.
 6. Complete App Store privacy disclosures and Google Play Data safety declarations from the VASI data map.
 7. Provide reviewer test accounts and review notes.
+
+## Portrait phone orientation
+
+The add/sync scripts apply portrait orientation to generated Android MainActivity and iOS Info.plist for all three apps. Always use these npm scripts before signing a new build. Existing installed binaries must be rebuilt and redistributed to pick up this native setting. Customer, Driver and Partner PWA manifests request portrait; browser support varies, especially iOS home-screen web apps. Ordinary website tabs retain browser-controlled rotation. Android large-screen/foldable policies and iPad multitasking can override orientation restrictions; keep responsive layouts working. No generated native projects or signed binaries are included in this repository.
