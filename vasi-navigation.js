@@ -120,6 +120,7 @@
   }
 
   function returnSafely() {
+    if (typeof window.vasiRideBack === "function" && window.vasiRideBack()) return;
     if (hasInternalPreviousPage()) history.back();
     else location.href = fallback;
   }
