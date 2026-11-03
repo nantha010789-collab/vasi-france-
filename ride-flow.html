@@ -1397,10 +1397,10 @@
         <div id="booking" class="hidden">
           <button class="bookingRoute" type="button" onclick="focusDestination()" aria-label="Edit route"><span id="bookingRouteLabel"></span><b aria-hidden="true">✎</b></button>
           <div class="bookingScroll">
-          <div id="promo" class="promo">VASI offer price</div>
+          <section id="vehicleStep"><div id="promo" class="promo">VASI offer price</div>
           <div class="section">Choose vehicle</div>
           <div id="types" class="types"></div>
-<details class="tripOptions"><summary>Trip options <span>Stops · preferences · pickup time</span></summary>
+</section><section id="optionsStep" class="tripOptions">
           <div class="section">Route</div>
           <div id="stops" class="stops"></div>
           <button
@@ -1490,7 +1490,7 @@
             <div id="cancellationPolicy">Cancellation<b>Free before driver accepts</b></div>
             <div>Waiting<b id="waitingPolicy">3 min free · €0.30/min</b></div>
           </div>
-          </details>
+          </section>
 <div hidden aria-hidden="true" id="fareData"><span id="fare"></span><span id="tripInfo"></span><span id="fareService"></span><span id="farePayment"></span><span id="fareRoute"></span><span id="fareRate"></span><span id="fareTotal"></span></div>
           </div>
           <div class="bookingActions">
@@ -1517,7 +1517,7 @@
             </button>
           </div>
           </details>
-          <button id="routeBtn" class="cta" onclick="requestRide()">
+          <button id="routeBtn" class="cta" onclick="advanceBooking()">
             Request VASI ride
           </button>
           </div>
@@ -1756,6 +1756,41 @@
       const vehicleIconSvg = '<span class="vehicleGlyph"><svg viewBox="0 0 32 22" aria-hidden="true"><path d="M5 14l2-6h18l3 6v4H4v-4h1Z"/><path d="M9 8l3-4h9l4 4M8 18v2M25 18v2"/><circle cx="9" cy="15" r="1"/><circle cx="24" cy="15" r="1"/></svg></span>';
       const vehiclePhotoHtml = (key) =>
         `<span class="vehiclePhoto" aria-hidden="true"><img src="${vehiclePhotos[key] || vehiclePhotos.go}" alt="" decoding="async"></span>`;
+      let bookingStep = "vehicle";
+      function setBookingStep(step) {
+        bookingStep = step;
+        $("vehicleStep").classList.toggle("hidden", step !== "vehicle");
+        $("optionsStep").classList.toggle("hidden", step !== "options");
+        $("paymentChoices").classList.toggle("hidden", step !== "payment");
+        $("paymentChoices").open = step === "payment";
+        $("routeBtn").textContent = step === "vehicle" ? ((localStorage.getItem("vasi_language") || document.documentElement.lang).startsWith("fr") ? "Choisir ce véhicule" : "Choose this vehicle")
+          : step === "options" ? ((localStorage.getItem("vasi_language") || document.documentElement.lang).startsWith("fr") ? "Choisir le paiement" : "Choose payment")
+          : `${tr("Request ride")} ${classes[selected].name} · ${money(priceFor(route.km, route.mins, selected))}`;
+        $("booking").querySelector(".bookingScroll").scrollTop = 0;
+      }
+      function advanceBooking() {
+        if (bookingStep === "vehicle") return setBookingStep("options");
+        if (bookingStep === "options") {
+          if (pickupChoice === "Custom" && !customPickup) return toast(tr("Please confirm your custom pickup time"));
+          return setBookingStep("payment");
+        }
+        return requestRide();
+      }
+      window.vasiRideBack = function () {
+        if (!$("paymentModal").classList.contains("hidden")) { closePaymentModal(); return true; }
+        if (!$("driverArea").classList.contains("hidden")) {
+          toast((localStorage.getItem("vasi_language") || document.documentElement.lang).startsWith("fr") ? "Votre course reste active. Utilisez Annuler pour la modifier." : "Your ride remains active. Use Cancel to change it.");
+          return true;
+        }
+        if (!$("booking").classList.contains("hidden")) {
+          if (bookingStep === "payment") setBookingStep("options");
+          else if (bookingStep === "options") setBookingStep("vehicle");
+          else focusDestination();
+          return true;
+        }
+        if (mapSelectionKind === "destination") { focusPickup(); return true; }
+        return false;
+      };
       function syncMapUiState() {
         const panel = $("panel"),
           bookingVisible = !$("booking").classList.contains("hidden"),
@@ -2981,6 +3016,7 @@
           renderTypes();
           $("booking").classList.remove("hidden");
           selectType(selected);
+          setBookingStep(bookingStep);
           syncMapUiState();
           requestAnimationFrame(() => {
             if (routeLine) map.fitBounds(routeLine.getBounds(), routeMapPadding($("map").getBoundingClientRect(), $("panel").getBoundingClientRect()));
@@ -3032,6 +3068,7 @@
         $("fare").textContent = money(f);
         $("routeBtn").textContent = `${tr("Request ride")} ${classes[k].name} · ${money(f)}`;
         renderFareSummary(f);
+        setBookingStep(bookingStep);
         if ($("airportPickup").checked) {
           $("waitingPolicy").textContent = k === "go"
             ? "45 min free after airport arrival · €0.30/min"
@@ -3044,7 +3081,7 @@
           .querySelectorAll(".pay")
           .forEach((x) => x.classList.remove("active"));
         el.classList.add("active");
-        $("paymentChoices").open = false;
+        $("paymentChoices").open = true;
         renderFareSummary(priceFor(route.km, route.mins, selected));
       }
       function renderFareSummary(fareValue = priceFor(route.km, route.mins, selected)) {
