@@ -1757,8 +1757,15 @@
       const vehiclePhotoHtml = (key) =>
         `<span class="vehiclePhoto" aria-hidden="true"><img src="${vehiclePhotos[key] || vehiclePhotos.go}" alt="" decoding="async"></span>`;
       let bookingStep = "vehicle";
-      function setBookingStep(step) {
+      function setBookingStep(step, trackHistory = false) {
         bookingStep = step;
+        if (trackHistory && window.history?.pushState) {
+          window.history.pushState(
+            { ...(window.history.state || {}), vasiRideBookingStep: step },
+            "",
+            window.location.href,
+          );
+        }
         $("vehicleStep").classList.toggle("hidden", step !== "vehicle");
         $("optionsStep").classList.toggle("hidden", step !== "options");
         $("paymentChoices").classList.toggle("hidden", step !== "payment");
@@ -1768,11 +1775,15 @@
           : `${tr("Request ride")} ${classes[selected].name} · ${money(priceFor(route.km, route.mins, selected))}`;
         $("booking").querySelector(".bookingScroll").scrollTop = 0;
       }
+      window.addEventListener("popstate", (event) => {
+        const step = event.state?.vasiRideBookingStep;
+        if (step && !$("booking").classList.contains("hidden")) setBookingStep(step);
+      });
       function advanceBooking() {
-        if (bookingStep === "vehicle") return setBookingStep("options");
+        if (bookingStep === "vehicle") return setBookingStep("options", true);
         if (bookingStep === "options") {
           if (pickupChoice === "Custom" && !customPickup) return toast(tr("Please confirm your custom pickup time"));
-          return setBookingStep("payment");
+          return setBookingStep("payment", true);
         }
         return requestRide();
       }
@@ -1783,7 +1794,9 @@
           return true;
         }
         if (!$("booking").classList.contains("hidden")) {
-          if (bookingStep === "payment") setBookingStep("options");
+          if (bookingStep !== "vehicle" && window.history?.state?.vasiRideBookingStep) {
+            window.history.back();
+          } else if (bookingStep === "payment") setBookingStep("options");
           else if (bookingStep === "options") setBookingStep("vehicle");
           else focusDestination();
           return true;
@@ -3015,6 +3028,7 @@
           document.activeElement?.blur();
           renderTypes();
           $("booking").classList.remove("hidden");
+          setBookingStep(bookingStep, true);
           selectType(selected);
           setBookingStep(bookingStep);
           syncMapUiState();
