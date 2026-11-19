@@ -1765,14 +1765,19 @@
         `<span class="vehiclePhoto" aria-hidden="true"><img src="${vehiclePhotos[key] || vehiclePhotos.go}" alt="" decoding="async"></span>`;
       let bookingStep = "vehicle";
       function setBookingStep(step, trackHistory = false) {
-        bookingStep = step;
         if (trackHistory && window.history?.pushState) {
+          window.history.replaceState(
+            { ...(window.history.state || {}), vasiRideBookingStep: bookingStep },
+            "",
+            window.location.href,
+          );
           window.history.pushState(
             { ...(window.history.state || {}), vasiRideBookingStep: step },
             "",
             window.location.href,
           );
         }
+        bookingStep = step;
         $("vehicleStep").classList.toggle("hidden", step !== "vehicle");
         $("optionsStep").classList.toggle("hidden", step !== "options");
         $("paymentChoices").classList.toggle("hidden", step !== "payment");
