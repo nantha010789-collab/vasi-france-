@@ -1033,6 +1033,13 @@
         border: 0;
         background: transparent;
       }
+      #map .vasi-raster-tile {
+        filter: saturate(0.45);
+      }
+      .pinReticle .vasi-pin {
+        width: 44px;
+        height: 44px;
+      }
       .pinReticle {
         position: absolute;
         z-index: 700;
@@ -2366,6 +2373,7 @@
           updateWhenIdle: true,
           keepBuffer: 3,
           detectRetina: false,
+          className: "vasi-raster-tile",
           attribution: "© OpenStreetMap contributors",
         });
         mapFallbackLayer = L.tileLayer("/api/map-tile?z={z}&x={x}&y={y}", {
@@ -2375,6 +2383,7 @@
           updateWhenZooming: false,
           keepBuffer: 6,
           detectRetina: false,
+          className: "vasi-raster-tile",
           attribution: "© OpenStreetMap contributors",
         }).addTo(map);
         mapFallbackLayer.on("tileload", () => { rasterTilesLoaded += 1; if (map.hasLayer(publicRasterFallback)) map.removeLayer(publicRasterFallback); });
@@ -2439,7 +2448,7 @@
                 map.on("click", (e) => {
           if (activePinKind()) return;
           if (!pickup || mapSelectionKind === "pickup")
-            setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map");
+            setPickup([e.latlng.lat, e.latlng.lng], "Pickup selected on map", { resolveAddress: true });
           else
             setDestination(
               [e.latlng.lat, e.latlng.lng],
@@ -2450,7 +2459,11 @@
           mapPinDragKind = activePinKind();
         });
         map.on("drag", () => {
-          if (mapPinDragKind) moveActivePinToMapCenter(mapPinDragKind);
+          if (mapPinDragKind) {
+            locationRequest++;
+            pinAddressRequest++;
+            moveActivePinToMapCenter(mapPinDragKind);
+          }
         });
         map.on("dragend", () => {
           const kind = mapPinDragKind;
@@ -2512,7 +2525,9 @@
           useLocation();
         }
       }
+      let locationRequest = 0;
       function useLocation() {
+        const request = ++locationRequest;
         mapSelectionKind = "pickup";
         expandPanel();
         syncMapUiState();
@@ -2526,22 +2541,22 @@
         $("status").textContent = "Requesting your location…";
         let settled = false;
         const acceptPosition = (p, label = "Current location") => {
-          if (!p?.coords) return;
+          if (!p?.coords || request !== locationRequest) return;
           settled = true;
-          setPickup([p.coords.latitude, p.coords.longitude], label);
+          setPickup([p.coords.latitude, p.coords.longitude], label, { resolveAddress: true, fromLocation: true });
           try { localStorage.setItem("vasi_last_location", JSON.stringify({lat:p.coords.latitude,lng:p.coords.longitude,at:Date.now()})); } catch (_) {}
         };
         try {
           const last = JSON.parse(localStorage.getItem("vasi_last_location") || "null");
           if (last && Date.now() - Number(last.at || 0) < 10 * 60 * 1000) {
             settled = true;
-            setPickup([Number(last.lat), Number(last.lng)], "Recent location");
+            setPickup([Number(last.lat), Number(last.lng)], "Recent location", { resolveAddress: true, fromLocation: true });
           }
         } catch (_) {}
         navigator.geolocation.getCurrentPosition(
           (p) => acceptPosition(p),
           () => {
-            if (settled) return;
+            if (settled || request !== locationRequest) return;
             pickup = null;
             if (pickupMarker) {
               pickupMarker.remove();
@@ -2563,7 +2578,9 @@
           { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
         );
       }
-      function setPickup(p, label = "Pickup selected") {
+      function setPickup(p, label = "Pickup selected", { resolveAddress = false, fromLocation = false } = {}) {
+        if (!fromLocation) locationRequest++;
+        pinAddressRequest++;
         pickup = p;
         pickupConfirmed = false;
         mapSelectionKind = "pickup";
@@ -2591,6 +2608,7 @@
         } catch (mapError) {
           console.warn("Pickup map preview unavailable", mapError);
         }
+        if (resolveAddress) reverseGeocodePoint("pickup", p);
         if ($("airportPickup")?.checked) refreshAirportGuidance();
         if (homeDestination) {
           $("destSearch").value = homeDestination;
@@ -2609,6 +2627,7 @@
       }
       function confirmPickup() {
         if (!pickup) return;
+        locationRequest++;
         pickupConfirmed = true;
         mapSelectionKind = "destination";
         expandPanel();
