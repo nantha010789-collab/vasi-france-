@@ -1802,6 +1802,10 @@
       window.vasiRideBack = function () {
         if (!$("paymentModal").classList.contains("hidden")) { closePaymentModal(); return true; }
         if (!$("driverArea").classList.contains("hidden")) {
+          if (isFinishedRide(ride?.status)) {
+            location.href = "index.html";
+            return true;
+          }
           toast((localStorage.getItem("vasi_language") || document.documentElement.lang).startsWith("fr") ? "Votre course reste active. Utilisez Annuler pour la modifier." : "Your ride remains active. Use Cancel to change it.");
           return true;
         }
@@ -3498,6 +3502,9 @@
         button.textContent =
           quote.fee > 0 ? "Cancel ride · €5" : "Cancel ride · Free";
       }
+      function isFinishedRide(status) {
+        return ["completed", "cancelled", "canceled"].includes(String(status).toLowerCase());
+      }
       function setRideStatus(r) {
         const st = String(r.status || "requested").toLowerCase();
         updateCancellationUI(r);
@@ -3592,7 +3599,8 @@
           $("receiptBtn").textContent = "View cancellation receipt";
           $("receiptBtn").classList.remove("hidden");
         } else $("receiptBtn").classList.add("hidden");
-        if (["completed", "cancelled", "canceled"].includes(st)) {
+        if (isFinishedRide(st)) {
+          $("driverSub").textContent = labels[st];
           closePaymentModal();
           clearInterval(statusTimer);
           clearInterval(waitTimer);
@@ -3708,7 +3716,8 @@
           const d = await r.json();
           if (!r.ok)
             throw Error(d.error || "Cancellation could not be completed");
-          ride = d.ride || ride;
+          ride = { ...ride, ...d.ride, status: "cancelled" };
+          setRideStatus(ride);
           const fee = Number(d.cancellation_fee ?? 0);
           $("status").innerHTML =
             fee > 0
@@ -3716,12 +3725,6 @@
                 money(fee) +
                 " cancellation fee</span>"
               : '<span class="success">Ride cancelled · No fee</span>';
-          $("cancelBtn").classList.add("hidden");
-          $("receiptBtn").textContent = "View cancellation receipt";
-          $("receiptBtn").classList.remove("hidden");
-          $("eta").textContent = "—";
-          clearInterval(statusTimer);
-          clearInterval(waitTimer);
         } catch (e) {
           $("cancelBtn").disabled = false;
           $("status").innerHTML =
