@@ -1,0 +1,95 @@
+name: Native release build files
+on:
+  workflow_dispatch:
+  push:
+    branches: [build/native-release-files]
+    paths: [".github/workflows/native-release-files.yml", "native/**"]
+permissions:
+  contents: read
+jobs:
+  android:
+    name: Android release - ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [customer, driver, partner]
+    defaults:
+      run:
+        working-directory: native/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - run: npm install
+      - run: npm run android:add
+      - run: npm run sync
+      - name: Target API 36
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("android/variables.gradle")
+          p.write_text(p.read_text().replace("compileSdkVersion = 35","compileSdkVersion = 36").replace("targetSdkVersion = 35","targetSdkVersion = 36"))
+          PY
+      - name: Build release bundle and debug APK
+        run: cd android && ./gradlew bundleRelease assembleDebug
+      - name: Verify bundle and portrait setting
+        run: |
+          test -s android/app/build/outputs/bundle/release/app-release.aab
+          grep -q 'android:screenOrientation="portrait"' android/app/src/main/AndroidManifest.xml
+          mkdir -p release-files
+          cp android/app/build/outputs/bundle/release/app-release.aab release-files/vasi-${{ matrix.app }}-UNSIGNED.aab
+          cp android/app/build/outputs/apk/debug/app-debug.apk release-files/vasi-${{ matrix.app }}-TEST.apk
+          printf '%s\n' 'AAB is unsigned and cannot be uploaded until signed with the existing registered upload key. APK is debug-signed for testing only. Apps connect to current VASI servers; use test accounts only.' > release-files/READ-ME.txt
+          sha256sum release-files/* > release-files/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vasi-${{ matrix.app }}-android-release-files
+          path: native/${{ matrix.app }}/release-files/
+          if-no-files-found: error
+          retention-days: 14
+  ios:
+    name: iOS device archive - ${{ matrix.app }}
+    runs-on: macos-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [customer, driver, partner]
+    defaults:
+      run:
+        working-directory: native/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run ios:add
+      - run: npm run sync
+      - name: Archive for physical iOS devices without distribution credentials
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/VASI-${{ matrix.app }}.xcarchive" CODE_SIGNING_ALLOWED=NO archive
+      - name: Verify archive and package
+        run: |
+          test -d "$RUNNER_TEMP/VASI-${{ matrix.app }}.xcarchive/Products/Applications/App.app"
+          mkdir -p release-files
+          tar -czf release-files/vasi-${{ matrix.app }}-UNSIGNED.xcarchive.tar.gz -C "$RUNNER_TEMP" "VASI-${{ matrix.app }}.xcarchive"
+          printf '%s\n' 'Unsigned Release archive for physical iOS devices. Not an installable IPA or TestFlight upload. Distribution certificate, matching profile and team settings are required for signing/export. Apps connect to current VASI servers; use test accounts only.' > release-files/READ-ME.txt
+          shasum -a 256 release-files/* > release-files/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vasi-${{ matrix.app }}-ios-device-archive-unsigned
+          path: native/${{ matrix.app }}/release-files/
+          if-no-files-found: error
+          retention-days: 14
