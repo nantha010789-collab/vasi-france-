@@ -1803,7 +1803,7 @@
         if (!$("paymentModal").classList.contains("hidden")) { closePaymentModal(); return true; }
         if (!$("driverArea").classList.contains("hidden")) {
           if (isFinishedRide(ride?.status)) {
-            location.href = "index.html";
+            location.replace("app.html");
             return true;
           }
           toast((localStorage.getItem("vasi_language") || document.documentElement.lang).startsWith("fr") ? "Votre course reste active. Utilisez Annuler pour la modifier." : "Your ride remains active. Use Cancel to change it.");
@@ -1818,7 +1818,8 @@
           return true;
         }
         if (mapSelectionKind === "destination") { focusPickup(); return true; }
-        return false;
+        location.replace("app.html");
+        return true;
       };
       function syncMapUiState() {
         const panel = $("panel"),
