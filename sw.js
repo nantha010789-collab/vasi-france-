@@ -30,13 +30,13 @@ self.addEventListener("fetch",e=>{
   if(e.request.mode==="navigate"){
     e.respondWith(fetch(e.request,{cache:"no-store"}).then(n=>{
       const copy=n.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return n
-    }).catch(()=>caches.match(e.request).then(r=>r||caches.match(
-      url.pathname.startsWith("/admin")?appUrl("admin-login.html"):
-      url.pathname==="/driver"||url.pathname==="/driver/"||url.pathname.endsWith("/driver.html")||url.pathname.endsWith("/delivery-driver.html")?appUrl("driver-home.html"):
-      url.pathname==="/partner"||url.pathname==="/partner/"||url.pathname.startsWith("/restaurant-")?appUrl("partner.html"):
-      url.pathname==="/ride"||url.pathname.endsWith("/ride-flow.html")?appUrl("ride-flow.html"):
-      url.pathname==="/"||url.pathname.endsWith("/index.html")?appUrl("index.html"):appUrl("app.html")
-    ))));
+    }).catch(async () => {
+      const cached = await caches.match(e.request);
+      return cached || new Response("Hors connexion. Réessayez lorsque votre connexion est rétablie.", {
+        status: 503,
+        headers: {"Content-Type": "text/plain; charset=utf-8"}
+      });
+    }));
     return;
   }
   e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(n=>{
@@ -44,4 +44,4 @@ self.addEventListener("fetch",e=>{
   })));
 });
 self.addEventListener("push",event=>{let data={};try{data=event.data?.json()||{}}catch(_){data={body:event.data?.text()||"Vous avez une nouvelle mise à jour VASI."}}event.waitUntil(self.registration.showNotification(data.title||"VASI",{body:data.body||"Vous avez une nouvelle mise à jour.",icon:appUrl("vasi-word-icon-192.png"),badge:appUrl("vasi-word-icon-192.png"),tag:data.tag||"vasi-update",renotify:false,silent:Boolean(data.silent),vibrate:data.silent?[]:[180,80,180],data:{url:appUrl(data.url||"activity.html")}}))});
-self.addEventListener("notificationclick",event=>{event.notification.close();const target=new URL(event.notification.data?.url||appUrl("activity.html"),APP_BASE).href;event.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(clients=>{const openClient=clients.find(client=>client.url.startsWith(self.location.origin));if(openClient){openClient.navigate(target);return openClient.focus()}return self.clients.openWindow(target)}))});
+self.addEventListener("notificationclick",event=>{event.notification.close();const target=new URL(event.notification.data?.url||appUrl("activity.html"),APP_BASE).href;event.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(clients=>{const openClient=clients.find(client=>client.url === target);if(openClient){return openClient.focus()}return self.clients.openWindow(target)}))});
