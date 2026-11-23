@@ -37,26 +37,26 @@
   if (rootPages.has(page) && !["admin", "publicity"].includes(parent)) return;
 
   const fallbacks = {
-    "account.html": "index.html",
-    "activity.html": "index.html",
+    "account.html": "/app",
+    "activity.html": "/app",
     "admin-discounts.html": "vasi-admin.html",
-    "admin-login.html": "index.html",
-    "auth.html": "index.html",
+    "admin-login.html": "/app",
+    "auth.html": "/app",
     "business-account.html": "account.html",
-    "contact.html": "index.html",
+    "contact.html": "/app",
     "delete-account.html": "settings.html#privacy",
     "delivery-driver.html": "driver-home.html",
-    "delivery.html": "index.html",
+    "delivery.html": "/app",
     "driver.html": "driver-home.html",
     "food-checkout.html": "food.html",
-    "food.html": "index.html",
+    "food.html": "/app",
     "food-orders.html": "food.html",
     "group-order.html": "food.html",
-    "help.html": "index.html",
-    "legal.html": "index.html",
+    "help.html": "/app",
+    "legal.html": "/app",
     "partner-admin.html": "vasi-admin.html",
-    "partner-register-v2.html": "index.html",
-    "partners.html": "index.html",
+    "partner-register-v2.html": "/app",
+    "partners.html": "/app",
     "pricing-admin.html": "vasi-admin.html",
     "restaurant-admin.html": "vasi-admin.html",
     "restaurant-dashboard.html": "partner.html",
@@ -64,23 +64,25 @@
     "restaurant-register-form.html": "partner.html",
     "restaurant-register.html": "partner.html",
     "ride-chat.html": "ride-flow.html",
-    "ride-flow.html": "index.html",
+    "ride-flow.html": "/app",
     "ride-history.html": "account.html",
-    "safety.html": "index.html",
+    "safety.html": "/app",
     "settings.html": "account.html",
-    "share-ride.html": "index.html",
+    "share-ride.html": "/app",
     "support-admin.html": "vasi-admin.html",
-    "support.html": "index.html",
+    "support.html": "/app",
   };
 
-  let fallback = fallbacks[page] || "index.html";
+  let fallback = fallbacks[page] || "/app";
   if (page === "auth.html") {
-    const surface = new URLSearchParams(location.search).get("surface");
-    if (surface === "driver") fallback = "driver-home.html";
-    if (surface === "partner") fallback = "partner.html";
+    const params = new URLSearchParams(location.search);
+    const surface = params.get("surface");
+    const role = params.get("role");
+    if (surface === "driver" || ["ride", "courier"].includes(role)) fallback = "driver-home.html";
+    if (surface === "partner" || role === "restaurant") fallback = "partner.html";
   }
-  if (parent === "website") fallback = "index.html";
-  if (parent === "admin") fallback = "./";
+  if (segments[0]?.toLowerCase() === "website") fallback = "/website";
+  if (parent === "admin" || fallback === "vasi-admin.html") fallback = "/admin/";
   if (parent === "publicity") fallback = "../index.html";
 
   const labels = {
@@ -109,20 +111,9 @@
     if (text) text.textContent = label;
   }
 
-  function hasInternalPreviousPage() {
-    if (history.length <= 1 || !document.referrer) return false;
-    try {
-      const previous = new URL(document.referrer);
-      return previous.origin === location.origin && previous.href !== location.href;
-    } catch (_) {
-      return false;
-    }
-  }
-
   function returnSafely() {
     if (typeof window.vasiRideBack === "function" && window.vasiRideBack()) return;
-    if (hasInternalPreviousPage()) history.back();
-    else location.href = fallback;
+    location.replace(fallback);
   }
 
   function install() {
