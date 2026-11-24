@@ -1,4 +1,4 @@
-const CACHE = "vasi-app-v153";
+const CACHE = "vasi-app-v154";
 const MAP_CACHE = "vasi-map-runtime-v2";
 const APP_BASE = self.registration.scope;
 const appUrl = (path) => new URL(path, APP_BASE).href;
@@ -27,6 +27,7 @@ self.addEventListener("fetch",e=>{
     return;
   }
   if(url.pathname.startsWith("/api/"))return;
+  if(url.pathname.startsWith("/admin") && e.request.mode==="navigate")return;
   if(e.request.mode==="navigate"){
     e.respondWith(fetch(e.request,{cache:"no-store"}).then(n=>{
       const copy=n.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return n
