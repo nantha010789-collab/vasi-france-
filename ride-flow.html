@@ -3664,16 +3664,18 @@
         await loadRideStatus();
       }
       async function loadRideStatus() {
-        if (!ride?.id) return;
+        const rideId = ride?.id;
+        if (!rideId || isFinishedRide(ride.status)) return;
         try {
           const s = await getSession();
           if (!s) return;
           const r = await fetch(
-            "/api/ride-status?id=" + encodeURIComponent(ride.id),
+            "/api/ride-status?id=" + encodeURIComponent(rideId),
             { headers: { Authorization: "Bearer " + s.access_token } },
           );
           const d = await r.json();
           if (!r.ok) throw Error(d.error || "Status unavailable");
+          if (ride?.id !== rideId || isFinishedRide(ride.status)) return;
           ride = d;
           setRideStatus(ride);
         } catch (e) {}
