@@ -26,7 +26,10 @@ function harness({ auth = {}, search = '?role=customer&method=email', language =
     location: { search, pathname: '/auth.html', origin: 'https://www.vasigo.eu', href: 'https://www.vasigo.eu/auth.html' + search },
     history: { replaceState() {} }, document: { getElementById: node, querySelector: node },
     window: { localStorage: sessionStorage, VasiLanguage: { translate: x => x, getLanguage: () => language } },
-    VasiRegion: { getRegion: () => ({ phonePlaceholder: '+33612345678', shortName: 'France' }), normalizePhone: x => x },
+    VasiRegion: {
+      getRegion: () => ({ phonePlaceholder: '06 12 34 56 78', shortName: 'France' }),
+      normalizePhone: x => /^\+33\d{9}$/.test(x) ? x : '',
+    },
     VasiAccountRole: { scoped: () => ({ active: () => '', intent: () => '', setIntent() {} }) },
     supabase: { createClient: () => ({ auth }) },
     setInterval(fn) { ticks.push(fn); return ticks.length; }, clearInterval() {} };
@@ -71,6 +74,17 @@ test('pending requests prevent method changes and duplicate email sends; network
   assert.equal(h.node('continueBtn').disabled, false);
   assert.equal(h.run('sendingCode'), false);
   assert.match(h.node('msg').textContent, /momentanément indisponible/);
+});
+
+test('invalid phone input shows a correctly worded French validation message without sending SMS', async () => {
+  let sends = 0;
+  const h = harness({ auth: { async signInWithOtp() { sends++; return { error: null }; } } });
+  h.run("setAuthMethod('phone')");
+  h.node('identity').value = 'abc';
+  await h.run('submitAuth()');
+  assert.equal(sends, 0);
+  assert.equal(h.node('msg').textContent, 'Saisissez un numéro de mobile valide, par exemple 06 12 34 56 78.');
+  assert.doesNotMatch(h.node('msg').textContent, /France numéro/);
 });
 
 test('email resend respects cooldown, clears old code and keeps the email channel', async () => {
