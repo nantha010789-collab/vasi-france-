@@ -101,15 +101,15 @@ test("public home never redirects an admin or provider session away from VASI", 
 test("the shared return control is valid JavaScript and has safe navigation rules", () => {
   const source = readFileSync("vasi-navigation.js", "utf8");
   assert.doesNotThrow(() => new vm.Script(source));
-  assert.match(source, /previous\.origin === location\.origin/);
-  assert.match(source, /history\.length <= 1/);
+  assert.match(source, /location\.replace\(fallback\)/);
+  assert.doesNotMatch(source, /history\.back\(/);
   assert.match(source, /\["admin", "publicity"\]\.includes\(lastSegment\)/);
   assert.doesNotMatch(source, /nestedIndex[^;]+segments\.length === 1/);
   assert.match(source, /"food-checkout\.html": "food\.html"/);
   assert.match(source, /"settings\.html": "account\.html"/);
   assert.match(source, /page === "admin-login\.html"/);
   assert.match(source, /parent === "admin" && page === "index\.html"/);
-  assert.match(source, /parent === "admin"\) fallback = "\.\/"/);
+  assert.match(source, /parent === "admin" \|\| fallback === "vasi-admin\.html"\) fallback = "\/admin\/"/);
   assert.match(source, /"driver\.html": "driver-home\.html"/);
   assert.match(source, /"delivery-driver\.html": "driver-home\.html"/);
   assert.match(source, /"restaurant-dashboard\.html": "partner\.html"/);
