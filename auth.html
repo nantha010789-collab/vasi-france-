@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 10862)
+Total output lines: 1024
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -559,49 +562,7 @@
             : phone
             ? "Enter your mobile number. We will send a 6-digit SMS code."
             : authCopy("Saisissez votre e-mail. Nous vous enverrons un code sécurisé à 6 chiffres.", "Enter your email. We will send you a secure 6-digit code.")
-          : driverRegistration
-            ? phone
-              ? authCopy("Saisissez votre numéro. Nous vous enverrons un code SMS à 6 chiffres pour commencer votre dossier.", "Enter your number. We will send a 6-digit SMS code to start your application.")
-              : authCopy("Saisissez votre e-mail. Nous vous enverrons un code à 6 chiffres pour commencer votre dossier étape par étape.", "Enter your email. We will send a 6-digit code to start your application step by step.")
-            : role === "ride"
-              ? phone ? authCopy("Connexion chauffeur par code SMS.", "Driver login with SMS code.") : "VTC passenger driver account."
-              : role === "courier"
-                ? phone ? authCopy("Connexion livreur par code SMS.", "Courier login with SMS code.") : "Food + Delivery courier account."
-              : phone
-                ? "Enter your mobile number. We will send a 6-digit SMS code."
-                : "Manage your restaurant or market, products and orders.");
-        const methodChoice = customer || surface === "driver";
-        $("methodSwitch").classList.toggle("hidden", !methodChoice || codePending);
-        $("phoneMethodBtn").classList.toggle("active", methodChoice && phone);
-        $("emailMethodBtn").classList.toggle("active", methodChoice && !phone);
-        $("phoneMethodBtn").setAttribute("aria-pressed", String(methodChoice && phone));
-        $("emailMethodBtn").setAttribute("aria-pressed", String(methodChoice && !phone));
-        $("phoneMethodLabel").textContent = authCopy("Téléphone", "Phone");
-        $("methodHint").textContent = surface === "driver"
-          ? authCopy("Choisissez une méthode et utilisez toujours la même pour retrouver votre dossier.", "Choose one method and always use the same one to access your application.")
-          : "";
-        $("methodHint").classList.toggle("hidden", surface !== "driver" || codePending);
-        $("identity").type = phone ? "tel" : "email";
-        $("identity").inputMode = phone ? "tel" : "email";
-        $("identity").autocomplete = phone ? "tel" : "email";
-        $("identity").placeholder = phone
-          ? VasiRegion.getRegion().phonePlaceholder
-          : "you@example.com";
-        $("otp").placeholder = phone
-          ? authCopy("Code SMS à 6 chiffres", "6-digit SMS code")
-          : authCopy("Code e-mail à 6 chiffres", "6-digit email code");
-        $("changeIdentityBtn").textContent = phone
-          ? authCopy("Modifier le numéro", "Change phone number")
-          : authCopy("Modifier l’e-mail", "Change email address");
-        $("deliveryNote").textContent = phone
-          ? authCopy("La réception du SMS peut prendre jusqu’à 2 minutes. Après un renvoi, utilisez uniquement le code du SMS le plus récent.", "SMS delivery can take up to 2 minutes. After a resend, use only the code from the newest SMS.")
-          : authCopy("La réception de l’e-mail peut prendre quelques minutes. Vérifiez aussi les courriers indésirables et utilisez uniquement le code le plus récent.", "Email delivery can take a few minutes. Check spam too and use only the newest code.");
-        $("continueBtn").textContent = t(awaitingCode()
-          ? authCopy("Vérifier et continuer", "Verify & continue")
-          : phone
-            ? authCopy("Envoyer le code SMS", "Send SMS code")
-            : authCopy("Envoyer le code e-mail", "Send email code"));
-        $("codeStep").classList.toggle("hidden", !awaitingCode());
+          …862 tokens truncated…"hidden", !awaitingCode());
         const roleButtons = { customerBtn: "customer", rideBtn: "ride", courierBtn: "courier", restaurantBtn: "restaurant" };
         Object.entries(roleButtons).forEach(([id, buttonRole]) => {
           $(id).classList.remove("active");
@@ -682,12 +643,16 @@
       }
       async function sendPhoneCode() {
         if (sendingCode || resendSeconds > 0) return;
+        const region = VasiRegion.getRegion();
         const phone = normalizePhone($("identity").value.trim());
         if (!phone)
           return show(
-            "Enter a valid " + VasiRegion.getRegion().shortName +
-              " mobile number, for example " +
-              VasiRegion.getRegion().phonePlaceholder + ".",
+            authCopy(
+              "Saisissez un numéro de mobile valide, par exemple " +
+                region.phonePlaceholder + ".",
+              "Enter a valid " + region.shortName +
+                " mobile number, for example " + region.phonePlaceholder + ".",
+            ),
           );
         sendingCode = true;
         $("continueBtn").disabled = true;
