@@ -212,6 +212,7 @@
 
       .arrow { flex: 0 0 auto; color: #737373; font-size: 21px; }
 
+      .required.unverified { background: #3a2c1b; color: #ffd37a; }
       .required {
         flex: 0 1 auto;
         border-radius: 999px;
@@ -454,9 +455,9 @@
           </div>
           <div class="menu">
             <div class="row">
-              <span class="icon" aria-hidden="true">✓</span>
-              <span class="copy"><strong>SMS verification</strong><span id="verifiedPhone">Verified VASI account</span></span>
-              <span class="required">On</span>
+              <span class="icon" id="phoneVerificationIcon" aria-hidden="true">!</span>
+              <span class="copy"><strong>SMS verification</strong><span id="verifiedPhone">No verified phone</span></span>
+              <span class="required unverified" id="phoneVerificationState">Not verified</span>
             </div>
             <div class="row">
               <span class="icon" aria-hidden="true">▣</span>
@@ -567,7 +568,7 @@
           const local = "0" + value.slice(3);
           return local.replace(/(\d{5})(\d{6})/, "$1 $2");
         }
-        return value || "Verified VASI account";
+        return value || "No verified phone";
       }
 
       function updateNotificationState() {
@@ -740,7 +741,14 @@
         }
         initializePreferences();
         updateNotificationState();
-        $("verifiedPhone").textContent = displayPhone(currentSession.user.phone);
+        const phone = String(currentSession.user.phone || "");
+        const phoneVerified = Boolean(phone && currentSession.user.phone_confirmed_at);
+        $("verifiedPhone").textContent = phoneVerified
+          ? displayPhone(phone)
+          : (phone ? "Phone number not verified" : "No verified phone");
+        $("phoneVerificationState").textContent = phoneVerified ? "On" : "Not verified";
+        $("phoneVerificationState").classList.toggle("unverified", !phoneVerified);
+        $("phoneVerificationIcon").textContent = phoneVerified ? "✓" : "!";
         $("sessionState").textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent)
           ? "This iPhone has an active VASI session"
           : "This device has an active VASI session";
